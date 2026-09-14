@@ -27,7 +27,7 @@ flowchart LR
         WEB -->|"HTTPS / REST"| BACKEND
         BACKEND -->|"liest / schreibt"| DB
         BACKEND -->|"semantische Suche / Retrieval"| VS
-    end
+    end  
     
     MIETER -->|"erfasst Anliegen"| WEB
     MIETER -->|"sendet Anliegen per E-Mail"| MAIL
@@ -36,3 +36,4 @@ flowchart LR
     BACKEND <-->|"Mieter-, Mietvertrags-<br/>und Objektdaten"| ERP
     BACKEND <-->|"KI-Aufruf / strukturierte Ausgabe"| LLM
     BACKEND <-->|"Prozesse starten<br/>Jobs bearbeiten<br/>User Tasks abschliessen"| CAMUNDA
+

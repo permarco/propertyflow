@@ -13,7 +13,7 @@ Die Anwendung umfasst die fachlichen Bereiche:
 
 - Erfassung und Strukturierung von Mieteranliegen
 - Dringlichkeitsbewertung
-- Zuständigkeits- und Handlungsempfehlung
+- Zuständigkeits- und HandlungsempfehlungF
 - Prüfung und Bearbeitung durch die Immobilienbewirtschaftung
 
 PropertyFlow integriert zudem mehrere externe Systeme:
