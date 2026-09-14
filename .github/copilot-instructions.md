@@ -8,7 +8,7 @@ Read at minimum:
 - `docs/vision.md`
 - `docs/architecture/c4-context.md`
 - `docs/architecture/c4-container.md`
-- `docs/architecture/adr/ADR-001-modular-monolith.md`
+- `docs/architecture/adr/ADR-001-grundarchitektur.md`
 
 ## Architecture
 

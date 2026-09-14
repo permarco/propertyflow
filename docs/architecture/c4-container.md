@@ -16,9 +16,9 @@ flowchart LR
 
         WEB["<b>Web Frontend</b><br/>Erfassung und Bearbeitung<br/>von Mieteranliegen"]
 
-        APP["<b>Backend Application</b><br/>Geschäftslogik, Triage,<br/>Embedded Camunda 7,<br/>Workflow-Steuerung,</br>KI-Orchestrierung und RAG"]
+        APP["<b>Backend Application</b><br/>Geschäftslogik, Triage,<br/>Embedded Camunda 7,<br/>Workflow-Steuerung,<br/>KI-Orchestrierung und RAG"]
 
-        DB[("Application Database<br/>Anliegen, Status,<br/>KI-Ergebnisse, Bearbeitungsverlauf")]
+        DB[("Application Database<br/>Anliegen, Status,<br/>KI-Ergebnisse, Bearbeitungsverlauf, Workflow-State")]
 
         VS[("Knowledge Store / Vector Store<br/>Richtlinien, Regelwerke,<br/>freigegebene frühere Fälle")]
 
@@ -28,7 +28,7 @@ flowchart LR
     end
 
     MIETER -->|"erfasst Anliegen"| WEB
-    MIETER -->|"erfasst Anliegen"| MAIL
+    MIETER -->|"sendet Anliegen per E-Mail"| MAIL
     
     BEW -->|"prüft und bearbeitet Anliegen"| WEB
 

@@ -1,16 +1,7 @@
 # C4 Level 1 – System Context
 
-## Systemübersicht
-
-PropertyFlow ist das zentrale System für die Verwaltung von Immobilien-, Miet- und Betriebsprozessen. Es bildet die fachliche Klammer zwischen Immobilienmanagement, operativem Service und Managementsicht.
-
-## Aktoren
-
-- Immobilienverwalter: pflegen Objektdaten, Verträge und Zuständigkeiten
-- Betriebsservice: dokumentiert Wartungs- und Reparaturarbeiten
-- Management: nutzt Kennzahlen und aktuellen Status für Entscheidungen
-- Mieter/Kunden: erhalten je nach Prozess Sicht auf relevante Informationen
-
+PropertyFlow unterstützt Immobilienbewirtschaftungen bei der
+KI-gestützten Triage und Bearbeitung von Mieteranliegen.
 
 ```mermaid
 flowchart LR
