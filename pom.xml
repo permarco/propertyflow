@@ -16,7 +16,7 @@
     <description>AI-assisted processing of tenant requests for property management</description>
 
     <properties>
-        <java.version>25</java.version>
+        <java.version>23</java.version>
         <spring-ai.version>2.0.1</spring-ai.version>
         <camunda.version>8.9.19</camunda.version>
     </properties>
@@ -74,7 +74,7 @@
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <scope>test</scope>
+            <scope>runtime</scope>
         </dependency>
 
     </dependencies>
