@@ -17,6 +17,17 @@ Read at minimum:
 - Do not introduce microservices unless explicitly justified by an accepted ADR.
 - Keep external systems isolated from the domain logic through explicit interfaces.
 
+## Technology and workflow
+
+- The backend is a modular monolith based on Spring Boot.
+- Use the current project-defined Spring AI version for AI integrations.
+- Camunda 8 is used for long-running workflow orchestration.
+- Camunda is not embedded in the PropertyFlow backend.
+- PropertyFlow integrates with Camunda through its supported client APIs and job workers.
+- Business data remains owned by PropertyFlow.
+- Camunda process variables should contain only the data required for workflow orchestration.
+- Camunda job workers must be designed with retries and idempotency in mind.
+
 ## Safety
 
 - Treat LLM output as untrusted input.

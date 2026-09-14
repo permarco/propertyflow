@@ -15,16 +15,20 @@ flowchart LR
         direction TB
 
         WEB["<b>Web Frontend</b><br/>Erfassung und Bearbeitung<br/>von Mieteranliegen"]
+        
+        CAMUNDA["<b>Camunda 8</b><br/><br/>Prozess-Orchestrierung<br/>Workflow-State<br/>Timer / Wait States<br/>Human Tasks"]
 
-        APP["<b>Backend Application</b><br/>Geschäftslogik, Triage,<br/>Embedded Camunda 7,<br/>Workflow-Steuerung,<br/>KI-Orchestrierung und RAG"]
+        BACKEND["<b>Backend Application</b><br/>Geschäftslogik, Triage,<br/>Workflow-Steuerung,<br/>KI-Orchestrierung und RAG"]
 
         DB[("Application Database<br/>Anliegen, Status,<br/>KI-Ergebnisse, Bearbeitungsverlauf, Workflow-State")]
 
+        BACKEND <-->|"startet Prozesse / verarbeitet Jobs"| CAMUNDA
+
         VS[("Knowledge Store / Vector Store<br/>Richtlinien, Regelwerke,<br/>freigegebene frühere Fälle")]
 
-        WEB -->|"HTTPS / REST"| APP
-        APP -->|"liest / schreibt"| DB
-        APP -->|"semantische Suche / Retrieval"| VS
+        WEB -->|"HTTPS / REST"| BACKEND
+        BACKEND -->|"liest / schreibt"| DB
+        BACKEND -->|"semantische Suche / Retrieval"| VS
     end
 
     MIETER -->|"erfasst Anliegen"| WEB
@@ -32,8 +36,8 @@ flowchart LR
     
     BEW -->|"prüft und bearbeitet Anliegen"| WEB
 
-    MAIL -->|"liefert Mieteranliegen"| APP
+    MAIL -->|"liefert Mieteranliegen"| BACKEND
 
-    APP <-->|"Mieter-, Mietvertrags-<br/>und Objektdaten"| ERP
+    BACKEND <-->|"Mieter-, Mietvertrags-<br/>und Objektdaten"| ERP
 
-    APP <-->|"KI-Aufruf / strukturierte Ausgabe"| LLM
+    BACKEND <-->|"KI-Aufruf / strukturierte Ausgabe"| LLM
