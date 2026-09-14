@@ -13,7 +13,7 @@ Die Anwendung umfasst die fachlichen Bereiche:
 
 - Erfassung und Strukturierung von Mieteranliegen
 - Dringlichkeitsbewertung
-- Zuständigkeits- und HandlungsempfehlungF
+- Zuständigkeits- und Handlungsempfehlung
 - Prüfung und Bearbeitung durch die Immobilienbewirtschaftung
 
 PropertyFlow integriert zudem mehrere externe Systeme:
@@ -25,7 +25,7 @@ PropertyFlow integriert zudem mehrere externe Systeme:
 
 Die Bearbeitung eines Mieteranliegens kann sich über einen längeren Zeitraum
 erstrecken und Warte- oder Freigabeschritte enthalten.
-Für langlebige Bearbeitungsprozesse ist eine externe Workflow-Orchestrierung vorgesehen.
+Für langlebige Bearbeitungsprozesse ist eine separate Workflow-Orchestrierung vorgesehen.
 Die konkrete Entscheidung für Camunda 8 wird in einem separaten
 Architecture Decision Record dokumentiert.
 

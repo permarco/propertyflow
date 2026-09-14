@@ -18,9 +18,9 @@ flowchart LR
         
         CAMUNDA["<b>Camunda 8</b><br/><br/>Prozess-Orchestrierung<br/>Workflow-State<br/>Timer / Wait States<br/>Human Tasks"]
 
-        BACKEND["<b>Backend Application</b><br/>Geschäftslogik, Triage,<br/>Workflow-Steuerung,<br/>KI-Orchestrierung und RAG"]
+        BACKEND["<b>Backend Application</b><br/>Geschäftslogik, Triage,<br/>Workflow-Integration / Job Worker,<br/>KI-Orchestrierung und RAG"]
 
-        DB[("Application Database<br/>Anliegen, Status,<br/>KI-Ergebnisse, Bearbeitungsverlauf, Workflow-State")]
+        DB[("Application Database<br/>Anliegen, Bearbeitungsstatus,<br/>KI-Ergebnisse, Bearbeitungsverlauf")]
 
         BACKEND <-->|"startet Prozesse / verarbeitet Jobs"| CAMUNDA
 
