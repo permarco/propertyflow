@@ -8,7 +8,7 @@ Read at minimum:
 - `docs/vision.md`
 - `docs/architecture/c4-context.md`
 - `docs/architecture/c4-container.md`
-- `docs/architecture/adr/ADR-001-grundarchitektur.md`
+- all accepted ADRs under `docs/architecture/adr/`
 
 ## Architecture
 
