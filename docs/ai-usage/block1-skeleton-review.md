@@ -218,7 +218,3 @@ Relevante Nachweise befinden sich unter anderem in:
 - `docs/architecture/module-structure.md`
 - `docs/project-context.md`
 
-Relevante Pull Requests beziehungsweise Commits:
-
-- PR #8 – Erweiterung des technischen Skeletts mit Persistenz und Flyway
-- PR #12 – technischer Review und Härtung des Block-1-Skeletts
