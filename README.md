@@ -131,6 +131,12 @@ Entwicklung vorgesehen.
 
 ## PropertyFlow starten
 
+Das Block-1-Skelett verwendet standardmässig eine H2-In-Memory-Datenbank im
+PostgreSQL-Kompatibilitätsmodus. Dadurch kann das Skelett ohne lokale
+PostgreSQL-Instanz gestartet und getestet werden. PostgreSQL bleibt die
+vorgesehene relationale Zieldatenbank und ist bereits über `compose.yaml`
+vorbereitet.
+
 Vom Projekt-Root aus:
 
 ```bash
@@ -144,6 +150,30 @@ Unter Windows:
 mvnw.cmd clean test
 mvnw.cmd spring-boot:run
 ```
+
+Die Tests verwenden das Profil `test` und deaktivieren die Camunda-Verbindung,
+damit `clean test` keine lokal laufende Camunda-Instanz benötigt.
+
+### Hello-World-Skelett prüfen
+
+Nach dem Start ist der Block-1-Endpunkt erreichbar unter:
+
+```text
+GET http://localhost:8081/api/hello
+```
+
+Beispielantwort:
+
+```json
+{
+  "message": "Hello World",
+  "count": 1
+}
+```
+
+Der Zähler wird über JPA persistiert. Das Schema wird durch die
+Flyway-Migration unter `src/main/resources/db/migration/` erstellt; Hibernate
+validiert das resultierende Schema beim Start.
 
 ## Dokumentation
 
