@@ -34,3 +34,4 @@ flowchart LR
 
     PF <-->|"sendet aufbereitete Eingaben /
     erhält Analyse und Empfehlungen"| LLM
+```
