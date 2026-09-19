@@ -283,6 +283,14 @@ Der Ausfall einer unterstützenden KI- oder Retrieval-Komponente darf den
 Kernprozess zur Erfassung und manuellen Bearbeitung eines Mieteranliegens
 nicht verhindern.
 
+### Interne Modulstruktur
+
+Der modulare Monolith wird primär nach fachlichen Verantwortlichkeiten
+strukturiert. Innerhalb eines Moduls werden Ein-/Ausgabe,
+Anwendungslogik, Fachmodell und Infrastruktur getrennt.
+
+Die detaillierten Struktur- und Abhängigkeitsregeln sind in
+`docs/architecture/module-structure.md` beschrieben.
 
 ## Konsequenzen
 
