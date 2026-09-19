@@ -281,17 +281,14 @@ Für den KI-Anteil gelten mindestens folgende Guardrails:
 Die KI unterstützt die Immobilienbewirtschaftung, übernimmt aber nicht die
 endgültige fachliche Verantwortung.
 
-Insbesondere folgende Aktionen dürfen nicht allein aufgrund einer KI-Ausgabe
-irreversibel ausgeführt werden:
+**Verpflichtende menschliche Freigabe:**  
+Das Auslösen eines externen, verbindlichen oder kostenwirksamen Auftrags an
+einen Hauswart, Handwerker oder anderen Dienstleister darf nie automatisch
+allein aufgrund einer KI-Empfehlung erfolgen. Vor der Auslösung muss die
+Immobilienbewirtschaftung den vorgeschlagenen Auftrag explizit prüfen und
+freigeben.
 
-- endgültige Freigabe einer Zuständigkeits- oder Handlungsempfehlung
-- Abschluss eines fachlichen Falls, wenn dafür eine fachliche Prüfung
-  erforderlich ist
-- Auslösen externer Aufträge mit verbindlicher oder kostenwirksamer Wirkung,
-  sofern dafür keine explizite menschliche Freigabe vorgesehen ist
-
-Die konkrete Menge freigabepflichtiger Aktionen wird mit den späteren
-fachlichen Workflows präzisiert.
+Die KI darf eine solche Massnahme empfehlen, aber nicht selbst freigeben.
 
 ## Datenschutz und Protokollierung
 
