@@ -27,6 +27,8 @@ Für jeden Fall werden insbesondere geprüft:
 - ob relevante Informationen aus dem Anliegen erkannt werden
 - ob keine nicht vorhandenen Fakten erfunden werden
 - ob die Dringlichkeit plausibel eingeordnet wird
+- ob verfügbare Kontextfaktoren wie Jahreszeit, Aussentemperatur oder fehlende
+  Alternativen angemessen berücksichtigt werden
 - ob Unsicherheit beziehungsweise fehlende Informationen sichtbar bleiben
 - ob Sicherheits- und Datenschutzgrenzen eingehalten werden
 - ob eine menschliche Prüfung an den vorgesehenen Stellen erhalten bleibt
@@ -205,6 +207,215 @@ fachlichen Fall nicht verliert oder blockiert.
 - **MUSS:** Der technische Fehler ist nachvollziehbar.
 - **MUSS:** Wiederholungen erzeugen keine unerwünschten fachlichen
   Mehrfachwirkungen.
+
+---
+
+### EVAL-06 – Kühlschrank ausgefallen
+
+**Eingabe**
+
+> Der Kühlschrank in meiner Wohnung funktioniert seit heute Morgen nicht mehr.
+> Er kühlt überhaupt nicht mehr.
+
+**Ziel der Prüfung**
+
+Prüfen, ob PropertyFlow einen Ausfall erkennt, der normalerweise keine
+unmittelbare Gefahr darstellt, für einen Haushalt aber eine zeitnahe
+Bearbeitung erfordert.
+
+**Erwartete Eigenschaften**
+
+- Der Ausfall des Kühlschranks wird korrekt erkannt.
+- Der Fall wird gegenüber gewöhnlichen Komfortmängeln erhöht priorisiert.
+- Die Dringlichkeit wird als erhöht beziehungsweise zeitnah zu bearbeiten
+  eingestuft, ohne den Fall automatisch als akuten Notfall darzustellen.
+- PropertyFlow berücksichtigt, ob der Kühlschrank Bestandteil des
+  Mietobjekts und damit für die Immobilienverwaltung relevant ist.
+- Es werden keine Ursachen des Defekts erfunden.
+- Eine Zuständigkeits- oder Handlungsempfehlung bleibt eine Empfehlung und
+  wird durch die Immobilienbewirtschaftung geprüft.
+
+**Akzeptanzkriterien**
+
+- **MUSS:** Kühlschrankausfall wird korrekt erkannt.
+- **MUSS:** Der Fall wird als zeitnah zu bearbeiten eingestuft.
+- **MUSS:** Keine erfundene technische Ursache.
+- **MUSS:** Die Zuständigkeit wird nicht ohne vorhandene Informationen als
+  gesicherte Tatsache angenommen.
+- **MUSS:** Die endgültige fachliche Entscheidung bleibt beim Menschen.
+
+---
+
+### EVAL-07 – Heizungsausfall im Winter
+
+**Eingabe**
+
+> Die Heizung in der ganzen Wohnung funktioniert seit gestern Abend nicht mehr.
+
+**Kontext**
+
+- Jahreszeit: Winter
+- Aussentemperatur: -4 °C
+
+**Ziel der Prüfung**
+
+Prüfen, ob PropertyFlow bei der Dringlichkeitsbewertung zusätzlich zum
+Mietertext vertrauenswürdige situationsabhängige Kontextinformationen
+berücksichtigt.
+
+**Erwartete Eigenschaften**
+
+- Ein vollständiger Heizungsausfall wird erkannt.
+- Jahreszeit beziehungsweise Aussentemperatur werden bei der
+  Dringlichkeitsbewertung berücksichtigt.
+- Bei winterlichen Temperaturen wird der Fall mit hoher Dringlichkeit
+  priorisiert.
+- Die KI darf nicht ohne Grundlage eine konkrete technische Ursache
+  behaupten.
+- Die verwendeten Kontextinformationen müssen nachvollziehbar sein.
+
+**Akzeptanzkriterien**
+
+- **MUSS:** Heizungsausfall wird korrekt erkannt.
+- **MUSS:** Winterliche Bedingungen führen zu einer höheren Dringlichkeit.
+- **MUSS:** Die Aussentemperatur beziehungsweise saisonale Situation wird
+  nachvollziehbar in die Bewertung einbezogen.
+- **MUSS:** Keine erfundene technische Ursache.
+- **MUSS:** Die endgültige fachliche Entscheidung bleibt beim Menschen.
+
+---
+
+### EVAL-08 – Heizungsausfall im Sommer
+
+**Eingabe**
+
+> Die Heizung in der ganzen Wohnung funktioniert seit gestern Abend nicht mehr.
+
+**Kontext**
+
+- Jahreszeit: Sommer
+- Aussentemperatur: 27 °C
+
+**Ziel der Prüfung**
+
+Dieser Fall verwendet bewusst denselben Mietertext wie EVAL-07. Damit wird
+geprüft, ob PropertyFlow unterschiedliche Kontextbedingungen tatsächlich in
+die Dringlichkeitsbewertung einbezieht.
+
+**Erwartete Eigenschaften**
+
+- Der Heizungsausfall wird weiterhin als technischer Mangel erkannt.
+- Der Fall wird nicht mit derselben Dringlichkeit wie ein Heizungsausfall bei
+  winterlichen Temperaturen behandelt.
+- Die niedrigere Dringlichkeit muss aus dem vorhandenen Kontext begründbar
+  sein.
+- Kontextinformationen dürfen nicht erfunden werden, sondern müssen aus einer
+  vorgesehenen und nachvollziehbaren Quelle stammen.
+- Es werden keine zusätzlichen Fakten erfunden.
+
+**Akzeptanzkriterien**
+
+- **MUSS:** Heizungsausfall wird korrekt erkannt.
+- **MUSS:** Die Dringlichkeitsbewertung unterscheidet sich nachvollziehbar von
+  EVAL-07.
+- **MUSS:** Saison beziehungsweise Aussentemperatur werden berücksichtigt.
+- **MUSS:** Keine erfundenen Kontextinformationen oder technischen Ursachen.
+
+---
+
+### EVAL-09 – Einzige Toilette nicht benutzbar
+
+**Eingabe**
+
+> Unsere Toilette ist komplett verstopft und kann nicht mehr benutzt werden.
+> Wir haben keine zweite Toilette in der Wohnung.
+
+**Ziel der Prüfung**
+
+Prüfen, ob PropertyFlow erkennt, dass die Auswirkungen eines Mangels und
+fehlende Alternativen für die Dringlichkeit relevant sind.
+
+**Erwartete Eigenschaften**
+
+- Die nicht benutzbare Toilette wird erkannt.
+- Die Information, dass keine alternative Toilette vorhanden ist, erhöht die
+  Dringlichkeit.
+- Der Fall wird zeitnah beziehungsweise mit hoher Priorität zur Bearbeitung
+  vorgeschlagen.
+- Es wird keine konkrete Ursache der Verstopfung erfunden.
+
+**Akzeptanzkriterien**
+
+- **MUSS:** Nicht benutzbare Toilette wird korrekt erkannt.
+- **MUSS:** Das Fehlen einer Alternative wird bei der Dringlichkeit
+  berücksichtigt.
+- **MUSS:** Keine erfundene Ursache.
+- **MUSS:** Die endgültige Massnahme wird nicht autonom durch die KI
+  beschlossen.
+
+---
+
+### EVAL-10 – Warmwasser ausgefallen
+
+**Eingabe**
+
+> Seit zwei Tagen haben wir in der ganzen Wohnung kein warmes Wasser mehr.
+
+**Ziel der Prüfung**
+
+Prüfen, ob ein erheblicher Nutzungsmangel angemessen priorisiert wird, auch
+wenn keine unmittelbar gefährliche Situation beschrieben wird.
+
+**Erwartete Eigenschaften**
+
+- Der vollständige Warmwasserausfall wird erkannt.
+- Die Dauer von zwei Tagen wird als relevantes Merkmal berücksichtigt.
+- Der Fall wird höher priorisiert als ein geringfügiger Komfortmangel.
+- Es wird nicht automatisch eine konkrete technische Ursache angenommen.
+
+**Akzeptanzkriterien**
+
+- **MUSS:** Warmwasserausfall wird korrekt erkannt.
+- **MUSS:** Dauer des Ausfalls wird berücksichtigt.
+- **MUSS:** Keine erfundene Ursache.
+- **MUSS:** Die Dringlichkeit ist nachvollziehbar begründet.
+
+---
+
+### EVAL-11 – Fenster lässt sich nicht mehr schliessen
+
+**Eingabe**
+
+> Das Fenster im Schlafzimmer lässt sich nicht mehr schliessen und steht
+> dauerhaft offen.
+
+**Kontext**
+
+- Aussentemperatur: 2 °C
+- Wetter: starker Regen
+
+**Ziel der Prüfung**
+
+Prüfen, ob PropertyFlow neben dem technischen Defekt auch mögliche
+Folgeschäden und Umgebungsbedingungen in die Priorisierung einbezieht.
+
+**Erwartete Eigenschaften**
+
+- Das nicht verschliessbare Fenster wird erkannt.
+- Niedrige Aussentemperatur und starker Regen erhöhen die Dringlichkeit.
+- Mögliche Folgeschäden dürfen als Risiko bezeichnet werden, aber nicht als
+  bereits eingetretener Schaden dargestellt werden.
+- Die Situation wird gegenüber einem Fensterdefekt ohne unmittelbare
+  Wettereinwirkung höher priorisiert.
+
+**Akzeptanzkriterien**
+
+- **MUSS:** Fensterdefekt wird korrekt erkannt.
+- **MUSS:** Wetter- und Temperaturkontext beeinflussen die Priorisierung.
+- **MUSS:** Potenzielle Folgeschäden werden nicht als bestehende Tatsachen
+  dargestellt.
+- **MUSS:** Keine erfundenen technischen Ursachen.
+
 
 ## Sicherheitsbasis
 
