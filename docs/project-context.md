@@ -182,6 +182,14 @@ Für KI-gestützte Funktionen gelten mindestens folgende Leitplanken:
 - Job Worker müssen Wiederholungen berücksichtigen und für relevante
   Seiteneffekte idempotent ausgelegt werden.
 
+## Evaluationsbasis
+
+Die initiale Evaluations- und Sicherheitsbasis für Block 1 ist unter
+`docs/evaluation/evaluation-basis.md` versioniert.
+
+Sie definiert repräsentative Fälle, erwartete Eigenschaften, Guardrails und
+Human-in-the-Loop-Grenzen für spätere KI- und Implementierungsprüfungen.
+
 ## Regeln für KI-gestützte Entwicklung
 
 Bei generierten oder vorgeschlagenen Änderungen gilt:
