@@ -8,6 +8,7 @@ Read at minimum:
 - `docs/vision.md`
 - `docs/architecture/c4-context.md`
 - `docs/architecture/c4-container.md`
+- `docs/architecture/module-structure.md`
 - all accepted ADRs under `docs/architecture/adr/`
 
 ## Architecture
@@ -16,6 +17,9 @@ Read at minimum:
 - Do not change architectural decisions without proposing an ADR change.
 - Do not introduce microservices unless explicitly justified by an accepted ADR.
 - Keep external systems isolated from the domain logic through explicit interfaces.
+- Follow the module and dependency rules in `docs/architecture/module-structure.md`.
+- Structure backend code by business capability; do not introduce global root-level `controller`, `service`, `repository` or `entity` packages.
+- Do not access another module's persistence implementation directly.
 
 ## Technology and workflow
 

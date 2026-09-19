@@ -61,6 +61,7 @@ propertyflow/
 │   └── architecture/
 │       ├── c4-context.md
 │       ├── c4-container.md
+│       ├── module-structure.md
 │       └── adr/
 │           ├── ADR-001-grundarchitektur.md
 │           └── ADR-002-camunda8-workflow-orchestration.md
@@ -154,6 +155,9 @@ architektonische Source of Truth.
 
 - `docs/architecture/c4-container.md`  
   C4 Level 2 – Container View
+
+- `docs/architecture/module-structure.md`  
+  Interne Modulstruktur und Abhängigkeitsregeln des Backends
 
 - `docs/architecture/adr/ADR-001-grundarchitektur.md`  
   Entscheidung für den modularen Monolithen

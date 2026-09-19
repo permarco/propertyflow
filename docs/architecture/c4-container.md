@@ -11,16 +11,16 @@ flowchart LR
 
     LLM["LLM-Provider<br/>Fine-Tuned Model / Foundation Model<br/>Externes System"]
     
-    CAMUNDA["<b>Camunda 8</b><br/><br/>Prozess-Orchestrierung<br/>Workflow-State<br/>Timer / Wait States<br/>Human Tasks"]
+    CAMUNDA["<b>Camunda 8</b><br/><br/>Prozess-Orchestrierung<br/>technischer Workflow-State<br/>Jobs<br/>Timer / Wait States<br/>User-Task-State"]
     
     subgraph PF["PropertyFlow"]
         direction TB
 
         WEB["<b>Web Frontend</b><br/>Erfassung und Bearbeitung<br/>von Mieteranliegen"]
         
-        BACKEND["<b>Backend Application</b><br/>Geschäftslogik, Triage,<br/>Workflow-Integration / Job Worker,<br/>KI-Orchestrierung und RAG"]
+        BACKEND["<b>Backend Application</b><br/>Geschäftslogik, Triage,<br/>Camunda Client / Job Worker,<br/>KI-Orchestrierung und RAG"]
 
-        DB[("Application Database<br/>Anliegen, Bearbeitungsstatus,<br/>KI-Ergebnisse, Bearbeitungsverlauf")]
+        DB[("Application Database<br/>Anliegen, fachlicher Bearbeitungsstatus,<br/>KI-Ergebnisse, Bearbeitungsverlauf,<br/>Auditinformationen")]
 
         VS[("Knowledge Store / Vector Store<br/>Richtlinien, Regelwerke,<br/>freigegebene frühere Fälle")]
 
@@ -36,4 +36,4 @@ flowchart LR
     BACKEND <-->|"Mieter-, Mietvertrags-<br/>und Objektdaten"| ERP
     BACKEND <-->|"KI-Aufruf / strukturierte Ausgabe"| LLM
     BACKEND <-->|"Prozesse starten<br/>Jobs bearbeiten<br/>User Tasks abschliessen"| CAMUNDA
-
+```
