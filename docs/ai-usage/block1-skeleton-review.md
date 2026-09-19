@@ -81,23 +81,26 @@ Mehrere Punkte wurden nach einem Review gezielt angepasst.
 
 ### 4.1 Flyway und Hibernate
 
-In einer früheren Version war die Schema-Validierung durch Hibernate noch
-deaktiviert beziehungsweise provisorisch konfiguriert.
-
-Beim Review wurde entschieden, die Verantwortung klar zu trennen:
-
-- Flyway ist für Erstellung und Weiterentwicklung des Datenbankschemas verantwortlich.
-- Hibernate verändert das Schema nicht automatisch.
-- Hibernate validiert lediglich, ob das vorhandene Schema zur JPA-Abbildung passt.
-
-Daraus wurde folgende Konfiguration abgeleitet:
+Im Review wurde geprüft, ob Hibernate das von Flyway verwaltete Schema mit
 
 `spring.jpa.hibernate.ddl-auto=validate`
 
-Zusätzlich wurde die PostgreSQL-Unterstützung für Flyway ergänzt.
+validieren kann.
 
-Diese Änderung stellt sicher, dass Datenbankschema und Anwendungscode nicht
-unabhängig voneinander auseinanderlaufen.
+Im aktuellen Block-1-Skelett wird H2 im PostgreSQL-Kompatibilitätsmodus
+verwendet. In dieser Konstellation funktionierte die Hibernate-Validierung
+nicht zuverlässig. Deshalb wurde `ddl-auto=validate` bewusst **nicht**
+aktiviert und bleibt in der aktuellen Konfiguration auskommentiert.
+
+Die grundlegende Verantwortungsaufteilung bleibt dennoch bestehen:
+
+- Flyway ist für Erstellung und Weiterentwicklung des Datenbankschemas verantwortlich.
+- Hibernate soll das Schema nicht automatisch mit `create` oder `update` verändern.
+- Die erneute Aktivierung von `ddl-auto=validate` wird beim Wechsel auf die
+  PostgreSQL-Zieldatenbank erneut geprüft.
+
+Die deaktivierte Validierung ist damit keine vergessene Konfiguration,
+sondern eine bewusste Einschränkung des H2-basierten Block-1-Skeletts.
 
 ### 4.2 Testbarkeit ohne lokale Camunda-Instanz
 
