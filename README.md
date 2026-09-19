@@ -61,6 +61,8 @@ propertyflow/
 │   ├── project-context.md
 │   ├── evaluation/
 │   │   └── evaluation-basis.md
+│   ├── ai-usage/
+│   │   └── block1-skeleton-review.md
 │   └── architecture/
 │       ├── c4-context.md
 │       ├── c4-container.md
@@ -158,6 +160,9 @@ architektonische Source of Truth.
 
 - `docs/evaluation/evaluation-basis.md`  
   Repräsentative Evaluationsfälle, Guardrails und Human-in-the-Loop-Grenzen
+
+- `docs/ai-usage/block1-skeleton-review.md`  
+  Nachweis der KI-Nutzung beim Skelett: Generierung, Review, Korrekturen und Veto-Entscheidungen
 
 - `docs/architecture/c4-context.md`  
   C4 Level 1 – System Context
