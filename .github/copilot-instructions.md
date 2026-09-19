@@ -5,6 +5,7 @@ under `/docs` as the source of truth.
 
 Read at minimum:
 
+- `docs/project-context.md`
 - `docs/vision.md`
 - `docs/architecture/c4-context.md`
 - `docs/architecture/c4-container.md`
