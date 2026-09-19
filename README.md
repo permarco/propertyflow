@@ -156,7 +156,7 @@ architektonische Source of Truth.
   Problemstellung, Vision, Stakeholder und Kernfunktionen
 
 - `docs/project-context.md`  
-  Versionierter KI-Rahmen mit Architektur, Stack, Konventionen, NFRs und Sicherheitsleitplanken
+  Versionierter, kompakt an arc42 orientierter KI-Rahmen mit Architektur, Stack, Konventionen, NFRs und Sicherheitsleitplanken
 
 - `docs/evaluation/evaluation-basis.md`  
   Repräsentative Evaluationsfälle, Guardrails und Human-in-the-Loop-Grenzen

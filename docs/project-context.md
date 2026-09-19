@@ -1,7 +1,8 @@
 # PropertyFlow – Projekt-Kontext
 
 **Version:** 0.1  
-**Status:** Block 1 – Konzeption
+**Status:** Block 1 – Konzeption  
+**Struktur:** kompakt und an arc42 orientiert
 
 ## Zweck
 
@@ -10,11 +11,15 @@ PropertyFlow. Es fasst die wichtigsten Architektur-, Technologie-,
 Qualitäts- und Sicherheitsleitplanken zusammen und verweist für Details auf
 die versionierte Projektdokumentation.
 
+Die Struktur orientiert sich an arc42, wird für den aktuellen Projektstand
+aber bewusst kompakt gehalten. Nicht benötigte arc42-Kapitel werden nicht
+künstlich als leere Abschnitte angelegt.
+
 KI-Werkzeuge sollen dieses Dokument vor repo-weiten oder architektonisch
 relevanten Änderungen als Einstiegskontext verwenden. Dieses Dokument ersetzt
 die Detaildokumentation nicht.
 
-## Vision und Scope
+## 1. Ziele und Scope
 
 PropertyFlow ist eine KI-gestützte Webanwendung zur Triage und Bearbeitung
 von Mieteranliegen für Immobilienverwaltungen.
@@ -32,39 +37,9 @@ Details:
 
 - `docs/vision.md`
 
-## Architektur
+## 2. Randbedingungen
 
-Das PropertyFlow-Backend wird als **modularer Monolith** umgesetzt.
-
-Die fachlichen Backend-Module sind:
-
-- `intake`
-- `triage`
-- `recommendation`
-- `caseprocessing`
-
-Die Module werden nach fachlicher Verantwortung geschnitten. Innerhalb eines
-Moduls können technische Verantwortlichkeiten wie Controller, Service,
-Domain, Persistence, AI-, Retrieval- oder Workflow-Adapter getrennt werden.
-
-Direkte Zugriffe auf Persistence- oder andere interne
-Implementierungsdetails eines fremden Moduls sind nicht erlaubt.
-Modulübergreifende Kommunikation erfolgt über explizite Schnittstellen und
-Verträge.
-
-Camunda 8 wird als separate Orchestrierungskomponente für langlebige
-Bearbeitungsprozesse eingesetzt. PropertyFlow besitzt die fachlichen Daten;
-Camunda besitzt den technischen Workflow-State.
-
-Details:
-
-- `docs/architecture/c4-context.md`
-- `docs/architecture/c4-container.md`
-- `docs/architecture/module-structure.md`
-- `docs/architecture/adr/ADR-001-grundarchitektur.md`
-- `docs/architecture/adr/ADR-002-camunda8-workflow-orchestration.md`
-
-## Technologie-Stack
+### Technischer Stack
 
 Der aktuelle Stack wird durch die versionierten Build- und
 Infrastrukturdateien im Repository festgelegt.
@@ -85,7 +60,71 @@ Konkrete Dependency-Versionen werden nicht zusätzlich in diesem Dokument
 gepflegt, wenn sie bereits durch `pom.xml` oder andere Build-Dateien
 eindeutig festgelegt sind.
 
-## Entwicklungs- und Strukturkonventionen
+### Entwicklungsrandbedingungen
+
+- Das Backend bleibt eine deploybare Anwendung.
+- Architekturentscheidungen werden über ADRs dokumentiert.
+- Datenbankschemaänderungen werden mit Flyway versioniert.
+- Bereits angewendete Flyway-Migrationen werden nicht nachträglich verändert.
+- Kleine, fokussierte Änderungen und automatisierte Tests werden bevorzugt.
+
+## 3. Kontext und Systemgrenzen
+
+PropertyFlow steht zwischen Mieterinnen und Mietern,
+Immobilienbewirtschaftung und mehreren externen Systemen.
+
+Wesentliche externe Systeme sind:
+
+- E-Mail-System für eingehende Mieteranliegen
+- Immobilienverwaltungs- beziehungsweise Mieterstammdatensystem
+- externer LLM-Provider
+- Camunda 8 für die technische Workflow-Orchestrierung
+
+Die detaillierte System- und Containerabgrenzung ist in den C4-Diagrammen
+dokumentiert:
+
+- `docs/architecture/c4-context.md`
+- `docs/architecture/c4-container.md`
+
+Daten- und Vertrauensgrenzen werden zusätzlich in der Evaluations- und
+Sicherheitsbasis konkretisiert:
+
+- `docs/evaluation/evaluation-basis.md`
+
+## 4. Lösungsstrategie
+
+Das PropertyFlow-Backend wird als **modularer Monolith** umgesetzt.
+
+Die wichtigsten Architekturentscheidungen der Lösungsstrategie sind:
+
+- fachliche Strukturierung des Backends in klar abgegrenzte Module
+- eine gemeinsame Backend-Deployment-Einheit
+- Kapselung externer Systeme über explizite Integrationsschnittstellen
+- Camunda 8 als separate Orchestrierungskomponente für langlebige Prozesse
+- PropertyFlow als Besitzer der fachlichen Daten
+- Camunda als Besitzer des technischen Workflow-States
+- KI und RAG als unterstützende Komponenten, nicht als alleinige
+  Entscheidungsinstanz
+
+Details:
+
+- `docs/architecture/adr/ADR-001-grundarchitektur.md`
+- `docs/architecture/adr/ADR-002-camunda8-workflow-orchestration.md`
+
+## 5. Bausteinsicht und Modulgrenzen
+
+Die fachlichen Backend-Module sind:
+
+- `intake`
+- `triage`
+- `recommendation`
+- `caseprocessing`
+
+Die Module werden nach fachlicher Verantwortung geschnitten. Innerhalb eines
+Moduls können technische Verantwortlichkeiten wie Controller, Service,
+Domain, Persistence, AI-, Retrieval- oder Workflow-Adapter getrennt werden.
+
+Es gelten folgende Strukturregeln:
 
 - Fachliche Module stehen über globalen technischen Schichten.
 - Es werden keine globalen Root-Packages wie `controller`, `service`,
@@ -95,19 +134,67 @@ eindeutig festgelegt sind.
 - Services orchestrieren Anwendungsfälle und fachliche Abläufe.
 - Domain-Code soll möglichst unabhängig von Spring, JPA, Camunda und
   konkreten LLM-Providern bleiben.
-- Job Worker sind Adapter zwischen Camunda und PropertyFlow und enthalten
-  keine umfangreiche Fachlogik.
-- Externe Systeme werden über explizite Integrationsschnittstellen gekapselt.
-- Datenbankschemaänderungen werden mit Flyway versioniert.
-- Bereits angewendete Flyway-Migrationen werden nicht nachträglich verändert.
-- Kleine, fokussierte Änderungen und automatisierte Tests werden bevorzugt.
+- Direkte Zugriffe auf Persistence- oder andere interne
+  Implementierungsdetails eines fremden Moduls sind nicht erlaubt.
+- Modulübergreifende Kommunikation erfolgt über explizite Schnittstellen und
+  Verträge.
 
 Details:
 
 - `docs/architecture/module-structure.md`
-- `.github/copilot-instructions.md`
 
-## Massgebende nichtfunktionale Anforderungen
+## 6. Querschnittliche Konzepte
+
+### 6.1 KI und RAG
+
+- LLM-Ausgaben werden als nicht vertrauenswürdige Eingaben behandelt und
+  vor fachlicher Verwendung validiert.
+- RAG liefert fachlichen Kontext aus freigegebenen Wissensquellen.
+- Relevante KI-Entscheidungen und verwendete Wissensquellen müssen
+  auditierbar bleiben.
+- KI-Empfehlungen ersetzen keine endgültige menschliche Fachentscheidung.
+
+### 6.2 Datenschutz und Sicherheit
+
+- Es werden keine unnötigen Mieter-, Mietvertrags- oder Objektdaten an
+  externe LLM-Provider übertragen.
+- Personenbezogene Daten werden soweit fachlich möglich minimiert oder
+  maskiert.
+- Kritische fachliche Aktionen benötigen eine explizite menschliche Prüfung
+  oder Freigabe.
+- Sicherheits- und Vertrauensgrenzen werden in
+  `docs/evaluation/evaluation-basis.md` dokumentiert.
+
+### 6.3 Persistenz
+
+- PropertyFlow besitzt die fachlichen Daten.
+- Flyway ist für versionierte Datenbankmigrationen verantwortlich.
+- Bereits angewendete Migrationen werden nicht nachträglich verändert.
+- Ein Mieteranliegen wird persistent gespeichert, bevor eine KI-Analyse
+  durchgeführt wird.
+
+### 6.4 Workflow-Orchestrierung
+
+- Camunda 8 wird für langlebige Bearbeitungsprozesse eingesetzt.
+- Camunda-Prozessvariablen enthalten nur die für die Orchestrierung
+  notwendigen Daten.
+- Vollständige fachliche Objekte und unnötige personenbezogene Daten werden
+  nicht in Camunda dupliziert.
+- Job Worker sind Adapter zwischen Camunda und PropertyFlow und enthalten
+  keine umfangreiche Fachlogik.
+- Job Worker müssen Wiederholungen berücksichtigen und für relevante
+  Seiteneffekte idempotent ausgelegt werden.
+
+### 6.5 Testbarkeit und Fehlerverhalten
+
+- Zentrale fachliche Abläufe müssen ohne reale externe Systeme automatisiert
+  testbar sein.
+- Externe Abhängigkeiten sollen durch Testimplementierungen oder Mocks
+  ersetzbar sein.
+- Ein Ausfall von KI oder RAG darf weder die Persistenz eines Anliegens noch
+  die manuelle Bearbeitung verhindern.
+
+## 7. Qualitätsanforderungen
 
 ### Änderbarkeit
 
@@ -161,36 +248,22 @@ Technische KI-Details stehen dabei nicht im Vordergrund.
 Die vollständigen Prüfkriterien und Begründungen sind in
 `docs/architecture/adr/ADR-001-grundarchitektur.md` dokumentiert.
 
-## Sicherheits- und KI-Leitplanken
+## 8. Architekturentscheidungen
 
-Für KI-gestützte Funktionen gelten mindestens folgende Leitplanken:
+Akzeptierte Architekturentscheidungen sind:
 
-- LLM-Ausgaben werden als nicht vertrauenswürdige Eingaben behandelt und
-  vor fachlicher Verwendung validiert.
-- Es werden keine unnötigen Mieter-, Mietvertrags- oder Objektdaten an
-  externe LLM-Provider übertragen.
-- KI-Empfehlungen ersetzen keine endgültige menschliche Fachentscheidung.
-- Kritische fachliche Aktionen benötigen eine explizite menschliche Prüfung
-  oder Freigabe.
-- Relevante KI-Entscheidungen und die verwendeten Wissensquellen müssen
-  auditierbar bleiben.
-- Ein Ausfall von KI oder RAG darf weder die Persistenz eines Anliegens noch
-  die manuelle Bearbeitung verhindern.
-- Camunda-Prozessvariablen enthalten nur die für die Orchestrierung
-  notwendigen Daten; vollständige fachliche Objekte und unnötige
-  personenbezogene Daten werden dort nicht dupliziert.
-- Job Worker müssen Wiederholungen berücksichtigen und für relevante
-  Seiteneffekte idempotent ausgelegt werden.
+- `ADR-001-grundarchitektur.md`: modularer Monolith als Grundarchitektur
+- `ADR-002-camunda8-workflow-orchestration.md`: Camunda 8 für langlebige
+  Workflow-Orchestrierung
 
-## Evaluationsbasis
+Bei einem Konflikt zwischen einem KI-Vorschlag und einem akzeptierten ADR
+gilt der ADR.
 
-Die initiale Evaluations- und Sicherheitsbasis für Block 1 ist unter
-`docs/evaluation/evaluation-basis.md` versioniert.
+Details:
 
-Sie definiert repräsentative Fälle, erwartete Eigenschaften, Guardrails und
-Human-in-the-Loop-Grenzen für spätere KI- und Implementierungsprüfungen.
+- `docs/architecture/adr/`
 
-## Regeln für KI-gestützte Entwicklung
+## 9. Regeln für KI-gestützte Entwicklung
 
 Bei generierten oder vorgeschlagenen Änderungen gilt:
 
@@ -198,14 +271,22 @@ Bei generierten oder vorgeschlagenen Änderungen gilt:
 2. Bestehende ADRs und Modulgrenzen einhalten.
 3. Keine neuen fachlichen Anforderungen erfinden.
 4. Architekturentscheidungen nicht stillschweigend ändern.
-5. Bei einem Konflikt zwischen einem KI-Vorschlag und einem akzeptierten ADR
-   gilt der ADR.
-6. Externe Integrationen nicht direkt in die Domain-Logik einbauen.
-7. Generierten Code und generierte Tests fachlich und technisch prüfen.
-8. Relevante Übernahmen, Korrekturen und Vetos bei KI-Vorschlägen
+5. Externe Integrationen nicht direkt in die Domain-Logik einbauen.
+6. Generierten Code und generierte Tests fachlich und technisch prüfen.
+7. Relevante Übernahmen, Korrekturen und Vetos bei KI-Vorschlägen
    nachvollziehbar dokumentieren.
 
-## Pflege dieses Dokuments
+Repository-weite KI-Anweisungen:
+
+- `.github/copilot-instructions.md`
+
+## 10. Evaluation und Pflege
+
+Die initiale Evaluations- und Sicherheitsbasis für Block 1 ist unter
+`docs/evaluation/evaluation-basis.md` versioniert.
+
+Sie definiert repräsentative Fälle, erwartete Eigenschaften, Guardrails und
+Human-in-the-Loop-Grenzen für spätere KI- und Implementierungsprüfungen.
 
 Dieses Dokument wird über die Projektblöcke weiterentwickelt.
 
