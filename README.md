@@ -59,6 +59,8 @@ propertyflow/
 ├── docs/
 │   ├── vision.md
 │   ├── project-context.md
+│   ├── evaluation/
+│   │   └── evaluation-basis.md
 │   └── architecture/
 │       ├── c4-context.md
 │       ├── c4-container.md
@@ -153,6 +155,9 @@ architektonische Source of Truth.
 
 - `docs/project-context.md`  
   Versionierter KI-Rahmen mit Architektur, Stack, Konventionen, NFRs und Sicherheitsleitplanken
+
+- `docs/evaluation/evaluation-basis.md`  
+  Repräsentative Evaluationsfälle, Guardrails und Human-in-the-Loop-Grenzen
 
 - `docs/architecture/c4-context.md`  
   C4 Level 1 – System Context
