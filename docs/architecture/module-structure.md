@@ -117,7 +117,7 @@ intake/
 ├── controller/
 ├── service/
 ├── domain/
-└── persistence/
+├── persistence/
 └── config/
 ```
 
@@ -364,18 +364,36 @@ Ein Package wird nur dann eingeführt, wenn die entsprechende technische
 Verantwortung tatsächlich benötigt wird.
 
 
-## Configuration
+## Konfiguration
 
-Configuration is placed close to the responsibility it belongs to.
+Konfiguration wird möglichst nahe bei der Verantwortung abgelegt, zu der sie
+gehört.
 
-Module-specific configuration is located inside the corresponding module,
-for example:
+Modulspezifische Java-Konfiguration liegt innerhalb des entsprechenden Moduls,
+zum Beispiel:
 
 ```text
 triage/config/
 recommendation/config/
 caseprocessing/config/
 ```
+
+Querschnittliche technische Konfiguration, die die gesamte Anwendung betrifft,
+kann zentral unter folgendem Package abgelegt werden:
+
+```text
+propertyflow/config/
+```
+
+Laufzeitkonfiguration wie Datenbankverbindungen, Camunda-Endpunkte oder
+umgebungsspezifische Properties liegt unter:
+
+```text
+src/main/resources/
+```
+
+Konfiguration darf nicht verwendet werden, um fachliche Modulgrenzen zu
+umgehen.
 
 ## Abhängigkeitsrichtung
 
@@ -399,7 +417,7 @@ Moduls.
 Die fachliche Logik soll dadurch unabhängig von konkreten technischen
 Integrationen bleiben.
 
-### Database migrations
+## Datenbankmigrationen
 
 Änderungen am relationalen Datenbankschema werden mit Flyway versioniert.
 
@@ -408,6 +426,17 @@ Die Migrationen befinden sich zentral unter:
 ```text
 src/main/resources/db/migration/
 ```
+
+Jede Schemaänderung wird durch eine neue versionierte Migration beschrieben.
+Bereits angewendete Migrationen werden nicht nachträglich verändert.
+
+Flyway ist für die versionierte Weiterentwicklung des relationalen
+Datenbankschemas vorgesehen. Hibernate/JPA soll das Schema nicht automatisch
+mit `create` oder `update` verändern.
+
+Die Flyway-Migrationen werden zentral verwaltet; die
+Persistence-Implementierungen verbleiben weiterhin innerhalb der jeweiligen
+fachlichen Module.
 
 ## Zielbild
 
