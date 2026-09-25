@@ -105,11 +105,16 @@ Die wichtigsten Architekturentscheidungen der Lösungsstrategie sind:
 - Camunda als Besitzer des technischen Workflow-States
 - KI und RAG als unterstützende Komponenten, nicht als alleinige
   Entscheidungsinstanz
+- SSR als primäre Rendering-Strategie mit gezielter clientseitiger
+  Interaktivität für fachlich begründete Funktionen
+- Thymeleaf als serverseitige Template-Engine sowie Vanilla JavaScript für
+  klar abgegrenzte interaktive Komponenten
 
 Details:
 
 - `docs/architecture/adr/ADR-001-grundarchitektur.md`
 - `docs/architecture/adr/ADR-002-camunda8-workflow-orchestration.md`
+- `docs/architecture/adr/ADR-003-praesentationsschicht.md`
 
 ## 5. Bausteinsicht und Modulgrenzen
 
@@ -185,7 +190,35 @@ Details:
 - Job Worker müssen Wiederholungen berücksichtigen und für relevante
   Seiteneffekte idempotent ausgelegt werden.
 
-### 6.5 Testbarkeit und Fehlerverhalten
+### 6.5 Präsentationsschicht
+
+- Server-Side Rendering (SSR) ist die primäre Rendering-Strategie.
+- Thymeleaf wird als serverseitige Template-Engine für die HTML-Erzeugung
+  eingesetzt.
+- Formulare, Listen, Detailansichten und normale Bearbeitungsabläufe werden
+  serverseitig gerendert.
+- Eine vollständige CSR-/SPA-Anwendung wird nicht eingesetzt.
+- Vanilla JavaScript wird nur als klar abgegrenzte interaktive Komponente
+  eingesetzt, wenn ein konkreter fachlicher oder qualitativer Nutzen besteht.
+- Die KI-Analyse muss ihren aktuellen Status anzeigen, schrittweise Ausgaben
+  darstellen, einen wirksamen Abbruch ermöglichen und definierte Fehlerzustände
+  unterstützen.
+- Ein Abbruch der KI-Analyse muss mindestens die clientseitige Verbindung und
+  Darstellung beenden. Das Backend soll den Abbruch erkennen und die laufende
+  Verarbeitung kontrolliert beenden oder weitere Ausgabe verwerfen.
+- Die Weiterleitung des Abbruchs an den externen LLM-Provider wird genutzt,
+  sofern der eingesetzte Provider und Client dies unterstützen.
+- Die Zustandsübergänge der Analyse müssen mindestens `waiting`,
+  `streaming`, `completed`, `aborted` und `error` unterscheiden.
+- Benutzer- und KI-generierte Inhalte werden standardmässig sicher als Text
+  ausgegeben und nicht ungeprüft als HTML interpretiert.
+- Interaktive Funktionen müssen per Tastatur bedienbar sein.
+
+Details:
+
+- `docs/architecture/adr/ADR-003-praesentationsschicht.md`
+
+### 6.6 Testbarkeit und Fehlerverhalten
 
 - Zentrale fachliche Abläufe müssen ohne reale externe Systeme automatisiert
   testbar sein.
@@ -255,6 +288,8 @@ Akzeptierte Architekturentscheidungen sind:
 - `ADR-001-grundarchitektur.md`: modularer Monolith als Grundarchitektur
 - `ADR-002-camunda8-workflow-orchestration.md`: Camunda 8 für langlebige
   Workflow-Orchestrierung
+- `ADR-003-praesentationsschicht.md`: SSR mit gezielter clientseitiger
+  Interaktivität
 
 Bei einem Konflikt zwischen einem KI-Vorschlag und einem akzeptierten ADR
 gilt der ADR.
