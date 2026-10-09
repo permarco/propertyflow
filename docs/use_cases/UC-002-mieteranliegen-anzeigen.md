@@ -58,3 +58,7 @@ Die Dringlichkeit eines Anliegens darf nicht ausschliesslich durch Farbe kommuni
 ### BR-002: Bearbeitungsstatus sichtbar
 
 Der aktuelle Bearbeitungsstatus muss in der Listenansicht schnell erkennbar sein.
+
+## Gemeinsame fachliche Grundlage
+
+Fallidentität, fachliche Statusbedeutung und Abgrenzung zum technischen Camunda-Zustand sind in der [Fallverwaltung](../specifications/fallverwaltung.md) definiert, insbesondere FALL-01, FALL-05 und FALL-06. Die Ansicht verwendet diese fachliche Grundlage; ein technischer Incident ist kein eigener fachlicher Abschlussstatus. Die konkreten Bezeichnungen der verfeinerten Bearbeitungsstände bleiben bis zum Fach-/BPMN-Review offen.

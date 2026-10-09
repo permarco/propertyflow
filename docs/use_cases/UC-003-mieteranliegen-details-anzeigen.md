@@ -59,3 +59,7 @@ Eine KI-Ausgabe wird als Empfehlung beziehungsweise Unterstützung dargestellt. 
 ### BR-002: Technische KI-Details stehen nicht im Vordergrund
 
 Die Detailansicht priorisiert fachlich verständliche Informationen wie Dringlichkeit, Empfehlung, Zuständigkeit und Bearbeitungsstatus.
+
+## Gemeinsame fachliche Grundlage
+
+Fallidentität, fachliche Statusbedeutung und Abgrenzung zum technischen Camunda-Zustand sind in der [Fallverwaltung](../specifications/fallverwaltung.md) definiert, insbesondere FALL-01, FALL-05 und FALL-06. Die Ansicht verwendet diese fachliche Grundlage; ein technischer Incident ist kein eigener fachlicher Abschlussstatus. Die konkreten Bezeichnungen der verfeinerten Bearbeitungsstände bleiben bis zum Fach-/BPMN-Review offen.
