@@ -201,7 +201,7 @@ Details:
 - Eine vollständige CSR-/SPA-Anwendung wird nicht eingesetzt.
 - Vanilla JavaScript wird nur als klar abgegrenzte interaktive Komponente
   eingesetzt, wenn ein konkreter fachlicher oder qualitativer Nutzen besteht.
-- Die KI-Analyse muss ihren aktuellen Status anzeigen, schrittweise Ausgaben
+- Die interaktive KI-Analyse in der Mitarbeiteransicht muss ihren aktuellen Status anzeigen, schrittweise Ausgaben
   darstellen, einen wirksamen Abbruch ermöglichen und definierte Fehlerzustände
   unterstützen.
 - Ein Abbruch der KI-Analyse muss mindestens die clientseitige Verbindung und
@@ -211,6 +211,11 @@ Details:
   sofern der eingesetzte Provider und Client dies unterstützen.
 - Die Zustandsübergänge der Analyse müssen mindestens `waiting`,
   `streaming`, `completed`, `aborted` und `error` unterscheiden.
+- Streaming und Abbruch sind Funktionen der Mitarbeiteransicht gemäss ADR-003
+  und UC-004. Die Mieteransicht zeigt gespeicherte veröffentlichte Nachrichten
+  und aktualisiert sie durch periodische Leseabrufe; sie bietet weder einen
+  direkten Chat-Stream noch KI-/Prozessabbruch. Der Abbruch einer interaktiven
+  Mitarbeiteranfrage ist nicht automatisch der Abbruch des Camunda-Fallprozesses.
 - Benutzer- und KI-generierte Inhalte werden standardmässig sicher als Text
   ausgegeben und nicht ungeprüft als HTML interpretiert.
 - Interaktive Funktionen müssen per Tastatur bedienbar sein.

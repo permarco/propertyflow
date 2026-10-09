@@ -20,7 +20,7 @@ Die Annahme und Fortführung des Falls richten sich nach [FALL-02](../specificat
 
 ### Render-Strategie
 
-**SSR mit gezielter clientseitiger Interaktivität:** Thymeleaf rendert Erfassungsformular, Falldaten und gespeicherten Verlauf serverseitig. Vanilla JavaScript unterstützt begrenzte Bedienungshilfen wie den Sendezustand und das Kopieren der Case-ID. Neue veröffentlichte Nachrichten werden beim erneuten Aufruf oder manuellen Aktualisieren vollständig geladen.
+**SSR mit gezielter clientseitiger Interaktivität:** Thymeleaf rendert Erfassungsformular, Falldaten und gespeicherten Verlauf serverseitig. Vanilla JavaScript unterstützt begrenzte Bedienungshilfen wie den Sendezustand und das Kopieren der Case-ID. Neue veröffentlichte Nachrichten und Statusänderungen werden bei aktivem Fall zusätzlich durch periodische Abrufe mit Vanilla JavaScript aktualisiert, ohne die gesamte Seite neu zu laden. Ohne JavaScript bleiben erneuter Aufruf und manuelles Aktualisieren möglich; Details siehe Abschnitt 4.5.1.
 
 Diese Entscheidung folgt `docs/architecture/adr/ADR-003-praesentationsschicht.md` und `../project-context.md`.
 
@@ -114,7 +114,7 @@ Der aufklappbare Bereich wird vorzugsweise mit den nativen HTML-Elementen `<deta
 
 ### 4.2 Kommunikationshistorie
 
-Die Historie enthält **alle für den Mieter sichtbaren Nachrichten** dieses Falls in chronologischer Reihenfolge und bleibt über spätere Aufrufe erhalten.
+Die Historie enthält **alle für den Mieter sichtbaren Nachrichten** dieses Falls auf einer Seite und bleibt über spätere Aufrufe erhalten. **Vereinbart: älteste Nachricht oben, neueste Nachricht unten; keine Seitennavigation.**
 
 Jeder Nachrichteneintrag zeigt mindestens:
 
@@ -122,7 +122,7 @@ Jeder Nachrichteneintrag zeigt mindestens:
 - **Zeitpunkt:** Erstellungszeit beziehungsweise Versandzeit in einer verständlichen Darstellung.
 - **Inhalt:** Die unveränderte inhaltliche Aussage als sicher ausgegebener Text.
 
-**Absender und Ausrichtung im Wireframe:** Nachrichten des Mieters rechts; Nachrichten von System/KI und Mitarbeitenden links. Der Absender wird zusätzlich als Text bezeichnet, nicht nur über Farbe oder Ausrichtung kenntlich gemacht.
+**Vereinbarte Absenderanordnung:** Nachrichten des Mieters rechts; Nachrichten von System/KI und Mitarbeitenden links. Der Absender wird zusätzlich als Text bezeichnet, nicht nur über Farbe oder Ausrichtung kenntlich gemacht.
 
 Automatische Antworten können durch Camunda-Service-Tasks und PropertyFlow-Worker ausgelöst werden; manuelle Antworten entstehen durch Backoffice-Mitarbeitende. Ihre externen, veröffentlichten Nachrichten werden im gleichen Verlauf angezeigt. Interne Notizen, technische Prozessvariablen, Modell-Prompts und vertrauliche Backoffice-Daten gehören **nicht** in die Mieteransicht.
 
@@ -130,7 +130,7 @@ Automatische Antworten können durch Camunda-Service-Tasks und PropertyFlow-Work
 
 **Zeitpunkte und Reihenfolge:** Speicherung in UTC, Anzeige in `Europe/Zurich` mit korrekter Sommerzeit. Nachrichten mit identischen Zeitstempeln erhalten eine stabile Reihenfolge. Die letzte öffentliche Aktualisierung ist vom technischen internen Bearbeitungszeitpunkt zu unterscheiden.
 
-**Lange Verläufe:** Serverseitige Seitennavigation und ein manueller Aktualisieren-Link ermöglichen das Lesen neuer Einträge. Automatische Aktualisierung und Lesebestätigungen sind keine Voraussetzung.
+**Lange Verläufe:** Alle sichtbaren Nachrichten bleiben auf derselben Seite und sind durch Scrollen erreichbar. Die automatische Aktualisierung nach Abschnitt 4.5.1 erhält die Leseposition und ergänzt neue Einträge unten. Beim Lesen älterer Einträge weist sie auf neue Nachrichten hin, ohne ungefragt nach unten zu springen. Manuelles Aktualisieren bleibt verfügbar; Lesebestätigungen sind nicht vorgesehen.
 
 **Veröffentlichung und Zustellung:** Nur ausdrücklich mieteröffentliche Inhalte werden serverseitig in das Lesemodell aufgenommen; interne Inhalte dürfen auch nicht im HTML oder in ergänzenden Antworten enthalten sein. Ein Historieneintrag belegt Speicherung bzw. Veröffentlichung, nicht die E-Mail-Zustellung. Eingehende E-Mail-Antworten benötigen einen separaten sicheren Zuordnungs- und Autorisierungsvertrag; Case-ID oder Absenderadresse allein genügen nicht.
 
@@ -138,7 +138,7 @@ Automatische Antworten können durch Camunda-Service-Tasks und PropertyFlow-Work
 
 Die fachliche Unterscheidung von internen Memos und externer Kommunikation ist zentral in [KOM-01](../specifications/fallkommunikation.md#kom-01-interne-und-externe-nachrichten) festgelegt.
 
-Screen 01 zeigt nur veröffentlichte externe Nachrichten des autorisierten Falls. Für interne Memos gibt es weder Inhalt, Platzhalter noch Zählerhinweise. Das Mieterformular bietet keine Auswahl «intern/extern». Die sichtbaren Zeitangaben und die Seitennavigation beziehen sich ausschliesslich auf die externe Historie.
+Screen 01 zeigt nur veröffentlichte externe Nachrichten des autorisierten Falls. Für interne Memos gibt es weder Inhalt, Platzhalter noch Zählerhinweise. Das Mieterformular bietet keine Auswahl «intern/extern». Die sichtbaren Zeitangaben beziehen sich ausschliesslich auf die externe Historie.
 
 ### 4.2.2 Grundlage generierter Kommunikationsnachrichten
 
@@ -172,14 +172,32 @@ Validierung: Eine Nachricht darf nicht leer oder nur aus Leerzeichen bestehen; M
 
 Die Ausführung und Berechtigungsgrenzen sind in [KOM-03](../specifications/fallkommunikation.md#kom-03-asynchrone-fallkommunikation) definiert. Screen 01 bietet keinen Chat-Stream und keine Abbruchaktion.
 
-Neue vollständige Nachrichten werden beim erneuten Aufruf oder manuellen Aktualisieren angezeigt. Fachliche Status- und Fehlerhinweise erklären den Bearbeitungsstand; interne KI-Zwischenergebnisse werden nicht dargestellt. Alle Nachrichten werden sicher als Text ausgegeben, ohne ungeprüftes `innerHTML`.
+Neue vollständige Nachrichten werden bei aktivem Fall automatisch nach Abschnitt 4.5.1 sowie beim erneuten Aufruf oder manuellen Aktualisieren angezeigt. Fachliche Status- und Fehlerhinweise erklären den Bearbeitungsstand; interne KI-Zwischenergebnisse werden nicht dargestellt. Alle Nachrichten werden sicher als Text ausgegeben, ohne ungeprüftes `innerHTML`.
 
 **Block 2:** Mock-Daten bilden veröffentlichte Nachrichten und fachliche Bearbeitungsstände ab. Es wird kein Chat-Stream simuliert und keine Abbruchfunktion implementiert.
+
+### 4.5.1 Automatische Aktualisierung von Nachrichten und Status
+
+Bei einem aktiven Fall ruft die sichtbare Seite periodisch die neuesten veröffentlichten externen Nachrichten und den fachlichen Fallstatus über PropertyFlow ab (**Polling**). Die periodischen Leseabrufe übertragen ausschliesslich gespeicherte Ergebnisse. Sie erzeugen keine direkte KI-Chatsitzung und lösen keine Camunda-Verarbeitung aus.
+
+**Vereinbartes Intervall:** Ein Abruf alle 20 Sekunden, also ungefähr dreimal pro Minute, solange die aktive Fallansicht sichtbar ist. Es läuft höchstens eine Anfrage gleichzeitig; dauert sie länger als das Intervall, wird kein überlappender Abruf gestartet. Die Pausen und Fehlerregeln unten gelten weiterhin.
+
+- Aktualisiert werden nur Verlauf, fachlicher Status und die Rückmeldung zur Aktualisierung. Die gesamte Seite wird nicht automatisch neu geladen. Ein ungesendeter Nachrichtentext, Tastaturfokus, aufgeklappte Ursprungsdaten und Leseposition bleiben bei gewöhnlichen Aktualisierungen erhalten. Die Eingabe wird weder automatisch gespeichert noch bei diesen Abrufen an den Server übertragen.
+- Nachrichten werden anhand stabiler IDs abgeglichen und in stabiler chronologischer Reihenfolge angezeigt. Wiederholte Abrufe dürfen keine doppelten Einträge erzeugen; unveränderte Daten verursachen keine unnötigen sichtbaren Änderungen.
+- Liest der Benutzer ältere Einträge, wird nicht automatisch gescrollt. Ein Hinweis «Neue Nachrichten vorhanden» ermöglicht den bewussten Wechsel zu den neuesten Einträgen. Die Rückmeldung ist auch für assistive Technologien zugänglich, ohne bei jedem unveränderten Abruf den gesamten Verlauf erneut vorzulesen.
+- Ist der Browser-Tab nicht sichtbar, pausieren die Abrufe. Bei Rückkehr erfolgt eine Aktualisierung und danach die Fortsetzung des Intervalls. Navigation oder Schliessen der Seite beendet nur die periodischen Browserabrufe, niemals den Camunda-Prozess oder einen KI-Schritt.
+- Ein erkannter Fallabschluss aktualisiert den Status, berücksichtigt den verfügbaren veröffentlichten Abschlussstand und ersetzt die Nachrichteneingabe durch den Abschlusshinweis. Ungesendeter Text wird nicht übertragen oder gespeichert. Danach enden die periodischen Abrufe; manuelles Lesen und Aktualisieren bleiben bei gültigem Zugang möglich.
+- Bei einem vorübergehenden Netzwerk- oder Serverfehler bleiben die bereits angezeigten Daten bestehen. Ein Hinweis «Aktualisierung momentan nicht möglich» kennzeichnet den Zustand; Wiederholungen erfolgen mit wachsender Wartezeit statt einer schnellen Endlosschleife. Eine erfolgreiche Aktualisierung entfernt den Fehlerhinweis. Konkrete Wartezeiten bleiben festzulegen.
+- Ein Rate Limit wird berücksichtigt, einschliesslich `Retry-After`, soweit angegeben. Bei ungültigem, abgelaufenem oder widerrufenem Zugang enden die Abrufe und weitere Schreibaktionen werden gesperrt; es erscheint die neutrale Zugriffsrückmeldung. Bereits ausgelieferte Inhalte können technisch nicht zurückgerufen werden.
+- Jeder Abruf prüft serverseitig den Token und dieselben Fall-/Sichtbarkeitsrechte wie die vollständige Ansicht. Interne Memos, deren Metadaten und KI-Zwischenergebnisse werden niemals übertragen. Token-, Cache-, Referrer- und Protokollschutz gelten auch für diese Anfragen.
+- Ohne JavaScript bleibt die SSR-Ansicht mit manueller Aktualisierung und Formular nutzbar. Die vereinbarten E-Mails werden unabhängig von Polling und geöffnetem Tab versendet.
+
+Der konkrete Lesevertrag für die ergänzenden Abrufe (Antwortformat, inkrementeller Abgleich oder Snapshot und gegebenenfalls zusätzliche Route) wird im Service-Design festgelegt. Die Browseradresse bleibt `/mieter/fall/zugang/<geheimer-token>`. Die Umsetzung verwendet Thymeleaf und gezieltes Vanilla JavaScript; eine neue Architekturentscheidung ist für diese begrenzte Aktualisierung nicht erforderlich.
 
 ### 4.6 Weitere Anzeige- und Navigationsvorschläge aus dem Review
 
 - Die Case-ID kann kopiert werden. Sichtbare Zeitangaben umfassen den Eingang und die letzte mieteröffentliche Aktualisierung.
-- Vorschlag für die Kontaktanzeige: E-Mail standardmässig maskieren. Der bestehende Wireframe zeigt noch die unmaskierte Mock-Adresse; die endgültige Darstellung wird im gemeinsamen Wireframe-Review entschieden.
+- **Vereinbarte Kontaktanzeige:** Die E-Mail-Adresse wird im bestehenden Fall serverseitig maskiert, mit erstem Buchstaben und einer kurzen Endung; Beispiel: `mieter@example.ch` → `m***ple.ch`. Das Beispiel zeigt die letzten sechs Zeichen. Der mittlere Teil einschliesslich der vollständigen Domain bleibt verborgen; kurze Adressen dürfen nicht versehentlich vollständig ausgegeben werden. Auch HTML-Attribute, Tooltips und ergänzende Lesedaten enthalten keine unmaskierte Kontaktadresse. Im Erfassungsformular bleibt die selbst eingegebene Adresse zur Prüfung sichtbar; ihre Speicherung und Verwendung für den Versand bleiben unverändert.
 - Die Aktion «Neues Anliegen melden» führt zu `GET /mieter/fall`. Sie ist auch bei einem abgeschlossenen Fall verfügbar; erst das Absenden erzeugt einen separaten Fall. Eine Wiedereröffnung des bisherigen Falls gehört nicht zu Screen 01.
 - Die vorgeschlagenen Bearbeitungsstände und ihre Bedeutungen werden zentral unter [FALL-05](../specifications/fallverwaltung.md#fall-05-fachlicher-lebenszyklus) gepflegt. Die finalen UI-Bezeichnungen werden damit abgestimmt.
 - Technische Camunda-Incidents, Retries und KI-Analysezustände sind keine fachlichen Mieterstatus. Ein technischer Verzögerungshinweis ersetzt nicht den letzten bestätigten fachlichen Status.
@@ -306,61 +324,102 @@ Der Browser ruft **nicht direkt Camunda** auf. Die Fachlogik bleibt im PropertyF
 
 ### 8.2 Aktiver Fall – Kommunikation
 
-```text
-┌──────────────────────────────────────────────────────────┐
-│ PropertyFlow                                             │
-├──────────────────────────────────────────────────────────┤
-│ REQ-2026-001                          [In Abklärung]     │
-│ Heizung funktioniert nicht                               │
-│                                                          │
-│ ▸ Ursprüngliches Anliegen anzeigen                       │
-│   (standardmässig eingeklappt; schreibgeschützt)         │
-├──────────────────────────────────────────────────────────┤
-│ Kommunikationsverlauf                                    │
-│                                                          │
-│                         ┌─────────────────────────────┐  │
-│                         │ Mieter · 09:12              │  │
-│                         │ Meine Heizung funktioniert │  │
-│                         │ seit gestern nicht mehr.   │  │
-│                         └─────────────────────────────┘  │
-│                                                          │
-│ ┌────────────────────────────────────┐                   │
-│ │ KI-Assistent · 09:13               │                   │
-│ │ Sind alle Heizkörper betroffen?    │                   │
-│ └────────────────────────────────────┘                   │
-│                                                          │
-│                         ┌─────────────────────────────┐  │
-│                         │ Mieter · 09:15              │  │
-│                         │ Ja, sämtliche Heizkörper.   │  │
-│                         └─────────────────────────────┘  │
-│                                                          │
-│ ┌───────────────────────────────────────────────┐        │
-│ │ Immobilienverwaltung · 10:30                  │        │
-│ │ Wir haben den Hauswart informiert.            │        │
-│ └───────────────────────────────────────────────┘        │
-│                                                          │
-├──────────────────────────────────────────────────────────┤
-│ Weitere Informationen hinzufügen                         │
-│ ┌──────────────────────────────────────────────────────┐ │
-│ │ Neue Nachricht schreiben ...                        │ │
-│ │                                                      │ │
-│ └──────────────────────────────────────────────────────┘ │
-│                                         [Nachricht senden]│
-└──────────────────────────────────────────────────────────┘
-```
+**Status:** Technischer Entwurf zur gemeinsamen Besprechung, keine endgültige Gestaltung. Die fachlichen Regeln aus Abschnitt 4 bleiben massgeblich.
 
-**Aktion:** Eine neue Nachricht ergänzt den bestehenden Fall, ohne die ursprünglichen Felder zu verändern oder einen neuen Camunda-Prozess zu eröffnen.
-
-**Aufgeklappter Bereich (Ausschnitt):**
+Die Ansicht verwendet eine Hauptspalte. **Vereinbarte Reihenfolge:** Kopf → Ursprungsdaten → Verlauf → Nachrichteneingabe. Nachrichten des Mieters sind rechts angeordnet, veröffentlichte Nachrichten der Verwaltung und von KI/System links. Absender und Datum bleiben als Text erkennbar. Farben, Schrift, Abstände und endgültige Breite werden später gestaltet.
 
 ```text
-│ ▾ Ursprüngliches Anliegen ausblenden                     │
-│   Betreff:       Heizung funktioniert nicht              │
-│   Objekt/Wohnung: Musterstrasse 12, Wohnung 4            │
-│   E-Mail:        mieter@example.ch                       │
-│   Beschreibung:  Seit gestern funktionieren ...          │
-│   [Alle Werte nur lesen – keine Bearbeiten-Schaltfläche]│
++------------------------------------------------------------------+
+| PropertyFlow                                                     |
++------------------------------------------------------------------+
+| Fall REQ-2026-001                              [In Abklärung]    |
+| Heizung funktioniert nicht                                       |
+|                                                                  |
+| > Ursprüngliches Anliegen anzeigen                               |
++------------------------------------------------------------------+
+| Fallverlauf                               [Ansicht aktualisieren]|
+|                                                                  |
+|                          +-----------------------------------+   |
+|                          | Mieter · 09.10.2026, 09:12         |  |
+|                          | Seit gestern funktioniert die    |    |
+|                          | Heizung nicht mehr.               |   |
+|                          +-----------------------------------+   |
+|                                                                  |
+| +-------------------------------------------+                    |
+| | KI-Assistent · 09.10.2026, 09:30           |                   |
+| | Sind alle Heizkörper betroffen?           |                    |
+| +-------------------------------------------+                    |
+|                                                                  |
+|                          +-----------------------------------+   |
+|                          | Mieter · 09.10.2026, 10:00         |  |
+|                          | Ja, alle Heizkörper.              |   |
+|                          +-----------------------------------+   |
+|                                                                  |
+| +-------------------------------------------+                    |
+| | Immobilienverwaltung · 09.10.2026, 11:00   |                   |
+| | Wir haben den Hauswart informiert.        |                    |
+| +-------------------------------------------+                    |
+|                                                                  |
++------------------------------------------------------------------+
+| Weitere Informationen hinzufügen                                 |
+| Nachricht                                                        |
+| +------------------------------------------------------------+   |
+| |                                                            |   |
+| |                                                            |   |
+| +------------------------------------------------------------+   |
+|                                            [Nachricht senden]    |
+|                                                                  |
+| Bei Änderungen erhalten Sie eine E-Mail mit Ihrem Falllink.      |
++------------------------------------------------------------------+
 ```
+
+Die Beispiele enthalten ausschliesslich fiktive, veröffentlichte externe Nachrichten. «In Abklärung» ist ein beispielhafter Status, kein neu festgelegter Statuswert. Die Ursprungsbeschreibung ist der erste Historieneintrag und erzeugt keine zweite fachliche Nachricht.
+
+#### 8.2.1 Bereiche und Verhalten
+
+| Bereich | Verhalten |
+|---|---|
+| Kopf | Case-ID, unveränderlicher Betreff und aktueller fachlicher Status. Die Case-ID ist eine Referenz, kein Zugangsschlüssel. |
+| Ursprungsdaten | Standardmässig eingeklappt. Native `<details>`-/`<summary>`-Darstellung mit allen vier ursprünglichen Feldern, ausschliesslich lesbar. |
+| Verlauf | Alle sichtbaren Nachrichten auf einer Seite, chronologisch von oben nach unten, neueste Nachricht zuunterst; jeder Eintrag mit Absenderrolle, Datum, Uhrzeit und sicher ausgegebenem Text. |
+| Aktualisieren | Automatisch bei aktivem Fall gemäss Abschnitt 4.5.1; vereinbartes Intervall 20 Sekunden. Manueller GET bleibt verfügbar. Kein Stream, kein Prozessstart und keine Schreibaktion. |
+| Langer Verlauf | Lesen durch Scrollen, ohne Seitennavigation. Neue Nachrichten werden unten ergänzt; beim Lesen älterer Einträge bleibt die Position erhalten. |
+| Eingabe | Sichtbares Label «Nachricht», Mehrzeilentext und «Nachricht senden». Keine Auswahl intern/extern. |
+| Rückmeldung | Speicherbestätigung oder verständlicher Fehler bei der Eingabe. Bestätigte Speicherung bedeutet keine bestätigte E-Mail-Zustellung. |
+| E-Mail-Hinweis | Auch eigene gespeicherte Nachrichten werden per E-Mail bestätigt. Der Hinweis ist ein Darstellungsvorschlag. |
+
+#### 8.2.2 Aufgeklappte Ursprungsdaten
+
+```text
+v Ursprüngliches Anliegen anzeigen
+  Betreff:        Heizung funktioniert nicht
+  Objekt/Wohnung: Musterstrasse 12, Wohnung 4
+  E-Mail-Adresse: m***ple.ch
+  Beschreibung:  Seit gestern funktioniert die Heizung nicht mehr.
+  (Alle Werte schreibgeschützt)
+```
+
+Die Kontaktanzeige verwendet hier fiktive Daten und die vereinbarte Maskierung aus Abschnitt 4.6: erster Buchstabe, maskierter Mittelteil und kurze Endung (`m***ple.ch`).
+
+#### 8.2.3 Rückmeldungen und kleinere Bildschirme
+
+- **Ungültige Eingabe:** Feldbezogener Hinweis unter dem Nachrichtenfeld; kein Historieneintrag. Die Eingabe bleibt bei wieder angezeigtem Formular erhalten, soweit die gültige Berechtigung und der technische Ablauf dies erlauben.
+- **Speicherung läuft:** Bei vorhandener JavaScript-Ergänzung vorübergehende Rückmeldung «Nachricht wird gespeichert …». Das Formular bleibt ohne JavaScript nutzbar. Dieser Zustand betrifft die Speicherung, nicht einen laufenden KI-Schritt.
+- **Speicherung bestätigt:** Nach der vorgesehenen POST-/303-/GET-Folge erscheint die vollständige eigene Nachricht im Verlauf. Das Eingabefeld wird erst nach bestätigter Speicherung geleert.
+- **Aktualisieren mit ungesendeter Eingabe:** Periodische Abrufe erhalten die Eingabe ohne Seitenneuladen. Bei manueller Navigation bleibt ein Hinweis auf möglichen Textverlust ein Vorschlag zur Besprechung. Kein automatisches Speichern und keine dauerhafte Browserspeicherung einführen.
+- **Zwischenzeitlicher Abschluss:** Nachrichteneingabe durch den Abschlusshinweis ersetzen; die serverseitige Sperre bleibt massgeblich. Kein KI-Abbruchbutton.
+- **Zugang ungültig:** Neutrale Zugangsfehlermeldung statt Falldaten. Kein stiller Wechsel zur Neuanlage.
+- **Schmaler Bildschirm:** Gleiche Reihenfolge in einer Spalte; Nachrichten können die verfügbare Breite nutzen. Absendertexte erhalten die Unterscheidung auch ohne deutliche Links-/Rechtsanordnung. Navigation und Senden bleiben ohne horizontales Scrollen erreichbar.
+
+#### 8.2.4 Vereinbarte Anordnung und verbleibende Gestaltung
+
+- **Bereiche:** Kopf → Ursprungsdaten → Verlauf → Nachrichteneingabe.
+- **Nachrichtenreihenfolge:** Alle sichtbaren Nachrichten auf einer Seite; älteste oben, neueste zuunterst. Ältere Einträge bleiben durch Scrollen erreichbar.
+- **Absenderanordnung:** Mieter rechts, Immobilienverwaltung und KI/System links. Textliche Absenderangaben bleiben zusätzlich sichtbar.
+
+Diese Grundanordnung, die maskierte Kontaktanzeige und das Aktualisierungsintervall von 20 Sekunden sind vereinbart. Farben, Schrift, Abstände und endgültige Breite bleiben Gestaltungspunkte. Die automatische Aktualisierung verändert beim Lesen älterer Einträge nicht ungefragt die Leseposition.
+
+Neuerfassung und abgeschlossener Fall werden anhand dieser Festlegungen weiter abgestimmt. Ein stilistischer JPG-Entwurf ist noch nicht erstellt.
 
 ### 8.3 Abgeschlossener Fall – nur lesbar
 
@@ -434,6 +493,9 @@ Der Browser ruft **nicht direkt Camunda** auf. Die Fachlogik bleibt im PropertyF
 - **AK-23:** Zentral geführt als [KOM-AK-04](../specifications/fallkommunikation.md#kom-ak-04).
 - **AK-24:** Zentral geführt als [KOM-AK-05](../specifications/fallkommunikation.md#kom-ak-05).
 
+- **AK-25:** Periodische Abrufe aktualisieren gespeicherte veröffentlichte Nachrichten und Fallstatus ohne Seitenneuladen, Duplikate, Eingabeverlust oder unerwartete Fokus-/Scrolländerungen. Ein gezielter Test umfasst neue Einträge beim Lesen älterer Einträge auf derselben Seite.
+- **AK-26:** Ausgeblendeter Tab, Rückkehr, langsame Anfrage, Netzwerkfehler und Rate Limit prüfen Pausieren, einzelne laufende Anfrage und verzögerte Wiederholung. Abschluss oder ungültiger Zugang beendet Polling; keine dieser Aktionen bricht KI oder Camunda ab. Jeder Abruf wahrt Fallrechte und Inhaltsgrenzen.
+
 ## 11. Umsetzung im FFHS-Block 2 / spätere Blöcke
 
 **Block 2 – mit statischen Testdaten:**
@@ -442,7 +504,7 @@ Der Browser ruft **nicht direkt Camunda** auf. Die Fachlogik bleibt im PropertyF
 - Mock-Falldaten und Mock-Nachrichten, inklusive abgeschlossenem Fall und einem aktiven Fall mit internen Memos sowie externen Nachrichten zur Prüfung der Sichtbarkeitsfilterung.
 - Ein- und Ausklappen der ursprünglichen Angaben mit nativem HTML.
 - Eine Master-Detail-Ansicht wird **separat im Backoffice-Dashboard mit Falldetail** umgesetzt; Screen 01 ist selbst keine solche Ansicht.
-- Asynchrone Fallkommunikation mit vollständig gespeicherten Mock-Nachrichten, fachlichen Status- und Fehlerfällen sowie sicherer Textausgabe; Aktualisierung über erneuten Seitenaufruf.
+- Asynchrone Fallkommunikation mit vollständig gespeicherten Mock-Nachrichten, fachlichen Status- und Fehlerfällen sowie sicherer Textausgabe; automatische Aktualisierung alle 20 Sekunden gemäss Abschnitt 4.5.1 und manueller Seitenaufruf als Fallback.
 - Generierte und überprüfte Tests sowie A11y-, Sicherheits- und Performance-Nachweise.
 
 **Block 3 – Services:** API-Verträge, tatsächliche Camunda-8-Integration, Prozessstart, Nachrichtenkorrelation, KI-/Worker-Integration, Autorisierungs- und Idempotenzmechanismen sowie überprüfbarer Ausschluss interner Memos und ihrer Ableitungen aus dem Kontext der Kommunikationsgenerierung.
@@ -466,7 +528,7 @@ Der Browser ruft **nicht direkt Camunda** auf. Die Fachlogik bleibt im PropertyF
 - `docs/use_cases/UC-001-mieteranliegen-einreichen.md` – ursprüngliche Anliegen-Erfassung.
 - `docs/use_cases/UC-002-mieteranliegen-anzeigen.md` – Backoffice-Übersicht.
 - `docs/use_cases/UC-003-mieteranliegen-details-anzeigen.md` – Backoffice-Detail.
-- `docs/use_cases/UC-004-ki-analyse-durchfuehren.md` – separat abzugleichender Analyse-Use-Case; dessen Streaming-/Abbruchfunktion gehört nicht zu Screen 01.
+- `docs/use_cases/UC-004-ki-analyse-durchfuehren.md` – Analyse-Use-Case der Mitarbeiteransicht; dessen Streaming-/Abbruchfunktion gehört nicht zu Screen 01.
 
 **Durch diese Screen-Spezifikation präzisiert beziehungsweise erweitert:** durchgängige Mieter-Kommunikationsansicht, asynchrone Veröffentlichung von Ergebnissen der Camunda-gesteuerten KI-Verarbeitung, persönlicher Fall-Link, gesperrte Ursprungsdaten, vollständige Mieter-sichtbare Historie, Nachrichtensperre nach Camunda-Abschluss. Bestehende Use-Cases und ADRs müssen bei der Implementierung **konsistent** ergänzt werden, statt konkurrierende Regeln einzuführen.
 
@@ -507,4 +569,4 @@ Abgleich mit diesem Chat: 09.10.2026. Bestehende Projektentscheidungen, vorgesch
 
 ### 12.3 Abgleich mit übergreifenden KI-/Frontend-Vorgaben
 
-Der noch erforderliche Abgleich ist zentral in der [Fallkommunikationsspezifikation](../specifications/fallkommunikation.md#abgleich-mit-bestehenden-dokumenten) beschrieben. Die Mieteransicht folgt KOM-03; die SSR-Entscheidung bleibt gültig.
+Der Geltungsbereich ist geklärt: Die Mitarbeiteransicht verwendet Streaming und Abbruch gemäss [ADR-003](../architecture/adr/ADR-003-praesentationsschicht.md) und UC-004. Die Mieteransicht folgt KOM-03 und zeigt gespeicherte Nachrichten mit periodischer Aktualisierung, ohne direkten Chat-Stream oder KI-/Prozessabbruch. Der [Abgleich](../specifications/fallkommunikation.md#abgleich-mit-bestehenden-dokumenten) ist damit fachlich abgeschlossen; die SSR-Entscheidung bleibt gültig.
