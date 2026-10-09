@@ -6,7 +6,7 @@
 **Darstellung:** Server-Side Rendering (Thymeleaf) mit gezieltem Vanilla JavaScript  
 **Workflow-Orchestrierung:** Camunda 8
 
-**Gemeinsame fachliche Grundlagen:** [Fallverwaltung](../specifications/fallverwaltung.md) definiert Fallanlage und Lebenszyklus; [Fallkommunikation](../specifications/fallkommunikation.md) definiert Nachrichten und ihre Verwendung; [Fallzugriff und Sicherheit](../specifications/fallzugriff-und-sicherheit.md) definiert den direkten persönlichen Tokenzugriff und seine Berechtigungen. Dieses Dokument beschreibt die Darstellung und Bedienung von Screen 01 und verweist auf die zentralen Regeln und Prüfkriterien.
+**Gemeinsame fachliche Grundlagen:** [Fallverwaltung](../specifications/fallverwaltung.md) definiert Fallanlage und Lebenszyklus; [Fallkommunikation](../specifications/fallkommunikation.md) definiert Nachrichten und ihre Verwendung; [Dringlichkeitsbewertung](../specifications/dringlichkeitsbewertung.md) definiert Stufen, Farben, manuelle Einstufung und transparente Historie; [Fallzugriff und Sicherheit](../specifications/fallzugriff-und-sicherheit.md) definiert den direkten persönlichen Tokenzugriff und seine Berechtigungen. Dieses Dokument beschreibt die Darstellung und Bedienung von Screen 01 und verweist auf die zentralen Regeln und Prüfkriterien.
 
 ## 1. Zweck und Abgrenzung
 
@@ -31,8 +31,8 @@ Die folgenden Ansichten bilden den [fachlichen Lebenszyklus nach FALL-05](../spe
 | Zustand | Aufruf / Auslöser | Sichtbarer Inhalt | Zulässige Aktion |
 |---|---|---|---|
 | **Neuer Fall** | Neue Erfassungsseite, noch keine Case-ID | Formular mit Pflichtfeldern | Einmalig einen neuen Fall absenden |
-| **Aktiver Fall** | Nach erfolgreichem Erstabsenden oder über persönlichen Fall-Link | Case-ID, Status, Betreff, aufklappbares ursprüngliches Anliegen, chronologische Nachrichten, Eingabe für neue Nachricht | Weitere Nachrichten jederzeit hinzufügen, solange der Fall aktiv ist |
-| **Abgeschlossener Fall** | Persönlicher Fall-Link nach bestätigtem fachlichem Abschluss in PropertyFlow | Case-ID, Abschlussstatus, ursprüngliches Anliegen und gesamte bisherige Historie | Ausschliesslich lesen; keine neuen Nachrichten durch irgendeinen Absender |
+| **Aktiver Fall** | Nach erfolgreichem Erstabsenden oder über persönlichen Fall-Link | Case-ID, Status, Dringlichkeit mit Quelle, Betreff, aufklappbares ursprüngliches Anliegen, chronologischer Verlauf aus Nachrichten und Dringlichkeitsereignissen, Eingabe für neue Nachricht | Weitere Nachrichten jederzeit hinzufügen, solange der Fall aktiv ist |
+| **Abgeschlossener Fall** | Persönlicher Fall-Link nach bestätigtem fachlichem Abschluss in PropertyFlow | Case-ID, Abschlussstatus, Dringlichkeit mit Quelle, ursprüngliches Anliegen und gesamte bisherige freigegebene Historie | Ausschliesslich lesen; keine neuen Nachrichten durch irgendeinen Absender |
 
 **Direkter Übergang:** Nach dem erfolgreichen Erstabsenden gelangt der Mieter **ohne erneute Anmeldung und ohne zuerst die E-Mail öffnen zu müssen** unmittelbar zur aktiven Fallansicht. Der persönliche Link enthält als variablen Zugangswert nur den geheimen Token und wird zusätzlich per E-Mail zugestellt. Die sichere Übergabe richtet sich nach [ZUG-02](../specifications/fallzugriff-und-sicherheit.md#zug-02-ausgabe-und-erstzugriff); ihre technische Umsetzung wird im Service-Block festgelegt.
 
@@ -107,14 +107,15 @@ Für Wiederholungen und unklare Sendeergebnisse gilt [FALL-03](../specifications
 |---|---|
 | **Case-ID** | Lesbare Referenz, z. B. `REQ-2026-001`; dient der Wiedererkennung, **nicht** allein als Zugriffsberechtigung. |
 | **Betreff** | Ursprünglicher Betreff, schreibgeschützt. |
-| **Fallstatus** | Fachlich verständlicher, vom Camunda-Ablauf abgeleiteter Status, z. B. «In Abklärung», «Wartet auf Rückmeldung», «Beim Backoffice». |
+| **Fallstatus** | Aktueller fachlicher Bearbeitungsstatus aus PropertyFlow gemäss den sieben vereinbarten Status in FALL-05, z. B. «In Abklärung» oder «Wartet auf Mieterantwort». |
+| **Dringlichkeit** | Aktuelle wirksame Stufe mit Text und Farbe gemäss [DRING-01/DRING-04](../specifications/dringlichkeitsbewertung.md); ohne wirksame System- oder manuelle Einstufung «Noch nicht bewertet». Änderungsquelle «System» oder «Immobilienverwaltung» erkennbar; ohne Bewertung noch keine Änderungsquelle. Ausschliesslich lesbar. |
 | **Ursprüngliches Anliegen anzeigen** | Standardmässig **eingeklappter** Bereich; beim Aufklappen werden alle vier ursprünglichen Felder **schreibgeschützt** angezeigt. |
 
 Der aufklappbare Bereich wird vorzugsweise mit den nativen HTML-Elementen `<details>` und `<summary>` umgesetzt; hierfür ist kein JavaScript erforderlich. Es gibt **keine Bearbeiten-Funktion** für diese Daten.
 
 ### 4.2 Kommunikationshistorie
 
-Die Historie enthält **alle für den Mieter sichtbaren Nachrichten** dieses Falls auf einer Seite und bleibt über spätere Aufrufe erhalten. **Vereinbart: älteste Nachricht oben, neueste Nachricht unten; keine Seitennavigation.**
+Die Historie enthält **alle für den Mieter sichtbaren Nachrichten und freigegebenen Dringlichkeitsereignisse** dieses Falls auf einer Seite und bleibt über spätere Aufrufe erhalten. **Vereinbart: ältester Eintrag oben, neuester Eintrag unten; keine Seitennavigation.** Die strukturierten Ereignisse folgen Abschnitt 4.2.3 und sind von Nachrichten unterscheidbar.
 
 Jeder Nachrichteneintrag zeigt mindestens:
 
@@ -138,11 +139,23 @@ Automatische Antworten können durch Camunda-Service-Tasks und PropertyFlow-Work
 
 Die fachliche Unterscheidung von internen Memos und externer Kommunikation ist zentral in [KOM-01](../specifications/fallkommunikation.md#kom-01-interne-und-externe-nachrichten) festgelegt.
 
-Screen 01 zeigt nur veröffentlichte externe Nachrichten des autorisierten Falls. Für interne Memos gibt es weder Inhalt, Platzhalter noch Zählerhinweise. Das Mieterformular bietet keine Auswahl «intern/extern». Die sichtbaren Zeitangaben beziehen sich ausschliesslich auf die externe Historie.
+Der Nachrichtenteil von Screen 01 zeigt nur veröffentlichte externe Nachrichten des autorisierten Falls; hinzu kommen die freigegebenen Dringlichkeitsereignisse nach Abschnitt 4.2.3. Für interne Memos gibt es weder Inhalt, Platzhalter noch Zählerhinweise. Das Mieterformular bietet keine Auswahl «intern/extern». Die sichtbaren Zeitangaben beziehen sich ausschliesslich auf den mieteröffentlichen Verlauf.
 
 ### 4.2.2 Grundlage generierter Kommunikationsnachrichten
 
 Für alle LLM-generierten Kommunikationsnachrichten gilt [KOM-02: LLM-Kommunikation ohne interne Memos](../specifications/fallkommunikation.md#kom-02-llm-kommunikation-ohne-interne-memos). Die zentrale Spezifikation definiert den Ausschluss interner Memos und ihrer Ableitungen vor der Generierung sowie die zugehörigen Prüfkriterien. Screen 01 erhält ausschliesslich das zur Veröffentlichung freigegebene Ergebnis.
+
+### 4.2.3 Transparenter Dringlichkeitsverlauf
+
+**Vereinbart am 09.10.2026:** Die Mieteransicht zeigt zusätzlich zu veröffentlichten externen Nachrichten alle gespeicherten fachlichen Änderungen der Dringlichkeit gemäss [DRING-05 bis DRING-07](../specifications/dringlichkeitsbewertung.md). Die Erstbewertung folgt der ursprünglichen Mieter-Mitteilung; nach jeder weiteren Mieter-Nachricht wird die Dringlichkeit erneut im Camunda-gesteuerten Ablauf bewertet. Berechtigte Mitarbeitende können die Stufe im separaten Mitarbeiterdetail manuell anpassen.
+
+Stufenänderungen werden als strukturierte Ereignisse in den bestehenden Fallverlauf eingeordnet: älteste Einträge oben, neueste unten, alle auf einer Seite. Sie sind links angeordnet und eindeutig von Kommunikationsnachrichten unterscheidbar. Jeder Änderungseintrag zeigt Datum/Uhrzeit in Europe/Zurich, alte und neue Stufe mit Text/Farbkennzeichnung sowie «Geändert durch System» oder «Geändert durch Immobilienverwaltung». Die erste Einstufung zeigt beispielsweise «Noch nicht bewertet → Hoch». Die Änderungsquelle ist auch ohne Farbe erkennbar.
+
+Der Mieter kann die aktuelle Stufe und ihre Historie nur lesen. Persönliche Mitarbeiternamen, interne Begründungen/Memos, Prompts und technische Prozessreferenzen werden nicht ausgegeben. Das externe Lesemodell enthält nur die zentral freigegebenen strukturierten Ereignisdaten; es ist kein Zugriff auf die gesamte interne Audit-Historie.
+
+Eine manuell durch die Immobilienverwaltung gesetzte Stufe bleibt gemäss DRING-06 massgeblich und kann vom System nicht überschrieben werden. Spätere automatische Bewertungen erzeugen deshalb keine Änderung der angezeigten manuellen Stufe oder einen fingierten Wechsel im Mieter-Verlauf. Eine erneute manuelle Stufenänderung bleibt transparent mit der Quelle «Immobilienverwaltung» sichtbar.
+
+Ein unverändertes Neubewertungsergebnis erzeugt keinen Stufenwechsel im sichtbaren Verlauf. Während einer Neubewertung und bei ihrem Fehlschlag bleibt die bisher gespeicherte Stufe sichtbar. Gespeicherte Stufenänderungen lösen gemäss BEN-01 eine E-Mail aus; ein Historieneintrag beweist keine E-Mail-Zustellung. Bei abgeschlossenem Fall bleibt die bestehende Dringlichkeitshistorie lesbar. Strukturierte Ereignisse eröffnen keine Ausnahme von der Nachrichtensperre KOM-04.
 
 ### 4.3 Neue Nachricht hinzufügen
 
@@ -161,7 +174,7 @@ Validierung: Eine Nachricht darf nicht leer oder nur aus Leerzeichen bestehen; M
 3. Mieter schreibt eine neue Nachricht und klickt auf **«Nachricht senden»**.
 4. Der Server prüft erneut Zugriffsberechtigung, Eingabevalidität, Idempotenz und ob der Fall **noch aktiv** ist.
 5. Die Nachricht wird dem bestehenden Fall zugeordnet und chronologisch gespeichert.
-6. Die Information wird dem Camunda-Prozess entsprechend dem **aktuellen BPMN-Schritt** zugeführt (z. B. Message-Korrelation bei einer wartenden Rückfrage oder vorgesehene weitere Verarbeitung). Eine Nachricht löst **nicht** zwangsläufig jedes Mal einen neuen Prozessschritt aus.
+6. Die Information wird dem bestehenden Camunda-Prozess entsprechend dem **aktuellen BPMN-Schritt** zugeführt (z. B. Message-Korrelation bei einer wartenden Rückfrage oder vorgesehene weitere Verarbeitung). Jede gespeicherte Mieter-Nachricht veranlasst die Dringlichkeitsneubewertung gemäss DRING-05; geschützte manuelle Einstufungen bleiben wirksam. Die Nachricht schliesst eine offene Rückfrage nicht automatisch ab und startet keinen zweiten führenden Prozess.
 7. Der Mieter sieht die übernommene externe Nachricht; eine spätere KI- oder Backoffice-Antwort wird nach externer Veröffentlichung im gleichen Verlauf ergänzt. Interne Memos bleiben ausschliesslich im Backoffice.
 
 **Speicherbestätigung:** Die Eingabe wird erst nach bestätigtem Commit geleert. Nachgelagerte Benachrichtigungen oder Camunda-Korrelationen dürfen die gespeicherte Nachricht nicht verlieren. Auch für Nachrichten gilt eine fallgebundene Absende-ID; Wiederholungen erzeugen keinen zweiten Historieneintrag.
@@ -176,15 +189,15 @@ Neue vollständige Nachrichten werden bei aktivem Fall automatisch nach Abschnit
 
 **Block 2:** Mock-Daten bilden veröffentlichte Nachrichten und fachliche Bearbeitungsstände ab. Es wird kein Chat-Stream simuliert und keine Abbruchfunktion implementiert.
 
-### 4.5.1 Automatische Aktualisierung von Nachrichten und Status
+### 4.5.1 Automatische Aktualisierung von Nachrichten, Status und Dringlichkeit
 
-Bei einem aktiven Fall ruft die sichtbare Seite periodisch die neuesten veröffentlichten externen Nachrichten und den fachlichen Fallstatus über PropertyFlow ab (**Polling**). Die periodischen Leseabrufe übertragen ausschliesslich gespeicherte Ergebnisse. Sie erzeugen keine direkte KI-Chatsitzung und lösen keine Camunda-Verarbeitung aus.
+Bei einem aktiven Fall ruft die sichtbare Seite periodisch die neuesten veröffentlichten externen Nachrichten, freigegebene Dringlichkeitsereignisse, aktuelle wirksame Dringlichkeit mit Quelle und den fachlichen Fallstatus über PropertyFlow ab (**Polling**). Die periodischen Leseabrufe übertragen ausschliesslich gespeicherte Ergebnisse. Sie erzeugen keine direkte KI-Chatsitzung und lösen keine Camunda-Verarbeitung aus.
 
 **Vereinbartes Intervall:** Ein Abruf alle 20 Sekunden, also ungefähr dreimal pro Minute, solange die aktive Fallansicht sichtbar ist. Es läuft höchstens eine Anfrage gleichzeitig; dauert sie länger als das Intervall, wird kein überlappender Abruf gestartet. Die Pausen und Fehlerregeln unten gelten weiterhin.
 
-- Aktualisiert werden nur Verlauf, fachlicher Status und die Rückmeldung zur Aktualisierung. Die gesamte Seite wird nicht automatisch neu geladen. Ein ungesendeter Nachrichtentext, Tastaturfokus, aufgeklappte Ursprungsdaten und Leseposition bleiben bei gewöhnlichen Aktualisierungen erhalten. Die Eingabe wird weder automatisch gespeichert noch bei diesen Abrufen an den Server übertragen.
-- Nachrichten werden anhand stabiler IDs abgeglichen und in stabiler chronologischer Reihenfolge angezeigt. Wiederholte Abrufe dürfen keine doppelten Einträge erzeugen; unveränderte Daten verursachen keine unnötigen sichtbaren Änderungen.
-- Liest der Benutzer ältere Einträge, wird nicht automatisch gescrollt. Ein Hinweis «Neue Nachrichten vorhanden» ermöglicht den bewussten Wechsel zu den neuesten Einträgen. Die Rückmeldung ist auch für assistive Technologien zugänglich, ohne bei jedem unveränderten Abruf den gesamten Verlauf erneut vorzulesen.
+- Aktualisiert werden nur Verlauf einschliesslich gespeicherter Dringlichkeitsänderungen, aktuelle Dringlichkeit mit Änderungsquelle, fachlicher Status und die Rückmeldung zur Aktualisierung. Die gesamte Seite wird nicht automatisch neu geladen. Ein ungesendeter Nachrichtentext, Tastaturfokus, aufgeklappte Ursprungsdaten und Leseposition bleiben bei gewöhnlichen Aktualisierungen erhalten. Die Eingabe wird weder automatisch gespeichert noch bei diesen Abrufen an den Server übertragen.
+- Nachrichten und Dringlichkeitsereignisse werden anhand stabiler IDs abgeglichen und in stabiler chronologischer Reihenfolge angezeigt. Wiederholte Abrufe dürfen keine doppelten Einträge erzeugen; unveränderte Daten verursachen keine unnötigen sichtbaren Änderungen.
+- Liest der Benutzer ältere Einträge, wird nicht automatisch gescrollt. Ein Hinweis «Neue Einträge vorhanden» ermöglicht den bewussten Wechsel zu den neuesten Nachrichten oder Dringlichkeitsereignissen. Die Rückmeldung ist auch für assistive Technologien zugänglich, ohne bei jedem unveränderten Abruf den gesamten Verlauf erneut vorzulesen.
 - Ist der Browser-Tab nicht sichtbar, pausieren die Abrufe. Bei Rückkehr erfolgt eine Aktualisierung und danach die Fortsetzung des Intervalls. Navigation oder Schliessen der Seite beendet nur die periodischen Browserabrufe, niemals den Camunda-Prozess oder einen KI-Schritt.
 - Ein erkannter Fallabschluss aktualisiert den Status, berücksichtigt den verfügbaren veröffentlichten Abschlussstand und ersetzt die Nachrichteneingabe durch den Abschlusshinweis. Ungesendeter Text wird nicht übertragen oder gespeichert. Danach enden die periodischen Abrufe; manuelles Lesen und Aktualisieren bleiben bei gültigem Zugang möglich.
 - Bei einem vorübergehenden Netzwerk- oder Serverfehler bleiben die bereits angezeigten Daten bestehen. Ein Hinweis «Aktualisierung momentan nicht möglich» kennzeichnet den Zustand; Wiederholungen erfolgen mit wachsender Wartezeit statt einer schnellen Endlosschleife. Eine erfolgreiche Aktualisierung entfernt den Fehlerhinweis. Konkrete Wartezeiten bleiben festzulegen.
@@ -199,7 +212,7 @@ Der konkrete Lesevertrag für die ergänzenden Abrufe (Antwortformat, inkremente
 - Die Case-ID kann kopiert werden. Sichtbare Zeitangaben umfassen den Eingang und die letzte mieteröffentliche Aktualisierung.
 - **Vereinbarte Kontaktanzeige:** Die E-Mail-Adresse wird im bestehenden Fall serverseitig maskiert, mit erstem Buchstaben und einer kurzen Endung; Beispiel: `mieter@example.ch` → `m***ple.ch`. Das Beispiel zeigt die letzten sechs Zeichen. Der mittlere Teil einschliesslich der vollständigen Domain bleibt verborgen; kurze Adressen dürfen nicht versehentlich vollständig ausgegeben werden. Auch HTML-Attribute, Tooltips und ergänzende Lesedaten enthalten keine unmaskierte Kontaktadresse. Im Erfassungsformular bleibt die selbst eingegebene Adresse zur Prüfung sichtbar; ihre Speicherung und Verwendung für den Versand bleiben unverändert.
 - Die Aktion «Neues Anliegen melden» führt zu `GET /mieter/fall`. Sie ist auch bei einem abgeschlossenen Fall verfügbar; erst das Absenden erzeugt einen separaten Fall. Eine Wiedereröffnung des bisherigen Falls gehört nicht zu Screen 01.
-- Die vorgeschlagenen Bearbeitungsstände und ihre Bedeutungen werden zentral unter [FALL-05](../specifications/fallverwaltung.md#fall-05-fachlicher-lebenszyklus) gepflegt. Die finalen UI-Bezeichnungen werden damit abgestimmt.
+- Die sieben vereinbarten Bearbeitungsstatus und ihre Bedeutungen werden zentral unter [FALL-05](../specifications/fallverwaltung.md#fall-05-fachlicher-lebenszyklus) gepflegt. Bei aktiven Fällen mit offener Objektzuordnung, fehlgeschlagener KI-Analyse oder klärungsbedürftigem E-Mail-Versand wird «Mitarbeiterprüfung erforderlich» angezeigt. Intern gespeicherte Problemhinweise und technische Fehlerdetails werden dadurch nicht mieteröffentlich; auch die Mitarbeiterliste zeigt keine fallbezogenen Problemhinweise.
 - Technische Camunda-Incidents, Retries und KI-Analysezustände sind keine fachlichen Mieterstatus. Ein technischer Verzögerungshinweis ersetzt nicht den letzten bestätigten fachlichen Status.
 - Frühere Nachrichten werden im Screen weder bearbeitet noch gelöscht; Korrekturen erfolgen als neue Nachricht. Besondere Datenschutz-/Löschprozesse und Aufbewahrungsfristen benötigen eine separate Regelung.
 
@@ -207,7 +220,9 @@ Der konkrete Lesevertrag für die ergänzenden Abrufe (Antwortformat, inkremente
 
 Sobald PropertyFlow den fachlichen Abschluss nach [FALL-07](../specifications/fallverwaltung.md#fall-07-abschluss-und-zeit-danach) bestätigt, zeigt die Ansicht **«Abgeschlossen»**.
 
-- Betreff, Case-ID, ursprüngliche Angaben und die vollständige Mieter-sichtbare Nachrichtenhistorie bleiben einsehbar.
+Der Abschluss kann durch einen Mitarbeiter oder durch das System erfolgen. Vereinbarte Systemgründe sind eine eindeutige Bestätigung des Mieters «Problem behoben, keine weitere Hilfe nötig» oder eindeutig fehlender Bearbeitungsbedarf der Verwaltung gemäss hinterlegter Fachregel, etwa ein dem Mieter zugeordneter Glühbirnenwechsel. In beiden Fällen gelten dieselbe Leseansicht, Nachrichtensperre und Abschlussmail. Der Mieter teilt die Behebung über eine Nachricht mit; die eigentliche Statusänderung übernimmt PropertyFlow nach FALL-07.
+
+- Betreff, Case-ID, ursprüngliche Angaben, wirksame Dringlichkeit mit Quelle und der vollständige mieteröffentliche Verlauf einschliesslich Dringlichkeitsereignissen bleiben einsehbar.
 - Der Bereich «Ursprüngliches Anliegen anzeigen» bleibt **standardmässig eingeklappt** und jederzeit aufklappbar.
 - **Kein Absender** darf weitere Nachrichten erzeugen: weder Mieter noch System/KI noch Backoffice-Mitarbeitende.
 - Der Texteingabebereich und der Senden-Button werden durch folgenden Hinweis ersetzt:
@@ -232,7 +247,7 @@ Nach erfolgreicher Tokenprüfung wird die Fallansicht direkt unter derselben URL
 
 ### 6.1 E-Mail-Benachrichtigungen
 
-Gemäss [Benachrichtigungen und Zustellung](../specifications/benachrichtigungen-und-zustellung.md) erhält der Mieter eine E-Mail bei Fallannahme, jeder eigenen gespeicherten Nachricht, veröffentlichten externen KI-/Mitarbeiternachrichten, sichtbaren fachlichen Statusänderungen und Fallabschluss. Interne Memos, Entwürfe und technische Verarbeitungsschritte lösen keine E-Mail aus.
+Gemäss [Benachrichtigungen und Zustellung](../specifications/benachrichtigungen-und-zustellung.md) erhält der Mieter eine E-Mail bei Fallannahme, jeder eigenen gespeicherten Nachricht, veröffentlichten externen KI-/Mitarbeiternachrichten, sichtbaren fachlichen Status- und wirksamen Dringlichkeitsänderungen sowie Fallabschluss. Interne Memos, Entwürfe, unveränderte Bewertungen und technische Verarbeitungsschritte lösen keine E-Mail aus.
 
 Die E-Mail enthält eine kurze Änderungsinformation, Case-ID und denselben gültigen persönlichen Link; vollständige Nachrichten bleiben in dieser Fallansicht. Auch eine bereits geöffnete Ansicht ersetzt die E-Mail nicht. Mailfehler nehmen eine bestätigte Speicherung nicht zurück. Die Abschlussmail erzeugt keinen neuen Nachrichteneintrag nach Schliessung.
 
@@ -274,7 +289,7 @@ Interne Memos, Prioritätsänderung, Beauftragung, fachliche Freigabe, Schliessu
 
 | Bestandteil | Verantwortung |
 |---|---|
-| **Thymeleaf-Seite + Vanilla JavaScript** | Formular, Nachrichtenverlauf, aufklappbare Ursprungsdaten, sichtbarer fachlicher Status und vollständige veröffentlichte Nachrichten |
+| **Thymeleaf-Seite + Vanilla JavaScript** | Formular, Fallverlauf mit veröffentlichten Nachrichten und Dringlichkeitsereignissen, aufklappbare Ursprungsdaten, fachlicher Status und wirksame Dringlichkeit mit Quelle |
 | **PropertyFlow-Backend (Spring Boot)** | HTTP-Validierung, Autorisierung per persönlichem Zugriff, Fallanlage, Nachrichtenannahme, Anwendungslogik und Integrationsadapter |
 | **PropertyFlow-Datenhaltung (PostgreSQL)** | Persistente fachliche Falldaten, Nachrichten mit Sichtbarkeit und Veröffentlichungszustand, Absender, Zeitpunkte und fachlich relevante Historie |
 | **Camunda 8** | Technische Prozessinstanz, Prozessposition, Message-Catch-/Wartezustände, Service Tasks, User Tasks, Gateways, Timer und Prozessabschluss |
@@ -283,7 +298,7 @@ Interne Memos, Prioritätsänderung, Beauftragung, fachliche Freigabe, Schliessu
 
 Der Browser ruft **nicht direkt Camunda** auf. Die Fachlogik bleibt im PropertyFlow-Backend. Camunda verwaltet technische Prozessvariablen möglichst referenzbasiert und nicht als vollständige Kopie sensibler Mieter- und Kommunikationsdaten.
 
-**Regel zur KI-Autonomie:** Camunda kann eine automatische Antwort oder einen automatischen Abschluss nur entlang ausdrücklich modellierter und serverseitig geprüfter Geschäftsregeln ausführen. Für risikoreiche oder kritische Entscheidungen bleiben die in den bestehenden ADRs und Guardrails vorgesehenen menschlichen Prüfungen erhalten. Eine allgemeine Erlaubnis, jeden Fall durch die KI autonom zu schliessen, ist **nicht** beschlossen.
+**Regel zur KI-Autonomie:** Camunda führt automatische Abschlüsse entlang der vereinbarten, serverseitig geprüften Fachregeln aus FALL-07 aus. Auch automatische Antworten folgen den Kommunikationsregeln. Für kritische fachliche Aktionen bleiben die in den bestehenden ADRs und Guardrails vorgesehenen menschlichen Prüfungen erhalten. Die bestätigten Systemabschlussgründe verlangen bei eindeutiger Einordnung keine zusätzliche Einzelfreigabe; eine unklare Einordnung führt zur Mitarbeiterprüfung.
 
 ## 8. Technische Wireframes (Markdown / ASCII)
 
@@ -334,6 +349,7 @@ Die Ansicht verwendet eine Hauptspalte. **Vereinbarte Reihenfolge:** Kopf → Ur
 +------------------------------------------------------------------+
 | Fall REQ-2026-001                              [In Abklärung]    |
 | Heizung funktioniert nicht                                       |
+| Dringlichkeit: Hoch (Orange) · Geändert durch System              |
 |                                                                  |
 | > Ursprüngliches Anliegen anzeigen                               |
 +------------------------------------------------------------------+
@@ -344,6 +360,9 @@ Die Ansicht verwendet eine Hauptspalte. **Vereinbarte Reihenfolge:** Kopf → Ur
 |                          | Seit gestern funktioniert die    |    |
 |                          | Heizung nicht mehr.               |   |
 |                          +-----------------------------------+   |
+|                                                                  |
+| [Dringlichkeit geändert · System · 09.10.2026, 09:20]             |
+| Noch nicht bewertet (Blau) → Hoch (Orange)                        |
 |                                                                  |
 | +-------------------------------------------+                    |
 | | KI-Assistent · 09.10.2026, 09:30           |                   |
@@ -373,15 +392,16 @@ Die Ansicht verwendet eine Hauptspalte. **Vereinbarte Reihenfolge:** Kopf → Ur
 +------------------------------------------------------------------+
 ```
 
-Die Beispiele enthalten ausschliesslich fiktive, veröffentlichte externe Nachrichten. «In Abklärung» ist ein beispielhafter Status, kein neu festgelegter Statuswert. Die Ursprungsbeschreibung ist der erste Historieneintrag und erzeugt keine zweite fachliche Nachricht.
+Die Beispiele enthalten fiktive veröffentlichte externe Nachrichten und ein freigegebenes Dringlichkeitsereignis. «In Abklärung» ist ein vereinbarter Bearbeitungsstatus gemäss FALL-05. Die Ursprungsbeschreibung ist der erste Historieneintrag und erzeugt keine zweite fachliche Nachricht.
 
 #### 8.2.1 Bereiche und Verhalten
 
 | Bereich | Verhalten |
 |---|---|
-| Kopf | Case-ID, unveränderlicher Betreff und aktueller fachlicher Status. Die Case-ID ist eine Referenz, kein Zugangsschlüssel. |
+| Kopf | Case-ID, unveränderlicher Betreff, aktueller fachlicher Status und Dringlichkeit mit Änderungsquelle. Die Case-ID ist eine Referenz, kein Zugangsschlüssel. |
 | Ursprungsdaten | Standardmässig eingeklappt. Native `<details>`-/`<summary>`-Darstellung mit allen vier ursprünglichen Feldern, ausschliesslich lesbar. |
 | Verlauf | Alle sichtbaren Nachrichten auf einer Seite, chronologisch von oben nach unten, neueste Nachricht zuunterst; jeder Eintrag mit Absenderrolle, Datum, Uhrzeit und sicher ausgegebenem Text. |
+| Dringlichkeitsereignisse | Im selben Verlauf chronologisch eingeordnet; alter/neuer Wert, Zeitpunkt und Änderungsquelle System/Immobilienverwaltung. Keine internen Auditdetails oder Bearbeitungsaktion für Mieter. |
 | Aktualisieren | Automatisch bei aktivem Fall gemäss Abschnitt 4.5.1; vereinbartes Intervall 20 Sekunden. Manueller GET bleibt verfügbar. Kein Stream, kein Prozessstart und keine Schreibaktion. |
 | Langer Verlauf | Lesen durch Scrollen, ohne Seitennavigation. Neue Nachrichten werden unten ergänzt; beim Lesen älterer Einträge bleibt die Position erhalten. |
 | Eingabe | Sichtbares Label «Nachricht», Mehrzeilentext und «Nachricht senden». Keine Auswahl intern/extern. |
@@ -417,7 +437,7 @@ Die Kontaktanzeige verwendet hier fiktive Daten und die vereinbarte Maskierung a
 - **Nachrichtenreihenfolge:** Alle sichtbaren Nachrichten auf einer Seite; älteste oben, neueste zuunterst. Ältere Einträge bleiben durch Scrollen erreichbar.
 - **Absenderanordnung:** Mieter rechts, Immobilienverwaltung und KI/System links. Textliche Absenderangaben bleiben zusätzlich sichtbar.
 
-Diese Grundanordnung, die maskierte Kontaktanzeige und das Aktualisierungsintervall von 20 Sekunden sind vereinbart. Farben, Schrift, Abstände und endgültige Breite bleiben Gestaltungspunkte. Die automatische Aktualisierung verändert beim Lesen älterer Einträge nicht ungefragt die Leseposition.
+Diese Grundanordnung, die maskierte Kontaktanzeige und das Aktualisierungsintervall von 20 Sekunden sind vereinbart. Die Dringlichkeitsfarben folgen DRING-04; genaue Farbtöne, Schrift, Abstände und endgültige Breite bleiben Gestaltungspunkte. Die automatische Aktualisierung verändert beim Lesen älterer Einträge nicht ungefragt die Leseposition.
 
 Neuerfassung und abgeschlossener Fall werden anhand dieser Festlegungen weiter abgestimmt. Ein stilistischer JPG-Entwurf ist noch nicht erstellt.
 
@@ -429,13 +449,14 @@ Neuerfassung und abgeschlossener Fall werden anhand dieser Festlegungen weiter a
 ├──────────────────────────────────────────────────────────┤
 │ REQ-2026-001                          [Abgeschlossen]    │
 │ Heizung funktioniert nicht                               │
+│ Dringlichkeit: Hoch (Orange) · Quelle: System             │
 │                                                          │
 │ ▸ Ursprüngliches Anliegen anzeigen                       │
 │   (standardmässig eingeklappt; schreibgeschützt)         │
 ├──────────────────────────────────────────────────────────┤
-│ Kommunikationsverlauf                                    │
+│ Fallverlauf                                              │
 │                                                          │
-│   ... alle bisherigen Nachrichten chronologisch ...     │
+│   ... Nachrichten und Dringlichkeitsereignisse ...        │
 │                                                          │
 │ ┌───────────────────────────────────────────────┐        │
 │ │ Immobilienverwaltung · 16:45                  │        │
@@ -473,7 +494,7 @@ Neuerfassung und abgeschlossener Fall werden anhand dieser Festlegungen weiter a
 - **AK-06:** Die gesamte für den Mieter bestimmte Kommunikation erscheint chronologisch, mit erkennbarer Absenderrolle und Zeitstempel.
 - **AK-07:** Bei aktivem Fall kann der Mieter jederzeit zusätzliche Nachrichten an denselben Fall senden; Ursprungstext und Case-ID ändern sich dabei nicht.
 - **AK-08:** Externe, veröffentlichte KI-/Systemantworten und Backoffice-Antworten erscheinen im selben Verlauf. Interne Nachrichten und Memos sind ausschliesslich für berechtigte interne Mitarbeitende zugänglich.
-- **AK-09:** Screen 01 bietet keine direkte Chatfunktion, keinen KI-Stream und keine Abbruchaktion für KI oder Camunda. Er zeigt nur vollständig gespeicherte, veröffentlichte Nachrichten; Neuladen oder Schliessen der Seite stoppt keine Hintergrundverarbeitung. Die Mieterberechtigung vermittelt auch über direkte Backend-Aufrufe kein Abbruchrecht.
+- **AK-09:** Screen 01 bietet keine direkte Chatfunktion, keinen KI-Stream und keine Abbruchaktion für KI oder Camunda. Er zeigt vollständig gespeicherte veröffentlichte Nachrichten und freigegebene Dringlichkeitsereignisse; Neuladen oder Schliessen der Seite stoppt keine Hintergrundverarbeitung. Die Mieterberechtigung vermittelt auch über direkte Backend-Aufrufe kein Abbruchrecht.
 - **AK-10:** HTML-/Script-Payloads in Mieter- und KI-Ausgaben werden ohne Skriptausführung als Text dargestellt.
 - **AK-11:** Nach fachlichem Abschluss wird der gesamte Fall nur lesbar angezeigt; eine Nachricht kann weder im Browser noch über einen direkten Backend-Aufruf durch irgendeine Rolle gespeichert werden.
 - **AK-12:** Die Case-ID bleibt sichtbar und kopierbar. Der persönliche E-Mail-Link enthält nur den geheimen Token; die Case-ID allein berechtigt zu keinem Zugriff. Die zentrale Prüfung erfolgt nach [ZUG-AK-01](../specifications/fallzugriff-und-sicherheit.md#zug-ak-01) und [ZUG-AK-05](../specifications/fallzugriff-und-sicherheit.md#zug-ak-05).
@@ -493,8 +514,9 @@ Neuerfassung und abgeschlossener Fall werden anhand dieser Festlegungen weiter a
 - **AK-23:** Zentral geführt als [KOM-AK-04](../specifications/fallkommunikation.md#kom-ak-04).
 - **AK-24:** Zentral geführt als [KOM-AK-05](../specifications/fallkommunikation.md#kom-ak-05).
 
-- **AK-25:** Periodische Abrufe aktualisieren gespeicherte veröffentlichte Nachrichten und Fallstatus ohne Seitenneuladen, Duplikate, Eingabeverlust oder unerwartete Fokus-/Scrolländerungen. Ein gezielter Test umfasst neue Einträge beim Lesen älterer Einträge auf derselben Seite.
+- **AK-25:** Periodische Abrufe aktualisieren gespeicherte veröffentlichte Nachrichten, fachliche Dringlichkeitsereignisse, aktuelle Dringlichkeit und Fallstatus ohne Seitenneuladen, Duplikate, Eingabeverlust oder unerwartete Fokus-/Scrolländerungen. Ein gezielter Test umfasst neue Einträge beim Lesen älterer Einträge auf derselben Seite.
 - **AK-26:** Ausgeblendeter Tab, Rückkehr, langsame Anfrage, Netzwerkfehler und Rate Limit prüfen Pausieren, einzelne laufende Anfrage und verzögerte Wiederholung. Abschluss oder ungültiger Zugang beendet Polling; keine dieser Aktionen bricht KI oder Camunda ab. Jeder Abruf wahrt Fallrechte und Inhaltsgrenzen.
+- **AK-27:** Erstbewertung und jede gespeicherte wirksame Stufenänderung erscheinen chronologisch mit altem/neuem Wert, Zeitpunkt und «System» oder «Immobilienverwaltung». Der Mieter kann keine Stufe ändern. Manuelle Einstufungen bleiben auch bei späteren Systemergebnissen wirksam. Interne Auditdaten bleiben verborgen; unveränderte Neubewertungen und getrennte Systembewertungen erzeugen keine fingierten Änderungen. Zentrale Prüfkriterien: DRING-AK-05 bis DRING-AK-09.
 
 ## 11. Umsetzung im FFHS-Block 2 / spätere Blöcke
 
@@ -503,7 +525,7 @@ Neuerfassung und abgeschlossener Fall werden anhand dieser Festlegungen weiter a
 - Thymeleaf-Vorlage für die drei Zustände derselben funktionalen Mieter-Fallansicht.
 - Mock-Falldaten und Mock-Nachrichten, inklusive abgeschlossenem Fall und einem aktiven Fall mit internen Memos sowie externen Nachrichten zur Prüfung der Sichtbarkeitsfilterung.
 - Ein- und Ausklappen der ursprünglichen Angaben mit nativem HTML.
-- Eine Master-Detail-Ansicht wird **separat im Backoffice-Dashboard mit Falldetail** umgesetzt; Screen 01 ist selbst keine solche Ansicht.
+- Die [Mitarbeiter-Fallübersicht (Screen 02)](ansicht-02-mitarbeiter-falluebersicht.md) und die später zu spezifizierende Mitarbeiter-Falldetailansicht (Screen 03) sind eigenständige Backoffice-Seiten. Der Falllink wechselt von der Liste ins Detail; ein gleichzeitiges Detailpanel ist nicht vorgesehen.
 - Asynchrone Fallkommunikation mit vollständig gespeicherten Mock-Nachrichten, fachlichen Status- und Fehlerfällen sowie sicherer Textausgabe; automatische Aktualisierung alle 20 Sekunden gemäss Abschnitt 4.5.1 und manueller Seitenaufruf als Fallback.
 - Generierte und überprüfte Tests sowie A11y-, Sicherheits- und Performance-Nachweise.
 
@@ -565,8 +587,8 @@ Die folgenden Vorschläge bleiben dokumentiert, erweitern aber nicht automatisch
 
 ### 12.2 Stand und Verbindlichkeit
 
-Abgleich mit diesem Chat: 09.10.2026. Bestehende Projektentscheidungen, vorgeschlagene Konkretisierungen und optionale Erweiterungen werden getrennt gekennzeichnet. Laufzeiten, Feldalternativen und Statusnamen sind noch keine beschlossenen ADR-Änderungen. Diese Datei beschreibt Anforderungen und Entwürfe, keine nachgewiesene Implementierung oder ausgeführte Sicherheitsprüfung.
+Abgleich mit diesem Chat: 09.10.2026. Bestehende Projektentscheidungen, vorgeschlagene Konkretisierungen und optionale Erweiterungen werden getrennt gekennzeichnet. Die sieben Statusnamen und die Dringlichkeitsregeln sind fachlich vereinbart; dafür ist keine ADR-Änderung erforderlich. Laufzeiten, Feldalternativen und gekennzeichnete technische Details bleiben offen. Diese Datei beschreibt Anforderungen und Entwürfe, keine nachgewiesene Implementierung oder ausgeführte Sicherheitsprüfung.
 
 ### 12.3 Abgleich mit übergreifenden KI-/Frontend-Vorgaben
 
-Der Geltungsbereich ist geklärt: Die Mitarbeiteransicht verwendet Streaming und Abbruch gemäss [ADR-003](../architecture/adr/ADR-003-praesentationsschicht.md) und UC-004. Die Mieteransicht folgt KOM-03 und zeigt gespeicherte Nachrichten mit periodischer Aktualisierung, ohne direkten Chat-Stream oder KI-/Prozessabbruch. Der [Abgleich](../specifications/fallkommunikation.md#abgleich-mit-bestehenden-dokumenten) ist damit fachlich abgeschlossen; die SSR-Entscheidung bleibt gültig.
+Der Geltungsbereich ist geklärt: Das Mitarbeiterdetail verwendet Streaming und Abbruch gemäss [ADR-003](../architecture/adr/ADR-003-praesentationsschicht.md) und UC-004. Die Mitarbeiterliste aktualisiert gespeicherte Listenwerte. Die Mieteransicht folgt KOM-03 und zeigt gespeicherte Nachrichten und freigegebene Dringlichkeitsereignisse mit periodischer Aktualisierung, ohne direkten Chat-Stream oder KI-/Prozessabbruch. Der [Abgleich](../specifications/fallkommunikation.md#abgleich-mit-bestehenden-dokumenten) ist damit fachlich abgeschlossen; die SSR-Entscheidung bleibt gültig.

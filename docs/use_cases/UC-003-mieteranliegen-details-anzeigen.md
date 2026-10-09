@@ -10,7 +10,7 @@
 
 ## Preconditions
 
-- Die Immobilienbewirtschaftung hat Zugriff auf das PropertyFlow-Cockpit.
+- Die Immobilienbewirtschaftung ist separat für das Backoffice authentifiziert; alle Mitarbeitenden haben dieselben Adminrechte gemäss ZUG-04.
 - Ein Mieteranliegen wurde in UC-002 ausgewählt oder direkt über seine Referenz aufgerufen.
 
 ## Main Success Scenario
@@ -21,6 +21,8 @@
 4. Das System zeigt den Bereich für die KI-Analyse.
 5. Falls bereits ein Analyseergebnis vorhanden ist, wird dieses als unterstützende Information angezeigt.
 6. Die Immobilienbewirtschaftung kann die KI-Analyse starten (UC-004).
+
+Die Auswahl aus [Screen 02](../frontend/ansicht-02-mitarbeiter-falluebersicht.md) öffnet eine eigene Detailseite. Deren konkrete Gestaltung und Rücknavigation werden separat spezifiziert. Die bereits vereinbarte manuelle Dringlichkeitsänderung folgt [DRING-06](../specifications/dringlichkeitsbewertung.md#dring-06-manuelle-anpassung): Systembewertungen dürfen die manuelle Einstufung nicht überschreiben; wirksame Änderungen werden nach DRING-07 historisiert und dem Mieter angezeigt. Diese Fachregel legt noch keine zusätzlichen Bedienelemente oder Detailanordnung fest.
 
 ## Alternative Flows
 
@@ -54,7 +56,7 @@
 
 ### BR-001: KI-Empfehlung ist keine Entscheidung
 
-Eine KI-Ausgabe wird als Empfehlung beziehungsweise Unterstützung dargestellt. Die abschliessende fachliche Entscheidung verbleibt bei der Immobilienbewirtschaftung.
+Eine KI-Ausgabe wird als Empfehlung beziehungsweise Unterstützung dargestellt. Vorgeschriebene menschliche Prüfungen und die fachliche Verantwortung verbleiben bei der Immobilienbewirtschaftung. Mitarbeitende können Fälle abschliessen; die vereinbarten Systemabschlüsse folgen den gesonderten, serverseitig geprüften Fachregeln aus [FALL-07](../specifications/fallverwaltung.md#fall-07-abschluss-und-zeit-danach). Eine beliebige KI-Ausgabe ist keine Abschlussberechtigung. Die konkrete Bedienung des Mitarbeiterabschlusses wird mit Screen 03 spezifiziert.
 
 ### BR-002: Technische KI-Details stehen nicht im Vordergrund
 
@@ -62,4 +64,4 @@ Die Detailansicht priorisiert fachlich verständliche Informationen wie Dringlic
 
 ## Gemeinsame fachliche Grundlage
 
-Fallidentität, fachliche Statusbedeutung und Abgrenzung zum technischen Camunda-Zustand sind in der [Fallverwaltung](../specifications/fallverwaltung.md) definiert, insbesondere FALL-01, FALL-05 und FALL-06. Die Ansicht verwendet diese fachliche Grundlage; ein technischer Incident ist kein eigener fachlicher Abschlussstatus. Die konkreten Bezeichnungen der verfeinerten Bearbeitungsstände bleiben bis zum Fach-/BPMN-Review offen.
+Fallidentität, fachliche Statusbedeutung und Abgrenzung zum technischen Camunda-Zustand sind in der [Fallverwaltung](../specifications/fallverwaltung.md) definiert, insbesondere FALL-01, FALL-05 und FALL-06. Die Ansicht verwendet diese fachliche Grundlage; ein technischer Incident ist kein eigener fachlicher Abschlussstatus. Die sieben fachlichen Bearbeitungsstatus sind unter FALL-05 vereinbart; konkrete Prozessübergänge und das BPMN-Mapping bleiben zu konkretisieren.

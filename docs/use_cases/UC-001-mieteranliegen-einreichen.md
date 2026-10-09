@@ -66,7 +66,7 @@ Dieser Use Case beschreibt die Web-Erfassung. Die sichere Annahme und Zuordnung 
 **Trigger:** Die eingegebene Objekt-/Wohnungsreferenz kann noch nicht eindeutig den Stammdaten zugeordnet werden.
 
 1. Das gültige Anliegen wird gemäss FALL-04 angenommen.
-2. Die offene Zuordnung bleibt für die interne Bearbeitung erkennbar. Die Ursprungseingabe bleibt erhalten.
+2. Der aktive Fall erhält «Mitarbeiterprüfung erforderlich» und den Hinweis «Zuordnung offen» gemäss FALL-05. Die Ursprungseingabe bleibt erhalten.
 
 ## Postconditions
 
@@ -76,6 +76,7 @@ Dieser Use Case beschreibt die Web-Erfassung. Die sichere Annahme und Zuordnung 
 - Der Fall befindet sich in der aktiven Phase. Der Camunda-Prozessstart kann noch ausstehen.
 - Die Mieterin oder der Mieter sieht die Bestätigung und kann den angelegten Fall direkt unter dem gültigen persönlichen Tokenlink öffnen. Die Case-ID ist im Inhalt sichtbar; der GET-Fallaufruf leitet nicht auf eine andere Falladresse weiter.
 - Nachgelagerte Verarbeitung und Benachrichtigung sind zuverlässig veranlasst; ihr Abschluss ist keine Voraussetzung für den Annahmeerfolg.
+- Die Erstbewertung der Dringlichkeit wird im Camunda-gesteuerten Ablauf nach [DRING-05](../specifications/dringlichkeitsbewertung.md#dring-05-erst--und-neubewertung-im-prozess) veranlasst. Ohne wirksame System- oder manuelle Einstufung bleibt «Noch nicht bewertet» sichtbar.
 
 ### Failure Postconditions
 
