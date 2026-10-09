@@ -14,7 +14,7 @@ Eingaben, erwarteten Eigenschaften und klaren Sicherheitsgrenzen.
 
 Die fachliche Vision ist in `docs/vision.md` beschrieben. Verbindliche
 Architektur-, Qualitäts- und Sicherheitsleitplanken sind zusätzlich in
-`docs/project-context.md` und den akzeptierten ADRs dokumentiert.
+`../project-context.md` und den akzeptierten ADRs dokumentiert.
 
 ## Bewertungsprinzip
 
@@ -304,6 +304,34 @@ Für Logs und KI-Auditdaten gilt deshalb:
   Inhaltsdaten betrachten
 - verwendete Retrievalquellen referenzieren, ohne Inhalte unnötig zu
   duplizieren
+
+## Ergänzende Prüfkriterien zur Fallkommunikation
+
+Die kanalübergreifenden Regeln und Prüfkriterien sind in der
+[zentralen Spezifikation der Fallkommunikation](../specifications/fallkommunikation.md)
+geführt. KOM-AK-01 bis KOM-AK-07 ergänzen die Evaluationsbasis um Sichtbarkeit,
+Autorisierung, Memo-Ausschluss aus LLM-Eingaben, asynchrone Verarbeitung und
+Abschlusssperre. Für Änderungen an diesen Regeln wird die zentrale Quelle
+fortgeschrieben; hier entsteht keine zweite Definition. Die Kriterien sind
+Anforderungen an spätere Tests, keine bereits erbrachten Nachweise.
+
+## Ergänzende Prüfkriterien zur Fallverwaltung
+
+Die [Fallverwaltung](../specifications/fallverwaltung.md#prüfkriterien)
+führt mit FALL-AK-01 bis FALL-AK-09 die fachlichen Kriterien für Annahme,
+Wiederholung, Zuordnung, Statuskonsistenz und Abschluss. Die Prüfung erfolgt
+an den zuständigen Services mit ersetzbaren externen Abhängigkeiten.
+Die Kriterien sind noch keine ausgeführten Nachweise; Details werden an der
+zentralen Quelle gepflegt.
+
+## Ergänzende Prüfkriterien zum Fallzugriff
+
+Die [Spezifikation für Fallzugriff und Sicherheit](../specifications/fallzugriff-und-sicherheit.md#prüfkriterien)
+führt ZUG-AK-01 bis ZUG-AK-10 für direkten Tokenzugriff, Erstzugriff, Fallbindung,
+Falltrennung, Ablauf, Widerruf, Rechte, Secret-Schutz, CSRF und Linkersatz.
+Diese Kriterien ergänzen die Evaluationsbasis und werden an der zentralen
+Quelle gepflegt. Sie sind Anforderungen an spätere Tests und Reviews,
+keine bereits ausgeführten Sicherheitsnachweise.
 
 ## Verwendung in späteren Blöcken
 

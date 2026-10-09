@@ -83,13 +83,13 @@ Wesentliche externe Systeme sind:
 Die detaillierte System- und Containerabgrenzung ist in den C4-Diagrammen
 dokumentiert:
 
-- `docs/architecture/c4-context.md`
+- `architecture/c4-context.md`
 - `docs/architecture/c4-container.md`
 
 Daten- und Vertrauensgrenzen werden zusätzlich in der Evaluations- und
 Sicherheitsbasis konkretisiert:
 
-- `docs/evaluation/evaluation-basis.md`
+- `docs/evaluation/evaluationsgrundlage.md`
 
 ## 4. Lösungsstrategie
 
@@ -113,8 +113,9 @@ Die wichtigsten Architekturentscheidungen der Lösungsstrategie sind:
 Details:
 
 - `docs/architecture/adr/ADR-001-grundarchitektur.md`
-- `docs/architecture/adr/ADR-002-camunda8-workflow-orchestration.md`
+- `docs/architecture/adr/ADR-002-camunda8-workflow-orchestrierung.md`
 - `docs/architecture/adr/ADR-003-praesentationsschicht.md`
+- [ADR-004: Tokenbasierter Mieterzugriff](architecture/adr/ADR-004-tokenbasierter-mieterzugriff.md)
 
 ## 5. Bausteinsicht und Modulgrenzen
 
@@ -146,7 +147,7 @@ Es gelten folgende Strukturregeln:
 
 Details:
 
-- `docs/architecture/module-structure.md`
+- `architecture/module-structure.md`
 
 ## 6. Querschnittliche Konzepte
 
@@ -168,7 +169,7 @@ Details:
 - Kritische fachliche Aktionen benötigen eine explizite menschliche Prüfung
   oder Freigabe.
 - Sicherheits- und Vertrauensgrenzen werden in
-  `docs/evaluation/evaluation-basis.md` dokumentiert.
+  `docs/evaluation/evaluationsgrundlage.md` dokumentiert.
 
 ### 6.3 Persistenz
 
@@ -226,6 +227,51 @@ Details:
   ersetzbar sein.
 - Ein Ausfall von KI oder RAG darf weder die Persistenz eines Anliegens noch
   die manuelle Bearbeitung verhindern.
+
+### 6.7 Fallkommunikation
+
+Die [zentrale Spezifikation der Fallkommunikation](specifications/fallkommunikation.md)
+ist bei Änderungen an Nachrichten, Backoffice, Mieteransicht, Camunda-Workern,
+E-Mail und Kommunikations-LLM-/RAG-Integration verbindlich zu berücksichtigen.
+Sie führt die Regeln zur Sichtbarkeit interner/externer Nachrichten, zur
+zulässigen LLM-Datengrundlage, zur asynchronen Mieterkommunikation und zur
+Nachrichtensperre nach Abschluss. Die Details und Prüfkriterien werden dort
+gepflegt; Screen-Spezifikationen verweisen darauf.
+
+### 6.8 Fallanlage und Lebenszyklus
+
+Die [zentrale Spezifikation der Fallverwaltung](specifications/fallverwaltung.md)
+führt Fallidentität, erfolgreiche Annahme, Wiederholung, Ursprungsdaten,
+Objektzuordnung und fachlichen Lebenszyklus. Sie grenzt den fachlichen Status
+von technischem Workflow-State und Benachrichtigungszustand ab.
+Statusverfeinerungen und offene Abschlussentscheidungen sind dort als
+Review-Punkte gekennzeichnet. Use-Cases und Screens verweisen auf diese Quelle.
+
+### 6.9 Fallzugriff und Sicherheit
+
+[ADR-004](architecture/adr/ADR-004-tokenbasierter-mieterzugriff.md) begründet
+den tokenbasierten Zugang ohne Benutzerkonto sowie die Speicherung als Hash
+und verschlüsselte Versandkopie.
+
+Die [zentrale Spezifikation für Fallzugriff und Sicherheit](specifications/fallzugriff-und-sicherheit.md)
+führt das vereinbarte Zugangsmodell: Der persönliche E-Mail-Link enthält
+nur den geheimen Token; PropertyFlow ermittelt den Fall serverseitig und
+zeigt ihn direkt unter derselben Token-URL an. Der Token wird bei jeder
+Lese- und Schreibanfrage geprüft; eine berechtigende Fallsitzung entfällt.
+Die lesbare Case-ID bleibt im Inhalt eine unveränderliche Referenz und
+gewährt allein keinen Zugriff. Rechte, Widerruf, Ersatz und Token-Schutz
+werden dort gepflegt. Laufzeiten und technische Schutzparameter sind als
+Review-Vorschläge gekennzeichnet. Screens, Use-Cases und Services verweisen auf diese Quelle.
+
+### 6.10 Benachrichtigungen und Zustellung
+
+Die [zentrale Benachrichtigungs-Spezifikation](specifications/benachrichtigungen-und-zustellung.md)
+führt E-Mail-Auslöser für Fallannahme, eigene Mieter-Nachrichten, veröffentlichte
+externe Antworten, sichtbare Statusänderungen und Abschluss. Interne Memos,
+Entwürfe und technische Schritte lösen keine Mieter-E-Mail aus. Die E-Mail
+enthält eine kurze Information und den gleichbleibenden gültigen persönlichen
+Link; vollständige Nachrichten bleiben in der Fallansicht. Versandpflicht,
+Wiederholungen und Fehlerzustände werden vom fachlichen Fallstatus getrennt.
 
 ## 7. Qualitätsanforderungen
 
@@ -286,10 +332,13 @@ Die vollständigen Prüfkriterien und Begründungen sind in
 Akzeptierte Architekturentscheidungen sind:
 
 - `ADR-001-grundarchitektur.md`: modularer Monolith als Grundarchitektur
-- `ADR-002-camunda8-workflow-orchestration.md`: Camunda 8 für langlebige
+- `ADR-002-camunda8-workflow-orchestrierung.md`: Camunda 8 für langlebige
   Workflow-Orchestrierung
 - `ADR-003-praesentationsschicht.md`: SSR mit gezielter clientseitiger
   Interaktivität
+- [ADR-004-tokenbasierter-mieterzugriff.md](architecture/adr/ADR-004-tokenbasierter-mieterzugriff.md):
+  wiederverwendbarer Mieterlink ohne Benutzerkonto, getrennte Fallidentität
+  und Zugangsberechtigung sowie geschützte Token-Aufbewahrung
 
 Bei einem Konflikt zwischen einem KI-Vorschlag und einem akzeptierten ADR
 gilt der ADR.
@@ -318,7 +367,7 @@ Repository-weite KI-Anweisungen:
 ## 10. Evaluation und Pflege
 
 Die initiale Evaluations- und Sicherheitsbasis für Block 1 ist unter
-`docs/evaluation/evaluation-basis.md` versioniert.
+`docs/evaluation/evaluationsgrundlage.md` versioniert.
 
 Sie definiert repräsentative Fälle, erwartete Eigenschaften, Guardrails und
 Human-in-the-Loop-Grenzen für spätere KI- und Implementierungsprüfungen.

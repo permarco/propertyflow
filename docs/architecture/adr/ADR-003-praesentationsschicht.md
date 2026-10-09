@@ -1,4 +1,4 @@
-# ADR-002: Präsentationsschicht – SSR mit gezielter clientseitiger Interaktivität
+# ADR-003: Präsentationsschicht – SSR mit gezielter clientseitiger Interaktivität
 
 ## Status
 

@@ -60,16 +60,18 @@ propertyflow/
 │   ├── vision.md
 │   ├── project-context.md
 │   ├── evaluation/
-│   │   └── evaluation-basis.md
+│   │   └── evaluationsgrundlage.md
 │   ├── ai-usage/
-│   │   └── block1-skeleton-review.md
+│   │   └── block1-grundgeruest-pruefung.md
 │   └── architecture/
 │       ├── c4-context.md
 │       ├── c4-container.md
 │       ├── module-structure.md
 │       └── adr/
 │           ├── ADR-001-grundarchitektur.md
-│           └── ADR-002-camunda8-workflow-orchestration.md
+│           ├── ADR-002-camunda8-workflow-orchestrierung.md
+│           ├── ADR-003-praesentationsschicht.md
+│           └── ADR-004-tokenbasierter-mieterzugriff.md
 │
 ├── infra/
 │   └── camunda/
@@ -158,10 +160,18 @@ architektonische Source of Truth.
 - `docs/project-context.md`  
   Versionierter, kompakt an arc42 orientierter KI-Rahmen mit Architektur, Stack, Konventionen, NFRs und Sicherheitsleitplanken
 
-- `docs/evaluation/evaluation-basis.md`  
+- [Fallzugriff und Sicherheit](docs/specifications/fallzugriff-und-sicherheit.md): Direkter persönlicher Tokenzugriff unter derselben Falladresse, Berechtigungen und Linkersatz; die Case-ID bleibt eine lesbare Referenz.
+
+- [Benachrichtigungen und Zustellung](docs/specifications/benachrichtigungen-und-zustellung.md): E-Mail bei sichtbaren Falländerungen, eigenen Nachrichten und Abschluss; Versandpflicht, Wiederholungen und Fehlerbehandlung.
+
+- [Fallverwaltung](docs/specifications/fallverwaltung.md): Fallidentität, Annahme, Ursprungsdaten, Zuordnung und fachlicher Lebenszyklus mit Camunda-Anbindung.
+
+- [Fallkommunikation](docs/specifications/fallkommunikation.md): Gemeinsame fachliche und sicherheitsrelevante Regeln für Frontend, Backoffice, Backend, Camunda, E-Mail und LLM-Integration.
+
+- `docs/evaluation/evaluationsgrundlage.md`  
   Repräsentative Evaluationsfälle, Guardrails und Human-in-the-Loop-Grenzen
 
-- `docs/ai-usage/block1-skeleton-review.md`  
+- `docs/ai-usage/block1-grundgeruest-pruefung.md`  
   Nachweis der KI-Nutzung beim Skelett: Generierung, Review, Korrekturen und Veto-Entscheidungen
 
 - `docs/architecture/c4-context.md`  
@@ -176,8 +186,14 @@ architektonische Source of Truth.
 - `docs/architecture/adr/ADR-001-grundarchitektur.md`  
   Entscheidung für den modularen Monolithen
 
-- `docs/architecture/adr/ADR-002-camunda8-workflow-orchestration.md`  
+- `docs/architecture/adr/ADR-002-camunda8-workflow-orchestrierung.md`  
   Entscheidung für Camunda 8 zur Orchestrierung langlebiger Prozesse
+
+- [ADR-003: Präsentationsschicht](docs/architecture/adr/ADR-003-praesentationsschicht.md)  
+  Entscheidung für SSR mit Thymeleaf und gezieltem Vanilla JavaScript
+
+- [ADR-004: Tokenbasierter Mieterzugriff](docs/architecture/adr/ADR-004-tokenbasierter-mieterzugriff.md)  
+  Zugang ohne Benutzerkonto über einen wiederverwendbaren persönlichen Link; Hash und verschlüsselte Versandkopie
 
 ## KI-gestützte Entwicklung
 

@@ -292,7 +292,7 @@ fachliche Verarbeitung
 ```
 
 Die genaue Entscheidung zur Workflow-Orchestrierung ist in
-`docs/architecture/adr/ADR-002-camunda8-workflow-orchestration.md`
+`docs/architecture/adr/ADR-002-camunda8-workflow-orchestrierung.md`
 dokumentiert.
 
 
@@ -355,7 +355,7 @@ propertyflow/
 │   ├── domain/
 │   └── workflow/
 │
-└── PropertyFlowApplication.java
+└── PropertyflowApplication.java
 ```
 
 Diese Struktur ist beispielhaft.
