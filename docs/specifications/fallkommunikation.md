@@ -25,7 +25,7 @@ Jede Nachricht besitzt eine eindeutige **Sichtbarkeit**, unabhängig von ihrer A
 
 Für alle Komponenten und Ausgabekanäle der Fallkommunikation gelten folgende Regeln:
 
-- Die dem Mieter zugängliche Historie enthält ausschliesslich externe, veröffentlichte Nachrichten des autorisierten Falls. Interne Memos erscheinen weder als Inhalt noch als Platzhalter oder Hinweis «Interne Nachricht vorhanden».
+- Der Nachrichtenteil der dem Mieter zugänglichen Historie enthält ausschliesslich externe, veröffentlichte Nachrichten des autorisierten Falls. Ergänzend erscheinen die freigegebenen strukturierten Dringlichkeitsereignisse gemäss [DRING-07](dringlichkeitsbewertung.md#dring-07-änderungshistorie-und-mietertransparenz). Sie sind keine Kommunikationsnachrichten und geben keine interne Audit-Historie frei. Interne Memos erscheinen weder als Inhalt noch als Platzhalter oder Hinweis «Interne Nachricht vorhanden».
 - Nachrichten aus dem Mieterformular einschliesslich der Ursprungsmeldung werden serverseitig als externe Kommunikation eingeordnet. Der Mieter erhält keine Auswahl «intern/extern» und kann die Sichtbarkeit nicht über manipulierte Requests verändern.
 - Interne Memos werden ausschliesslich über eine dafür berechtigte Backoffice-Funktion erfasst. Ein Mitarbeiter muss eine Antwort an den Mieter ausdrücklich als extern veröffentlichen; eine interne Notiz wird nicht automatisch veröffentlicht. Bei fehlender oder unbekannter Klassifikation erfolgt keine Ausgabe an den Mieter.
 - Ein internes Memo bleibt intern. Soll ein berechtigter Mitarbeiter eine Information daraus dem Mieter mitteilen, erstellt er eine separate, manuell formulierte und bewusst geprüfte externe Nachricht. Das erlaubt keine memo-basierte LLM-Generierung; auch abgeleitete Inhalte bleiben gemäss [KOM-02](#kom-02-llm-kommunikation-ohne-interne-memos) als LLM-Grundlage ausgeschlossen. Der Zugriff auf interne Notizen wird durch den persönlichen Fall-Link nicht erweitert.
@@ -34,6 +34,8 @@ Für alle Komponenten und Ausgabekanäle der Fallkommunikation gelten folgende R
 - **Verbindlicher Ausschluss:** LLM-generierte Kommunikationsnachrichten dürfen niemals auf internen Memos basieren. Interne Memos und daraus abgeleitete Inhalte werden bereits vor der Generierung aus sämtlichen Eingaben und abrufbaren Quellen des Kommunikations-LLM ausgeschlossen. Eine nachträgliche Prüfung oder Freigabe der Antwort ersetzt diesen Ausschluss nicht; Details siehe [KOM-02](#kom-02-llm-kommunikation-ohne-interne-memos).
 
 Für beide Sichtbarkeiten gilt die [Nachrichtensperre nach Fallabschluss (KOM-04)](#kom-04-nachrichtensperre-nach-fallabschluss).
+
+**Mitarbeiter-Volltextsuche:** Alle separat authentifizierten Mitarbeitenden haben dieselben Adminrechte nach ZUG-04. Die Suche in [Screen 02](../frontend/ansicht-02-mitarbeiter-falluebersicht.md) umfasst gespeicherte veröffentlichte externe Nachrichten und sämtliche gespeicherten internen Memos. Externe Entwürfe, ungespeicherte Eingaben und KI-Teilantworten sind ausgeschlossen. «Versendet» meint die Veröffentlichung im Fallverlauf, unabhängig vom E-Mail-Zustellstatus. Die Mieteransicht bietet diese Suche nicht an. Auch ein interner Suchindex darf dem Kommunikations-LLM keine Memos oder Ableitungen daraus bereitstellen; KOM-02 gilt weiterhin.
 
 ## KOM-02: LLM-Kommunikation ohne interne Memos
 
@@ -50,11 +52,11 @@ Die Anforderung schützt die Grundlage der Generierung, nicht nur den sichtbaren
 
 ## KOM-03: Asynchrone Fallkommunikation
 
-KI-gestützte Verarbeitungsschritte der Fallkommunikation werden durch Camunda 8 orchestriert und über PropertyFlow-Worker/Services ausgeführt. Der Mieter übermittelt Informationen zum Fall; das Backend speichert sie und führt sie gemäss dem aktuellen BPMN-Schritt der weiteren Verarbeitung zu. Eine Nachricht eröffnet weder einen neuen Fall noch zwangsläufig einen neuen Prozessschritt.
+KI-gestützte Verarbeitungsschritte der Fallkommunikation werden durch Camunda 8 orchestriert und über PropertyFlow-Worker/Services ausgeführt. Der Mieter übermittelt Informationen zum Fall; das Backend speichert sie und führt sie gemäss dem aktuellen BPMN-Schritt der weiteren Verarbeitung zu. Jede dauerhaft gespeicherte Mieter-Nachricht veranlasst die Dringlichkeitsbewertung nach DRING-05 unter Wahrung manueller Einstufungen nach DRING-06. Sie eröffnet weder einen neuen Fall noch einen zweiten führenden Prozess und schliesst eine offene fachliche Rückfrage nicht automatisch ab. Die konkrete BPMN-Korrelation bleibt im Integrationsvertrag festzulegen.
 
 Der Mieter hat keine direkte LLM-Chatsitzung, keinen Chat-Stream und kein Recht, KI-Schritte oder den Camunda-Prozess abzubrechen. Diese Grenze gilt auch bei direkten Backend-Aufrufen mit Mieterberechtigung. Neuladen oder Schliessen der Seite beeinflusst die Hintergrundverarbeitung nicht.
 
-An den Mieter werden ausschliesslich vollständige, gespeicherte und veröffentlichte externe Nachrichten ausgegeben. KI-Teilantworten und interne Zwischenergebnisse gehören nicht zur externen Historie. Wiederholungen und KI-Fehler werden durch die Camunda-/Backend-Integration behandelt; gespeicherte Nachrichten bleiben erhalten. Vor Kommunikationsgenerierung gilt KOM-02, vor Ausgabe KOM-01.
+An den Mieter werden als Kommunikationsnachrichten ausschliesslich vollständige, gespeicherte und veröffentlichte externe Nachrichten ausgegeben. KI-Teilantworten und interne Zwischenergebnisse gehören nicht zur externen Historie. Wiederholungen und KI-Fehler werden durch die Camunda-/Backend-Integration behandelt; gespeicherte Nachrichten bleiben erhalten. Vor Kommunikationsgenerierung gilt KOM-02, vor Ausgabe KOM-01.
 
 Die konkrete Aktualisierung der Darstellung beschreibt [Screen 01](../frontend/ansicht-01-mieter-fallansicht.md). Die in [Vision](../vision.md) optional vorgesehenen KI-Rückfragen bleiben hinsichtlich ihres produktiven Umfangs separat zu entscheiden. Sobald sie eingesetzt werden, gelten diese Regeln ebenfalls.
 
@@ -115,8 +117,12 @@ Eine Mieterberechtigung ermöglicht keinen KI-/Prozessabbruch, auch nicht über 
 
 Nach Abschluss werden interne und externe Nachrichtenschreiboperationen aller Absender abgelehnt. Ein gezielter Konkurrenztest sowie ein verspätetes Worker-Ergebnis prüfen die Synchronisierung von Abschluss und Nachrichtenspeicherung.
 
+### KOM-AK-08
+
+Ein ausschliesslich in einem gespeicherten internen Memo vorhandener Suchbegriff liefert den Fall für jedes authentifizierte Mitarbeiterkonto. Ein Begriff, der ausschliesslich in einem externen Entwurf oder einer KI-Teilantwort vorkommt, liefert keinen Suchtreffer. Der Suchindex erweitert weder den Mieterzugriff noch den zulässigen Kommunikations-LLM-Kontext. Die übrigen Such-/Filterregeln werden in Screen 02 geprüft.
+
 ## Abgleich mit bestehenden Dokumenten
 
 **Geltungsbereich geklärt (09.10.2026):** Streaming und Abbruch gemäss [ADR-003](../architecture/adr/ADR-003-praesentationsschicht.md) und [UC-004](../use_cases/UC-004-ki-analyse-durchfuehren.md) gehören zur Mitarbeiteransicht im Backoffice. Die interaktive Mitarbeiteranfrage ist von der asynchronen Mieter-Fallkommunikation zu unterscheiden. Für den Mieter gilt KOM-03: kein direkter Chat-Stream und kein KI-/Prozessabbruch; periodische Leseabrufe zeigen gespeicherte Ergebnisse. Ein Mitarbeiterabbruch einer KI-Anfrage schliesst den Fall nicht und ist kein pauschaler Abbruch des führenden Camunda-Fallprozesses. Dieser fachliche Abgleich ist abgeschlossen; technische Streaming- und Abbruchverträge der Mitarbeiteransicht werden bei ihrer Umsetzung konkretisiert.
 
-Fallidentität, Annahme und Lebenszyklus werden zentral in der [Fallverwaltung](fallverwaltung.md) gepflegt. Direkter persönlicher Tokenzugriff und Berechtigungen werden zentral in [Fallzugriff und Sicherheit](fallzugriff-und-sicherheit.md) gepflegt. Screen-spezifische Felder, Routenübersicht, Wireframes und Bedienungsregeln bleiben in [Screen 01](../frontend/ansicht-01-mieter-fallansicht.md). Erweiterungen der grundlegenden Kommunikationsregeln werden hier vorgenommen und von den betroffenen Screens und Use-Cases referenziert.
+Fallidentität, Annahme und Lebenszyklus werden zentral in der [Fallverwaltung](fallverwaltung.md) gepflegt. Direkter persönlicher Tokenzugriff und Berechtigungen werden zentral in [Fallzugriff und Sicherheit](fallzugriff-und-sicherheit.md) gepflegt. Screen-spezifische Felder, Routenübersicht, Wireframes und Bedienungsregeln bleiben in [Screen 01](../frontend/ansicht-01-mieter-fallansicht.md) und [Screen 02](../frontend/ansicht-02-mitarbeiter-falluebersicht.md). Erweiterungen der grundlegenden Kommunikationsregeln werden hier vorgenommen und von den betroffenen Screens und Use-Cases referenziert.

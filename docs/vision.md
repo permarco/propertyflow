@@ -18,8 +18,10 @@ insbesondere bei dringenden oder unklaren Anliegen zu Verzögerungen führen.
 PropertyFlow unterstützt diesen Prozess durch die strukturierte Erfassung von
 Mieteranliegen, eine KI-gestützte Analyse und Dringlichkeitsbewertung sowie
 durch Zuständigkeits- und Handlungsempfehlungen auf Basis einer Wissensbasis.
-Die abschliessende fachliche Beurteilung und Entscheidung verbleibt bei der
-Immobilienbewirtschaftung.
+Die fachliche Verantwortung verbleibt bei der Immobilienbewirtschaftung.
+Fälle werden durch Mitarbeitende oder nach ausdrücklich vereinbarten
+Systemabschlussregeln beendet; vorgeschriebene menschliche Prüfungen bleiben
+bestehen. Die Abschlussregeln werden in [FALL-07](specifications/fallverwaltung.md#fall-07-abschluss-und-zeit-danach) geführt.
 
 ## Vision
 
@@ -75,8 +77,10 @@ auch bei länger dauernden Warte- und Freigabephasen fest.
 
 **KI-Nutzen:** Die KI reduziert den manuellen Abklärungsaufwand, indem sie
 strukturierte Informationen, eine Dringlichkeitsbewertung und eine begründete
-Handlungsempfehlung bereitstellt; die endgültige fachliche Entscheidung
-verbleibt beim Menschen.
+Handlungsempfehlung bereitstellt. Eindeutig erledigte Anliegen und Anliegen
+ohne weiteren Bearbeitungsbedarf der Verwaltung können gemäss FALL-07 durch
+das System abgeschlossen werden. Die fachliche Verantwortung und
+vorgeschriebene Prüf- und Freigabeentscheidungen verbleiben beim Menschen.
 
 ## Optional Extension
 

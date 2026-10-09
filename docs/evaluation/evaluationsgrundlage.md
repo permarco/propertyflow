@@ -71,7 +71,7 @@ eine unnötig hohe Dringlichkeit zu erzeugen.
 - **MUSS:** Problemart und betroffener Ort werden korrekt erkannt.
 - **MUSS:** Keine erfundenen Fakten.
 - **MUSS:** Keine Einstufung als akuter Notfall ohne weitere Hinweise.
-- **MUSS:** Die endgültige fachliche Entscheidung bleibt beim Menschen.
+- **MUSS:** Die fachliche Verantwortung bleibt bei der Immobilienbewirtschaftung. Ein Systemabschluss benötigt einen geprüften Abschlussgrund nach FALL-07; eine KI-Empfehlung allein genügt nicht. Vorgeschriebene menschliche Prüfungen bleiben erhalten.
 
 ---
 
@@ -185,7 +185,7 @@ Kontextinformationen bei der Dringlichkeitsbewertung berücksichtigen.
   unterschiedlichen Dringlichkeitsbewertungen.
 - **MUSS:** Verwendete Kontextinformationen sind nachvollziehbar.
 - **MUSS:** Keine erfundene technische Ursache.
-- **MUSS:** Die endgültige fachliche Entscheidung bleibt beim Menschen.
+- **MUSS:** Die fachliche Verantwortung bleibt bei der Immobilienbewirtschaftung. Vorgeschriebene menschliche Prüfungen bleiben erhalten; ein Systemabschluss ist nur unter den geprüften Bedingungen aus FALL-07 zulässig.
 
 ---
 
@@ -290,6 +290,8 @@ freigeben.
 
 Die KI darf eine solche Massnahme empfehlen, aber nicht selbst freigeben.
 
+**Vereinbarte Systemabschlüsse:** Nach [FALL-07](../specifications/fallverwaltung.md#fall-07-abschluss-und-zeit-danach) darf das System einen Fall bei eindeutiger Mieterbestätigung der Behebung ohne weiteren Hilfebedarf oder eindeutig fehlendem Verwaltungsbedarf nach hinterlegter Fachregel abschliessen. Dafür ist keine zusätzliche Einzelfreigabe vorgesehen, sofern keine verpflichtende menschliche Prüfung greift. Diese Fachregeln erlauben keine autonome Beauftragung. Das Stichwort «Glühbirne» allein legt insbesondere keine mieterseitige Zuständigkeit fest; das konkrete Anliegen und die Fachregel sind zu prüfen.
+
 ## Datenschutz und Protokollierung
 
 Auditierbarkeit bedeutet nicht, dass vollständige Mietertexte oder unnötige
@@ -309,8 +311,8 @@ Für Logs und KI-Auditdaten gilt deshalb:
 
 Die kanalübergreifenden Regeln und Prüfkriterien sind in der
 [zentralen Spezifikation der Fallkommunikation](../specifications/fallkommunikation.md)
-geführt. KOM-AK-01 bis KOM-AK-07 ergänzen die Evaluationsbasis um Sichtbarkeit,
-Autorisierung, Memo-Ausschluss aus LLM-Eingaben, asynchrone Verarbeitung und
+geführt. KOM-AK-01 bis KOM-AK-08 ergänzen die Evaluationsbasis um Sichtbarkeit,
+Autorisierung, Mitarbeiter-Suchumfang, Memo-Ausschluss aus LLM-Eingaben, asynchrone Verarbeitung und
 Abschlusssperre. Für Änderungen an diesen Regeln wird die zentrale Quelle
 fortgeschrieben; hier entsteht keine zweite Definition. Die Kriterien sind
 Anforderungen an spätere Tests, keine bereits erbrachten Nachweise.
@@ -318,8 +320,8 @@ Anforderungen an spätere Tests, keine bereits erbrachten Nachweise.
 ## Ergänzende Prüfkriterien zur Fallverwaltung
 
 Die [Fallverwaltung](../specifications/fallverwaltung.md#prüfkriterien)
-führt mit FALL-AK-01 bis FALL-AK-09 die fachlichen Kriterien für Annahme,
-Wiederholung, Zuordnung, Statuskonsistenz und Abschluss. Die Prüfung erfolgt
+führt mit FALL-AK-01 bis FALL-AK-13 die fachlichen Kriterien für Annahme,
+Wiederholung, Zuordnung, Statuskonsistenz, Prüfbedarf, letzten Mieterkontakt sowie Mitarbeiter- und Systemabschluss. Die Prüfung erfolgt
 an den zuständigen Services mit ersetzbaren externen Abhängigkeiten.
 Die Kriterien sind noch keine ausgeführten Nachweise; Details werden an der
 zentralen Quelle gepflegt.
@@ -327,11 +329,27 @@ zentralen Quelle gepflegt.
 ## Ergänzende Prüfkriterien zum Fallzugriff
 
 Die [Spezifikation für Fallzugriff und Sicherheit](../specifications/fallzugriff-und-sicherheit.md#prüfkriterien)
-führt ZUG-AK-01 bis ZUG-AK-10 für direkten Tokenzugriff, Erstzugriff, Fallbindung,
-Falltrennung, Ablauf, Widerruf, Rechte, Secret-Schutz, CSRF und Linkersatz.
+führt ZUG-AK-01 bis ZUG-AK-14 für direkten Tokenzugriff, Erstzugriff, Fallbindung,
+Falltrennung, Ablauf, Widerruf, Rechte, Secret-Schutz, CSRF, Linkersatz,
+geschützte Token-Aufbewahrung, Linkweitergabe und einheitliche Mitarbeiter-Adminrechte.
 Diese Kriterien ergänzen die Evaluationsbasis und werden an der zentralen
 Quelle gepflegt. Sie sind Anforderungen an spätere Tests und Reviews,
 keine bereits ausgeführten Sicherheitsnachweise.
+
+## Ergänzende Prüfkriterien zur Dringlichkeit und Mitarbeiterliste
+
+Die [Dringlichkeitsbewertung](../specifications/dringlichkeitsbewertung.md)
+führt DRING-AK-01 bis DRING-AK-09 für Stufen, Farben, Erst-/Neubewertung,
+geschützte manuelle Einstufungen und transparente Historie. Die obigen
+qualitativen Evaluationsfälle definieren keine abweichende Stufenskala;
+die konkrete Zuordnung von Grenzfällen wird an der zentralen Quelle ergänzt.
+
+Die [Mitarbeiter-Fallübersicht](../frontend/ansicht-02-mitarbeiter-falluebersicht.md)
+führt ÜB-AK-01 bis ÜB-AK-16 für Spalten, Standardsortierung, Suchumfang, Filter,
+Seitennavigation, Rechte und Aktualisierung. Die
+[Benachrichtigungs-Spezifikation](../specifications/benachrichtigungen-und-zustellung.md)
+ergänzt BEN-AK-01 bis BEN-AK-09 einschliesslich Dringlichkeitsänderungen und
+Versandproblemen. Diese Anforderungen sind noch keine ausgeführten Tests.
 
 ## Verwendung in späteren Blöcken
 

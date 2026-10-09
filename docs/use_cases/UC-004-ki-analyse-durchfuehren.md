@@ -8,7 +8,7 @@
 **Goal:** Eine KI-gestützte Analyse eines Mieteranliegens starten, den Fortschritt nachvollziehen und das Ergebnis kontrolliert anzeigen lassen.  
 **Status:** Planned
 
-**Geltungsbereich:** Dieser Use Case betrifft die Mitarbeiteransicht im Backoffice. Streaming und Abbruch folgen [ADR-003](../architecture/adr/ADR-003-praesentationsschicht.md). Sie sind keine Funktionen der Mieteransicht. Der Abbruch betrifft den interaktiven Analyseversuch; er schliesst weder den Fall noch automatisch den gesamten Camunda-Fallprozess. Die technische Koordination mit laufenden Worker-/Provider-Aufrufen wird im Integrationsvertrag festgelegt.
+**Geltungsbereich:** Dieser Use Case betrifft die separate Mitarbeiter-Falldetailansicht im Backoffice. Streaming und Abbruch folgen [ADR-003](../architecture/adr/ADR-003-praesentationsschicht.md). Sie sind keine Funktionen der Mitarbeiterliste oder Mieteransicht. Die automatische Erst- und Neubewertung nach Mieter-Nachrichten folgt unabhängig davon [DRING-05](../specifications/dringlichkeitsbewertung.md#dring-05-erst--und-neubewertung-im-prozess). Der Abbruch betrifft den interaktiven Analyseversuch; er schliesst weder den Fall noch automatisch den gesamten Camunda-Fallprozess. Die technische Koordination mit laufenden Worker-/Provider-Aufrufen wird im Integrationsvertrag festgelegt.
 
 ## Preconditions
 
@@ -53,8 +53,8 @@
 1. Das System beendet den laufenden Analysevorgang.
 2. Das System wechselt nach `error`.
 3. Das System zeigt eine verständliche Fehlermeldung.
-4. Bereits vorhandene Daten des Mieteranliegens bleiben unverändert verfügbar.
-5. Die Immobilienbewirtschaftung kann die Analyse erneut starten.
+4. Gespeicherte Ursprungseingaben, Nachrichten und die bisher wirksame Dringlichkeit bleiben erhalten. Bei aktivem Fall wird der Analysefehler mit dem Status «Mitarbeiterprüfung erforderlich» und dem Hinweis «KI-Analyse fehlgeschlagen» nach FALL-05 geführt.
+5. Die Immobilienbewirtschaftung kann die Analyse erneut starten; ein Wiederholungsversuch hebt den Prüfstatus nicht allein auf.
 
 ### A4: Antwort enthält Markup
 
@@ -75,7 +75,7 @@
 
 - Bei Abbruch befindet sich das System in `aborted`.
 - Bei einem Fehler befindet sich das System in `error`.
-- Ein Fehler oder Abbruch verändert das Mieteranliegen nicht und verhindert dessen manuelle Bearbeitung nicht.
+- Ein Fehler oder Abbruch verliert keine gespeicherten Fallinhalte und verhindert die manuelle Bearbeitung nicht. Ein Analysefehler führt bei aktivem Fall zu Status und Hinweis nach FALL-05; ein bewusster Abbruch wird davon unterschieden und schliesst den Fall nicht.
 
 ## Business Rules
 
@@ -94,3 +94,7 @@ Benutzer- und KI-generierte Inhalte werden standardmässig als Text dargestellt.
 ### BR-004: KI-Ausfall blockiert die Fachbearbeitung nicht
 
 Ein Fehler oder eine nicht verfügbare KI darf die manuelle Prüfung und weitere Bearbeitung des Mieteranliegens nicht verhindern.
+
+### BR-005: Wirksame Dringlichkeit bleibt geschützt
+
+Ein vollständiges Analyseergebnis ist nicht automatisch eine neue wirksame Dringlichkeit. Validierung, Übernahme und Historisierung richten sich nach DRING-05 bis DRING-07. Eine manuelle Einstufung darf auch durch ein späteres oder verspätetes Ergebnis nicht überschrieben werden. KI-Teilantworten sind weder wirksame Fallwerte noch Inhalte der Mitarbeiter-Volltextsuche.

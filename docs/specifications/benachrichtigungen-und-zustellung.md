@@ -2,7 +2,7 @@
 
 **Status:** Zentrale Spezifikation der vereinbarten E-Mail-Benachrichtigungen; technische Zustellung und Betriebsparameter noch zu konkretisieren.  
 **Stand:** 09.10.2026  
-**Geltungsbereich:** Fallanlage, externe Fallkommunikation, sichtbare Statusänderungen und Fallabschluss; PropertyFlow-Services, Versandfunktion und Camunda-Integration.
+**Geltungsbereich:** Fallanlage, externe Fallkommunikation, sichtbare Status- und Dringlichkeitsänderungen sowie Fallabschluss; PropertyFlow-Services, Versandfunktion und Camunda-Integration.
 
 ## Zweck und fachliche Grundlage
 
@@ -23,6 +23,7 @@ Für jedes dauerhaft gespeicherte, für den Mieter sichtbare Änderungsereignis 
 | Externe KI-/Systemnachricht veröffentlicht | Ja | Erst wenn die vollständige Nachricht gespeichert und für den Mieter veröffentlicht ist. |
 | Externe Mitarbeiternachricht veröffentlicht | Ja | Nach Speicherung und ausdrücklicher Veröffentlichung. |
 | Für den Mieter sichtbarer fachlicher Status geändert | Ja | Nach dauerhaftem Statuswechsel in PropertyFlow. Unveränderte Statuswerte erzeugen kein Ereignis. |
+| Mieteröffentliche Dringlichkeit erstmals bewertet oder geändert | Ja | Nach gespeicherter Stufenänderung mit Historieneintrag gemäss [DRING-07](dringlichkeitsbewertung.md#dring-07-änderungshistorie-und-mietertransparenz). Ein unverändertes Bewertungsergebnis erzeugt keine Änderungsmail. |
 | Fall fachlich abgeschlossen | Ja, ausdrücklich als Abschlussinformation | Nach gespeichertem Abschluss. Der Abschluss ist ein eigener Typ der Statusbenachrichtigung und erzeugt nicht zusätzlich eine zweite generische Statusmail. |
 | Internes Memo angelegt oder geändert | Nein | Auch keine Hinweise oder Metadaten dazu versenden. |
 | Externer Entwurf oder KI-Teilantwort | Nein | Eine spätere Veröffentlichung ist dagegen ein Auslöser. |
@@ -75,9 +76,13 @@ Wiederholungen eines alten Auftrags dürfen keinen neueren Fallstand überschrei
 
 Konkrete Wiederholungsabstände, Grenzen und interne Zuständigkeiten bleiben offen. Bei einem nicht mehr gültigen Zugang bleibt die Versandpflicht sichtbar; Ersatz und Identitätsprüfung folgen ZUG-05. Ob bis zum Ersatz eine neutrale E-Mail ohne Falllink versendet werden soll, ist noch zu entscheiden. Eine solche Mail wird hier nicht als vollständiger Ersatz der vereinbarten Linkbenachrichtigung festgelegt.
 
+**Abgleich mit FALL-05:** Ein klärungsbedürftiger E-Mail-Versand führt bei aktivem Fall zu «Mitarbeiterprüfung erforderlich» und zum intern gespeicherten Hinweis «E-Mail-Versand klären» am Fall. Die Mitarbeiterliste zeigt den Bearbeitungsstatus, aber keine Versand- oder sonstigen Problemhinweise; ihre interne Darstellung wird bei Screen 03 konkretisiert. Automatische Wiederholungen sind davon nicht ausgenommen; ein noch ausstehender Versuch ohne festgestellten Fehler erzeugt dagegen keinen Problemhinweis. Ein erst nach Abschluss festgestelltes Versandproblem bleibt ein interner Hinweis am abgeschlossenen Fall. Der Versandzustand bleibt technisch getrennt; er wird nicht selbst als Bearbeitungsstatus angezeigt. Wiederholungen bei unverändertem fachlichem Status erzeugen weder einen erneuten Statuswechsel noch weitere Statusmailaufträge.
+
 ## BEN-05: Fallabschluss und Sicherheit
 
 Der gespeicherte fachliche Abschluss löst auch dann eine Abschlussmail aus, wenn keine separate Abschlussnachricht erstellt wurde. Wird eine externe Abschlussmitteilung benötigt, muss sie vor oder konsistent mit dem Abschluss gespeichert werden, wie in FALL-07 geregelt. Das spätere Versenden der E-Mail erzeugt keinen neuen Historieneintrag und umgeht die Nachrichtensperre nach KOM-04 nicht.
+
+Dies gilt gleichermassen für einen Mitarbeiterabschluss und für die vereinbarten Systemabschlüsse nach FALL-07. Ein Abschluss wegen mieterseitiger Eigenverantwortung darf in der Information nicht als vom System bestätigte Reparatur dargestellt werden. Die Abschlussmail bestätigt den fachlichen Abschluss; der zugrunde liegende Fall bleibt lesbar.
 
 Ein gültiger Link öffnet den abgeschlossenen Fall lesend. Der Abschluss widerruft den Token nicht. Die Abschlussmail behauptet deshalb weder Schreibrechte noch einen erneuten Prozessstart.
 
@@ -90,11 +95,12 @@ Die folgenden Kriterien sind Anforderungen an spätere Tests, keine bereits erbr
 - **BEN-AK-01:** Fallannahme erzeugt einen Bestätigungsauftrag. Eine sichere Einreichungswiederholung erzeugt weder einen neuen Fall noch eine zweite logische Bestätigung.
 - **BEN-AK-02:** Eine eigene weitere Mieter-Nachricht sowie jede veröffentlichte externe Mitarbeiter- oder KI-Nachricht erzeugen je eine Benachrichtigungspflicht. Speicherung, Veröffentlichung und Ereigniswiederholungen werden getrennt geprüft.
 - **BEN-AK-03:** Interne Memos, externe Entwürfe, KI-Teilantworten, GET-Aufrufe und rein technische Workflow-Schritte erzeugen keine Mieter-E-Mail und keine Hinweise auf interne Inhalte.
-- **BEN-AK-04:** Ein sichtbarer fachlicher Statuswechsel und der Fallabschluss erzeugen Benachrichtigungen. Der Abschluss erzeugt keine zusätzliche generische Statusmail und benötigt keinen nachträglichen Nachrichteneintrag.
+- **BEN-AK-04:** Ein sichtbarer fachlicher Statuswechsel und der Fallabschluss erzeugen Benachrichtigungen. Dies gilt für Mitarbeiterabschlüsse und die beiden vereinbarten Systemabschlussgründe aus FALL-07. Der Abschluss erzeugt keine zusätzliche generische Statusmail und benötigt keinen nachträglichen Nachrichteneintrag. Fehlender Verwaltungsbedarf wird nicht als bestätigte Reparatur ausgegeben.
 - **BEN-AK-05:** Mails enthalten kurze Vorlageninformation, Case-ID, gültigen persönlichen Link und Vertraulichkeitshinweis; vollständige Nachrichten, sensible Freitexte und interne Inhalte fehlen. Wiederholungen verwenden denselben gültigen Token.
-- **BEN-AK-06:** Ein Neustart nach fachlicher Speicherung verliert keine Versandpflicht. Vorübergehende Fehler sind wiederholbar; dauerhafte oder unklare Ergebnisse bleiben nachvollziehbar. Mailausfälle ändern keine gespeicherten Falldaten.
+- **BEN-AK-06:** Ein Neustart nach fachlicher Speicherung verliert keine Versandpflicht. Vorübergehende Fehler sind wiederholbar; dauerhafte oder unklare Ergebnisse bleiben nachvollziehbar. Mailausfälle nehmen weder Fallannahme noch Nachrichten oder andere bestätigte Änderungen zurück. Bei klärungsbedürftigem Versand gelten Status und Hinweis nach FALL-05; abgeschlossene Fälle werden nicht wiedereröffnet. Unveränderte Statuswerte erzeugen auch bei Versandwiederholungen keine neuen Statusmailaufträge.
 - **BEN-AK-07:** Abgelaufene, widerrufene oder ersetzte Tokens werden vor Versand geprüft. Fehlende Schlüssel und Entschlüsselungsfehler führen zu sichtbarer Klärung, niemals zu automatischem Tokenersatz oder einer falschen Erfolgsmarkierung.
 - **BEN-AK-08:** Die Annahme durch den Maildienst wird nicht als bestätigte Zustellung oder Lesen ausgegeben. Ein Timeout nach möglicher Annahme prüft den Umgang mit potenziellen Doppelzustellungen.
+- **BEN-AK-09:** Die erste wirksame Dringlichkeitseinstufung und jede spätere wirksame Stufenänderung erzeugen je einen logischen Mailauftrag. Unveränderte Neubewertungen, Wiederholungen desselben Ereignisses und getrennte Systembewertungen bei geschützter manueller Einstufung erzeugen keine zusätzliche Dringlichkeitsmail.
 
 ## Offene Umsetzungsentscheidungen und Abschluss des Spezifikationsstands
 
@@ -102,6 +108,6 @@ Die folgenden Kriterien sind Anforderungen an spätere Tests, keine bereits erbr
 - Wiederholungsabstände und -grenzen, interne Fehlerzuständigkeit, Aufbewahrung und Bereinigung von Versandnachweisen.
 - Empfängerbindung bei geprüften Adressänderungen und Behandlung bereits wartender Aufträge.
 - Umgang mit Benachrichtigungen während eines abgelaufenen oder gesperrten Zugangs.
-- Konkrete sichtbare Statuswerte gemäss FALL-05. Eine externe Abschlussmitteilung und der Abschluss sind unterschiedliche Ereignisse; ob beide in einer gemeinsamen E-Mail bestätigt werden dürfen, bleibt offen. Bis dahin wird keine ihrer Benachrichtigungspflichten verworfen.
+- Konkrete Versandvorlagen und Übergangsereignisse für die vereinbarten Statuswerte gemäss FALL-05. Eine externe Abschlussmitteilung und der Abschluss sind unterschiedliche Ereignisse; ob beide in einer gemeinsamen E-Mail bestätigt werden dürfen, bleibt offen. Bis dahin wird keine ihrer Benachrichtigungspflichten verworfen.
 
-Damit sind die vereinbarten fachlichen Themen für Screen 01 dokumentiert. Die offenen Punkte betreffen die Konkretisierung beziehungsweise Umsetzung und werden nicht als bereits beschlossen dargestellt. Der [Geltungsbereich von Streaming und Abbruch](fallkommunikation.md#abgleich-mit-bestehenden-dokumenten) ist geklärt: Diese Funktionen gehören zur Mitarbeiteransicht gemäss ADR-003 und UC-004. Für den Mieter gilt weiterhin: keine direkte Chatsitzung und kein KI-/Prozessabbruch. Endgültiger Wireframe und JPG werden anschliessend gemeinsam entwickelt.
+Die vereinbarten Benachrichtigungsregeln gelten für Screen 01 und die interne Versandbearbeitung. Screen 02 zeigt bei aktivem Prüfbedarf den fachlichen Status nach FALL-05, aber keine Versandhinweise. Die offenen Punkte betreffen die Konkretisierung beziehungsweise Umsetzung und werden nicht als bereits beschlossen dargestellt. Der [Geltungsbereich von Streaming und Abbruch](fallkommunikation.md#abgleich-mit-bestehenden-dokumenten) ist geklärt: Diese Funktionen gehören zum Mitarbeiterdetail gemäss ADR-003 und UC-004. Die Mieteransicht bleibt eine asynchrone Fallansicht. Gemeinsame JPG-Entwürfe folgen erst nach den drei Screen-Spezifikationen samt technischen Wireframes.

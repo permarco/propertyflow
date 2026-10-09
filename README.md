@@ -9,8 +9,10 @@ RAG-gestützte Wissensbasis unterstützt bei der Ermittlung relevanter
 Richtlinien, Regelwerke und früherer Fälle. Auf dieser Grundlage erstellt
 PropertyFlow Zuständigkeits- und Handlungsempfehlungen.
 
-Die abschliessende fachliche Entscheidung verbleibt bei der
-Immobilienbewirtschaftung.
+Die fachliche Verantwortung verbleibt bei der Immobilienbewirtschaftung.
+Mitarbeitende und das System können Fälle gemäss den vereinbarten
+[Abschlussregeln](docs/specifications/fallverwaltung.md#fall-07-abschluss-und-zeit-danach)
+abschliessen; verpflichtende menschliche Prüfungen bleiben bestehen.
 
 ## Kernfunktionen
 
@@ -167,6 +169,14 @@ architektonische Source of Truth.
 - [Fallverwaltung](docs/specifications/fallverwaltung.md): Fallidentität, Annahme, Ursprungsdaten, Zuordnung und fachlicher Lebenszyklus mit Camunda-Anbindung.
 
 - [Fallkommunikation](docs/specifications/fallkommunikation.md): Gemeinsame fachliche und sicherheitsrelevante Regeln für Frontend, Backoffice, Backend, Camunda, E-Mail und LLM-Integration.
+
+- [Dringlichkeitsbewertung](docs/specifications/dringlichkeitsbewertung.md): Vereinbarte Stufen und Farben, automatische Neubewertung, Vorrang manueller Einstufungen und transparente Änderungshistorie.
+
+- [Screen 01 – Mieter-Fallansicht](docs/frontend/ansicht-01-mieter-fallansicht.md): Erfassung, Kommunikation und lesbare Dringlichkeitshistorie unter dem persönlichen Falllink.
+
+- [Screen 02 – Mitarbeiter-Fallübersicht](docs/frontend/ansicht-02-mitarbeiter-falluebersicht.md): Sechs Spalten ohne Problemhinweise, Suche in veröffentlichten Nachrichten und internen Memos, Filter, Sortierung, Seitennavigation und Aktualisierung alle 20 Sekunden. Die separate Mitarbeiter-Falldetailseite wird als Screen 03 anschliessend spezifiziert.
+
+- [Block-2-Prüfprotokoll](docs/ai-usage/block2-oberflaechen-pruefung.md): Dokumentierter Abgleich der UI-Spezifikationen mit den Fachregeln und Use Cases; Umsetzungsnachweise folgen später.
 
 - `docs/evaluation/evaluationsgrundlage.md`  
   Repräsentative Evaluationsfälle, Guardrails und Human-in-the-Loop-Grenzen

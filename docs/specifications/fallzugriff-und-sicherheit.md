@@ -2,7 +2,7 @@
 
 **Status:** Zentrale Spezifikation des vereinbarten direkten Tokenzugriffs; technische Umsetzung und Sicherheitsparameter im Review.  
 **Stand:** 09.10.2026  
-**Geltungsbereich:** Mieterzugriff, tokenbasierte Backend-Autorisierung, Speicherung von Zugriffsnachweisen und Versand persönlicher Falllinks.
+**Geltungsbereich:** Mieterzugriff, tokenbasierte Backend-Autorisierung, getrennte Mitarbeiter-Adminrechte, Speicherung von Zugriffsnachweisen und Versand persönlicher Falllinks.
 
 ## Zweck und Verbindlichkeit
 
@@ -59,11 +59,16 @@ Die sichtbare Adresse enthält den Zugangsschlüssel. Kopieren oder Weitergeben 
 | Aufrufer | Zulässige Aktionen |
 |---|---|
 | Ohne Fallberechtigung | Neues Anliegen einreichen; keine bestehenden Fälle lesen oder verändern. |
-| Mit gültiger Mieterberechtigung | Genau den zugeordneten Fall und seine externen, veröffentlichten Nachrichten lesen; bei aktivem Fall weitere externe Nachrichten senden. |
+| Mit gültiger Mieterberechtigung | Genau den zugeordneten Fall, seine externen veröffentlichten Nachrichten sowie aktuelle Dringlichkeit und freigegebene Stufenhistorie nach DRING-07 lesen; bei aktivem Fall weitere externe Nachrichten senden. |
 | Mit gültiger Mieterberechtigung bei abgeschlossenem Fall | Den zugeordneten Fall weiterhin lesen; die Schreibsperre gemäss KOM-04 gilt. |
-| Immobilienverwaltung | Interne Bearbeitung über separat authentifizierte Backoffice-Funktionen und deren Rollenmodell. Ein Mieterlink vermittelt keine internen Rechte. |
+| Immobilienverwaltung | Alle separat authentifizierten Mitarbeitenden haben dieselben Adminrechte im PropertyFlow-Backoffice, einschliesslich fachlichem Abschluss nach FALL-07. Ein Mieterlink vermittelt keine internen Rechte. |
+| Systemkomponenten | Fallabschluss über autorisierte PropertyFlow-Anwendungsdienste im Camunda-gesteuerten Ablauf, wenn ein vereinbarter Systemabschlussgrund nach FALL-07 geprüft vorliegt. |
 
 Die Mieterberechtigung erlaubt weder interne Memos noch deren Metadaten, keine Prioritätsänderung, Beauftragung, fachliche Freigabe, Schliessung oder Wiedereröffnung und keinen KI-/Prozessabbruch. Das gilt auch bei direkten Backend-Aufrufen. Die inhaltlichen Grenzen werden in [KOM-01](fallkommunikation.md#kom-01-interne-und-externe-nachrichten), [KOM-02](fallkommunikation.md#kom-02-llm-kommunikation-ohne-interne-memos), [KOM-03](fallkommunikation.md#kom-03-asynchrone-fallkommunikation) und [KOM-04](fallkommunikation.md#kom-04-nachrichtensperre-nach-fallabschluss) gepflegt.
+
+**Vereinbart am 09.10.2026 – einheitliche Mitarbeiterrechte:** Alle authentifizierten Mitarbeitenden haben dieselbe Adminrolle und Zugriff auf alle Fälle sowie deren interne Memos und externe Kommunikation im PropertyFlow-Backoffice. Es gibt keine unterschiedlichen Mitarbeiterrollen oder fallbezogenen Lesebeschränkungen zwischen Mitarbeitenden. Die Volltextsuche in der Mitarbeiter-Fallübersicht umfasst damit auch sämtliche internen Memos.
+
+Adminrechte beziehen sich auf die vorgesehenen PropertyFlow-Backoffice-Funktionen; sie setzen fachliche Regeln wie die Nachrichtensperre nach Abschluss, Veröffentlichungsprüfung und den Schutz manueller Dringlichkeitseinstufungen nicht ausser Kraft. Die Berechtigung zum Mitarbeiterabschluss und die geprüften Systemabschlussgründe sind in [FALL-07](fallverwaltung.md#fall-07-abschluss-und-zeit-danach) vereinbart. Weitere Funktionen werden durch die einheitliche Rolle nicht eingeführt. Separate Anmeldung, serverseitige Rechteprüfung und die Zuordnung von Änderungen zum tatsächlich handelnden Mitarbeiter bleiben erforderlich. Eine Mieter-Nachricht kann einen Systemabschluss begründen, vermittelt aber keine direkte Berechtigung zum Setzen des Fallstatus.
 
 Kontaktadresse, Fallzuordnung, Absenderrolle, Status, Sichtbarkeit, Veröffentlichungskennzeichen und Zeitstempel werden serverseitig bestimmt beziehungsweise geprüft. Manipulierte Pfade, Formularfelder oder Nachrichten-IDs erweitern keine Rechte. Mietertexte und LLM-Ausgaben sind nicht vertrauenswürdig; enthaltene Anweisungen verändern keine Systemregeln oder Berechtigungen.
 
@@ -158,7 +163,7 @@ Die bisher in Screen 01 diskutierten Werte werden hier weitergeführt und sind *
 | Tokenstärke | Mindestens 256 Bit kryptografische Zufallsentropie; URL-taugliche Darstellung und konkrete Hash-Verifikation im Service-Design festlegen. |
 | Tokenlaufzeit | 90 Tage ab Ausstellung; keine Verlängerung durch Öffnen. Umgang mit länger laufenden Fällen vor Produktivbetrieb klären. |
 | Routen | Direkte Fallansicht unter `/mieter/fall/zugang/{token}` gemäss ZUG-07; weitere Backend-Verträge werden bei der Umsetzung konkretisiert. |
-| Kontaktbestätigung und Linkersatz | Konkrete Identitätsprüfung, Adresswechsel, berechtigte Backoffice-Rollen und Nachvollziehbarkeit festlegen. |
+| Kontaktbestätigung und Linkersatz | Konkrete Identitätsprüfung, Adresswechsel, sichere Durchführung durch die einheitliche Mitarbeiter-Adminrolle und Nachvollziehbarkeit festlegen. |
 | Erstzugriff und Wiederholung | Sichere Bindung an den Einreichungskontext sowie Koordination von Annahme, Zugriffsdatensatz und Versandauftrag festlegen. |
 | Umsetzung der Token-Aufbewahrung | Hash für die Prüfung und separat verschlüsselte Kopie desselben Tokens für den Versand sind vereinbart. Verschlüsselungsverfahren, Schlüsselbereitstellung und -rotation, technische Entschlüsselungsrechte, Sicherungen und Löschfristen konkretisieren. |
 | Schutzparameter und Betrieb | Rate-Limit-Werte, Hash-Verfahren, Aufbewahrungsfristen, Formularschutz und technische Durchsetzung der Log-Redaktion konkretisieren. |
@@ -211,7 +216,6 @@ Schreibzugriffe mit fehlendem oder falschem CSRF-Nachweis werden ohne fachlichen
 
 Ein Linkersatz erfordert den vorgesehenen geprüften Ablauf. Unbestätigte Adressänderungen oder blosse Kenntnis einer Case-ID dürfen keinen Ersatzlink an einen anderen Empfänger auslösen. Ersatz und Linkablauf verändern weder den fachlichen Fallstatus noch seine Aufbewahrung.
 
-
 ### ZUG-AK-11
 
 Fallanlage erzeugt genau einen gültigen Mieterzugang. Hash und entschlüsselte Versandkopie gehören zum selben Token und Fall. Mehrere Benachrichtigungen und Versandwiederholungen enthalten denselben gültigen Link, ohne zusätzliche Tokens oder eine Laufzeitverlängerung zu erzeugen.
@@ -223,3 +227,7 @@ Nur die berechtigte Versandfunktion kann die Versandkopie entschlüsseln. Der Sc
 ### ZUG-AK-13
 
 Ein weitergeleiteter gültiger Link vermittelt dieselben Mieterrechte, ohne die Identität des Empfängers nachzuweisen. Interne Inhalte bleiben verborgen. Ein Widerruf beziehungsweise Ersatz sperrt den alten Zugang für alle Besitzer und für nachfolgende Versandversuche. Bereits ausgegebene Inhalte können nicht zurückgeholt werden.
+
+### ZUG-AK-14
+
+Alle separat authentifizierten Mitarbeitenden haben dieselben Fall- und Memorechte. Zwei Mitarbeiterkonten erhalten bei gleicher Such-/Filterauswahl dieselben Fälle und Trefferzahlen. Mieter und nicht authentifizierte Aufrufer können die Mitarbeiterliste, ihre Suche und ergänzende Datenabrufe nicht nutzen. Fachliche Schreibsperren und der Vorrang manueller Dringlichkeit gelten auch für die Adminrolle.

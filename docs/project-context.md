@@ -31,7 +31,10 @@ Die Kernfunktionen sind:
 3. RAG-gestützte Zuständigkeits- und Handlungsempfehlung
 4. Prüfung und Bearbeitung durch die Immobilienbewirtschaftung
 
-Die endgültige fachliche Entscheidung verbleibt beim Menschen.
+Die fachliche Verantwortung verbleibt bei der Immobilienbewirtschaftung.
+Fälle können durch Mitarbeitende und in den vereinbarten eindeutigen Fällen
+durch das System nach [FALL-07](specifications/fallverwaltung.md#fall-07-abschluss-und-zeit-danach)
+abgeschlossen werden. Verpflichtende menschliche Prüfungen bleiben bestehen.
 
 Details:
 
@@ -158,7 +161,9 @@ Details:
 - RAG liefert fachlichen Kontext aus freigegebenen Wissensquellen.
 - Relevante KI-Entscheidungen und verwendete Wissensquellen müssen
   auditierbar bleiben.
-- KI-Empfehlungen ersetzen keine endgültige menschliche Fachentscheidung.
+- KI-Empfehlungen ersetzen keine vorgeschriebene menschliche Fachentscheidung.
+  Systemabschlüsse folgen den ausdrücklich vereinbarten, serverseitig
+  geprüften Regeln aus FALL-07.
 
 ### 6.2 Datenschutz und Sicherheit
 
@@ -201,7 +206,7 @@ Details:
 - Eine vollständige CSR-/SPA-Anwendung wird nicht eingesetzt.
 - Vanilla JavaScript wird nur als klar abgegrenzte interaktive Komponente
   eingesetzt, wenn ein konkreter fachlicher oder qualitativer Nutzen besteht.
-- Die interaktive KI-Analyse in der Mitarbeiteransicht muss ihren aktuellen Status anzeigen, schrittweise Ausgaben
+- Die interaktive KI-Analyse in der Mitarbeiter-Falldetailansicht muss ihren aktuellen Status anzeigen, schrittweise Ausgaben
   darstellen, einen wirksamen Abbruch ermöglichen und definierte Fehlerzustände
   unterstützen.
 - Ein Abbruch der KI-Analyse muss mindestens die clientseitige Verbindung und
@@ -211,11 +216,18 @@ Details:
   sofern der eingesetzte Provider und Client dies unterstützen.
 - Die Zustandsübergänge der Analyse müssen mindestens `waiting`,
   `streaming`, `completed`, `aborted` und `error` unterscheiden.
-- Streaming und Abbruch sind Funktionen der Mitarbeiteransicht gemäss ADR-003
+- Streaming und Abbruch sind Funktionen der Mitarbeiter-Falldetailansicht gemäss ADR-003
   und UC-004. Die Mieteransicht zeigt gespeicherte veröffentlichte Nachrichten
   und aktualisiert sie durch periodische Leseabrufe; sie bietet weder einen
   direkten Chat-Stream noch KI-/Prozessabbruch. Der Abbruch einer interaktiven
   Mitarbeiteranfrage ist nicht automatisch der Abbruch des Camunda-Fallprozesses.
+- Die [Mitarbeiter-Fallübersicht](frontend/ansicht-02-mitarbeiter-falluebersicht.md)
+  ist eine separate Seite mit Live-Suche nach kurzer Eingabepause, sofort
+  wirkenden Filtern, Sortierung, maximal 50 Fällen je Seite und automatischer
+  Aktualisierung alle 20 Sekunden. Sie liest den
+  gespeicherten Stand aus PropertyFlow und bietet keinen Analyse-Stream.
+- Die [Mieter-Fallansicht](frontend/ansicht-01-mieter-fallansicht.md) zeigt
+  zusätzlich die wirksame Dringlichkeit und ihre freigegebene Änderungshistorie.
 - Benutzer- und KI-generierte Inhalte werden standardmässig sicher als Text
   ausgegeben und nicht ungeprüft als HTML interpretiert.
 - Interaktive Funktionen müssen per Tastatur bedienbar sein.
@@ -249,8 +261,13 @@ Die [zentrale Spezifikation der Fallverwaltung](specifications/fallverwaltung.md
 führt Fallidentität, erfolgreiche Annahme, Wiederholung, Ursprungsdaten,
 Objektzuordnung und fachlichen Lebenszyklus. Sie grenzt den fachlichen Status
 von technischem Workflow-State und Benachrichtigungszustand ab.
-Statusverfeinerungen und offene Abschlussentscheidungen sind dort als
-Review-Punkte gekennzeichnet. Use-Cases und Screens verweisen auf diese Quelle.
+Die sieben Bearbeitungsstatus, die Zuordnung klärungsbedürftiger Fälle zu
+«Mitarbeiterprüfung erforderlich» und das Zeitmodell des letzten Mieterkontakts
+sind dort vereinbart. Mitarbeitende dürfen den Abschluss bestätigen; das
+System darf bei eindeutig bestätigter Behebung ohne weiteren Hilfebedarf oder
+eindeutig fehlendem Verwaltungsbedarf nach hinterlegter Fachregel abschliessen.
+Konkrete Prozessübergänge und die technische Umsetzung der Abschlussregeln
+bleiben zu konkretisieren. Use-Cases und Screens verweisen auf diese Quelle.
 
 ### 6.9 Fallzugriff und Sicherheit
 
@@ -268,15 +285,32 @@ gewährt allein keinen Zugriff. Rechte, Widerruf, Ersatz und Token-Schutz
 werden dort gepflegt. Laufzeiten und technische Schutzparameter sind als
 Review-Vorschläge gekennzeichnet. Screens, Use-Cases und Services verweisen auf diese Quelle.
 
+Alle separat authentifizierten Mitarbeitenden haben dieselben Adminrechte auf
+alle Fälle und internen Memos. Die Mitarbeiter-Volltextsuche umfasst gespeicherte
+veröffentlichte externe Nachrichten und interne Memos, keine externen Entwürfe.
+Sie erweitert weder Mieterrechte noch den zulässigen Kommunikations-LLM-Kontext.
+
 ### 6.10 Benachrichtigungen und Zustellung
 
 Die [zentrale Benachrichtigungs-Spezifikation](specifications/benachrichtigungen-und-zustellung.md)
 führt E-Mail-Auslöser für Fallannahme, eigene Mieter-Nachrichten, veröffentlichte
-externe Antworten, sichtbare Statusänderungen und Abschluss. Interne Memos,
+externe Antworten, sichtbare Status- und wirksame Dringlichkeitsänderungen sowie Abschluss. Interne Memos,
 Entwürfe und technische Schritte lösen keine Mieter-E-Mail aus. Die E-Mail
 enthält eine kurze Information und den gleichbleibenden gültigen persönlichen
 Link; vollständige Nachrichten bleiben in der Fallansicht. Versandpflicht,
 Wiederholungen und Fehlerzustände werden vom fachlichen Fallstatus getrennt.
+
+### 6.11 Dringlichkeitsbewertung
+
+Die [zentrale Dringlichkeits-Spezifikation](specifications/dringlichkeitsbewertung.md)
+führt Stufen und Farben, Erstbewertung nach Einreichung und Neubewertung nach
+jeder gespeicherten Mieter-Nachricht im bestehenden Camunda-Prozess. Manuelle
+Einstufungen durch Mitarbeitende dürfen vom System nicht überschrieben werden.
+Die wirksame Stufe und ihre Änderungen werden mit Quelle historisiert und dem
+Mieter angezeigt. Die technische Synchronisierung wird dort konkretisiert;
+die fachliche Verantwortung bleibt bei der Immobilienbewirtschaftung.
+Eine Dringlichkeitsstufe allein berechtigt nicht zum Systemabschluss;
+dafür gelten die gesonderten Kriterien aus FALL-07.
 
 ## 7. Qualitätsanforderungen
 
