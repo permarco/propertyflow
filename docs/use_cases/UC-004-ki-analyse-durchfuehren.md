@@ -8,6 +8,8 @@
 **Goal:** Eine KI-gestützte Analyse eines Mieteranliegens starten, den Fortschritt nachvollziehen und das Ergebnis kontrolliert anzeigen lassen.  
 **Status:** Planned
 
+**Geltungsbereich:** Dieser Use Case betrifft die Mitarbeiteransicht im Backoffice. Streaming und Abbruch folgen [ADR-003](../architecture/adr/ADR-003-praesentationsschicht.md). Sie sind keine Funktionen der Mieteransicht. Der Abbruch betrifft den interaktiven Analyseversuch; er schliesst weder den Fall noch automatisch den gesamten Camunda-Fallprozess. Die technische Koordination mit laufenden Worker-/Provider-Aufrufen wird im Integrationsvertrag festgelegt.
+
 ## Preconditions
 
 - Die Immobilienbewirtschaftung befindet sich in der Detailansicht eines Mieteranliegens (UC-003).

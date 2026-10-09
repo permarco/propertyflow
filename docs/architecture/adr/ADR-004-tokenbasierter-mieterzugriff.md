@@ -67,4 +67,4 @@ Die Spezifikationen bleiben die Quellen für detaillierte Regeln und Prüfkriter
 - [Fallverwaltung](../../specifications/fallverwaltung.md): Fallidentität und Lebenszyklus.
 - [Mieter-Fallansicht](../../frontend/ansicht-01-mieter-fallansicht.md): Darstellung und Bedienung.
 
-Dieser ADR ergänzt ADR-001 bis ADR-003. Er entscheidet weder über eine allgemeine Streaming-Funktion im Backoffice noch über deren bereits dokumentierten Abgleich mit der asynchronen Mieterkommunikation. Künftige Änderungen an der hier festgelegten Zugangsarchitektur benötigen einen neuen oder ersetzenden ADR; fachliche und technische Detailregeln werden in den verknüpften Spezifikationen gepflegt.
+Dieser ADR ergänzt ADR-001 bis ADR-003. Die grundlegende Präsentationsarchitektur bleibt in ADR-003 beschrieben. Dieser ADR regelt die Zugangsarchitektur; die Zuordnung interaktiver Funktionen zu einzelnen Ansichten bleibt den Use-Cases und UI-Spezifikationen vorbehalten. Künftige Änderungen an der hier festgelegten Zugangsarchitektur benötigen einen neuen oder ersetzenden ADR; fachliche und technische Detailregeln werden in den verknüpften Spezifikationen gepflegt.

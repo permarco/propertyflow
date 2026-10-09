@@ -17,7 +17,7 @@ vollständige Single-Page-Application mit umfangreichem clientseitigem State
 ist für die Kernfunktionen nicht erforderlich.
 
 Einzelne Funktionen benötigen jedoch dynamisches Verhalten im Browser.
-Insbesondere soll die KI-Analyse eines Mieteranliegens ihren Zustand
+Insbesondere soll eine interaktive KI-Analyse ihren Zustand
 (`waiting`, `streaming`, `completed`, `aborted`, `error`) anzeigen können und
 eine laufende Ausgabe muss durch den Benutzer abgebrochen werden können.
 
@@ -39,7 +39,7 @@ Formulare, Listen, Detailansichten und normale Bearbeitungsabläufe werden
 serverseitig gerendert. Clientseitiges JavaScript wird gezielt dort ergänzt,
 wo ein fachlicher oder qualitativer Nutzen besteht.
 
-Insbesondere wird die Darstellung der KI-Analyse clientseitig erweitert, um:
+Insbesondere wird die Darstellung interaktiver KI-Funktionen clientseitig erweitert, um:
 
 - den aktuellen Verarbeitungsstatus anzuzeigen,
 - die KI-Antwort schrittweise darzustellen,
@@ -147,8 +147,8 @@ clientseitige Interaktivität benötigt.
 - Benutzer- und KI-generierte Inhalte werden standardmässig als Text
   ausgegeben und nicht ungeprüft als HTML interpretiert.
 - Interaktive Funktionen müssen per Tastatur bedienbar sein.
-- KI-Aufrufe müssen einen sichtbaren Status, einen wirksamen Abbruch und
-  einen definierten Fehlerpfad besitzen.
+- Interaktive KI-Aufrufe mit Streaming müssen einen sichtbaren Status,
+  einen wirksamen Abbruch und einen definierten Fehlerpfad besitzen.
 - Generierter Frontend-Code wird durch automatisierte Tests und manuelle
   Qualitätsprüfung verifiziert.
 
