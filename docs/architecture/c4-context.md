@@ -13,19 +13,13 @@ flowchart LR
     M["👤 Mieterin / Mieter"]
     B["👤 Immobilienbewirtschaftung"]
 
-    PF["PropertyFlow
-    KI-gestützte Triage und Bearbeitung
-    von Mieteranliegen"]
+    PF["PropertyFlow<br/>KI-gestützte Triage und Bearbeitung<br/>von Mieteranliegen"]
 
-    MAIL["E-Mail-System
-    Externes System"]
+    MAIL["E-Mail-System<br/>Externes System"]
 
-    ERP["Immobilienverwaltungs- /
-    Mieterstammdaten-System
-    Externes System"]
+    ERP["Immobilienverwaltungs- /<br/>Mieterstammdaten-System<br/>Externes System"]
 
-    LLM["LLM-Provider
-    Externer KI-Dienst"]
+    LLM["LLM-Provider<br/>Externer KI-Dienst"]
 
     M <-->|"erfasst Anliegen, liest Verlauf<br/>und sendet Nachrichten über UI1"| PF
     PF -->|"veranlasst Fallbenachrichtigungen"| MAIL
@@ -35,8 +29,7 @@ flowchart LR
 
     B <-->|"prüft Fälle in UI2/UI3,<br/>bearbeitet und kommuniziert"| PF
 
-    PF <-->|"bezieht Daten zur Identifikation
-    von Mieter, Mietverhältnis und Objekt"| ERP
+    PF <-->|"bezieht Daten zur Identifikation<br/>von Mieter, Mietverhältnis und Objekt"| ERP
 
     PF <-->|"sendet zulässige Eingaben / erhält<br/>Analyse, Empfehlungen und Formulierungen"| LLM
 ```
