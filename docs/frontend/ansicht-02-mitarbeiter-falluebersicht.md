@@ -1,7 +1,7 @@
 # Screen 02 – Mitarbeiter-Fallübersicht
 
 **Projekt:** PropertyFlow – FFHS CAS AISE  
-**Status:** Fachliche Spezifikation und Desktop-Gestaltung bestätigt, einschliesslich JPG und konsolidierter Bedienung vom 10.10.2026. Technische Umsetzung und responsive Detailgestaltung folgen.
+**Status:** Fachliche Spezifikation und Desktop-Gestaltung bestätigt, einschliesslich JPG und konsolidierter Bedienung vom 10.10.2026. Desktop- und responsive Gestaltung sind bestätigt; die technische Umsetzung folgt.
 
 **Stand:** 10.10.2026\
 **Zielgruppe:** Berechtigte Mitarbeitende der Immobilienbewirtschaftung  
@@ -63,7 +63,85 @@ Die [Dringlichkeitsbewertung](../specifications/dringlichkeitsbewertung.md) defi
 
 Interne Problemhinweise bleiben gemäss FALL-05/FALL-06 am Fall nachvollziehbar, werden aber nicht in der Übersicht angezeigt, auch nicht als Zusatz in anderen Spalten. Bei aktiven Fällen zeigt der Bearbeitungsstatus «Mitarbeiterprüfung erforderlich» den Prüfbedarf. Die Darstellung der Gründe wird bei Screen 03 konkretisiert. Allgemeine Lade-, Such- und Aktualisierungsfehler der Übersicht bleiben verständlich sichtbar. Es werden keine Live-Abfragen an LLM, Maildienst oder Camunda pro Tabellenzeile vorausgesetzt.
 
-**Farbkennzeichnung – vereinbart:** Die Dringlichkeitsanzeige verwendet die bestätigte zentrale Zuordnung aus [DRING-04](../specifications/dringlichkeitsbewertung.md#dring-04-farbkennzeichnung). Die Bezeichnung bleibt immer als Text sichtbar. UI2 übernimmt bei ihrer visuellen Ausarbeitung die gemeinsame [Gestaltungsbasis aus UI3](ansicht-03-mitarbeiter-falldetail.md#21-gemeinsame-gestaltung-und-änderungskarten): helle Oberfläche, weisse Karten, dunkle Schrift, dezente Rahmen und Petrol für Aktionen. Die konkrete Listengestaltung, Farbtöne und Kontrastnachweise folgen bei der Ausarbeitung; die bestätigten Listenfunktionen bleiben massgeblich.
+**Farbkennzeichnung – vereinbart:** Die Dringlichkeitsanzeige verwendet die bestätigte zentrale Zuordnung aus [DRING-04](../specifications/dringlichkeitsbewertung.md#dring-04-farbkennzeichnung). Die Bezeichnung bleibt immer als Text sichtbar. UI2 verwendet die bestätigte gemeinsame [Gestaltungsbasis aus UI3](ansicht-03-mitarbeiter-falldetail.md#21-gemeinsame-gestaltung-und-änderungskarten): helle Oberfläche, weisse Karten, dunkle Schrift, dezente Rahmen und Blau für Aktionen, passend zu den JPGs (bestätigt am 10.10.2026). Die Desktop-Listengestaltung ist gemäss Abschnitt 8.1 bestätigt. Farbcodes sind im Abschnitt «Bestätigte Schriftgrössen, Abstände und Farben» festgelegt; Kontrastnachweise folgen in der Umsetzung; die bestätigten Listenfunktionen bleiben massgeblich.
+
+### Bestätigte responsive Darstellung
+
+**Bestätigt am 10.10.2026:** Massgeblich ist die verfügbare Browserbreite in CSS-Pixeln.
+
+| Browserbreite | Darstellung |
+|---|---|
+| Ab 1200 px | Desktop gemäss JPGs |
+| 768–1199 px | Kompakte Ansicht mit umgebrochenem Kopf |
+| Unter 768 px | Mobile Ansicht mit einer Spalte |
+
+Unter 1200 px scrollt die ganze Seite; Kopf und Filterbereich sind nicht feststehend. Es gibt kein horizontales Scrollen; lange Wörter und Referenzen dürfen umbrechen. Bedienelemente bleiben mindestens 44 px hoch. Unter 768 px gelten 16 px Seitenrand, 24 px Seitentitel und weiterhin 16 px Nachrichtentext. Die Bildschirmtastatur darf keine Aktionen dauerhaft verdecken; diese bleiben durch Seitenscrollen erreichbar.
+
+Unter 1200 px ersetzen Fallkarten die Tabelle. Jede Karte zeigt dieselben sieben Angaben mit Beschriftungen in der bisherigen Feldreihenfolge; die Case-ID öffnet das Detail. Die Suche steht oben über die ganze Breite. Darunter folgen Dringlichkeitsfilter und Sortierauswahl für Spalte und Richtung einschliesslich Standardsortierung.
+
+Unter 768 px stehen die Filter untereinander. Der Toggle «Abgeschlossene Fälle» bleibt links, «Filter zurücksetzen» rechts; bei Platzmangel erhält der rechtsbündige Button eine eigene Zeile. Datum und Uhrzeit bleiben zusammen, solange Platz vorhanden ist. Die Trefferzahl steht oberhalb, die Seitennavigation mit Seitenangabe ausschliesslich unterhalb der Fallkarten.
+
+**Prüfkriterium für die Umsetzung:** Übergänge bei 767/768 px und 1199/1200 px sowie schmale Ansichten mit langen Inhalten prüfen. Alle Angaben und Aktionen bleiben ohne horizontales Scrollen erreichbar; Reihenfolge, Umbrüche und Scrollverhalten entsprechen diesem Abschnitt.
+
+#### JPG-Entwürfe für Mobile und Tablet
+
+**Erstellt am 10.10.2026 zur visuellen Abstimmung:** Die folgenden Entwürfe ergänzen die bestätigten Desktop-JPGs. Sie zeigen durchgehende Seitenansichten einschliesslich der durch Seitenscrollen erreichbaren Bereiche. Mobile orientiert sich an einer Browserbreite von 390 CSS-Pixeln, Tablet an 834 CSS-Pixeln; die Bildauflösung ist keine CSS-Massvorgabe. Die bestätigten Responsive-Regeln und Gestaltungswerte bleiben verbindlich. Die Bilder verwenden fiktive Beispieldaten und ausgewählte Verlaufsstände.
+
+| Zustand | Mobile | Tablet |
+|---|---|---|
+| Fallübersicht | [JPG](design/ansicht-02-mitarbeiter-falluebersicht-mobile.jpg) | [JPG](design/ansicht-02-mitarbeiter-falluebersicht-tablet.jpg) |
+
+### Bestätigte Schriftgrössen, Abstände und Farben
+
+**Bestätigt am 10.10.2026:** Die folgenden Werte gelten gemeinsam für UI1, UI2 und UI3. Sie konkretisieren die JPG-Gestaltung für die Umsetzung; die JPGs sind keine pixelgenauen Farbreferenzen. Grössen sind in CSS-Pixeln angegeben. Die Schriftfamilie ist Inter mit der Systemschrift des Geräts als Fallback; halbfett entspricht Schriftgewicht 600, normal 400.
+
+| Textelement | Grösse / Gewicht |
+|---|---|
+| Seiten- und Falltitel | 30 px / 600; auf kleinen Bildschirmen 24 px |
+| Kartenüberschrift | 20 px / 600 |
+| Nachrichtentext, Formulare und Tabellen | 16 px / 400 |
+| Buttons und Feldbeschriftungen | 14 px / 600 |
+| Zeitangaben und ergänzende Informationen | 14 px / 400 |
+
+Nachrichtentexte erhalten einen Zeilenabstand von 1,5.
+
+| Abstand / Form | Wert |
+|---|---|
+| Seitenrand Desktop / Mobil | 24 px / 16 px |
+| Abstand zwischen Karten | 16 px |
+| Innenabstand Karten | 20 px |
+| Innenabstand Nachrichtenblasen | 16 px |
+| Abstand zwischen Nachrichten | 12 px |
+| Abstand Feldlabel zum Feld | 8 px |
+| Mindesthöhe Buttons und Eingabefelder | 44 px |
+| Eckenradius Karten | 10 px |
+| Eckenradius Felder und Buttons | 6 px |
+| Rahmenstärke | 1 px |
+
+| Grundfarbe | Farbcode |
+|---|---|
+| Seitenhintergrund | `#F2F8FC` |
+| Karten und Eingabefelder | `#FFFFFF` |
+| Haupttext | `#172033` |
+| Ergänzende Texte und Zeitangaben | `#52627A` |
+| Kartenrahmen | `#DCE5EF` |
+| Eingabefeldrahmen | `#8292A8` |
+| Aktionen und Links | `#006FBB` |
+| Button bei Hover | `#005A99` |
+| Text auf primären Buttons | `#FFFFFF` |
+| Neutrale Statusanzeige | Hintergrund `#E9EEF5`, Text `#42536B` |
+
+| Dringlichkeit | Hintergrund | Text |
+|---|---|---|
+| Kritisch | `#FEE2E2` | `#B91C1C` |
+| Hoch | `#FFEDD5` | `#9A3412` |
+| Normal | `#FEF3C7` | `#854D0E` |
+| Niedrig | `#DCFCE7` | `#166534` |
+| Noch nicht bewertet | `#DBEAFE` | `#1D4ED8` |
+
+Die Farbfamilien folgen DRING-04; «Noch nicht bewertet» bleibt ein Bewertungszustand. Die responsive Darstellung ist im entsprechenden Abschnitt bestätigt. Die Kontrastprüfung an den tatsächlich umgesetzten Komponenten steht noch aus.
+
+UI2 verwendet die Tabellen-, Formular-, Status- und Aktionswerte; Nachrichtenblasen gehören nicht zu dieser Ansicht.
 
 ## 4. Suche, Filter und Sortierung
 
@@ -175,7 +253,7 @@ Die Übersicht enthält keine Mieter-Zugriffstokens, verschlüsselten Versandkop
 
 **Abgleich am 09.10.2026:** Die Grundansichten und ergänzenden Zustandsausschnitte bilden die bestätigten UI2-Entscheidungen ab. Die Ausschnitte zeigen alternative Zustände derselben Seite; unveränderte Bereiche werden nicht jedes Mal wiederholt.
 
-Die Skizze bildet die vereinbarten Listenfunktionen ab. Für schmale Bildschirme sind Fallblöcke mit sieben Angaben sowie Suche, Filter und Sortierauswahl darüber vereinbart. Die Desktop-Gestaltung ist mit dem JPG in Abschnitt 8.1 bestätigt; Farbfamilien folgen DRING-04. Exakte Gestaltungstokens, Kontrastnachweise und responsive Details werden bei der Umsetzung konkretisiert. Alle Beispieldaten sind fiktiv. «Aktiv» ist die Filtergruppe, die Statusspalte zeigt die fachlichen Bearbeitungsstatus aus FALL-05.
+Die Skizze bildet die vereinbarten Listenfunktionen ab. Für schmale Bildschirme sind Fallblöcke mit sieben Angaben sowie Suche, Filter und Sortierauswahl darüber vereinbart. Die Desktop-Gestaltung ist mit dem JPG in Abschnitt 8.1 bestätigt; Farbfamilien folgen DRING-04. Die gemeinsamen Gestaltungswerte sind im Abschnitt «Bestätigte Schriftgrössen, Abstände und Farben» festgelegt. Die responsive Darstellung ist bestätigt; Kontrastnachweise werden bei der Umsetzung erbracht. Alle Beispieldaten sind fiktiv. «Aktiv» ist die Filtergruppe, die Statusspalte zeigt die fachlichen Bearbeitungsstatus aus FALL-05.
 
 ### 8.1 Breiter Bildschirm – Standardansicht
 
@@ -224,7 +302,7 @@ Pagination-Links ohne Ziel sind deaktiviert. Lange Texte werden umbrochen, fachl
 
 ### 8.2 Schmaler Bildschirm
 
-**Vereinbart am 09.10.2026:** Jeder Fall erscheint als kompakter, beschrifteter Block mit denselben sieben Angaben untereinander und derselben Feldreihenfolge. Suche und Filter stehen oberhalb der Fallblöcke. Case-ID bleibt Link. Die Sortierauswahl darüber bietet die Standardsortierung und alternativ jede der sieben Spalten mit auf-/absteigender Richtung und demselben Pfeil ↑ bzw. ↓; alle sieben Angaben bleiben auch auf schmalen Bildschirmen verfügbar. Genaue Abstände, Schrift und Umschaltbreite werden bei der Gestaltung konkretisiert.
+**Vereinbart am 09.10.2026:** Jeder Fall erscheint als kompakter, beschrifteter Block mit denselben sieben Angaben untereinander und derselben Feldreihenfolge. Suche und Filter stehen oberhalb der Fallblöcke. Case-ID bleibt Link. Die Sortierauswahl darüber bietet die Standardsortierung und alternativ jede der sieben Spalten mit auf-/absteigender Richtung und demselben Pfeil ↑ bzw. ↓; alle sieben Angaben bleiben auch auf schmalen Bildschirmen verfügbar. Schrift und gemeinsame Abstände sind im Abschnitt «Bestätigte Schriftgrössen, Abstände und Farben» festgelegt; die Umschaltbreiten sind im Abschnitt «Bestätigte responsive Darstellung» festgelegt.
 
 ```text
 PropertyFlow · Mitarbeiterbereich
@@ -432,7 +510,7 @@ Der angegebene Stand bleibt der letzte erfolgreiche Lesezeitpunkt. Vorhandene Da
 | Eigene Falldetailseite; keine Problemhinweise oder zusätzlichen Filter | Case-ID ist Link zu UI3; kein Detailpanel, keine Hinweisspalte, kein Hinweis- oder Bearbeitungsstatusfilter |
 | Bedienung ohne JavaScript und per Tastatur | Bestehende SSR-/Zugänglichkeitsregeln aus Abschnitt 9; nur ohne JavaScript zusätzlicher Button «Suchen / Filter anwenden» |
 
-**Ergebnis des Abgleichs:** Die bestätigten sichtbaren Elemente und Bedienungszustände sind in den Grundansichten, Zustandsausschnitten und zugehörigen Erläuterungen enthalten. Fachliche Verarbeitung wie der Schutz manueller Einstufungen bleibt an der zentralen Spezifikation verbindlich; sie erzeugt keine zusätzlichen Bedienelemente in UI2. Die Skizzen sind keine nachgewiesene Implementierung und legen weiterhin keine endgültigen Farbtöne, Schriften oder Abstände fest.
+**Ergebnis des Abgleichs:** Die bestätigten sichtbaren Elemente und Bedienungszustände sind in den Grundansichten, Zustandsausschnitten und zugehörigen Erläuterungen enthalten. Fachliche Verarbeitung wie der Schutz manueller Einstufungen bleibt an der zentralen Spezifikation verbindlich; sie erzeugt keine zusätzlichen Bedienelemente in UI2. Die Skizzen sind keine nachgewiesene Implementierung; für Farben, Schrift und Abstände gelten die bestätigten Werte dieser Spezifikation.
 
 ## 9. Technische Leitplanken und spätere Prüfkriterien
 
@@ -489,7 +567,7 @@ Entscheidungen, fachliche Prüfung und Verantwortung verbleiben bei Marco. KI al
 | Verschobene Zeilen und entfallene Seiten | **Vereinbart:** Gewählte Sortierung nachführen, kein Sprung zum Listenanfang, Leseposition soweit möglich erhalten. Entfällt die Seite, auf die letzte gültige Seite wechseln und den Wechsel erklären; bei null Treffern passende Leermeldung. |
 | Ladefehler | **Vereinbart:** Erstabruf mit Fehlermeldung und «Erneut versuchen»; bei späterem Fehler vorhandene Daten mit «Aktualisierung momentan nicht möglich. Stand: …» erhalten. |
 
-**Fachlicher Abschluss am 09.10.2026:** Die Listenfunktionen, Suche, Filter, Sortierung und Bedienungsregeln sind festgelegt, einschliesslich schmaler Ansicht, verschobener Zeilen, entfallener Seiten und Ladefehler. Für die Umsetzung verbleiben technischer Textvergleich, Such- und Leseverträge, Parametergrenzen und Wiederholungsabstände. Die Desktop-Gestaltung wurde am 10.10.2026 gemäss Abschnitt 8.1 bestätigt; responsive Details und exakte Gestaltungstokens folgen in der Umsetzung. Diese Konkretisierungen öffnen die bestätigten Listenentscheidungen nicht erneut.
+**Fachlicher Abschluss am 09.10.2026:** Die Listenfunktionen, Suche, Filter, Sortierung und Bedienungsregeln sind festgelegt, einschliesslich schmaler Ansicht, verschobener Zeilen, entfallener Seiten und Ladefehler. Für die Umsetzung verbleiben technischer Textvergleich, Such- und Leseverträge, Parametergrenzen und Wiederholungsabstände. Die Desktop-Gestaltung wurde am 10.10.2026 gemäss Abschnitt 8.1 bestätigt; die responsive Darstellung und die gemeinsamen Gestaltungswerte sind ebenfalls bestätigt. Diese Konkretisierungen öffnen die bestätigten Listenentscheidungen nicht erneut.
 
 Die [Dringlichkeitsbewertung](../specifications/dringlichkeitsbewertung.md) führt Stufen, Farben, Bewertungsablauf, Vorrang manueller Anpassungen und transparente Historie. [FALL-07](../specifications/fallverwaltung.md#fall-07-abschluss-und-zeit-danach) erlaubt den Abschluss durch Mitarbeitende sowie durch das System bei bestätigter Behebung ohne weiteren Hilfebedarf oder eindeutig fehlendem Bearbeitungsbedarf der Verwaltung nach Fachregel. Offene menschliche Entscheidungen nach [FALL-10](../specifications/fallverwaltung.md#fall-10-automatisierung-und-menschliche-freigabe) bleiben verbindlich. Beide Abschlusswege liefern den Status «Abgeschlossen» und wirken gleich auf die Listenauswahl: standardmässig ausblenden, über den Toggle weiterhin einsehbar. Eine Abschlussaktion in der Liste ist nicht vorgesehen.
 
