@@ -168,6 +168,10 @@ Ein unverändertes Neubewertungsergebnis erzeugt keinen Stufenwechsel im sichtba
 
 Validierung: Eine Nachricht darf nicht leer oder nur aus Leerzeichen bestehen; Maximallänge festlegen (Vorschlag: 5'000 Zeichen); sicher als Text anzeigen. Eine gesendete Nachricht ist nicht nachträglich editierbar. Wiederholte Sendeversuche dürfen dieselbe Nachricht nicht mehrfach speichern.
 
+**Bestätigt am 10.10.2026 – Vergrössern der Nachrichtentextbox:** Auf breiten Bildschirmen lässt sich die Textbox durch Ziehen nach unten ausschliesslich in der Höhe vergrössern; seitliches Vergrössern ist ausgeschlossen. Der unten verankerte Eingabebereich wächst dabei nach oben und verkleinert den Verlauf darüber. Der Senden-Button bleibt sichtbar. Der Verlauf behält mindestens 200 CSS-Pixel Höhe. Sobald diese Grenze erreicht ist, lässt sich die Textbox nicht weiter vergrössern; längerer Text scrollt innerhalb der Textbox. Beim Verkleinern erhält der Verlauf den Platz zurück. Nachrichten und ungesendeter Text bleiben erhalten. Die Regel gilt für die Nachrichteneingabe im aktiven Fall; die Neuerfassung besitzt keinen Verlauf, dessen Höhe reduziert werden könnte.
+
+Unter 1200 px wächst die Textbox automatisch mit dem Inhalt von mindestens 96 px bis maximal 240 px; danach scrollt ihr Inhalt. Es gilt gemeinsames Seitenscrollen gemäss Abschnitt «Bestätigte responsive Darstellung»; die Desktop-Mindesthöhe des Verlaufs gilt dort nicht.
+
 ### 4.4 Ablauf beim Senden einer weiteren Nachricht
 
 1. Mieter öffnet den Fall über den persönlichen Link oder arbeitet nach der Erfassung direkt weiter.
@@ -355,7 +359,7 @@ Der Browser ruft **nicht direkt Camunda** auf. Die Fachlogik bleibt im PropertyF
 
 **Status:** Technischer Entwurf zur gemeinsamen Besprechung, keine endgültige Gestaltung. Die fachlichen Regeln aus Abschnitt 4 bleiben massgeblich.
 
-Die Ansicht verwendet eine Hauptspalte. **Vereinbarte Reihenfolge:** Kopf mit Objekt-/Kontaktangaben → Verlauf → Nachrichteneingabe. Nachrichten des Mieters sind rechts angeordnet, veröffentlichte Nachrichten der Verwaltung und von KI/System links. Absender und Datum bleiben als Text erkennbar. Farben, Schrift, Abstände und endgültige Breite werden später gestaltet.
+Die Ansicht verwendet eine Hauptspalte. **Vereinbarte Reihenfolge:** Kopf mit Objekt-/Kontaktangaben → Verlauf → Nachrichteneingabe. Nachrichten des Mieters sind rechts angeordnet, veröffentlichte Nachrichten der Verwaltung und von KI/System links. Absender und Datum bleiben als Text erkennbar. Die Desktop-Gestaltung ist gemäss Abschnitt 8.2.5 bestätigt; Schriftgrössen, Abstände und Farbcodes sind im Abschnitt «Bestätigte Schriftgrössen, Abstände und Farben» festgelegt.
 
 ```text
 +------------------------------------------------------------------+
@@ -442,7 +446,7 @@ Die Kontaktanzeige verwendet fiktive Daten und die Maskierung aus Abschnitt 4.6:
 - **Vereinbart – Aktualisieren mit ungesendeter Eingabe:** Periodische Abrufe erhalten die Eingabe ohne Seitenneuladen. Vor manuellem Verlassen oder Neuladen wird bei ungesendetem Text vor möglichem Textverlust gewarnt, soweit der Browser dies unterstützt. Wer den Wechsel abbricht, kann weiterschreiben. Bei leerer oder bereits gespeicherter Eingabe erscheint keine Textverlustwarnung. Kein automatisches Speichern oder Senden und keine dauerhafte Browserspeicherung einführen.
 - **Zwischenzeitlicher Abschluss:** Nachrichteneingabe durch den Abschlusshinweis ersetzen; die serverseitige Sperre bleibt massgeblich. Kein KI-Abbruchbutton.
 - **Zugang ungültig:** Neutrale Zugangsfehlermeldung statt Falldaten. Kein stiller Wechsel zur Neuanlage.
-- **Vereinbart – Schmaler Bildschirm:** Gleiche Reihenfolge in einer Spalte; Nachrichten können die verfügbare Breite nutzen. Absendertexte erhalten die Unterscheidung auch ohne deutliche Links-/Rechtsanordnung. Navigation und Senden bleiben ohne horizontales Scrollen erreichbar.
+- **Vereinbart – Schmaler Bildschirm:** Gleiche Reihenfolge in einer Spalte; unter 768 px verwenden beide Nachrichtenseiten dieselbe Breite von maximal 92 % der verfügbaren Verlaufsbreite. Mieter stehen rechts, Verwaltung/System links; Absendertexte bleiben zusätzlich sichtbar. Navigation und Senden bleiben ohne horizontales Scrollen erreichbar.
 
 #### 8.2.4 Vereinbarte Anordnung und verbleibende Gestaltung
 
@@ -450,7 +454,7 @@ Die Kontaktanzeige verwendet fiktive Daten und die Maskierung aus Abschnitt 4.6:
 - **Nachrichtenreihenfolge:** Alle sichtbaren Nachrichten auf einer Seite; älteste oben, neueste zuunterst. Ältere Einträge bleiben durch Scrollen erreichbar.
 - **Absenderanordnung:** Mieter rechts, Immobilienverwaltung und KI/System links. Textliche Absenderangaben bleiben zusätzlich sichtbar.
 
-Diese Grundanordnung, die maskierte Kontaktanzeige, das Aktualisierungsintervall von 20 Sekunden, die schmale Ansicht, das Fehlerverhalten und die Warnung bei ungesendetem Text sind vereinbart. Die Dringlichkeitsfarben folgen DRING-04; genaue Farbtöne, Schrift, Abstände und endgültige Breite bleiben Gestaltungspunkte. Die automatische Aktualisierung verändert beim Lesen älterer Einträge nicht ungefragt die Leseposition.
+Diese Grundanordnung, die maskierte Kontaktanzeige, das Aktualisierungsintervall von 20 Sekunden, die schmale Ansicht, das Fehlerverhalten und die Warnung bei ungesendetem Text sind vereinbart. Die Dringlichkeitsfarben folgen DRING-04; die Desktop-Gestaltung einschliesslich gleich breiter Nachrichtenblasen ist bestätigt. Farbcodes, Schriftgrössen und Abstände sind im Abschnitt «Bestätigte Schriftgrössen, Abstände und Farben» festgelegt. Die automatische Aktualisierung verändert beim Lesen älterer Einträge nicht ungefragt die Leseposition.
 
 Die fachlichen Zustände Neuerfassung, aktiver und abgeschlossener Fall sind festgelegt. Die Desktop-Gestaltung wurde am 10.10.2026 bestätigt. Die JPGs dokumentieren die drei Zustände; aktive und abgeschlossene Fälle zeigen die Objekt-/Kontaktangaben direkt im Kopf ohne separate Ursprungsansicht.
 
@@ -467,6 +471,86 @@ Die Entwürfe übernehmen Logo, helle Grundfläche, weisse Karten, dezente Rahme
 Mieternachrichten stehen rechts mit rechtsbündigem Inhalt, Antworten von Immobilienverwaltung und KI/System links. Nachrichtenblasen erhalten dieselbe Breite; Symbole, Rollen und Zeitangaben stehen innerhalb der Blasen. Personen werden durch ein Personensymbol, Systemeinträge durch ein Zahnrad ergänzt; die textlichen Rollen bleiben sichtbar. Einzelne Mitarbeiternamen und interne Informationen werden nicht angezeigt. Der aktuelle Antwortbedarf wird an der betreffenden Nachricht neutral gekennzeichnet, getrennt von den Dringlichkeitsfarben. Nach Abschluss wird keine offene Antwort mehr verlangt.
 
 Die Nachrichteneingabe des aktiven Falls bleibt ausserhalb des scrollbaren Verlaufs. Beim abgeschlossenen Fall nutzt der Verlauf den frei werdenden Platz; der Abschlusshinweis bleibt darunter sichtbar. Die Bilder verwenden fiktive Beispieldaten und zeigen ausgewählte Verlaufsstände. Fachliche Regeln und responsive Darstellung dieser Spezifikation bleiben verbindlich.
+
+### Bestätigte responsive Darstellung
+
+**Bestätigt am 10.10.2026:** Massgeblich ist die verfügbare Browserbreite in CSS-Pixeln.
+
+| Browserbreite | Darstellung |
+|---|---|
+| Ab 1200 px | Desktop gemäss JPGs |
+| 768–1199 px | Kompakte Ansicht mit umgebrochenem Kopf |
+| Unter 768 px | Mobile Ansicht mit einer Spalte |
+
+Unter 1200 px scrollt die ganze Seite; Kopf und Eingabebereiche sind nicht feststehend. Die Desktop-Regel mit mindestens 200 px Verlauf gilt dort nicht. Es gibt kein horizontales Scrollen; lange Wörter und Referenzen dürfen umbrechen. Bedienelemente bleiben mindestens 44 px hoch. Unter 768 px gelten 16 px Seitenrand, 24 px Seitentitel und weiterhin 16 px Nachrichtentext. Die Bildschirmtastatur darf keine Aktionen dauerhaft verdecken; diese bleiben durch Seitenscrollen erreichbar.
+
+Das Erfassungsformular bleibt einspaltig. Bestehende Fälle zeigen unter 1200 px Titel → Objekt/Kontakt → Status und Dringlichkeit → Verlauf → Nachrichteneingabe. Beim abgeschlossenen Fall ersetzt weiterhin der Abschlusshinweis die Eingabe. Auf Mobil erhalten Nachrichtenblasen beider Seiten dieselbe Breite von maximal 92 % der verfügbaren Verlaufsbreite: Mieter rechts, Verwaltung/System links. Rollen und Zeitangaben dürfen innerhalb der Blase umbrechen. Die Eingabe steht unter dem Verlauf.
+
+Nachrichtentextboxen wachsen unter 1200 px automatisch mit dem Inhalt von mindestens 96 px bis maximal 240 px Höhe; danach scrollt der Text innerhalb des Felds. Die manuelle Desktop-Vergrösserung gilt ab 1200 px.
+
+**Prüfkriterium für die Umsetzung:** Übergänge bei 767/768 px und 1199/1200 px sowie schmale Ansichten mit langen Inhalten prüfen. Alle Angaben und Aktionen bleiben ohne horizontales Scrollen erreichbar; Reihenfolge, Umbrüche und Scrollverhalten entsprechen diesem Abschnitt. Mit geöffneter Bildschirmtastatur und langem Eingabetext die automatische Textboxhöhe von 96–240 px, internes Textscrollen und Erreichbarkeit der Aktionen prüfen.
+
+#### JPG-Entwürfe für Mobile und Tablet
+
+**Erstellt am 10.10.2026 zur visuellen Abstimmung:** Die folgenden Entwürfe ergänzen die bestätigten Desktop-JPGs. Sie zeigen durchgehende Seitenansichten einschliesslich der durch Seitenscrollen erreichbaren Bereiche. Mobile orientiert sich an einer Browserbreite von 390 CSS-Pixeln, Tablet an 834 CSS-Pixeln; die Bildauflösung ist keine CSS-Massvorgabe. Die bestätigten Responsive-Regeln und Gestaltungswerte bleiben verbindlich. Die Bilder verwenden fiktive Beispieldaten und ausgewählte Verlaufsstände.
+
+| Zustand | Mobile | Tablet |
+|---|---|---|
+| Neuerfassung | [JPG](design/ansicht-01-mieter-fallansicht-1-mobile.jpg) | [JPG](design/ansicht-01-mieter-fallansicht-1-tablet.jpg) |
+| Aktiver Fall | [JPG](design/ansicht-01-mieter-fallansicht-2-mobile.jpg) | [JPG](design/ansicht-01-mieter-fallansicht-2-tablet.jpg) |
+| Abgeschlossener Fall | [JPG](design/ansicht-01-mieter-fallansicht-3-mobile.jpg) | [JPG](design/ansicht-01-mieter-fallansicht-3-tablet.jpg) |
+
+### Bestätigte Schriftgrössen, Abstände und Farben
+
+**Bestätigt am 10.10.2026:** Die folgenden Werte gelten gemeinsam für UI1, UI2 und UI3. Sie konkretisieren die JPG-Gestaltung für die Umsetzung; die JPGs sind keine pixelgenauen Farbreferenzen. Grössen sind in CSS-Pixeln angegeben. Die Schriftfamilie ist Inter mit der Systemschrift des Geräts als Fallback; halbfett entspricht Schriftgewicht 600, normal 400.
+
+| Textelement | Grösse / Gewicht |
+|---|---|
+| Seiten- und Falltitel | 30 px / 600; auf kleinen Bildschirmen 24 px |
+| Kartenüberschrift | 20 px / 600 |
+| Nachrichtentext, Formulare und Tabellen | 16 px / 400 |
+| Buttons und Feldbeschriftungen | 14 px / 600 |
+| Zeitangaben und ergänzende Informationen | 14 px / 400 |
+
+Nachrichtentexte erhalten einen Zeilenabstand von 1,5.
+
+| Abstand / Form | Wert |
+|---|---|
+| Seitenrand Desktop / Mobil | 24 px / 16 px |
+| Abstand zwischen Karten | 16 px |
+| Innenabstand Karten | 20 px |
+| Innenabstand Nachrichtenblasen | 16 px |
+| Abstand zwischen Nachrichten | 12 px |
+| Abstand Feldlabel zum Feld | 8 px |
+| Mindesthöhe Buttons und Eingabefelder | 44 px |
+| Eckenradius Karten | 10 px |
+| Eckenradius Felder und Buttons | 6 px |
+| Rahmenstärke | 1 px |
+
+| Grundfarbe | Farbcode |
+|---|---|
+| Seitenhintergrund | `#F2F8FC` |
+| Karten und Eingabefelder | `#FFFFFF` |
+| Haupttext | `#172033` |
+| Ergänzende Texte und Zeitangaben | `#52627A` |
+| Kartenrahmen | `#DCE5EF` |
+| Eingabefeldrahmen | `#8292A8` |
+| Aktionen und Links | `#006FBB` |
+| Button bei Hover | `#005A99` |
+| Text auf primären Buttons | `#FFFFFF` |
+| Neutrale Statusanzeige | Hintergrund `#E9EEF5`, Text `#42536B` |
+
+| Dringlichkeit | Hintergrund | Text |
+|---|---|---|
+| Kritisch | `#FEE2E2` | `#B91C1C` |
+| Hoch | `#FFEDD5` | `#9A3412` |
+| Normal | `#FEF3C7` | `#854D0E` |
+| Niedrig | `#DCFCE7` | `#166534` |
+| Noch nicht bewertet | `#DBEAFE` | `#1D4ED8` |
+
+Die Farbfamilien folgen DRING-04; «Noch nicht bewertet» bleibt ein Bewertungszustand. Die responsive Darstellung ist im entsprechenden Abschnitt bestätigt. Die Kontrastprüfung an den tatsächlich umgesetzten Komponenten steht noch aus.
+
+Nachrichtenblasen: eigene Mieternachrichten `#E5F2FF`, Antworten von Immobilienverwaltung und KI/System `#EEF2F7`. Rollen und Icons bleiben zusätzlich sichtbar.
 
 ### 8.3 Abgeschlossener Fall – nur lesbar
 
@@ -547,6 +631,8 @@ Die Nachrichteneingabe des aktiven Falls bleibt ausserhalb des scrollbaren Verla
 
 - **AK-28:** Ungesendeter Text löst bei manuellem Verlassen oder Neuladen eine Warnung aus, soweit der Browser dies unterstützt. Abbrechen der Navigation erhält die Eingabe; eine leere oder bereits gespeicherte Eingabe löst keine Textverlustwarnung aus. Die Warnung speichert oder sendet nichts und führt keine dauerhafte Browserspeicherung ein.
 
+- **AK-29:** Bei Vergrösserung der Nachrichtentextbox auf breiten Bildschirmen bleibt ihre Breite konstant; der Eingabebereich wächst nach oben, der Verlauf wird bis auf mindestens 200 CSS-Pixel verkleinert und der Senden-Button bleibt sichtbar. An der Grenze scrollt nur der längere Text innerhalb der Textbox. Verkleinern gibt dem Verlauf Platz zurück, ohne Nachrichten oder Eingabetext zu verlieren. Auf kleinen Bildschirmen wächst die Textbox automatisch bis zur vorgesehenen Maximalhöhe und scrollt danach intern.
+
 ## 11. Umsetzung im FFHS-Block 2 / spätere Blöcke
 
 **Block 2 – mit statischen Testdaten:**
@@ -606,7 +692,7 @@ Die folgenden Vorschläge bleiben dokumentiert, erweitern aber nicht automatisch
 
 **Modulverträge:** Als Zuordnungsvorschlag verantwortet `intake` die Annahme und initiale Speicherung und `caseprocessing` die fallbezogene Kommunikation und Anzeige. Gemeinsame Leseverträge werden im Service-Design festgelegt. Controller verwenden Anwendungsdienste; modulübergreifender Austausch erfolgt über öffentliche Schnittstellen ohne direkten Zugriff auf fremde Persistenz.
 
-**Gestaltung:** UI1 übernimmt bei ihrer visuellen Ausarbeitung die gemeinsame [Gestaltungsbasis aus UI3](ansicht-03-mitarbeiter-falldetail.md#21-gemeinsame-gestaltung-und-änderungskarten): helle Oberfläche, weisse Karten, dunkle Schrift, dezente Rahmen und Petrol für Aktionen. Dringlichkeitsfarben folgen DRING-04. Die bestätigte Desktop-Gestaltung ist in Abschnitt 8.2.5 mit drei JPGs verlinkt; UI3-spezifische Mitarbeiteraktionen und interne Kennzeichnungen werden nicht auf die Mieteransicht übertragen. Die vorhandenen ASCII-Wireframes bleiben technische Entwürfe der bestätigten Grundanordnung. Exakte Farbtöne, Schrift und Abstände werden bei der Ausarbeitung geprüft; die Ergänzungen dieses Reviews sind noch nicht vollständig in den ASCII-Entwürfen dargestellt.
+**Gestaltung:** UI1 verwendet die bestätigte gemeinsame [Gestaltungsbasis aus UI3](ansicht-03-mitarbeiter-falldetail.md#21-gemeinsame-gestaltung-und-änderungskarten): helle Oberfläche, weisse Karten, dunkle Schrift, dezente Rahmen und Blau für Aktionen, passend zu den JPGs (bestätigt am 10.10.2026). Dringlichkeitsfarben folgen DRING-04. Die bestätigte Desktop-Gestaltung ist in Abschnitt 8.2.5 mit drei JPGs verlinkt; UI3-spezifische Mitarbeiteraktionen und interne Kennzeichnungen werden nicht auf die Mieteransicht übertragen. Die vorhandenen ASCII-Wireframes bleiben technische Entwürfe der bestätigten Grundanordnung. Farbcodes, Schrift und Abstände sind im Abschnitt «Bestätigte Schriftgrössen, Abstände und Farben» festgelegt; die Ergänzungen dieses Reviews sind noch nicht vollständig in den ASCII-Entwürfen dargestellt.
 
 **Zusätzliche Grundlagen:**
 
@@ -616,7 +702,7 @@ Die folgenden Vorschläge bleiben dokumentiert, erweitern aber nicht automatisch
 
 ### 12.2 Stand und Verbindlichkeit
 
-**Fachlicher Abschluss am 09.10.2026, abgeglichen am 10.10.2026:** Zweck, Umfang, Zustände und Bedienungsregeln von UI1 sind bestätigt, einschliesslich schmaler Ansicht, Lesen bei neuen Einträgen, Ladefehlern und Warnung bei ungesendetem Text. Die menschlichen Entscheidungsgrenzen folgen FALL-10. Die bestätigten Ergänzungen wurden mit [UI3 – Mitarbeiter-Falldetailansicht](ansicht-03-mitarbeiter-falldetail.md) und den zentralen Fachregeln abgeglichen. Gekennzeichnete technische Parameter und Verträge sowie responsive Gestaltungsdetails folgen in der Umsetzung; optionale Erweiterungen gehören nicht zum abgeschlossenen Umfang. Diese Datei ist eine Spezifikation, kein Nachweis implementierter Funktionen oder ausgeführter Sicherheitsprüfungen.
+**Fachlicher Abschluss am 09.10.2026, abgeglichen am 10.10.2026:** Zweck, Umfang, Zustände und Bedienungsregeln von UI1 sind bestätigt, einschliesslich schmaler Ansicht, Lesen bei neuen Einträgen, Ladefehlern und Warnung bei ungesendetem Text. Die menschlichen Entscheidungsgrenzen folgen FALL-10. Die bestätigten Ergänzungen wurden mit [UI3 – Mitarbeiter-Falldetailansicht](ansicht-03-mitarbeiter-falldetail.md) und den zentralen Fachregeln abgeglichen. Die responsive Darstellung ist bestätigt. Gekennzeichnete technische Parameter und Verträge folgen in der Umsetzung; optionale Erweiterungen gehören nicht zum abgeschlossenen Umfang. Diese Datei ist eine Spezifikation, kein Nachweis implementierter Funktionen oder ausgeführter Sicherheitsprüfungen.
 
 ### 12.3 Abgleich mit übergreifenden KI-/Frontend-Vorgaben
 

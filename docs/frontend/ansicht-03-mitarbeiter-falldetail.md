@@ -1,7 +1,7 @@
 # Screen 03 – Mitarbeiter-Falldetailansicht
 
 **Projekt:** PropertyFlow – FFHS CAS AISE\
-**Status:** Fachliche Bedienung bestätigt; konsolidierter Stand, Prozess- und technische Verträge separat\
+**Status:** Fachliche Bedienung und Desktop-Gestaltung bestätigt; responsive Darstellung bestätigt; Prozess- und technische Verträge separat\
 **Stand:** 10.10.2026\
 **Zielgruppe:** Mitarbeitende mit einheitlichen Adminrechten\
 **Darstellung:** Eigene SSR-Seite mit Thymeleaf und gezieltem Vanilla JavaScript
@@ -38,15 +38,99 @@ Dieses Dokument fasst die am 09./10.10.2026 bestätigten Entscheidungen zusammen
 
 **Ebenfalls bestätigt:** Wenn der rechte Inhalt die verfügbare Bildschirmhöhe überschreitet, ist die rechte Hälfte ebenfalls unabhängig scrollbar. Scrollen in einer Hälfte verschiebt die andere Hälfte und den gemeinsamen Kopf nicht. Auf schmalen Bildschirmen gilt die bestätigte Reihenfolge Kopf → Falldaten und Aktionen → Verlauf mit Nachrichteneingabe; die Seite wird als Ganzes gescrollt.
 
-Die hier beschriebenen Bedienelemente und die nachfolgenden Gestaltungsentscheidungen sind bestätigt. Exakte Pixelmasse, Schriftwahl, Farbtöne und Kontrastnachweise werden bei der Umsetzung konkretisiert. Auf schmalen Bildschirmen gilt Kopf → Falldaten und Aktionen → Verlauf mit Nachrichteneingabe; die Seite wird als Ganzes gescrollt.
+Die hier beschriebenen Bedienelemente und die nachfolgenden Gestaltungsentscheidungen sind bestätigt. Schriftwahl, Schriftgrössen, Abstände und Farbcodes sind im Abschnitt «Bestätigte Schriftgrössen, Abstände und Farben» festgelegt. Weitere komponentenspezifische Masse und Kontrastnachweise werden bei der Umsetzung konkretisiert. Auf schmalen Bildschirmen gilt Kopf → Falldaten und Aktionen → Verlauf mit Nachrichteneingabe; die Seite wird als Ganzes gescrollt.
+
+**Bestätigt am 10.10.2026 – Vergrössern der Nachrichtentextbox:** Auf breiten Bildschirmen lässt sich die Textbox durch Ziehen nach unten ausschliesslich in der Höhe vergrössern; seitliches Vergrössern ist ausgeschlossen. Der unten verankerte Eingabebereich wächst dabei nach oben und verkleinert den Verlauf darüber. Der Senden-Button bleibt sichtbar. Der Verlauf behält mindestens 200 CSS-Pixel Höhe. Sobald diese Grenze erreicht ist, lässt sich die Textbox nicht weiter vergrössern; längerer Text scrollt innerhalb der Textbox. Beim Verkleinern erhält der Verlauf den Platz zurück. Nachrichten und ungesendeter Text bleiben erhalten. Kopf und rechte Spalte bleiben unverändert. Aktionen und der sichtbare KI-Vorschlag werden bei der verfügbaren Höhe mitberücksichtigt.
+
+Unter 1200 px wächst die Textbox automatisch mit dem Inhalt von mindestens 96 px bis maximal 240 px; danach scrollt ihr Inhalt. Es gilt gemeinsames Seitenscrollen gemäss Abschnitt «Bestätigte responsive Darstellung»; die Desktop-Mindesthöhe des Verlaufs gilt dort nicht.
 
 ### 2.1 Gemeinsame Gestaltung und Änderungskarten
 
-**Konsolidierter Gestaltungsstand am 10.10.2026:** Helle Oberfläche mit weissen Karten, dunkler gut lesbarer Schrift, dezenten Rahmen, abgerundeten Ecken und Petrol als Aktionsfarbe. Diese Gestaltungsbasis wird anschliessend auf UI1 und UI2 übertragen; ihre jeweiligen Abläufe bleiben massgeblich. Dringlichkeitsfarben folgen DRING-04: Kritisch rot, Hoch orange, Normal gelb, Niedrig grün, noch nicht bewertet blau. Status und Prüfbedarf sind davon visuell unterscheidbar. Eine zusätzliche Farblegende «Gestaltungsbasis» gehört nicht zur Anwendungsoberfläche.
+**Konsolidierter Gestaltungsstand am 10.10.2026:** Helle Oberfläche mit weissen Karten, dunkler gut lesbarer Schrift, dezenten Rahmen, abgerundeten Ecken und Blau als gemeinsame Aktionsfarbe, passend zu den JPGs (bestätigt am 10.10.2026). Diese gemeinsame Gestaltungsbasis ist in UI1, UI2 und UI3 bestätigt; ihre jeweiligen Abläufe bleiben massgeblich. Dringlichkeitsfarben folgen DRING-04: Kritisch rot, Hoch orange, Normal gelb, Niedrig grün, noch nicht bewertet blau. Status und Prüfbedarf sind davon visuell unterscheidbar. Eine zusätzliche Farblegende «Gestaltungsbasis» gehört nicht zur Anwendungsoberfläche.
 
 Geschlossene Karten für Status, Dringlichkeit und Wiedervorlage zeigen nur ihre Bezeichnung und die Änderungsaktion. Sie wiederholen die aktuellen Werte aus dem Kopf nicht. Beim Aufklappen ist der gespeicherte Status bzw. die gespeicherte Dringlichkeit vorausgewählt; bei Wiedervorlage ist ein vorhandener Termin in der Eingabe erkennbar. Auswahländerungen bleiben bis zum erfolgreichen Speichern ungespeichert; der Kopf zeigt weiterhin den bestätigten Stand. «Abbrechen» schliesst die Bearbeitung ohne Übernahme. Die optionale interne Begründung folgt Abschnitt 3. Die Karte «Abschluss» zeigt den Button ohne zusätzlichen Hinweis «Abschluss erfordert Bestätigung»; die Bestätigung beim Auslösen bleibt bestehen.
 
-JPGs unter `design/` illustrieren den Entwurfsstand, sind aber keine eigenständige Anforderungsquelle. Verbindliche Entscheidungen stehen in dieser Screen-Spezifikation und den referenzierten Fachspezifikationen. Abweichungen eines generierten Bildes, insbesondere bei exakten Breiten, ändern diese Vorgaben nicht.
+Das [bestätigte JPG der Mitarbeiter-Falldetailansicht](design/ansicht-03-mitarbeiter-falldetail.jpg) illustriert die Desktop-Gestaltung. Verbindliche Entscheidungen stehen in dieser Screen-Spezifikation und den referenzierten Fachspezifikationen; das JPG ist keine eigenständige Anforderungsquelle. Die festgelegten Gestaltungswerte gelten für die Umsetzung; weitere komponentenspezifische Masse werden dort konkretisiert.
+
+### Bestätigte responsive Darstellung
+
+**Bestätigt am 10.10.2026:** Massgeblich ist die verfügbare Browserbreite in CSS-Pixeln.
+
+| Browserbreite | Darstellung |
+|---|---|
+| Ab 1200 px | Desktop gemäss JPGs |
+| 768–1199 px | Kompakte Ansicht mit umgebrochenem Kopf |
+| Unter 768 px | Mobile Ansicht mit einer Spalte |
+
+Unter 1200 px scrollt die ganze Seite; Kopf und Eingabebereiche sind nicht feststehend. Die Desktop-Regel mit mindestens 200 px Verlauf gilt dort nicht. Es gibt kein horizontales Scrollen; lange Wörter und Referenzen dürfen umbrechen. Bedienelemente bleiben mindestens 44 px hoch. Unter 768 px gelten 16 px Seitenrand, 24 px Seitentitel und weiterhin 16 px Nachrichtentext. Die Bildschirmtastatur darf keine Aktionen dauerhaft verdecken; diese bleiben durch Seitenscrollen erreichbar.
+
+Unter 1200 px wechseln die zwei Spalten zu dieser Reihenfolge: Fallkopf → Falldaten und Aktionen → Verlauf → Nachricht verfassen → KI-Vorschlag. Status, Dringlichkeit und Wiedervorlage stehen unter dem Titel und dürfen umbrechen. Änderungskarten sind beim Öffnen der Ansicht zunächst geschlossen; beim Aufklappen erscheint der gespeicherte Wert vorausgewählt.
+
+Auf Mobil erhalten Nachrichtenblasen beider Seiten dieselbe Breite von maximal 92 % der verfügbaren Verlaufsbreite: Mieter links, Verwaltung/System rechts. Buttons und Toggles umbrechen in mehrere Zeilen, statt kleiner zu werden. Rollen und Zeitangaben bleiben innerhalb der Blasen.
+
+Nachrichtentextboxen wachsen unter 1200 px automatisch mit dem Inhalt von mindestens 96 px bis maximal 240 px Höhe; danach scrollt der Text innerhalb des Felds. Die manuelle Desktop-Vergrösserung gilt ab 1200 px. Die Regeln für abgeschlossene Fälle und gesperrte Eingaben bleiben bestehen.
+
+**Prüfkriterium für die Umsetzung:** Übergänge bei 767/768 px und 1199/1200 px sowie schmale Ansichten mit langen Inhalten prüfen. Alle Angaben und Aktionen bleiben ohne horizontales Scrollen erreichbar; Reihenfolge, Umbrüche und Scrollverhalten entsprechen diesem Abschnitt. Mit geöffneter Bildschirmtastatur und langem Eingabetext die automatische Textboxhöhe von 96–240 px, internes Textscrollen und Erreichbarkeit der Aktionen prüfen.
+
+#### JPG-Entwürfe für Mobile und Tablet
+
+**Erstellt am 10.10.2026 zur visuellen Abstimmung:** Die folgenden Entwürfe ergänzen die bestätigten Desktop-JPGs. Sie zeigen durchgehende Seitenansichten einschliesslich der durch Seitenscrollen erreichbaren Bereiche. Mobile orientiert sich an einer Browserbreite von 390 CSS-Pixeln, Tablet an 834 CSS-Pixeln; die Bildauflösung ist keine CSS-Massvorgabe. Die bestätigten Responsive-Regeln und Gestaltungswerte bleiben verbindlich. Die Bilder verwenden fiktive Beispieldaten und ausgewählte Verlaufsstände.
+
+| Zustand | Mobile | Tablet |
+|---|---|---|
+| Falldetail | [JPG](design/ansicht-03-mitarbeiter-falldetail-mobile.jpg) | [JPG](design/ansicht-03-mitarbeiter-falldetail-tablet.jpg) |
+
+### Bestätigte Schriftgrössen, Abstände und Farben
+
+**Bestätigt am 10.10.2026:** Die folgenden Werte gelten gemeinsam für UI1, UI2 und UI3. Sie konkretisieren die JPG-Gestaltung für die Umsetzung; die JPGs sind keine pixelgenauen Farbreferenzen. Grössen sind in CSS-Pixeln angegeben. Die Schriftfamilie ist Inter mit der Systemschrift des Geräts als Fallback; halbfett entspricht Schriftgewicht 600, normal 400.
+
+| Textelement | Grösse / Gewicht |
+|---|---|
+| Seiten- und Falltitel | 30 px / 600; auf kleinen Bildschirmen 24 px |
+| Kartenüberschrift | 20 px / 600 |
+| Nachrichtentext, Formulare und Tabellen | 16 px / 400 |
+| Buttons und Feldbeschriftungen | 14 px / 600 |
+| Zeitangaben und ergänzende Informationen | 14 px / 400 |
+
+Nachrichtentexte erhalten einen Zeilenabstand von 1,5.
+
+| Abstand / Form | Wert |
+|---|---|
+| Seitenrand Desktop / Mobil | 24 px / 16 px |
+| Abstand zwischen Karten | 16 px |
+| Innenabstand Karten | 20 px |
+| Innenabstand Nachrichtenblasen | 16 px |
+| Abstand zwischen Nachrichten | 12 px |
+| Abstand Feldlabel zum Feld | 8 px |
+| Mindesthöhe Buttons und Eingabefelder | 44 px |
+| Eckenradius Karten | 10 px |
+| Eckenradius Felder und Buttons | 6 px |
+| Rahmenstärke | 1 px |
+
+| Grundfarbe | Farbcode |
+|---|---|
+| Seitenhintergrund | `#F2F8FC` |
+| Karten und Eingabefelder | `#FFFFFF` |
+| Haupttext | `#172033` |
+| Ergänzende Texte und Zeitangaben | `#52627A` |
+| Kartenrahmen | `#DCE5EF` |
+| Eingabefeldrahmen | `#8292A8` |
+| Aktionen und Links | `#006FBB` |
+| Button bei Hover | `#005A99` |
+| Text auf primären Buttons | `#FFFFFF` |
+| Neutrale Statusanzeige | Hintergrund `#E9EEF5`, Text `#42536B` |
+
+| Dringlichkeit | Hintergrund | Text |
+|---|---|---|
+| Kritisch | `#FEE2E2` | `#B91C1C` |
+| Hoch | `#FFEDD5` | `#9A3412` |
+| Normal | `#FEF3C7` | `#854D0E` |
+| Niedrig | `#DCFCE7` | `#166534` |
+| Noch nicht bewertet | `#DBEAFE` | `#1D4ED8` |
+
+Die Farbfamilien folgen DRING-04; «Noch nicht bewertet» bleibt ein Bewertungszustand. Die responsive Darstellung ist im entsprechenden Abschnitt bestätigt. Die Kontrastprüfung an den tatsächlich umgesetzten Komponenten steht noch aus.
+
+Nachrichtenblasen: Mieter und Immobilienverwaltung `#EEF2F7`, Systemnachrichten `#E5F5F3`. Rollen beziehungsweise die vereinbarten Icons und die interne Kennzeichnung bleiben zusätzlich sichtbar.
 
 ## 3. Fachlich verbindliche Inhalte
 
@@ -168,7 +252,7 @@ Der Mitarbeiter kann das Datum während des aktiven Falls jederzeit ändern oder
 
 Neue Mieternachrichten erscheinen weiterhin links und werden parallel zur Wartezeit automatisch verarbeitet. Ihr Eingang allein beendet das Warten nicht. Neue Erkenntnisse können eine frühere, bei unmittelbarem Handlungsbedarf sofortige Wiedervorlage auslösen; andernfalls bleibt der gesetzte Termin bestehen. Beim wirksamen Wiedervorlagetermin erhält der aktive Fall «Mitarbeiterprüfung erforderlich». Eine manuelle Terminänderung wird im Timer berücksichtigt; beim Abschluss entfällt die offene Wiedervorlage.
 
-Die Aktualisierung von Nachrichten, Status, Dringlichkeit und Wiedervorlagedatum folgt weiterhin Abschnitt 6 und erhält Mitarbeitereingabe und KI-Stream. Änderungen am Wiedervorlagedatum werden im Popup mit altem und neuem Wert angezeigt; ein gelöschter Termin wird als «Keine Wiedervorlage» erkennbar. Tagesberechnung, Uhrzeit bei festem Datum und die visuelle Gestaltung werden noch konkretisiert.
+Die Aktualisierung von Nachrichten, Status, Dringlichkeit und Wiedervorlagedatum folgt weiterhin Abschnitt 6 und erhält Mitarbeitereingabe und KI-Stream. Änderungen am Wiedervorlagedatum werden im Popup mit altem und neuem Wert angezeigt; ein gelöschter Termin wird als «Keine Wiedervorlage» erkennbar. Tagesberechnung, Uhrzeit bei festem Datum und Darstellungsdetails des Aktualisierungs-Popups werden noch konkretisiert; die Desktop-Grundanordnung ist bestätigt.
 
 **Ergänzt am 10.10.2026 – optionale interne Begründung:** Bei Setzen, Ändern und Löschen steht «Begründung (optional, intern)» im Wiedervorlage-Bereich zur Verfügung. «Speichern» übernimmt sie mit der Terminsetzung oder -änderung; «Wiedervorlage löschen» übernimmt sie mit der Löschung. Jede Aktion bleibt ohne Begründung möglich. Die Begründung wird intern der erfolgreich bestätigten Aktion zugeordnet, auch nach Entfernung des Termins, und erzeugt kein separates Memo. Sie bleibt von Mieteransicht, E-Mail und KI-Kommunikationsformulierung ausgeschlossen (FALL-11, KOM-01/KOM-02). Abbrechen, Fehler oder Konflikte speichern weder Aktion noch Begründung.
 
@@ -334,6 +418,8 @@ Diese Kriterien bilden die bestätigten Fachregeln und Bedienungsentscheidungen 
 
 - **FD-AK-22:** Status, Dringlichkeit und Wiedervorlage stehen auf breiten Bildschirmen rechts neben dem Falltitel. Geschlossene Änderungskarten wiederholen die Werte nicht. Öffnen zeigt den gespeicherten Wert vorausgewählt; ungespeicherte Auswahl verändert den Kopf nicht. Abbrechen übernimmt nichts. Mieterblasen sind links angeordnet und linksbündig, Verwaltungs-/Systemblasen und Ereignisse rechts angeordnet und rechtsbündig. Alle Blasen sind gleich breit; Quelle, Rolle, Zeitpunkt und interne Kennzeichnung liegen vollständig darin. Personen-, Zahnrad- und Schloss-Icons, Rollen und Tooltips folgen Abschnitt 3 und sind per Tastatur sowie mit zugänglicher Beschriftung verständlich. Beide Eingabe-Toggles haben denselben Stil. Farblegende, Abschluss-Hilfstext und der Überschriftszusatz «ungespeichert» fehlen; fachliche Bestätigung und Veröffentlichung bleiben erforderlich.
 
+- **FD-AK-23:** Bei Vergrösserung der Nachrichtentextbox auf breiten Bildschirmen bleibt ihre Breite konstant; der Eingabebereich wächst nach oben, der Verlauf wird bis auf mindestens 200 CSS-Pixel verkleinert und der Senden-Button bleibt sichtbar. An der Grenze scrollt nur der längere Text innerhalb der Textbox. Verkleinern gibt dem Verlauf Platz zurück, ohne Nachrichten oder Eingabetext zu verlieren. Auf kleinen Bildschirmen wächst die Textbox automatisch bis zur vorgesehenen Maximalhöhe und scrollt danach intern. Kopf und rechte Spalte bleiben unverändert; Aktionen und sichtbarer KI-Vorschlag werden bei der Höhenbegrenzung berücksichtigt.
+
 ## 8. Abgleich und verbleibende Konkretisierungen
 
 Die grundlegende fachliche Bedienung von UI3 ist bestätigt. UI1 und UI2 behalten ihre bestätigten Funktionen; gemeinsame Kommunikations-, Status-, Zugriffs- und Dringlichkeitsregeln wurden mit den zentralen Spezifikationen sowie UC-003/UC-004 abgeglichen.
@@ -347,7 +433,7 @@ Folgende Punkte gehören zur anschliessenden Prozess- und technischen Ausarbeitu
 - Objekt-/Wohnungsauswahl nach FALL-04: genaue Gestaltung, Stammdatenzugriff und technische Umsetzung der bestätigten Zuordnungsänderung samt Konfliktprüfung und Nachvollziehbarkeit.
 - Technischer Nachweis der Trennung bewusster Mitarbeitereingaben von systemseitig bereitgestelltem KI-Kontext nach KOM-02, einschliesslich Ausschluss automatischer Memo-Übernahme und systemseitiger Memo-Ableitungen; Streaming-/Abbruchvertrag und Koordination konkurrierender Aktionen.
 - E-Mail-Vorlagen mit klar erkennbarem Antwortbedarf; die bereits zentral offene Behandlung der getrennten Benachrichtigungspflichten von Abschlussnachricht und Abschluss.
-- Darstellungsdetails wie Popup-Verhalten bei mehreren Aktualisierungen, Fokusführung, genaue Scrollhöhe, Farbtöne und Abstände sowie konkrete Grafikdateien der festgelegten Icons. Verhalten und Höhenbegrenzung bei manueller Textbox-Vergrösserung sind noch nicht bestätigt.
+- Darstellungsdetails wie Popup-Verhalten bei mehreren Aktualisierungen, Fokusführung, genaue Scrollhöhe sowie konkrete Grafikdateien der festgelegten Icons. Das Verhalten bei manueller Textbox-Vergrösserung ist in Abschnitt 2 bestätigt; unter 1200 px gilt die bestätigte automatische Textboxhöhe von 96–240 px.
 
 Die Erstposition des Verlaufs beim Öffnen sowie das Zurücksetzen einer vorübergehend nicht verfügbaren Antwortbedarfs-Auswahl beim Umschalten auf «Intern» wurden nicht gesondert bestätigt und bleiben als kleine Bedienungsdetails für die spätere Ausarbeitung kenntlich. Die bestehenden Regeln zu Textbestand, externem Antwortbedarf und Zurücksetzen nach erfolgreicher Speicherung gelten verbindlich.
 
