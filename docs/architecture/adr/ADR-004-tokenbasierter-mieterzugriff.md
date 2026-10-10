@@ -4,6 +4,8 @@
 
 Akzeptiert – dokumentiert die am 09.10.2026 vereinbarte Zugangsentscheidung. Die technische Implementierung und die noch offenen Sicherheitsparameter sind damit nicht als fertig bestätigt.
 
+**Fachlich konkretisiert am 10.10.2026:** Der persönliche Fall-Link hat keine zeitliche Ablauffrist. Diese bestätigte Festlegung ersetzt den bisherigen offenen Laufzeitvorschlag; das direkte Tokenmodell und die getrennten Regeln für einen bewussten Widerruf bleiben bestehen.
+
 ## Kontext
 
 Mieterinnen und Mieter sollen neue Anliegen erfassen und einen bestehenden Fall wiederholt aufrufen können. Ein Mieterportal mit Benutzerkonto und Anmeldung ist für diesen Umfang nicht vorgesehen. Der persönliche Falllink wird per E-Mail zugestellt und in späteren Benachrichtigungen wiederverwendet.
@@ -19,7 +21,7 @@ Die detaillierten Regeln sind in [Fallzugriff und Sicherheit](../../specificatio
 1. **Zugang ohne Benutzerkonto:** Ein kryptografisch zufälliger, nicht aus der Case-ID ableitbarer Token vermittelt die begrenzte Mieterberechtigung für genau einen Fall. Im vereinbarten Modell gibt es pro Fall genau einen gültigen Mieterzugang.
 2. **Fallidentität und Berechtigung getrennt:** Die Case-ID identifiziert den Fall und erscheint im Inhalt der Ansicht. Nur der gültige geheime Token berechtigt zum Zugriff; Case-ID, Kontaktadresse oder Absende-ID allein genügen nicht.
 3. **Direkte, wiederverwendbare Tokenadresse:** Der persönliche Link lautet `/mieter/fall/zugang/<geheimer-token>`. Ein gültiger GET rendert den Fall direkt unter derselben URL. Es gibt keinen Austausch gegen eine berechtigende Sitzung und keine GET-Weiterleitung auf eine tokenfreie Adresse. Jeder Lese- und Schreibaufruf prüft Token, Fallzuordnung und geltende Rechte erneut. Technische Cookies können dem Formularschutz dienen, ersetzen aber die Tokenprüfung nicht.
-4. **Ein gleichbleibender Link:** Öffnen und gewöhnliche E-Mail-Benachrichtigungen verbrauchen, verlängern oder ersetzen den Token nicht. Ein bewusster Ersatz erzeugt einen neuen unabhängigen Token und sperrt den alten. Die Case-ID und der Verlauf bleiben erhalten.
+4. **Ein gleichbleibender Link ohne zeitliche Ablauffrist:** Der Token läuft weder durch Zeitablauf noch durch Inaktivität ab. Öffnen und gewöhnliche E-Mail-Benachrichtigungen verbrauchen oder ersetzen ihn nicht; eine Verlängerung ist nicht erforderlich. Ein bewusster Ersatz erzeugt einen neuen unabhängigen Token und sperrt den alten. Die Case-ID und der Verlauf bleiben erhalten.
 5. **Zwei Speicherformen desselben Tokens:** Ein Hash dient zur Zugriffsprüfung. Eine separat geschützte, verschlüsselte Tokenkopie ermöglicht der berechtigten Versandfunktion, denselben Link in späteren E-Mails wiederherzustellen. Der Verschlüsselungsschlüssel wird ausserhalb der Datenbank und des Git-Repositorys verwaltet. Nur die Versandfunktion erhält die Möglichkeit zur Entschlüsselung; Fallbearbeitung, Camunda und KI erhalten sie nicht.
 6. **Besitz vermittelt Berechtigung, keine Identität:** Jeder Besitzer eines gültigen Links erhält dieselben begrenzten Mieterrechte. Linkweitergabe ist faktische Weitergabe dieser Rechte. Sie erzeugt keine separate Empfängeridentität oder zusätzliche E-Mail-Abonnierung.
 
@@ -48,16 +50,16 @@ Ein Hash allein kann den ursprünglichen Token nicht für spätere E-Mails wiede
 ## Konsequenzen
 
 - Der gültige Zugang erlaubt ausschliesslich das Lesen des zugeordneten externen, veröffentlichten Fallverlaufs und bei aktivem Fall das Senden externer Nachrichten. Interne Memos, Backoffice-Aktionen und KI-/Prozessabbruch bleiben ausgeschlossen.
-- Ein abgeschlossener Fall bleibt bei gültigem Token lesbar. Der Fallabschluss sperrt Nachrichten, widerruft aber den Zugang nicht automatisch. Tokenablauf schliesst oder löscht keinen Fall.
+- Ein abgeschlossener Fall bleibt bei gültigem Token lesbar. Der Fallabschluss sperrt Nachrichten, widerruft aber den Zugang nicht automatisch und setzt keine Ablauffrist. Aufbewahrung und Löschung von Falldaten werden unabhängig von der zeitlich unbegrenzten Linkgültigkeit geregelt.
 - Bei weitergegebenem Link kann PropertyFlow den ursprünglichen Mieter nicht vom Empfänger unterscheiden. Die Identität des Verfassers einer Nachricht ist damit nicht nachgewiesen. Ein Ersatz sperrt den alten Link für alle Besitzer; bereits gelesene Inhalte lassen sich nicht zurückholen.
 - Die Browseradresse, Lesezeichen und E-Mails enthalten ein Zugangsgeheimnis. HTTPS, Log-Redaktion auch des URL-Pfads, Cache-/Referrer-Schutz, Ausschluss von Drittanbieterressourcen und CSRF-Schutz für Schreibaktionen sind erforderlich. Der Zugriffstoken ersetzt keinen CSRF-Nachweis.
 - Schlüsselverwaltung, Entschlüsselungsrechte und Bereinigung der Versandkopien verursachen zusätzlichen Betriebsaufwand. Hash und verschlüsselte Kopie müssen demselben Zugang zugeordnet bleiben. Ein Wechsel des Verschlüsselungsschlüssels ist kein Wechsel des Zugriffstokens.
-- Die Versandfunktion prüft den Zugang vor dem Versand. Abgelaufene oder widerrufene Tokens werden nicht als gültige Links versendet. Ein Versandfehler erzeugt keinen Ersatztoken und nimmt keine fachliche Speicherung zurück.
+- Die Versandfunktion prüft den Zugang vor dem Versand. Widerrufene oder ersetzte Tokens werden nicht als gültige Links versendet; eine zeitliche Ablaufprüfung entfällt. Ein Versandfehler erzeugt keinen Ersatztoken und nimmt keine fachliche Speicherung zurück.
 - Tokens, verschlüsselte Versandkopien und Schlüssel gehören nicht in Camunda-Variablen, LLM-Eingaben oder RAG-Kontexte. Normale Benachrichtigungen verwenden kurze Vorlagen und den persönlichen Link.
 
 ## Abgrenzung und offene Konkretisierungen
 
-Dieser ADR legt weder ein konkretes Tokenformat noch endgültige Laufzeiten, Hash-/Verschlüsselungsverfahren, Schlüsselrotation, Rate Limits oder Löschfristen fest. Die in der Zugangs-Spezifikation genannten Werte bleiben Review-Vorschläge. Kontaktbestätigung, Identitätsprüfung beim Linkersatz und die Behandlung wartender Mails bei ungültigem Zugang werden vor produktivem Einsatz konkretisiert.
+Die fehlende zeitliche Ablauffrist ist bestätigt. Dieser ADR legt kein konkretes Tokenformat, Hash-/Verschlüsselungsverfahren, keine Schlüsselrotation, Rate Limits oder Löschfristen fest. Die hierzu in der Zugangs-Spezifikation genannten Werte bleiben Review-Vorschläge. Kontaktbestätigung, Identitätsprüfung bei einem administrativen Linkersatz und die Behandlung wartender Mails bei ungültigem Zugang werden vor produktivem Einsatz konkretisiert. Eine UI3-Aktion «Fall-Link ersetzen» ist nicht vorgesehen.
 
 Die Spezifikationen bleiben die Quellen für detaillierte Regeln und Prüfkriterien:
 

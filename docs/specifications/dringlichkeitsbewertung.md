@@ -31,7 +31,9 @@ Die Platzierung unbewerteter Fälle und der zweite Sortierwert der Mitarbeiterli
 
 ## DRING-03: Menschliche Prüfung und Darstellung
 
-KI-Empfehlungen ersetzen die endgültige menschliche Entscheidung nicht. LLM-Ausgaben sind nicht vertrauenswürdig und müssen vor fachlicher Verwendung validiert werden; relevante Empfehlungen bleiben gemäss Projekt-Kontext und ADR-001 nachvollziehbar.
+Menschliche Entscheidungen sind bei Kosten bzw. verbindlicher externer Beauftragung, sehr dringlichen oder schwerwiegenden Fällen sowie starken oder eskalierten Mieterbeschwerden gemäss [FALL-10](fallverwaltung.md#fall-10-automatisierung-und-menschliche-freigabe) verpflichtend. Ausserhalb dieser Grenzen sind die ausdrücklich vereinbarten automatischen Schritte und Systemabschlüsse zulässig. LLM-Ausgaben sind nicht vertrauenswürdig und müssen vor fachlicher Verwendung validiert werden; relevante Empfehlungen bleiben gemäss Projekt-Kontext und ADR-001 nachvollziehbar.
+
+Prüfbedarf und Dringlichkeitsstufe sind getrennte Angaben. Eine starke Beschwerde wird nicht allein wegen ihres Tons «Kritisch»; eine manuell niedrigere Einstufung beseitigt umgekehrt keine verpflichtende menschliche Prüfung. Der Vorrang manueller Einstufungen nach DRING-06 bleibt erhalten.
 
 Dringlichkeit wird gemäss [UC-002](../use_cases/UC-002-mieteranliegen-anzeigen.md) textlich dargestellt und nicht ausschliesslich über Farbe vermittelt. Die aktuelle Stufe und ihre Änderungsquelle werden unterschieden: «System» für die automatische Prozessbewertung, «Immobilienverwaltung» für die manuelle Anpassung durch einen berechtigten Mitarbeiter. Eine automatisch gespeicherte Dringlichkeit ist keine abschliessende menschliche Entscheidung über die weitere Bearbeitung oder den Fallabschluss.
 
@@ -57,13 +59,15 @@ Solange weder eine erfolgreiche Systembewertung noch eine manuelle Einstufung vo
 
 ## DRING-06: Manuelle Anpassung
 
-**Vereinbart:** Ein berechtigter, separat authentifizierter Mitarbeiter kann die Dringlichkeitsstufe in der Mitarbeiter-Falldetailansicht ändern. «User» bezeichnet in diesem Ablauf den Mitarbeiter, nicht den Mieter. Die Mieteransicht bleibt bezüglich Dringlichkeit ausschliesslich lesend gemäss ZUG-04.
+**Vereinbart:** Ein berechtigter, Mitarbeiter kann die Dringlichkeitsstufe in der Mitarbeiter-Falldetailansicht ändern. «User» bezeichnet in diesem Ablauf den Mitarbeiter, nicht den Mieter. Die Mieteransicht bleibt bezüglich Dringlichkeit ausschliesslich lesend gemäss ZUG-04.
 
 Die manuelle Anpassung wird in PropertyFlow gespeichert und mit der Änderungsquelle «Immobilienverwaltung» nachvollziehbar.
 
+**Bedienung in UI3 bestätigt am 10.10.2026:** «Dringlichkeit ändern» im rechten Bereich, Auswahl einer der vier fachlichen Stufen und bewusste Übernahme mit «Speichern». Die Auswahl allein verändert keine Einstufung. «Noch nicht bewertet» ist keine auswählbare Stufe. **Bestätigt am 10.10.2026:** Eine kurze Begründung ist optional und wird bei der Speicherung intern mit der Änderung nachvollziehbar festgehalten. Sie erscheint weder beim Mieter noch in Benachrichtigungen und ist keine zulässige Grundlage der KI-Kommunikationsformulierung. **Konfliktverhalten in UI3 bestätigt am 10.10.2026:** Vor dem Speichern prüft das System serverseitig auf zwischenzeitliche Einstellungsänderungen. Bei Konflikt wird keine manuelle Änderung übernommen; die aktuellen Einstellungen werden neu geladen und «konnte nicht erfolgreich gespeichert werden» angezeigt. Nachrichteneingabe und laufender KI-Stream bleiben erhalten. Prüfung und Speicherung müssen konsistent gegen gleichzeitige Änderungen abgesichert sein. Weitere Rückmeldungen und technische Versionierung bleiben zu konkretisieren.
+
 **Vereinbart:** Eine manuell gesetzte Dringlichkeitsstufe hat Vorrang und darf vom System nicht überschrieben werden. Dies gilt auch nach weiteren Mieter-Nachrichten und bei gleichzeitig oder verspätet eintreffenden automatischen Ergebnissen. Eine weitere manuelle Anpassung durch berechtigte Mitarbeitende bleibt möglich und wird erneut historisiert.
 
-Die automatische Neubewertung nach jeder Mieter-Nachricht bleibt bestehen. Ihr Ergebnis wird getrennt von der wirksamen manuellen Stufe als Systembewertung geführt und ersetzt diese nicht. Ohne Änderung der wirksamen Stufe entsteht kein mieteröffentlicher Stufenwechsel und keine Änderungsmail. Die Darstellung eines abweichenden Systemergebnisses im Mitarbeiterdetail bleibt zu konkretisieren. Ein Zurücksetzen auf automatische Einstufung ist nicht vereinbart; eine solche Funktion wird nicht stillschweigend eingeführt. Alle authentifizierten Mitarbeitenden haben diese Berechtigung über die einheitliche Adminrolle gemäss ZUG-04. Die technische Synchronisierung bleibt festzulegen.
+Die automatische Neubewertung nach jeder Mieter-Nachricht bleibt bestehen. Ihr Ergebnis wird getrennt von der wirksamen manuellen Stufe als Systembewertung geführt und ersetzt diese nicht. Ohne Änderung der wirksamen Stufe entsteht kein mieteröffentlicher Stufenwechsel und keine Änderungsmail. Die Darstellung eines abweichenden Systemergebnisses im Mitarbeiterdetail bleibt zu konkretisieren. Ein Zurücksetzen auf automatische Einstufung ist nicht vereinbart; eine solche Funktion wird nicht stillschweigend eingeführt. Alle Mitarbeitenden haben diese Berechtigung über die einheitliche Adminrolle gemäss ZUG-04. Die technische Synchronisierung bleibt festzulegen.
 
 ## DRING-07: Änderungshistorie und Mietertransparenz
 
@@ -75,12 +79,16 @@ Die aktuelle Stufe und alle fachlichen Stufenänderungen werden dem berechtigten
 
 Eine erneute Bewertung mit unveränderter Stufe erzeugt keine fingierte Stufenänderung; die Nachvollziehbarkeit des Bewertungsversuchs bleibt intern erforderlich. Wiederholungen derselben Änderung erzeugen keinen zweiten Historieneintrag. Historie und aktuelle Stufe müssen konsistent gespeichert werden. Mieteröffentliche Stufenänderungen lösen eine Benachrichtigung gemäss [BEN-01](benachrichtigungen-und-zustellung.md#ben-01-auslöser-und-ausschlüsse) aus.
 
+## DRING-08: Dringlichkeit bei abgeschlossenen Fällen
+
+**Vereinbart am 10.10.2026:** Bei einem abgeschlossenen Fall bleibt die wirksame Dringlichkeit nur lesbar. Weder Mitarbeitende noch Systembewertungen dürfen sie im abgeschlossenen Zustand ändern. Eine manuelle Anpassung setzt die vorherige bestätigte Wiedereröffnung durch einen Mitarbeiter nach FALL-07 voraus. Die serverseitige Prüfung muss auch gleichzeitige Abschlüsse und verspätete Bewertungsergebnisse berücksichtigen; solche Ergebnisse dürfen die Sperre nicht umgehen. Nach Wiedereröffnung gelten weiterhin der manuelle Vorrang und die Historisierungsregeln.
+
 ## Offene Konkretisierungen
 
 - Kriterien und repräsentative Grenzfälle zur Einordnung in die vereinbarten Stufen.
-- Konkrete Validierung und Übernahme einer automatischen Bewertung; die manuelle Anpassung ist für alle authentifizierten Mitarbeitenden mit einheitlichen Adminrechten vorgesehen.
+- Konkrete Validierung und Übernahme einer automatischen Bewertung; die manuelle Anpassung ist für alle Mitarbeitenden mit einheitlichen Adminrechten vorgesehen.
 - Technische Synchronisierung konkurrierender Bewertungen und manueller Änderungen, veralteter Ergebnisse sowie mehrerer rasch aufeinanderfolgender Mieter-Nachrichten. Der vereinbarte Vorrang manueller Einstufungen muss auch bei gleichzeitigem Speichern wirksam bleiben.
-- Zulässigkeit einer Dringlichkeitsänderung nach Fallabschluss; nachträgliche Nachrichtenerzeugung bleibt durch KOM-04 gesperrt.
+- Technische Durchsetzung der bestätigten Änderungssperre im abgeschlossenen Zustand, einschliesslich konkurrierender Abschlüsse und verspäteter Systembewertungen.
 - Technische Werte, Validierung und Service-/Persistenzverträge.
 
 Diese offenen Umsetzungs- und Konfliktregeln ändern die vereinbarten Auslöser, die manuelle Anpassung und die Transparenz der Historie nicht. Konkrete Fristen benötigen bei Bedarf eine separate fachliche Vereinbarung.

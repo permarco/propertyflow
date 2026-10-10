@@ -78,7 +78,7 @@ Immobilienbewirtschaftung und mehreren externen Systemen.
 
 Wesentliche externe Systeme sind:
 
-- E-Mail-System für eingehende Mieteranliegen
+- E-Mail-System für Fallbenachrichtigungen; eingehende Mieteranliegen aus der Projektvision benötigen noch einen eigenen Kanalvertrag
 - Immobilienverwaltungs- beziehungsweise Mieterstammdatensystem
 - externer LLM-Provider
 - Camunda 8 für die technische Workflow-Orchestrierung
@@ -171,8 +171,11 @@ Details:
   externe LLM-Provider übertragen.
 - Personenbezogene Daten werden soweit fachlich möglich minimiert oder
   maskiert.
-- Kritische fachliche Aktionen benötigen eine explizite menschliche Prüfung
-  oder Freigabe.
+- Kosten bzw. verbindliche externe Beauftragung, sehr dringliche oder
+  schwerwiegende Fälle sowie starke oder eskalierte Mieterbeschwerden erfordern
+  eine explizite Mitarbeiterentscheidung nach
+  [FALL-10](specifications/fallverwaltung.md#fall-10-automatisierung-und-menschliche-freigabe).
+  Offener Prüfbedarf darf nicht durch einen Systemabschluss umgangen werden.
 - Sicherheits- und Vertrauensgrenzen werden in
   `docs/evaluation/evaluationsgrundlage.md` dokumentiert.
 
@@ -206,15 +209,15 @@ Details:
 - Eine vollständige CSR-/SPA-Anwendung wird nicht eingesetzt.
 - Vanilla JavaScript wird nur als klar abgegrenzte interaktive Komponente
   eingesetzt, wenn ein konkreter fachlicher oder qualitativer Nutzen besteht.
-- Die interaktive KI-Analyse in der Mitarbeiter-Falldetailansicht muss ihren aktuellen Status anzeigen, schrittweise Ausgaben
+- Die interaktive KI-Formulierungshilfe für externe Nachrichten in der Mitarbeiter-Falldetailansicht muss ihren aktuellen Status anzeigen, schrittweise Ausgaben
   darstellen, einen wirksamen Abbruch ermöglichen und definierte Fehlerzustände
   unterstützen.
-- Ein Abbruch der KI-Analyse muss mindestens die clientseitige Verbindung und
+- Ein Abbruch der interaktiven KI-Nachrichtenformulierung muss mindestens die clientseitige Verbindung und
   Darstellung beenden. Das Backend soll den Abbruch erkennen und die laufende
   Verarbeitung kontrolliert beenden oder weitere Ausgabe verwerfen.
 - Die Weiterleitung des Abbruchs an den externen LLM-Provider wird genutzt,
   sofern der eingesetzte Provider und Client dies unterstützen.
-- Die Zustandsübergänge der Analyse müssen mindestens `waiting`,
+- Die Zustandsübergänge der interaktiven Formulierung müssen mindestens `waiting`,
   `streaming`, `completed`, `aborted` und `error` unterscheiden.
 - Streaming und Abbruch sind Funktionen der Mitarbeiter-Falldetailansicht gemäss ADR-003
   und UC-004. Die Mieteransicht zeigt gespeicherte veröffentlichte Nachrichten
@@ -226,8 +229,17 @@ Details:
   wirkenden Filtern, Sortierung, maximal 50 Fällen je Seite und automatischer
   Aktualisierung alle 20 Sekunden. Sie liest den
   gespeicherten Stand aus PropertyFlow und bietet keinen Analyse-Stream.
+- Die [Mitarbeiter-Falldetailansicht](frontend/ansicht-03-mitarbeiter-falldetail.md)
+  ist als dritter Screen fachlich spezifiziert: Falltitel, Status und Dringlichkeit
+  oben, darunter Verlauf links sowie Falldaten und Aktionen rechts. Nachrichten,
+  interne Memos, KI-Formulierung, Status- und Dringlichkeitsänderung, Wiedervorlage,
+  Abschluss und Wiedereröffnung folgen der dort bestätigten Bedienung.
+  Technische Umsetzung und visuelle Ausgestaltung folgen separat.
 - Die [Mieter-Fallansicht](frontend/ansicht-01-mieter-fallansicht.md) zeigt
   zusätzlich die wirksame Dringlichkeit und ihre freigegebene Änderungshistorie.
+  Die sichtbare Ansicht aktualisiert aktive und abgeschlossene Fälle alle
+  20 Sekunden; nach bestätigter Wiedereröffnung erscheint die Nachrichteneingabe
+  automatisch wieder. Ein Leseabruf eröffnet selbst keinen Fall.
 - Benutzer- und KI-generierte Inhalte werden standardmässig sicher als Text
   ausgegeben und nicht ungeprüft als HTML interpretiert.
 - Interaktive Funktionen müssen per Tastatur bedienbar sein.
@@ -255,19 +267,34 @@ zulässigen LLM-Datengrundlage, zur asynchronen Mieterkommunikation und zur
 Nachrichtensperre nach Abschluss. Die Details und Prüfkriterien werden dort
 gepflegt; Screen-Spezifikationen verweisen darauf.
 
+Für die KI-Formulierung übernimmt das System keine internen Memos oder daraus
+erzeugten Zusammenfassungen und Fakten. Bewusst eingegebene kurze Sachanweisungen
+des Mitarbeiters sind nach KOM-02 zulässig, auch wenn dieselbe Information in
+einem Memo steht. Der Mitarbeiter prüft den Vorschlag vor dem Senden.
+
 ### 6.8 Fallanlage und Lebenszyklus
 
 Die [zentrale Spezifikation der Fallverwaltung](specifications/fallverwaltung.md)
 führt Fallidentität, erfolgreiche Annahme, Wiederholung, Ursprungsdaten,
 Objektzuordnung und fachlichen Lebenszyklus. Sie grenzt den fachlichen Status
 von technischem Workflow-State und Benachrichtigungszustand ab.
-Die sieben Bearbeitungsstatus, die Zuordnung klärungsbedürftiger Fälle zu
+Die acht Bearbeitungsstatus, die Zuordnung klärungsbedürftiger Fälle zu
 «Mitarbeiterprüfung erforderlich» und das Zeitmodell des letzten Mieterkontakts
 sind dort vereinbart. Mitarbeitende dürfen den Abschluss bestätigen; das
 System darf bei eindeutig bestätigter Behebung ohne weiteren Hilfebedarf oder
 eindeutig fehlendem Verwaltungsbedarf nach hinterlegter Fachregel abschliessen.
 Konkrete Prozessübergänge und die technische Umsetzung der Abschlussregeln
 bleiben zu konkretisieren. Use-Cases und Screens verweisen auf diese Quelle.
+
+Die optionale Wiedervorlage nach FALL-11 wird in UI3 in Tagen oder als Datum
+gesetzt und am Fall gespeichert. UI2 zeigt das Datum als zusätzliche, in
+beiden Richtungen sortierbare Spalte. In UI3 kann der Mitarbeiter den Termin
+im aktiven Fall jederzeit ändern oder löschen. Setzen und Ändern führen zu
+«Wartet auf Wiedervorlage», Löschen zu «In Bearbeitung». Camunda führt die
+Wartezeit als Timer im bestehenden Fallprozess. Neue Mieternachrichten werden
+parallel verarbeitet; neue Erkenntnisse können die Wiedervorlage vorziehen.
+Ohne früheren Handlungsbedarf bleibt der Termin bestehen. Bei Fälligkeit gilt
+«Mitarbeiterprüfung erforderlich»; ein Abschluss beendet die offene Wiedervorlage.
 
 ### 6.9 Fallzugriff und Sicherheit
 
@@ -282,10 +309,15 @@ zeigt ihn direkt unter derselben Token-URL an. Der Token wird bei jeder
 Lese- und Schreibanfrage geprüft; eine berechtigende Fallsitzung entfällt.
 Die lesbare Case-ID bleibt im Inhalt eine unveränderliche Referenz und
 gewährt allein keinen Zugriff. Rechte, Widerruf, Ersatz und Token-Schutz
-werden dort gepflegt. Laufzeiten und technische Schutzparameter sind als
+werden dort gepflegt. Der persönliche Fall-Link hat keine zeitliche Ablauffrist;
+dies ist am 10.10.2026 bestätigt. Weitere technische Schutzparameter bleiben als
 Review-Vorschläge gekennzeichnet. Screens, Use-Cases und Services verweisen auf diese Quelle.
 
-Alle separat authentifizierten Mitarbeitenden haben dieselben Adminrechte auf
+Für Mitarbeitende gibt es keine Anmeldung, keine Mitarbeiterkonten und keine
+Abmeldefunktion. UI2 und UI3 enthalten keinen Ablauf für eine abgelaufene Anmeldung.
+Die technische Absicherung des Mitarbeiterbereichs und die Ermittlung individueller
+Mitarbeiteridentitäten bleiben gemäss ZUG-04 zu konkretisieren.
+Alle Mitarbeitenden haben dieselben Adminrechte auf
 alle Fälle und internen Memos. Die Mitarbeiter-Volltextsuche umfasst gespeicherte
 veröffentlichte externe Nachrichten und interne Memos, keine externen Entwürfe.
 Sie erweitert weder Mieterrechte noch den zulässigen Kommunikations-LLM-Kontext.

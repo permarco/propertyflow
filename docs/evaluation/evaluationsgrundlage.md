@@ -288,7 +288,9 @@ allein aufgrund einer KI-Empfehlung erfolgen. Vor der Auslösung muss die
 Immobilienbewirtschaftung den vorgeschlagenen Auftrag explizit prüfen und
 freigeben.
 
-Die KI darf eine solche Massnahme empfehlen, aber nicht selbst freigeben.
+Die KI darf eine solche Massnahme empfehlen, aber nicht selbst freigeben. Unbekannte Kosten erlauben keine automatische Beauftragung.
+
+Nach [FALL-10](../specifications/fallverwaltung.md#fall-10-automatisierung-und-menschliche-freigabe) erfordern auch sehr dringliche oder schwerwiegende Fälle sowie starke oder eskalierte Mieterbeschwerden eine Mitarbeiterentscheidung über Vorgehen und Abschluss. Bis zur Entscheidung wird ein aktiver Fall als «Mitarbeiterprüfung erforderlich» geführt. Eine spätere Behebungsmeldung darf offenen Prüfbedarf nicht automatisch umgehen. Eine Beschwerde allein setzt die Dringlichkeit nicht auf «Kritisch»; manuelle Einstufungen bleiben geschützt. FALL-AK-14 und FALL-AK-15 definieren die später zu prüfenden Grenzen, keine bereits ausgeführten Nachweise.
 
 **Vereinbarte Systemabschlüsse:** Nach [FALL-07](../specifications/fallverwaltung.md#fall-07-abschluss-und-zeit-danach) darf das System einen Fall bei eindeutiger Mieterbestätigung der Behebung ohne weiteren Hilfebedarf oder eindeutig fehlendem Verwaltungsbedarf nach hinterlegter Fachregel abschliessen. Dafür ist keine zusätzliche Einzelfreigabe vorgesehen, sofern keine verpflichtende menschliche Prüfung greift. Diese Fachregeln erlauben keine autonome Beauftragung. Das Stichwort «Glühbirne» allein legt insbesondere keine mieterseitige Zuständigkeit fest; das konkrete Anliegen und die Fachregel sind zu prüfen.
 
@@ -311,17 +313,20 @@ Für Logs und KI-Auditdaten gilt deshalb:
 
 Die kanalübergreifenden Regeln und Prüfkriterien sind in der
 [zentralen Spezifikation der Fallkommunikation](../specifications/fallkommunikation.md)
-geführt. KOM-AK-01 bis KOM-AK-08 ergänzen die Evaluationsbasis um Sichtbarkeit,
-Autorisierung, Mitarbeiter-Suchumfang, Memo-Ausschluss aus LLM-Eingaben, asynchrone Verarbeitung und
-Abschlusssperre. Für Änderungen an diesen Regeln wird die zentrale Quelle
+geführt. KOM-AK-01 bis KOM-AK-10 ergänzen die Evaluationsbasis um Sichtbarkeit,
+Autorisierung, Mitarbeiter-Suchumfang, Ausschluss systemseitiger Memo-Übernahme bei zulässiger bewusster Mitarbeitereingabe, asynchrone Verarbeitung und
+Abschlusssperre sowie die inhaltliche Einzelprüfung offener Rückfragen, das gezielte Aufheben des Antwortbedarfs durch Mitarbeiter und die jeweilige Statusfortsetzung. Für Änderungen an diesen Regeln wird die zentrale Quelle
 fortgeschrieben; hier entsteht keine zweite Definition. Die Kriterien sind
 Anforderungen an spätere Tests, keine bereits erbrachten Nachweise.
 
 ## Ergänzende Prüfkriterien zur Fallverwaltung
 
 Die [Fallverwaltung](../specifications/fallverwaltung.md#prüfkriterien)
-führt mit FALL-AK-01 bis FALL-AK-13 die fachlichen Kriterien für Annahme,
-Wiederholung, Zuordnung, Statuskonsistenz, Prüfbedarf, letzten Mieterkontakt sowie Mitarbeiter- und Systemabschluss. Die Prüfung erfolgt
+führt mit FALL-AK-01 bis FALL-AK-19 die fachlichen Kriterien für Annahme,
+Wiederholung, manuelle Objekt-/Wohnungszuordnung in UI3, Statuskonsistenz, Prüfbedarf, letzten Mieterkontakt,
+Mitarbeiter- und Systemabschluss, Wiedereröffnung sowie Wiedervorlage mit
+paralleler Nachrichtenverarbeitung sowie die direkte manuelle Übernahme der
+Bearbeitung ohne Wiedervorlage. Die Prüfung erfolgt
 an den zuständigen Services mit ersetzbaren externen Abhängigkeiten.
 Die Kriterien sind noch keine ausgeführten Nachweise; Details werden an der
 zentralen Quelle gepflegt.
@@ -330,7 +335,7 @@ zentralen Quelle gepflegt.
 
 Die [Spezifikation für Fallzugriff und Sicherheit](../specifications/fallzugriff-und-sicherheit.md#prüfkriterien)
 führt ZUG-AK-01 bis ZUG-AK-14 für direkten Tokenzugriff, Erstzugriff, Fallbindung,
-Falltrennung, Ablauf, Widerruf, Rechte, Secret-Schutz, CSRF, Linkersatz,
+Falltrennung, zeitlich unbegrenzte Linkgültigkeit, bewussten Widerruf, Rechte, Secret-Schutz, CSRF, administrativen Linkersatz,
 geschützte Token-Aufbewahrung, Linkweitergabe und einheitliche Mitarbeiter-Adminrechte.
 Diese Kriterien ergänzen die Evaluationsbasis und werden an der zentralen
 Quelle gepflegt. Sie sind Anforderungen an spätere Tests und Reviews,
@@ -345,7 +350,7 @@ qualitativen Evaluationsfälle definieren keine abweichende Stufenskala;
 die konkrete Zuordnung von Grenzfällen wird an der zentralen Quelle ergänzt.
 
 Die [Mitarbeiter-Fallübersicht](../frontend/ansicht-02-mitarbeiter-falluebersicht.md)
-führt ÜB-AK-01 bis ÜB-AK-16 für Spalten, Standardsortierung, Suchumfang, Filter,
+führt ÜB-AK-01 bis ÜB-AK-17 für Spalten, Standardsortierung, Suchumfang, Filter,
 Seitennavigation, Rechte und Aktualisierung. Die
 [Benachrichtigungs-Spezifikation](../specifications/benachrichtigungen-und-zustellung.md)
 ergänzt BEN-AK-01 bis BEN-AK-09 einschliesslich Dringlichkeitsänderungen und
