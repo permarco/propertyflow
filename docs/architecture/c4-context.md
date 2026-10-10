@@ -3,6 +3,11 @@
 PropertyFlow unterstützt Immobilienbewirtschaftungen bei der
 KI-gestützten Triage und Bearbeitung von Mieteranliegen.
 
+Die Darstellung beschreibt den geplanten Systemkontext. Der vereinbarte
+UI-Umfang umfasst Web-Erfassung und Fallkommunikation über UI1 sowie
+Mitarbeiterübersicht und Fallbearbeitung über UI2/UI3. Benachrichtigungen
+werden per E-Mail mit dem persönlichen Fall-Link zugestellt.
+
 ```mermaid
 flowchart LR
     M["👤 Mieterin / Mieter"]
@@ -22,16 +27,25 @@ flowchart LR
     LLM["LLM-Provider
     Externer KI-Dienst"]
 
-    M -->|"reicht Anliegen über Webformular ein"| PF
-    M -->|"schickt Anliegen per E-Mail"| MAIL
-    MAIL -->|"liefert per E-Mail eingegangene Anliegen"| PF
+    M <-->|"erfasst Anliegen, liest Verlauf<br/>und sendet Nachrichten über UI1"| PF
+    PF -->|"veranlasst Fallbenachrichtigungen"| MAIL
+    MAIL -->|"sendet Hinweise mit persönlichem Fall-Link"| M
+    M -.->|"weitere Projektvision: Anliegen per E-Mail"| MAIL
+    MAIL -.->|"E-Mail-Annahme: Kanalvertrag noch offen"| PF
 
-    B <-->|"prüft Anliegen, KI-Empfehlungen
-    und steuert die Bearbeitung"| PF
+    B <-->|"prüft Fälle in UI2/UI3,<br/>bearbeitet und kommuniziert"| PF
 
     PF <-->|"bezieht Daten zur Identifikation
     von Mieter, Mietverhältnis und Objekt"| ERP
 
-    PF <-->|"sendet aufbereitete Eingaben /
-    erhält Analyse und Empfehlungen"| LLM
+    PF <-->|"sendet zulässige Eingaben / erhält<br/>Analyse, Empfehlungen und Formulierungen"| LLM
 ```
+
+Analyse und Dringlichkeitsbewertung erfolgen automatisch im Camunda-Prozess;
+die interaktive KI-Funktion unterstützt die bewusste Formulierung einer externen
+Mitarbeiternachricht. Für diesen Kommunikationskontext gilt
+[KOM-02](../specifications/fallkommunikation.md#kom-02-llm-kommunikation-ohne-interne-memos).
+Die weitergehende E-Mail-Annahme aus der Vision benötigt gemäss
+[UC-001](../use_cases/UC-001-mieteranliegen-einreichen.md) einen eigenen Kanalvertrag.
+Externe Beauftragungen werden durch die Verwaltung ausserhalb von PropertyFlow
+organisiert; eine automatische Beauftragungsschnittstelle gehört nicht zum Umfang.

@@ -37,7 +37,7 @@ Read at minimum:
 
 - Treat LLM output as untrusted input.
 - Do not send unnecessary tenant or rental data to external LLM providers.
-- AI recommendations must never replace the final human decision.
+- Human decisions are mandatory for costs or binding external orders (including technician callouts), very urgent or severe cases, and strong or escalated tenant complaints, as specified in FALL-10 in `docs/specifications/fallverwaltung.md`. Outside these boundaries, only explicitly agreed and server-validated automated actions and closures under FALL-07/FALL-10 are allowed.
 - Relevant AI decisions must remain auditable.
 - AI or RAG failures must not prevent a tenant request from being persisted
   and manually processed.

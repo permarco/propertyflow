@@ -4,6 +4,10 @@
 
 Accepted
 
+## Fachliche Präzisierung vom 10.10.2026
+
+Die ursprünglich als interaktive KI-Analyse bezeichnete Mitarbeiterfunktion dient gemäss UC-004 der Formulierung einer externen Nachricht aus einer kurzen Mitarbeitereingabe. Die nachfolgenden Bezeichnungen wurden entsprechend abgeglichen. Fallanalyse und Dringlichkeitsbewertung laufen automatisch im Camunda-Fallprozess. Streaming und wirksamer Abbruch betreffen den Formulierungsversuch. Die akzeptierte Architekturentscheidung für SSR und gezielte clientseitige Interaktivität bleibt unverändert; dies ist ein fachlicher Abgleich der Bezeichnung und des Anwendungsfalls.
+
 ## Kontext
 
 PropertyFlow stellt zwei wesentliche Benutzeroberflächen bereit:
@@ -17,7 +21,7 @@ vollständige Single-Page-Application mit umfangreichem clientseitigem State
 ist für die Kernfunktionen nicht erforderlich.
 
 Einzelne Funktionen benötigen jedoch dynamisches Verhalten im Browser.
-Insbesondere soll eine interaktive KI-Analyse ihren Zustand
+Insbesondere soll die interaktive KI-Formulierungshilfe ihren Zustand
 (`waiting`, `streaming`, `completed`, `aborted`, `error`) anzeigen können und
 eine laufende Ausgabe muss durch den Benutzer abgebrochen werden können.
 
@@ -77,7 +81,7 @@ werden auf klar abgegrenzte Bereiche beschränkt.
 
 ### KI-Streaming
 
-Die KI-Analyse benötigt dynamisches Verhalten. Diese Anforderung rechtfertigt
+Die KI-Formulierungshilfe benötigt dynamisches Verhalten. Diese Anforderung rechtfertigt
 gezielte clientseitige Logik, jedoch nicht die Umstellung der gesamten
 Anwendung auf CSR.
 
@@ -129,7 +133,7 @@ clientseitige Interaktivität benötigt.
 - geringe Grundkomplexität der Präsentationsschicht,
 - weniger clientseitiger State,
 - JavaScript wird gezielt statt flächendeckend eingesetzt,
-- Streaming und Abbruch der KI-Analyse bleiben möglich,
+- Streaming und Abbruch der KI-Formulierung bleiben möglich,
 - SSR und interaktive KI-Funktionen können kombiniert werden.
 
 ### Negative Konsequenzen

@@ -9,10 +9,22 @@ RAG-gestützte Wissensbasis unterstützt bei der Ermittlung relevanter
 Richtlinien, Regelwerke und früherer Fälle. Auf dieser Grundlage erstellt
 PropertyFlow Zuständigkeits- und Handlungsempfehlungen.
 
+Der aktuelle Spezifikationsstand beschreibt die Web-Erfassung und die weitere
+Kommunikation über den persönlichen Fall-Link (UI1), die Mitarbeiterübersicht
+(UI2) und die Fallbearbeitung (UI3). Analyse und Dringlichkeitsbewertung laufen
+automatisch im Camunda-Prozess. Die interaktive KI-Funktion in UI3 hilft beim
+Formulieren einer Nachricht, die der Mitarbeiter prüft und bewusst sendet.
+Die E-Mail-Annahme aus der Projektvision benötigt weiterhin einen eigenen
+Kanalvertrag; die vereinbarten Benachrichtigungen verweisen auf die Fallansicht.
+Die Oberflächen sind fachlich spezifiziert; ihre Implementierung folgt separat.
+
 Die fachliche Verantwortung verbleibt bei der Immobilienbewirtschaftung.
 Mitarbeitende und das System können Fälle gemäss den vereinbarten
 [Abschlussregeln](docs/specifications/fallverwaltung.md#fall-07-abschluss-und-zeit-danach)
 abschliessen; verpflichtende menschliche Prüfungen bleiben bestehen.
+Bei Kosten bzw. verbindlicher externer Beauftragung, sehr dringlichen oder
+schwerwiegenden Fällen sowie starken oder eskalierten Mieterbeschwerden entscheidet
+ein Mitarbeiter gemäss [FALL-10](docs/specifications/fallverwaltung.md#fall-10-automatisierung-und-menschliche-freigabe).
 
 ## Kernfunktionen
 
@@ -162,7 +174,7 @@ architektonische Source of Truth.
 - `docs/project-context.md`  
   Versionierter, kompakt an arc42 orientierter KI-Rahmen mit Architektur, Stack, Konventionen, NFRs und Sicherheitsleitplanken
 
-- [Fallzugriff und Sicherheit](docs/specifications/fallzugriff-und-sicherheit.md): Direkter persönlicher Tokenzugriff unter derselben Falladresse, Berechtigungen und Linkersatz; die Case-ID bleibt eine lesbare Referenz.
+- [Fallzugriff und Sicherheit](docs/specifications/fallzugriff-und-sicherheit.md): Persönlicher Tokenlink ohne zeitliche Ablauffrist, Trennung von Mieter- und Mitarbeiterfunktionen sowie bewusster Widerruf und administrativer Ersatz. Für Mitarbeitende gibt es keine Anmeldung; die technische Absicherung des Mitarbeiterbereichs ist noch zu konkretisieren.
 
 - [Benachrichtigungen und Zustellung](docs/specifications/benachrichtigungen-und-zustellung.md): E-Mail bei sichtbaren Falländerungen, eigenen Nachrichten und Abschluss; Versandpflicht, Wiederholungen und Fehlerbehandlung.
 
@@ -172,9 +184,11 @@ architektonische Source of Truth.
 
 - [Dringlichkeitsbewertung](docs/specifications/dringlichkeitsbewertung.md): Vereinbarte Stufen und Farben, automatische Neubewertung, Vorrang manueller Einstufungen und transparente Änderungshistorie.
 
-- [Screen 01 – Mieter-Fallansicht](docs/frontend/ansicht-01-mieter-fallansicht.md): Erfassung, Kommunikation und lesbare Dringlichkeitshistorie unter dem persönlichen Falllink.
+- [Screen 01 – Mieter-Fallansicht](docs/frontend/ansicht-01-mieter-fallansicht.md): Erfassung, Kommunikation und lesbare Dringlichkeitshistorie unter dem persönlichen Falllink. Die sichtbare Ansicht aktualisiert aktive und abgeschlossene Fälle alle 20 Sekunden und zeigt nach Wiedereröffnung die Nachrichteneingabe wieder an. Fachliche Bedienung spezifiziert; Umsetzung und visuelle Ausgestaltung folgen.
 
-- [Screen 02 – Mitarbeiter-Fallübersicht](docs/frontend/ansicht-02-mitarbeiter-falluebersicht.md): Sechs Spalten ohne Problemhinweise, Suche in veröffentlichten Nachrichten und internen Memos, Filter, Sortierung, Seitennavigation und Aktualisierung alle 20 Sekunden. Die separate Mitarbeiter-Falldetailseite wird als Screen 03 anschliessend spezifiziert.
+- [Screen 02 – Mitarbeiter-Fallübersicht](docs/frontend/ansicht-02-mitarbeiter-falluebersicht.md): Sieben Spalten einschliesslich sortierbarem Wiedervorlagedatum, Suche in veröffentlichten Nachrichten und internen Memos, Filter, Seitennavigation und Aktualisierung alle 20 Sekunden. Umsetzung und visuelle Ausgestaltung folgen.
+
+- [Screen 03 – Mitarbeiter-Falldetailansicht](docs/frontend/ansicht-03-mitarbeiter-falldetail.md): Verlauf links sowie Falldaten und Aktionen rechts; externe Nachrichten, interne Memos, KI-Formulierung mit Streaming, manuelle Status-/Dringlichkeitsänderung, Abschluss und Wiedereröffnung. Wiedervorlagen können in Tagen oder als Datum gesetzt, geändert und gelöscht werden; Camunda wartet parallel zur Verarbeitung neuer Mieternachrichten. Fachliche Bedienung spezifiziert; Umsetzung und visuelle Ausgestaltung folgen.
 
 - [Block-2-Prüfprotokoll](docs/ai-usage/block2-oberflaechen-pruefung.md): Dokumentierter Abgleich der UI-Spezifikationen mit den Fachregeln und Use Cases; Umsetzungsnachweise folgen später.
 

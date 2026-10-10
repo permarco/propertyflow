@@ -45,9 +45,11 @@ Die E-Mail enthält:
 
 Betreff und Text enthalten keine vollständigen Nachrichten, internen Memos, sensiblen Freitextbetreffe oder technischen Fehlerdetails. Für die kurzen Benachrichtigungstexte genügen feste Vorlagen; eine zusätzliche LLM-Generierung ist dafür nicht erforderlich. Die Inhaltsgrenzen nach KOM-01 und KOM-02 gelten auch hier.
 
-Jede normale E-Mail verwendet denselben gültigen Link `/mieter/fall/zugang/<geheimer-token>`. PropertyFlow zeigt den Fall direkt unter dieser Adresse. Mailversand, Öffnen und Wiederholung erzeugen keinen neuen Token und verlängern seine Laufzeit nicht. Hash, verschlüsselte Versandkopie und getrennte Schlüsselverwaltung sind in [ZUG-06](fallzugriff-und-sicherheit.md#speicherung-und-wiederverwendung-für-e-mails) geregelt.
+Jede normale E-Mail verwendet denselben gültigen Link `/mieter/fall/zugang/<geheimer-token>`. PropertyFlow zeigt den Fall direkt unter dieser Adresse. Der Link hat keine zeitliche Ablauffrist. Mailversand, Öffnen und Wiederholung erzeugen keinen neuen Token; eine Verlängerung entfällt. Hash, verschlüsselte Versandkopie und getrennte Schlüsselverwaltung sind in [ZUG-06](fallzugriff-und-sicherheit.md#speicherung-und-wiederverwendung-für-e-mails) geregelt.
 
 Wer den Link weiterleitet, gibt die bestehenden Mieterrechte weiter. Der zusätzliche Besitzer wird dadurch weder als Person identifiziert noch automatisch zum Benachrichtigungsempfänger.
+
+**Bestätigt am 10.10.2026 – Antwortbedarf:** Die Benachrichtigung zu einer externen Mitarbeiternachricht unterscheidet ausdrücklich eine Information von einer erforderlichen Mieterantwort. Bei gesetztem Antwortbedarf muss bereits in der E-Mail klar ersichtlich sein, dass der Mieter handeln und über seine Fallansicht antworten soll; der vollständige Auftrag steht in der veröffentlichten Nachricht. Bei einer reinen Information wird keine erforderliche Antwort behauptet. Eine ältere offene Rückfrage wird durch eine neue Informationsnachricht nicht aufgehoben. Kurze feste Vorlagen, Case-ID, persönlicher Link und die bisherigen Inhaltsgrenzen bleiben gültig; vollständige Nachrichten werden nicht in die E-Mail kopiert. Die konkrete Formulierung von Betreff und Hinweis bleibt noch zu besprechen.
 
 ## BEN-03: Speicherung und zuverlässige Übergabe
 
@@ -68,7 +70,7 @@ Der Versand erfolgt nachgelagert. Ein Mailausfall nimmt weder die Fallannahme no
 | Maildienst bestätigt die Annahme | Als an den Maildienst übergeben vermerken. Dies beweist weder Posteingangszustellung noch Lesen. |
 | Übermittlungsausgang unklar, etwa bei Timeout nach Übergabe | Unsicheren Ausgang festhalten; soweit unterstützt mit derselben Versandkennung abgleichen oder idempotent wiederholen. Eine doppelte E-Mail kann bei fehlender Dienstunterstützung nicht vollständig ausgeschlossen werden. |
 | Dauerhafter Fehler, Rückläufer oder Wiederholungsgrenze erreicht | Für berechtigte interne Bearbeitung sichtbar machen; Auftrag nicht stillschweigend als erfolgreich markieren oder verlieren. |
-| Gültiger Zugang oder Entschlüsselung fehlt | Versand mit persönlichem Link blockieren und zur Klärung sichtbar machen; keinen abgelaufenen Link als gültig senden und keinen Token automatisch ersetzen. |
+| Gültiger Zugang oder Entschlüsselung fehlt | Versand mit persönlichem Link blockieren und zur Klärung sichtbar machen; keinen widerrufenen oder ersetzten Link als gültig senden und keinen Token automatisch ersetzen. |
 
 Die fachliche Vorgabe «immer eine E-Mail» bedeutet: Jeder vereinbarte Auslöser erzeugt eine nachvollziehbare Versandpflicht. Eine tatsächliche Zustellung in den Posteingang kann PropertyFlow nicht allein garantieren. Versandannahme, gegebenenfalls vom Maildienst bestätigte Zustellung und Rückläufer werden getrennt von Fallstatus und Nachrichtenveröffentlichung geführt. Tracking zur Lesebestätigung ist nicht vorgesehen.
 
@@ -80,11 +82,11 @@ Konkrete Wiederholungsabstände, Grenzen und interne Zuständigkeiten bleiben of
 
 ## BEN-05: Fallabschluss und Sicherheit
 
-Der gespeicherte fachliche Abschluss löst auch dann eine Abschlussmail aus, wenn keine separate Abschlussnachricht erstellt wurde. Wird eine externe Abschlussmitteilung benötigt, muss sie vor oder konsistent mit dem Abschluss gespeichert werden, wie in FALL-07 geregelt. Das spätere Versenden der E-Mail erzeugt keinen neuen Historieneintrag und umgeht die Nachrichtensperre nach KOM-04 nicht.
+Der gespeicherte fachliche Abschluss löst auch dann eine Abschlussmail aus, wenn keine separate Abschlussnachricht erstellt wurde. **Für UI3 bestätigt am 10.10.2026:** Eine zusätzliche externe Abschlussmitteilung ist optional und wird vor dem Abschluss über das bestehende Textfeld gesendet, wie in FALL-07 geregelt. Ihre Veröffentlichung und der fachliche Abschluss bleiben unterschiedliche Ereignisse mit den jeweils geltenden Benachrichtigungspflichten. Das spätere Versenden der E-Mail erzeugt keinen neuen Historieneintrag und umgeht die Nachrichtensperre nach KOM-04 nicht.
 
 Dies gilt gleichermassen für einen Mitarbeiterabschluss und für die vereinbarten Systemabschlüsse nach FALL-07. Ein Abschluss wegen mieterseitiger Eigenverantwortung darf in der Information nicht als vom System bestätigte Reparatur dargestellt werden. Die Abschlussmail bestätigt den fachlichen Abschluss; der zugrunde liegende Fall bleibt lesbar.
 
-Ein gültiger Link öffnet den abgeschlossenen Fall lesend. Der Abschluss widerruft den Token nicht. Die Abschlussmail behauptet deshalb weder Schreibrechte noch einen erneuten Prozessstart.
+Ein gültiger Link öffnet den abgeschlossenen Fall lesend. Der Abschluss widerruft den Token nicht. Die Abschlussmail behauptet deshalb weder Schreibrechte noch einen erneuten Prozessstart. Da mit dem Abschluss noch offener Mieterantwortbedarf gemäss KOM-04 endet, fordert die Abschlussmail keine Antwort auf bisherige Rückfragen an.
 
 Versandaufträge und Fehlerdaten unterliegen den Token- und Datenschutzregeln aus ZUG-06. Der Token wird nur durch die berechtigte Versandfunktion entschlüsselt. Er gehört weder in normale Protokolle noch in Camunda-Variablen oder KI-Kontexte. Interne Memos und deren Metadaten dürfen keine Benachrichtigung beeinflussen oder darin erscheinen.
 
@@ -98,7 +100,7 @@ Die folgenden Kriterien sind Anforderungen an spätere Tests, keine bereits erbr
 - **BEN-AK-04:** Ein sichtbarer fachlicher Statuswechsel und der Fallabschluss erzeugen Benachrichtigungen. Dies gilt für Mitarbeiterabschlüsse und die beiden vereinbarten Systemabschlussgründe aus FALL-07. Der Abschluss erzeugt keine zusätzliche generische Statusmail und benötigt keinen nachträglichen Nachrichteneintrag. Fehlender Verwaltungsbedarf wird nicht als bestätigte Reparatur ausgegeben.
 - **BEN-AK-05:** Mails enthalten kurze Vorlageninformation, Case-ID, gültigen persönlichen Link und Vertraulichkeitshinweis; vollständige Nachrichten, sensible Freitexte und interne Inhalte fehlen. Wiederholungen verwenden denselben gültigen Token.
 - **BEN-AK-06:** Ein Neustart nach fachlicher Speicherung verliert keine Versandpflicht. Vorübergehende Fehler sind wiederholbar; dauerhafte oder unklare Ergebnisse bleiben nachvollziehbar. Mailausfälle nehmen weder Fallannahme noch Nachrichten oder andere bestätigte Änderungen zurück. Bei klärungsbedürftigem Versand gelten Status und Hinweis nach FALL-05; abgeschlossene Fälle werden nicht wiedereröffnet. Unveränderte Statuswerte erzeugen auch bei Versandwiederholungen keine neuen Statusmailaufträge.
-- **BEN-AK-07:** Abgelaufene, widerrufene oder ersetzte Tokens werden vor Versand geprüft. Fehlende Schlüssel und Entschlüsselungsfehler führen zu sichtbarer Klärung, niemals zu automatischem Tokenersatz oder einer falschen Erfolgsmarkierung.
+- **BEN-AK-07:** Widerrufene oder ersetzte Tokens werden vor Versand geprüft und nicht als gültige Links versendet. Ein unverändert gültiger Token bleibt auch lange nach Ausstellung für spätere Benachrichtigungen nutzbar; eine zeitliche Ablaufprüfung entfällt. Fehlende Schlüssel und Entschlüsselungsfehler führen zu sichtbarer Klärung, niemals zu automatischem Tokenersatz oder einer falschen Erfolgsmarkierung.
 - **BEN-AK-08:** Die Annahme durch den Maildienst wird nicht als bestätigte Zustellung oder Lesen ausgegeben. Ein Timeout nach möglicher Annahme prüft den Umgang mit potenziellen Doppelzustellungen.
 - **BEN-AK-09:** Die erste wirksame Dringlichkeitseinstufung und jede spätere wirksame Stufenänderung erzeugen je einen logischen Mailauftrag. Unveränderte Neubewertungen, Wiederholungen desselben Ereignisses und getrennte Systembewertungen bei geschützter manueller Einstufung erzeugen keine zusätzliche Dringlichkeitsmail.
 
@@ -107,7 +109,7 @@ Die folgenden Kriterien sind Anforderungen an spätere Tests, keine bereits erbr
 - Konkretes Übergabeverfahren, Ereignis-/Versandkennungen, Maildienst und dessen Idempotenz- beziehungsweise Rückläuferunterstützung.
 - Wiederholungsabstände und -grenzen, interne Fehlerzuständigkeit, Aufbewahrung und Bereinigung von Versandnachweisen.
 - Empfängerbindung bei geprüften Adressänderungen und Behandlung bereits wartender Aufträge.
-- Umgang mit Benachrichtigungen während eines abgelaufenen oder gesperrten Zugangs.
+- Umgang mit Benachrichtigungen bei einem bewusst gesperrten Zugang.
 - Konkrete Versandvorlagen und Übergangsereignisse für die vereinbarten Statuswerte gemäss FALL-05. Eine externe Abschlussmitteilung und der Abschluss sind unterschiedliche Ereignisse; ob beide in einer gemeinsamen E-Mail bestätigt werden dürfen, bleibt offen. Bis dahin wird keine ihrer Benachrichtigungspflichten verworfen.
 
 Die vereinbarten Benachrichtigungsregeln gelten für Screen 01 und die interne Versandbearbeitung. Screen 02 zeigt bei aktivem Prüfbedarf den fachlichen Status nach FALL-05, aber keine Versandhinweise. Die offenen Punkte betreffen die Konkretisierung beziehungsweise Umsetzung und werden nicht als bereits beschlossen dargestellt. Der [Geltungsbereich von Streaming und Abbruch](fallkommunikation.md#abgleich-mit-bestehenden-dokumenten) ist geklärt: Diese Funktionen gehören zum Mitarbeiterdetail gemäss ADR-003 und UC-004. Die Mieteransicht bleibt eine asynchrone Fallansicht. Gemeinsame JPG-Entwürfe folgen erst nach den drei Screen-Spezifikationen samt technischen Wireframes.

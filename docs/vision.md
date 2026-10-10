@@ -22,6 +22,9 @@ Die fachliche Verantwortung verbleibt bei der Immobilienbewirtschaftung.
 Fälle werden durch Mitarbeitende oder nach ausdrücklich vereinbarten
 Systemabschlussregeln beendet; vorgeschriebene menschliche Prüfungen bleiben
 bestehen. Die Abschlussregeln werden in [FALL-07](specifications/fallverwaltung.md#fall-07-abschluss-und-zeit-danach) geführt.
+Kosten bzw. verbindliche externe Beauftragung, sehr dringliche oder schwerwiegende
+Fälle sowie starke oder eskalierte Mieterbeschwerden erfordern eine menschliche
+Entscheidung nach [FALL-10](specifications/fallverwaltung.md#fall-10-automatisierung-und-menschliche-freigabe).
 
 ## Vision
 
@@ -81,6 +84,8 @@ Handlungsempfehlung bereitstellt. Eindeutig erledigte Anliegen und Anliegen
 ohne weiteren Bearbeitungsbedarf der Verwaltung können gemäss FALL-07 durch
 das System abgeschlossen werden. Die fachliche Verantwortung und
 vorgeschriebene Prüf- und Freigabeentscheidungen verbleiben beim Menschen.
+
+**Umfang präzisiert am 10.10.2026:** Im Zentrum stehen Fallbearbeitung und Kommunikation zwischen Verwaltung und Mieter. PropertyFlow sendet keine externen Beauftragungen und besitzt keine Anbindung für eine automatische Techniker- oder Dienstleisterbeauftragung. Solche Massnahmen organisiert die Verwaltung ausserhalb des Systems; PropertyFlow kann die anschliessende Information an den Mieter unterstützen.
 
 ## Optional Extension
 
