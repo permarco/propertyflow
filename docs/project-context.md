@@ -234,7 +234,10 @@ Details:
   oben, darunter Verlauf links sowie Falldaten und Aktionen rechts. Nachrichten,
   interne Memos, KI-Formulierung, Status- und Dringlichkeitsänderung, Wiedervorlage,
   Abschluss und Wiedereröffnung folgen der dort bestätigten Bedienung.
-  Technische Umsetzung und visuelle Ausgestaltung folgen separat.
+  Die bestätigte visuelle Gestaltung steht ebenfalls in dieser Screen-Spezifikation:
+  kompakter Kopf mit Werten rechts neben dem Titel, gleich breite Nachrichtenblasen
+  mit Icons sowie fester Eingabebereich unter dem scrollbar bleibenden Verlauf.
+  Technische Umsetzung und genaue Gestaltungsparameter folgen separat.
 - Die [Mieter-Fallansicht](frontend/ansicht-01-mieter-fallansicht.md) zeigt
   zusätzlich die wirksame Dringlichkeit und ihre freigegebene Änderungshistorie.
   Die sichtbare Ansicht aktualisiert aktive und abgeschlossene Fälle alle

@@ -1,7 +1,7 @@
 # Screen 01 – Mieter-Fallansicht
 
 **Projekt:** PropertyFlow – KI-gestützte Triage und Bearbeitung von Mieteranliegen  
-**Status:** Fachliche Spezifikation abgeschlossen am 09.10.2026; technische Umsetzung und visuelle Ausgestaltung folgen.\
+**Status:** Fachliche Spezifikation abgeschlossen am 09.10.2026; Desktop-Gestaltung am 10.10.2026 bestätigt, einschliesslich kompakter Objekt-/Kontaktangaben im Kopf ohne separate Ursprungsansicht; technische Umsetzung folgt.\
 **Zielgruppe:** Mieterinnen und Mieter  
 **Darstellung:** Server-Side Rendering (Thymeleaf) mit gezieltem Vanilla JavaScript  
 **Workflow-Orchestrierung:** Camunda 8
@@ -31,7 +31,7 @@ Die folgenden Ansichten bilden den [fachlichen Lebenszyklus nach FALL-05](../spe
 | Zustand | Aufruf / Auslöser | Sichtbarer Inhalt | Zulässige Aktion |
 |---|---|---|---|
 | **Neuer Fall** | Neue Erfassungsseite, noch keine Case-ID | Formular mit Pflichtfeldern | Einmalig einen neuen Fall absenden |
-| **Aktiver Fall** | Nach erfolgreichem Erstabsenden oder über persönlichen Fall-Link | Case-ID, Status, Dringlichkeit mit Quelle, Betreff, aufklappbares ursprüngliches Anliegen, chronologischer Verlauf aus Nachrichten und Dringlichkeitsereignissen, Eingabe für neue Nachricht | Weitere Nachrichten jederzeit hinzufügen, solange der Fall aktiv ist |
+| **Aktiver Fall** | Nach erfolgreichem Erstabsenden oder über persönlichen Fall-Link | Case-ID, Status, Dringlichkeit mit Quelle, Betreff, Objekt/Wohnung und maskierte E-Mail-Adresse im Kopf, chronologischer Verlauf aus Nachrichten und Dringlichkeitsereignissen, Eingabe für neue Nachricht | Weitere Nachrichten jederzeit hinzufügen, solange der Fall aktiv ist |
 | **Abgeschlossener Fall** | Persönlicher Fall-Link nach bestätigtem fachlichem Abschluss in PropertyFlow | Case-ID, Abschlussstatus, Dringlichkeit mit Quelle, ursprüngliches Anliegen und gesamte bisherige freigegebene Historie | Ausschliesslich lesen; keine neuen Nachrichten durch irgendeinen Absender |
 
 **Direkter Übergang:** Nach dem erfolgreichen Erstabsenden gelangt der Mieter **ohne erneute Anmeldung und ohne zuerst die E-Mail öffnen zu müssen** unmittelbar zur aktiven Fallansicht. Der persönliche Link enthält als variablen Zugangswert nur den geheimen Token und wird zusätzlich per E-Mail zugestellt. Die sichere Übergabe richtet sich nach [ZUG-02](../specifications/fallzugriff-und-sicherheit.md#zug-02-ausgabe-und-erstzugriff); ihre technische Umsetzung wird im Service-Block festgelegt.
@@ -109,9 +109,10 @@ Für Wiederholungen und unklare Sendeergebnisse gilt [FALL-03](../specifications
 | **Betreff** | Ursprünglicher Betreff, schreibgeschützt. |
 | **Fallstatus** | Aktueller fachlicher Bearbeitungsstatus aus PropertyFlow gemäss den acht vereinbarten Status in FALL-05, z. B. «In Abklärung» oder «Wartet auf Mieterantwort». |
 | **Dringlichkeit** | Aktuelle wirksame Stufe mit Text und Farbe gemäss [DRING-01/DRING-04](../specifications/dringlichkeitsbewertung.md); ohne wirksame System- oder manuelle Einstufung «Noch nicht bewertet». Änderungsquelle «System» oder «Immobilienverwaltung» erkennbar; ohne Bewertung noch keine Änderungsquelle. Ausschliesslich lesbar. |
-| **Ursprüngliches Anliegen anzeigen** | Standardmässig **eingeklappter** Bereich; beim Aufklappen werden alle vier ursprünglichen Felder **schreibgeschützt** angezeigt. |
+| **Objekt / Wohnung** | Ursprüngliche Objekt-/Wohnungsreferenz direkt unter dem Betreff, schreibgeschützt. |
+| **E-Mail-Adresse** | Kompakte, serverseitig maskierte Kontaktangabe im Kopf gemäss Abschnitt 4.6. |
 
-Der aufklappbare Bereich wird vorzugsweise mit den nativen HTML-Elementen `<details>` und `<summary>` umgesetzt; hierfür ist kein JavaScript erforderlich. Es gibt **keine Bearbeiten-Funktion** für diese Daten.
+**Vereinbart am 10.10.2026:** Es gibt keinen separaten oder aufklappbaren Bereich für das ursprüngliche Anliegen. Der Betreff bleibt der Titel; Objekt/Wohnung und maskierte E-Mail-Adresse stehen direkt darunter. Die ursprüngliche Beschreibung erscheint ausschliesslich als erste Mieternachricht im Verlauf. Es gibt **keine Bearbeiten-Funktion** für diese Daten.
 
 ### 4.2 Kommunikationshistorie
 
@@ -195,7 +196,7 @@ Bei einem aktiven oder abgeschlossenen Fall ruft die sichtbare Seite periodisch 
 
 **Vereinbartes Intervall, präzisiert am 10.10.2026:** Ein Abruf alle 20 Sekunden, also ungefähr dreimal pro Minute, solange die Fallansicht sichtbar ist. Dies gilt auch bei einem abgeschlossenen Fall, sowohl nach erkanntem Abschluss als auch beim direkten Öffnen eines bereits abgeschlossenen Falls. Es läuft höchstens eine Anfrage gleichzeitig; dauert sie länger als das Intervall, wird kein überlappender Abruf gestartet. Die Pausen und Fehlerregeln unten gelten weiterhin.
 
-- Aktualisiert werden nur Verlauf einschliesslich gespeicherter Dringlichkeitsänderungen, aktuelle Dringlichkeit mit Änderungsquelle, fachlicher Status und die Rückmeldung zur Aktualisierung. Die gesamte Seite wird nicht automatisch neu geladen. Ein ungesendeter Nachrichtentext, Tastaturfokus, aufgeklappte Ursprungsdaten und Leseposition bleiben bei gewöhnlichen Aktualisierungen erhalten. Die Eingabe wird weder automatisch gespeichert noch bei diesen Abrufen an den Server übertragen.
+- Aktualisiert werden nur Verlauf einschliesslich gespeicherter Dringlichkeitsänderungen, aktuelle Dringlichkeit mit Änderungsquelle, fachlicher Status und die Rückmeldung zur Aktualisierung. Die gesamte Seite wird nicht automatisch neu geladen. Ein ungesendeter Nachrichtentext, Tastaturfokus und Leseposition bleiben bei gewöhnlichen Aktualisierungen erhalten. Die Eingabe wird weder automatisch gespeichert noch bei diesen Abrufen an den Server übertragen.
 - Nachrichten und Dringlichkeitsereignisse werden anhand stabiler IDs abgeglichen und in stabiler chronologischer Reihenfolge angezeigt. Wiederholte Abrufe dürfen keine doppelten Einträge erzeugen; unveränderte Daten verursachen keine unnötigen sichtbaren Änderungen.
 - Liest der Benutzer ältere Einträge, wird nicht automatisch gescrollt. Ein Hinweis «Neue Einträge vorhanden» ermöglicht den bewussten Wechsel zu den neuesten Nachrichten oder Dringlichkeitsereignissen. Die Rückmeldung ist auch für assistive Technologien zugänglich, ohne bei jedem unveränderten Abruf den gesamten Verlauf erneut vorzulesen.
 - Ist der Browser-Tab nicht sichtbar, pausieren die Abrufe. Bei Rückkehr erfolgt eine Aktualisierung und danach die Fortsetzung des Intervalls. Navigation oder Schliessen der Seite beendet nur die periodischen Browserabrufe, niemals den Camunda-Prozess oder einen KI-Schritt.
@@ -232,7 +233,7 @@ Sobald PropertyFlow den fachlichen Abschluss nach [FALL-07](../specifications/fa
 Der Abschluss kann durch einen Mitarbeiter oder durch das System erfolgen. Vereinbarte Systemgründe sind eine eindeutige Bestätigung des Mieters «Problem behoben, keine weitere Hilfe nötig» oder eindeutig fehlender Bearbeitungsbedarf der Verwaltung gemäss hinterlegter Fachregel, etwa ein dem Mieter zugeordneter Glühbirnenwechsel. In beiden Fällen gelten dieselbe Leseansicht, Nachrichtensperre und Abschlussmail. Der Mieter teilt die Behebung über eine Nachricht mit; die eigentliche Statusänderung übernimmt PropertyFlow nach FALL-07.
 
 - Betreff, Case-ID, ursprüngliche Angaben, wirksame Dringlichkeit mit Quelle und der vollständige mieteröffentliche Verlauf einschliesslich Dringlichkeitsereignissen bleiben einsehbar.
-- Der Bereich «Ursprüngliches Anliegen anzeigen» bleibt **standardmässig eingeklappt** und jederzeit aufklappbar.
+- Objekt/Wohnung und maskierte E-Mail-Adresse bleiben direkt im Kopf sichtbar; die ursprüngliche Beschreibung bleibt als erste Mieternachricht im Verlauf lesbar. Es gibt keine separate Ursprungsansicht.
 - **Kein Absender** darf weitere Nachrichten erzeugen: weder Mieter noch System/KI noch Backoffice-Mitarbeitende.
 - Mit dem erfolgreichen Fallabschluss endet noch offener Mieterantwortbedarf. Frühere Rückfragen bleiben im Verlauf sichtbar, fordern aber keine Antwort mehr an und werden ohne passende Antwort nicht als beantwortet dargestellt. Dafür gibt es keinen zusätzlichen Status; massgeblich ist «Abgeschlossen» gemäss KOM-04.
 - Der Texteingabebereich und der Senden-Button werden durch folgenden Hinweis ersetzt:
@@ -302,7 +303,7 @@ Interne Memos, Prioritätsänderung, Beauftragung, fachliche Freigabe, Schliessu
 
 | Bestandteil | Verantwortung |
 |---|---|
-| **Thymeleaf-Seite + Vanilla JavaScript** | Formular, Fallverlauf mit veröffentlichten Nachrichten und Dringlichkeitsereignissen, aufklappbare Ursprungsdaten, fachlicher Status und wirksame Dringlichkeit mit Quelle |
+| **Thymeleaf-Seite + Vanilla JavaScript** | Formular, Fallverlauf mit veröffentlichten Nachrichten und Dringlichkeitsereignissen, schreibgeschützte Objekt- und Kontaktangaben im Kopf, fachlicher Status und wirksame Dringlichkeit mit Quelle |
 | **PropertyFlow-Backend (Spring Boot)** | HTTP-Validierung, Autorisierung per persönlichem Zugriff, Fallanlage, Nachrichtenannahme, Anwendungslogik und Integrationsadapter |
 | **PropertyFlow-Datenhaltung (PostgreSQL)** | Persistente fachliche Falldaten, Nachrichten mit Sichtbarkeit und Veröffentlichungszustand, Absender, Zeitpunkte und fachlich relevante Historie |
 | **Camunda 8** | Technische Prozessinstanz, Prozessposition, Message-Catch-/Wartezustände, Service Tasks, User Tasks, Gateways, Timer und Prozessabschluss |
@@ -354,7 +355,7 @@ Der Browser ruft **nicht direkt Camunda** auf. Die Fachlogik bleibt im PropertyF
 
 **Status:** Technischer Entwurf zur gemeinsamen Besprechung, keine endgültige Gestaltung. Die fachlichen Regeln aus Abschnitt 4 bleiben massgeblich.
 
-Die Ansicht verwendet eine Hauptspalte. **Vereinbarte Reihenfolge:** Kopf → Ursprungsdaten → Verlauf → Nachrichteneingabe. Nachrichten des Mieters sind rechts angeordnet, veröffentlichte Nachrichten der Verwaltung und von KI/System links. Absender und Datum bleiben als Text erkennbar. Farben, Schrift, Abstände und endgültige Breite werden später gestaltet.
+Die Ansicht verwendet eine Hauptspalte. **Vereinbarte Reihenfolge:** Kopf mit Objekt-/Kontaktangaben → Verlauf → Nachrichteneingabe. Nachrichten des Mieters sind rechts angeordnet, veröffentlichte Nachrichten der Verwaltung und von KI/System links. Absender und Datum bleiben als Text erkennbar. Farben, Schrift, Abstände und endgültige Breite werden später gestaltet.
 
 ```text
 +------------------------------------------------------------------+
@@ -364,7 +365,8 @@ Die Ansicht verwendet eine Hauptspalte. **Vereinbarte Reihenfolge:** Kopf → Ur
 | Heizung funktioniert nicht                                       |
 | Dringlichkeit: Hoch (Orange) · Geändert durch System              |
 |                                                                  |
-| > Ursprüngliches Anliegen anzeigen                               |
+| Objekt / Wohnung: Musterstrasse 12, Wohnung 4                    |
+| E-Mail: m***ple.ch                                               |
 +------------------------------------------------------------------+
 | Fallverlauf                               [Ansicht aktualisieren]|
 |                                                                  |
@@ -412,7 +414,7 @@ Die Beispiele enthalten fiktive veröffentlichte externe Nachrichten und ein fre
 | Bereich | Verhalten |
 |---|---|
 | Kopf | Case-ID, unveränderlicher Betreff, aktueller fachlicher Status und Dringlichkeit mit Änderungsquelle. Die Case-ID ist eine Referenz, kein Zugangsschlüssel. |
-| Ursprungsdaten | Standardmässig eingeklappt. Native `<details>`-/`<summary>`-Darstellung mit allen vier ursprünglichen Feldern, ausschliesslich lesbar. |
+| Ursprungsdaten | Betreff als Titel, Objekt/Wohnung und maskierte E-Mail-Adresse im Kopf; Beschreibung ausschliesslich als erste Mieternachricht im Verlauf. Alle Werte schreibgeschützt. |
 | Verlauf | Alle sichtbaren Nachrichten auf einer Seite, chronologisch von oben nach unten, neueste Nachricht zuunterst; jeder Eintrag mit Absenderrolle, Datum, Uhrzeit und sicher ausgegebenem Text. |
 | Dringlichkeitsereignisse | Im selben Verlauf chronologisch eingeordnet; alter/neuer Wert, Zeitpunkt und Änderungsquelle System/Immobilienverwaltung. Keine internen Auditdetails oder Bearbeitungsaktion für Mieter. |
 | Aktualisieren | Automatisch bei aktivem und abgeschlossenem Fall gemäss Abschnitt 4.5.1; vereinbartes Intervall 20 Sekunden bei sichtbarer Seite. Nach erkannter Wiedereröffnung erscheint die Nachrichteneingabe wieder. Manueller GET bleibt verfügbar. Kein Stream, kein Prozessstart und keine Schreibaktion. |
@@ -421,18 +423,16 @@ Die Beispiele enthalten fiktive veröffentlichte externe Nachrichten und ein fre
 | Rückmeldung | Speicherbestätigung oder verständlicher Fehler bei der Eingabe. Bestätigte Speicherung bedeutet keine bestätigte E-Mail-Zustellung. |
 | E-Mail-Hinweis | Auch eigene gespeicherte Nachrichten werden per E-Mail bestätigt. Der Hinweis ist ein Darstellungsvorschlag. |
 
-#### 8.2.2 Aufgeklappte Ursprungsdaten
+#### 8.2.2 Ursprungsangaben ohne separate Ansicht
 
 ```text
-v Ursprüngliches Anliegen anzeigen
-  Betreff:        Heizung funktioniert nicht
-  Objekt/Wohnung: Musterstrasse 12, Wohnung 4
-  E-Mail-Adresse: m***ple.ch
-  Beschreibung:  Seit gestern funktioniert die Heizung nicht mehr.
-  (Alle Werte schreibgeschützt)
+Heizung funktioniert nicht
+Objekt / Wohnung: Musterstrasse 12, Wohnung 4 · E-Mail: m***ple.ch
 ```
 
-Die Kontaktanzeige verwendet hier fiktive Daten und die vereinbarte Maskierung aus Abschnitt 4.6: erster Buchstabe, maskierter Mittelteil und kurze Endung (`m***ple.ch`).
+Der Betreff bleibt der Titel. Objekt/Wohnung und maskierte E-Mail-Adresse stehen direkt darunter. Die ursprüngliche Beschreibung steht ausschliesslich als erste Mieternachricht im Verlauf, bei langem Verlauf durch Scrollen erreichbar. Alle Angaben bleiben schreibgeschützt. Es gibt keinen zusätzlichen aufklappbaren Bereich.
+
+Die Kontaktanzeige verwendet fiktive Daten und die Maskierung aus Abschnitt 4.6: erster Buchstabe, maskierter Mittelteil und kurze Endung (`m***ple.ch`).
 
 #### 8.2.3 Rückmeldungen und kleinere Bildschirme
 
@@ -446,13 +446,27 @@ Die Kontaktanzeige verwendet hier fiktive Daten und die vereinbarte Maskierung a
 
 #### 8.2.4 Vereinbarte Anordnung und verbleibende Gestaltung
 
-- **Bereiche:** Kopf → Ursprungsdaten → Verlauf → Nachrichteneingabe.
+- **Bereiche:** Kopf mit Objekt-/Kontaktangaben → Verlauf → Nachrichteneingabe.
 - **Nachrichtenreihenfolge:** Alle sichtbaren Nachrichten auf einer Seite; älteste oben, neueste zuunterst. Ältere Einträge bleiben durch Scrollen erreichbar.
 - **Absenderanordnung:** Mieter rechts, Immobilienverwaltung und KI/System links. Textliche Absenderangaben bleiben zusätzlich sichtbar.
 
 Diese Grundanordnung, die maskierte Kontaktanzeige, das Aktualisierungsintervall von 20 Sekunden, die schmale Ansicht, das Fehlerverhalten und die Warnung bei ungesendetem Text sind vereinbart. Die Dringlichkeitsfarben folgen DRING-04; genaue Farbtöne, Schrift, Abstände und endgültige Breite bleiben Gestaltungspunkte. Die automatische Aktualisierung verändert beim Lesen älterer Einträge nicht ungefragt die Leseposition.
 
-Die fachlichen Zustände Neuerfassung, aktiver und abgeschlossener Fall sind festgelegt. Die endgültige visuelle Ausgestaltung folgt später; ein stilistischer JPG-Entwurf ist noch nicht erstellt.
+Die fachlichen Zustände Neuerfassung, aktiver und abgeschlossener Fall sind festgelegt. Die Desktop-Gestaltung wurde am 10.10.2026 bestätigt. Die JPGs dokumentieren die drei Zustände; aktive und abgeschlossene Fälle zeigen die Objekt-/Kontaktangaben direkt im Kopf ohne separate Ursprungsansicht.
+
+#### 8.2.5 JPG-Entwürfe der drei Zustände
+
+| Entwurf | Zustand |
+|---|---|
+| [ansicht-01-mieter-fallansicht-1.jpg](design/ansicht-01-mieter-fallansicht-1.jpg) | Neuerfassung mit den vier Pflichtfeldern, Datenschutzhinweis, Notfallhinweis und «Anliegen absenden». |
+| [ansicht-01-mieter-fallansicht-2.jpg](design/ansicht-01-mieter-fallansicht-2.jpg) | Aktiver Fall mit Objekt-/Kontaktangaben im Kopf, Verlauf, offenem Antwortbedarf und Nachrichteneingabe. |
+| [ansicht-01-mieter-fallansicht-3.jpg](design/ansicht-01-mieter-fallansicht-3.jpg) | Abgeschlossener Fall mit lesbarem Verlauf und Abschlusshinweis anstelle der Eingabe. |
+
+Die Entwürfe übernehmen Logo, helle Grundfläche, weisse Karten, dezente Rahmen und Aktionsfarben aus UI2/UI3. Die Neuerfassung verwendet eine zentrierte Formularkarte; bestehende Fälle nutzen die Bildschirmbreite für eine einspaltige Anordnung. Status und Dringlichkeit stehen im Fallkopf rechts. Die Dringlichkeitsquelle bleibt in UI1 sichtbar. «Hoch» ist orange, «Noch nicht bewertet» blau; alle weiteren Stufen folgen DRING-04.
+
+Mieternachrichten stehen rechts mit rechtsbündigem Inhalt, Antworten von Immobilienverwaltung und KI/System links. Nachrichtenblasen erhalten dieselbe Breite; Symbole, Rollen und Zeitangaben stehen innerhalb der Blasen. Personen werden durch ein Personensymbol, Systemeinträge durch ein Zahnrad ergänzt; die textlichen Rollen bleiben sichtbar. Einzelne Mitarbeiternamen und interne Informationen werden nicht angezeigt. Der aktuelle Antwortbedarf wird an der betreffenden Nachricht neutral gekennzeichnet, getrennt von den Dringlichkeitsfarben. Nach Abschluss wird keine offene Antwort mehr verlangt.
+
+Die Nachrichteneingabe des aktiven Falls bleibt ausserhalb des scrollbaren Verlaufs. Beim abgeschlossenen Fall nutzt der Verlauf den frei werdenden Platz; der Abschlusshinweis bleibt darunter sichtbar. Die Bilder verwenden fiktive Beispieldaten und zeigen ausgewählte Verlaufsstände. Fachliche Regeln und responsive Darstellung dieser Spezifikation bleiben verbindlich.
 
 ### 8.3 Abgeschlossener Fall – nur lesbar
 
@@ -464,8 +478,8 @@ Die fachlichen Zustände Neuerfassung, aktiver und abgeschlossener Fall sind fes
 │ Heizung funktioniert nicht                               │
 │ Dringlichkeit: Hoch (Orange) · Quelle: System             │
 │                                                          │
-│ ▸ Ursprüngliches Anliegen anzeigen                       │
-│   (standardmässig eingeklappt; schreibgeschützt)         │
+│ Objekt / Wohnung: Musterstrasse 12, Wohnung 4            │
+│ E-Mail: m***ple.ch                                       │
 ├──────────────────────────────────────────────────────────┤
 │ Fallverlauf                                              │
 │                                                          │
@@ -503,7 +517,7 @@ Die fachlichen Zustände Neuerfassung, aktiver und abgeschlossener Fall sind fes
 - **AK-02:** Ungültige Pflichtfelder verhindern die Annahme und führen zu verständlichen, feldbezogenen Fehlermeldungen ohne Verlust der eingegebenen Werte.
 - **AK-03:** Nach bestätigter Annahme ist die Case-ID sichtbar. Die fachlichen Annahme-, Wiederholungs- und Prozessstartregeln werden zentral mit [FALL-AK-01](../specifications/fallverwaltung.md#fall-ak-01), [FALL-AK-02](../specifications/fallverwaltung.md#fall-ak-02) und [FALL-AK-03](../specifications/fallverwaltung.md#fall-ak-03) geprüft.
 - **AK-04:** Nach dem Erstabsenden wird auf derselben funktionalen Seite unmittelbar die aktive Fallansicht angezeigt; der persönliche Fall-Link wird per E-Mail versendet.
-- **AK-05:** Beim bestehenden Fall ist «Ursprüngliches Anliegen anzeigen» zunächst eingeklappt und zeigt nach dem Aufklappen die vier ursprünglichen Angaben ausschliesslich lesbar.
+- **AK-05:** Bei aktiven und abgeschlossenen Fällen stehen Betreff, ursprüngliche Objekt-/Wohnungsreferenz und maskierte E-Mail-Adresse schreibgeschützt im Kopf. Die ursprüngliche Beschreibung erscheint ausschliesslich als erste Mieternachricht im Verlauf. Eine separate Ursprungsansicht oder ein entsprechender Aufklappbereich existiert nicht.
 - **AK-06:** Die gesamte für den Mieter bestimmte Kommunikation erscheint chronologisch, mit erkennbarer Absenderrolle und Zeitstempel.
 - **AK-07:** Bei aktivem Fall kann der Mieter jederzeit zusätzliche Nachrichten an denselben Fall senden; Ursprungstext und Case-ID ändern sich dabei nicht.
 - **AK-08:** Externe, veröffentlichte KI-/Systemantworten und Backoffice-Antworten erscheinen im selben Verlauf. Interne Nachrichten und Memos sind ausschliesslich für berechtigte interne Mitarbeitende zugänglich.
@@ -518,7 +532,7 @@ Die fachlichen Zustände Neuerfassung, aktiver und abgeschlossener Fall sind fes
 - **AK-16:** Bei einer nachgelagerten Störung bleibt die bestätigte Annahme sichtbar; ein Mail- oder Verarbeitungshinweis wird getrennt dargestellt. Die zugrunde liegende Fallstabilität wird nach [FALL-AK-03](../specifications/fallverwaltung.md#fall-ak-03) und [FALL-AK-06](../specifications/fallverwaltung.md#fall-ak-06) geprüft.
 - **AK-17:** Ein gültiger Link zeigt den Fall direkt unter derselben Token-URL ohne GET-Weiterleitung oder erforderliche Fallsitzung. Er bleibt ohne zeitliche Ablauffrist auch nach längerer Inaktivität gültig. Bei widerrufenem oder ersetztem Token erscheint die neutrale Rückmeldung. Wiederverwendbarkeit, Prüfung bei jedem Aufruf und Fallbindung werden zentral nach [ZUG-AK-04](../specifications/fallzugriff-und-sicherheit.md#zug-ak-04), [ZUG-AK-05](../specifications/fallzugriff-und-sicherheit.md#zug-ak-05) und [ZUG-AK-06](../specifications/fallzugriff-und-sicherheit.md#zug-ak-06) geprüft.
 - **AK-18:** Interne Inhalte fehlen im ausgelieferten HTML und ergänzenden Antworten gemäss KOM-01. Die technischen Schutz- und Fehlerprüfungen sind zentral als [ZUG-AK-08](../specifications/fallzugriff-und-sicherheit.md#zug-ak-08) und [ZUG-AK-09](../specifications/fallzugriff-und-sicherheit.md#zug-ak-09) geführt.
-- **AK-19:** Die Kernabläufe bleiben ohne JavaScript nutzbar; Feldfehler und Statusmeldungen sind zugänglich. Auf schmalen Bildschirmen bleibt die Reihenfolge Kopf → Ursprungsdaten → Verlauf → Nachrichteneingabe in einer Spalte erhalten. Absender sind textlich erkennbar; Navigation und Senden erfordern kein horizontales Scrollen.
+- **AK-19:** Die Kernabläufe bleiben ohne JavaScript nutzbar; Feldfehler und Statusmeldungen sind zugänglich. Auf schmalen Bildschirmen bleibt die Reihenfolge Kopf mit Objekt-/Kontaktangaben → Verlauf → Nachrichteneingabe in einer Spalte erhalten. Absender sind textlich erkennbar; Navigation und Senden erfordern kein horizontales Scrollen.
 
 - **AK-20:** Zentral geführt als [KOM-AK-01](../specifications/fallkommunikation.md#kom-ak-01).
 - **AK-21:** Zentral geführt als [KOM-AK-02](../specifications/fallkommunikation.md#kom-ak-02).
@@ -592,7 +606,7 @@ Die folgenden Vorschläge bleiben dokumentiert, erweitern aber nicht automatisch
 
 **Modulverträge:** Als Zuordnungsvorschlag verantwortet `intake` die Annahme und initiale Speicherung und `caseprocessing` die fallbezogene Kommunikation und Anzeige. Gemeinsame Leseverträge werden im Service-Design festgelegt. Controller verwenden Anwendungsdienste; modulübergreifender Austausch erfolgt über öffentliche Schnittstellen ohne direkten Zugriff auf fremde Persistenz.
 
-**Gestaltung:** Die vorhandenen ASCII-Wireframes bleiben technische Entwürfe der bestätigten Grundanordnung. Farbtöne, Schrift, Abstände und stilistische JPG-Darstellung werden später gemeinsam entwickelt. Die Ergänzungen dieses Reviews sind noch nicht vollständig in den ASCII-Entwürfen dargestellt.
+**Gestaltung:** UI1 übernimmt bei ihrer visuellen Ausarbeitung die gemeinsame [Gestaltungsbasis aus UI3](ansicht-03-mitarbeiter-falldetail.md#21-gemeinsame-gestaltung-und-änderungskarten): helle Oberfläche, weisse Karten, dunkle Schrift, dezente Rahmen und Petrol für Aktionen. Dringlichkeitsfarben folgen DRING-04. Die bestätigte Desktop-Gestaltung ist in Abschnitt 8.2.5 mit drei JPGs verlinkt; UI3-spezifische Mitarbeiteraktionen und interne Kennzeichnungen werden nicht auf die Mieteransicht übertragen. Die vorhandenen ASCII-Wireframes bleiben technische Entwürfe der bestätigten Grundanordnung. Exakte Farbtöne, Schrift und Abstände werden bei der Ausarbeitung geprüft; die Ergänzungen dieses Reviews sind noch nicht vollständig in den ASCII-Entwürfen dargestellt.
 
 **Zusätzliche Grundlagen:**
 
@@ -602,7 +616,7 @@ Die folgenden Vorschläge bleiben dokumentiert, erweitern aber nicht automatisch
 
 ### 12.2 Stand und Verbindlichkeit
 
-**Fachlicher Abschluss am 09.10.2026, abgeglichen am 10.10.2026:** Zweck, Umfang, Zustände und Bedienungsregeln von UI1 sind bestätigt, einschliesslich schmaler Ansicht, Lesen bei neuen Einträgen, Ladefehlern und Warnung bei ungesendetem Text. Die menschlichen Entscheidungsgrenzen folgen FALL-10. Die bestätigten Ergänzungen wurden mit [UI3 – Mitarbeiter-Falldetailansicht](ansicht-03-mitarbeiter-falldetail.md) und den zentralen Fachregeln abgeglichen. Gekennzeichnete technische Parameter und Verträge sowie visuelle Gestaltung folgen in der Umsetzung; optionale Erweiterungen gehören nicht zum abgeschlossenen Umfang. Diese Datei ist eine Spezifikation, kein Nachweis implementierter Funktionen oder ausgeführter Sicherheitsprüfungen.
+**Fachlicher Abschluss am 09.10.2026, abgeglichen am 10.10.2026:** Zweck, Umfang, Zustände und Bedienungsregeln von UI1 sind bestätigt, einschliesslich schmaler Ansicht, Lesen bei neuen Einträgen, Ladefehlern und Warnung bei ungesendetem Text. Die menschlichen Entscheidungsgrenzen folgen FALL-10. Die bestätigten Ergänzungen wurden mit [UI3 – Mitarbeiter-Falldetailansicht](ansicht-03-mitarbeiter-falldetail.md) und den zentralen Fachregeln abgeglichen. Gekennzeichnete technische Parameter und Verträge sowie responsive Gestaltungsdetails folgen in der Umsetzung; optionale Erweiterungen gehören nicht zum abgeschlossenen Umfang. Diese Datei ist eine Spezifikation, kein Nachweis implementierter Funktionen oder ausgeführter Sicherheitsprüfungen.
 
 ### 12.3 Abgleich mit übergreifenden KI-/Frontend-Vorgaben
 
