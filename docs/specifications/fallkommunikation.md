@@ -1,7 +1,7 @@
 # Fallkommunikation – fachliche und sicherheitsrelevante Regeln
 
 **Status:** Zentrale Spezifikation der im Projekt festgelegten Kommunikationsregeln; technische Umsetzung noch offen.
-**Stand:** 09.10.2026
+**Stand:** 10.10.2026
 **Geltungsbereich:** Mieteransicht, Backoffice, Backend-Services, Persistenz, Camunda-Worker, E-Mail und LLM-/RAG-Integration, soweit sie Fallkommunikation verarbeiten.
 
 ## Zweck und Verbindlichkeit
@@ -16,7 +16,7 @@ Die Architekturgrundlagen bleiben in [ADR-001](../architecture/adr/ADR-001-grund
 
 Jede Nachricht besitzt eine eindeutige **Sichtbarkeit**, unabhängig von ihrer Absenderrolle. Ein Mitarbeiter kann sowohl ein internes Memo als auch eine externe Antwort zum gleichen Fall erfassen. **Bestätigt am 10.10.2026:** Auch das System darf interne Memos über autorisierte PropertyFlow-Anwendungsdienste speichern. Sie bleiben ausschliesslich intern, erzeugen keine Mieterbenachrichtigung und unterliegen KOM-02 sowie der Nachrichtensperre nach KOM-04. Absender System, Zeitpunkt und Sichtbarkeit bleiben nachvollziehbar.
 
-**Bestätigt am 10.10.2026:** Im Mitarbeiterverlauf wird neben Absender und Zeitpunkt die Herkunft System (Camunda-/KI-Verarbeitung) oder Mensch erkennbar geführt. Menschliche Absenderrollen unterscheiden Mieter und Immobilienverwaltung. Interne Memos bleiben zusätzlich als «Intern» gekennzeichnet; Herkunft und Sichtbarkeit sind getrennte Merkmale. Eine vom Mitarbeiter geprüfte und gesendete Nachricht wird als «Mensch» gekennzeichnet, auch wenn sie zuvor mit KI formuliert wurde; ein zusätzlicher Hinweis «mit KI formuliert» wird nicht angezeigt. Ein ergänzendes Icon bleibt eine optionale Gestaltungsentscheidung. Die Sichtbarkeit wird dauerhaft mit der Nachricht gespeichert; die konkreten technischen Bezeichnungen können beispielsweise `INTERNAL` und `EXTERNAL` lauten.
+**Bestätigt am 10.10.2026, Darstellung konkretisiert:** Im Mitarbeiterverlauf bleiben Absender, Zeitpunkt, Herkunft System (Camunda-/KI-Verarbeitung) bzw. Mensch und interne Sichtbarkeit erkennbar. UI3 stellt menschliche Herkunft mit einem Personen-Icon und der Rolle «Mieter» bzw. «Immobilienverwaltung», Systemherkunft mit einem Zahnrad und interne Sichtbarkeit zusätzlich mit einem Schloss dar. Die Wörter «Mensch», «System» und «Intern» entfallen in diesen Blasenkopfzeilen zugunsten verständlicher Tooltips und zugänglicher Beschriftungen gemäss UI3; Herkunft und Sichtbarkeit bleiben getrennte gespeicherte Merkmale. Ein internes Systemmemo trägt Zahnrad und Schloss. Eine vom Mitarbeiter geprüfte und gesendete Nachricht behält menschliche Herkunft und das Personen-Icon, auch nach KI-Formulierung, ohne Zusatz «mit KI formuliert». Die Sichtbarkeit wird dauerhaft mit der Nachricht gespeichert; technische Bezeichnungen können beispielsweise `INTERNAL` und `EXTERNAL` lauten. Diese UI3-Darstellung erweitert keine Mieterrechte.
 
 | Sichtbarkeit | Zweck und Beispiel | Wer darf die Nachricht sehen? |
 |---|---|---|
@@ -37,6 +37,8 @@ Für alle Komponenten und Ausgabekanäle der Fallkommunikation gelten folgende R
 
 **Bestätigt am 10.10.2026 – Mitarbeiterdokumentation:** Interne Memos dienen auch der Dokumentation fachlicher Prüfungen, Abklärungen und ausserhalb von PropertyFlow organisierter Massnahmen. Dafür wird kein separates Prüfbestätigungsformular eingeführt. Ein gespeichertes Memo bewirkt für sich weder eine Statusänderung noch eine automatische Erledigung offenen Prüfbedarfs. Memo-Inhalte werden nicht automatisch für die KI-Kommunikationsformulierung verwendet; bewusst eingegebene Sachanweisungen des Mitarbeiters folgen KOM-02.
 
+**Ergänzt am 10.10.2026 – interne Änderungsbegründungen:** Optionale Begründungen manueller aktiver Statusänderungen (FALL-06), des Setzens, Änderns und Löschens einer Wiedervorlage (FALL-11) sowie manueller Dringlichkeitsänderungen (DRING-06) sind ausschliesslich interne Angaben zum jeweiligen Änderungsnachweis. Sie sind keine externen Nachrichten und erzeugen kein separates Memo. Sie fehlen serverseitig in allen Mieterausgaben, einschliesslich HTML, Datenantworten, Vorschauen und E-Mails. Die Begründung selbst löst keine Mieterbenachrichtigung aus; eine nach BEN-01 vorgesehene Benachrichtigung über die fachliche Änderung bleibt davon unabhängig und enthält die Begründung nicht.
+
 Für beide Sichtbarkeiten gilt die [Nachrichtensperre nach Fallabschluss (KOM-04)](#kom-04-nachrichtensperre-nach-fallabschluss).
 
 **Mitarbeiter-Volltextsuche:** Alle Mitarbeitenden haben dieselben Adminrechte nach ZUG-04. Die Suche in [Screen 02](../frontend/ansicht-02-mitarbeiter-falluebersicht.md) umfasst gespeicherte veröffentlichte externe Nachrichten und sämtliche gespeicherten internen Memos. Externe Entwürfe, ungespeicherte Eingaben und KI-Teilantworten sind ausgeschlossen. «Versendet» meint die Veröffentlichung im Fallverlauf, unabhängig vom E-Mail-Zustellstatus. Die Mieteransicht bietet diese Suche nicht an. Auch ein interner Suchindex darf dem Kommunikations-LLM keine Memos oder Ableitungen daraus bereitstellen; KOM-02 gilt weiterhin.
@@ -47,7 +49,7 @@ Für beide Sichtbarkeiten gilt die [Nachrichtensperre nach Fallabschluss (KOM-04
 
 Beispiele: «Der Techniker ist informiert und wird Sie für einen Termin kontaktieren» verlangt keine Antwort an PropertyFlow. «Bitte bestätigen Sie, ob die Fehlermeldung auch nach Ausstecken und Wiedereinstecken bestehen bleibt» verlangt eine Mieterantwort. Der Antwortbedarf wird beim Mieter im Fallverlauf und in der zugehörigen Benachrichtigungs-E-Mail eindeutig angezeigt. Interne Memos erzeugen keinen Mieterantwortbedarf.
 
-Eine reine Informationsnachricht hebt keinen bereits offenen Antwortbedarf auf. Der Eingang irgendeiner Mieternachricht erledigt eine Rückfrage nicht automatisch; die inhaltliche Klärung und Prozessfortsetzung folgen FALL-05 und KOM-03. **Bedienung in UI3 bestätigt:** Checkbox «Mieterantwort erforderlich» neben dem Toggle «Intern», beim Öffnen standardmässig ausgeschaltet und nur für externe Nachrichten verfügbar. Interne Memos dürfen keinen Mieterantwortbedarf setzen; dies wird serverseitig geprüft.
+Eine reine Informationsnachricht hebt keinen bereits offenen Antwortbedarf auf. Der Eingang irgendeiner Mieternachricht erledigt eine Rückfrage nicht automatisch; die inhaltliche Klärung und Prozessfortsetzung folgen FALL-05 und KOM-03. **Bedienung in UI3 bestätigt:** Toggle «Mieterantwort erforderlich» im selben Stil neben dem Toggle «Intern», beim Öffnen standardmässig ausgeschaltet und nur für externe Nachrichten verfügbar. Interne Memos dürfen keinen Mieterantwortbedarf setzen; dies wird serverseitig geprüft.
 
 ## KOM-02: LLM-Kommunikation ohne interne Memos
 
@@ -61,6 +63,8 @@ Eine reine Informationsnachricht hebt keinen bereits offenen Antwortbedarf auf. 
 - Ein LLM-Sitzungs- oder Gesprächskontext, der für andere Aufgaben mit internen Memos befüllt wurde, darf nicht zur Kommunikationsgenerierung weiterverwendet werden. Der Kommunikationsschritt erhält einen getrennten, zulässigen Kontext. Bewusst eingegebene Sachanweisungen eröffnen keinen Zugriff auf die zugrunde liegenden Memos.
 
 **Bestätigtes Beispiel:** Ein internes Memo enthält den Technikertermin am Dienstag, eine Kostenfreigabe und eine interne Vorgabe zur Offertprüfung. Der Mitarbeiter gibt für die externe Formulierung nur «Techniker kommt am Dienstag. Bitte Zugang zur Wohnung ermöglichen.» ein. Diese Sachanweisung ist zulässig. Die ausschliesslich im Memo vorhandene Kostenfreigabe und Offertvorgabe werden nicht in den KI-Kontext übernommen. Das Memo bleibt intern; erst die vom Mitarbeiter geprüfte und gesendete externe Nachricht wird veröffentlicht. Kurzeingabe und ungesendeter KI-Vorschlag bleiben ohne Entwurfsspeicherung.
+
+**Ergänzt am 10.10.2026 – interne Änderungsbegründungen:** Die vorstehenden Ausschlüsse gelten ebenso für Begründungen zu Status-, Wiedervorlage- und Dringlichkeitsänderungen. Das System übernimmt weder die Begründungen selbst noch daraus erzeugte Zusammenfassungen oder Fakten in Prompts, Retrieval-/Tool-Ergebnisse oder wiederverwendeten Kommunikationskontext. Die Eingabe in ein Begründungsfeld gilt nicht als Sachanweisung für die externe KI-Formulierung. Eine gesonderte, bewusst für die externe Formulierung eingegebene Sachanweisung folgt weiterhin der oben vereinbarten Abgrenzung; sie erlaubt keinen automatischen Zugriff auf gespeicherte Begründungen.
 
 ## KOM-03: Asynchrone Fallkommunikation
 
@@ -170,6 +174,10 @@ Sind alle zuvor offenen Rückfragen beantwortet und ist die automatische Verarbe
 ### KOM-AK-10
 
 Ein Mitarbeiter hebt in UI3 gezielt den Antwortbedarf einer veröffentlichten Rückfrage auf. UI1 und UI3 zeigen danach für diese Nachricht keinen offenen Antwortbedarf; der offene Antwortbedarf einer zweiten Nachricht bleibt unverändert. Nachrichtentext und ursprüngliche Kennzeichnung bleiben erhalten, ohne eine erfolgte Beantwortung zu behaupten. Entfällt der letzte offene Antwortbedarf, folgt «In Bearbeitung»; eine laufende Wiedervorlage und vorrangiger aktueller Mitarbeiterprüfbedarf bleiben nach FALL-05/FALL-11 wirksam. Verbleibender Antwortbedarf löst durch die Aktion allein keinen Statuswechsel aus. Fall und ausstehende Bearbeitung bleiben aktiv. Es entsteht kein zusätzlicher Fall- oder Rückfragestatus. Die Aufhebung ist mit Nachricht, Mitarbeiter und Zeitpunkt nachvollziehbar. Mieteraufrufe und Änderungen an abgeschlossenen Fällen werden abgelehnt. Wiederholte Aufrufe, verspätete Auswertungen sowie ein konkurrierender Fallabschluss oder neu hinzugekommener Antwortbedarf erzeugen keine falsche oder doppelte Änderung. Ein abgelehnter Vorgang speichert weder eine Aufhebung noch deren Statusfolge. Bei Fehlschlag wird kein Erfolg vorgetäuscht; Mitarbeitereingabe und aktiver KI-Stream bleiben erhalten.
+
+### KOM-AK-11: Interne Änderungsbegründungen
+
+Ein ausschliesslich in einer internen Begründung vorhandener Marker wird jeweils bei manueller aktiver Statusänderung, Setzen, Ändern und Löschen der Wiedervorlage sowie manueller Dringlichkeitsänderung geprüft. Er ist für berechtigte Mitarbeitende dem Änderungsnachweis zugeordnet, fehlt aber in Mieter-HTML, Datenantworten, Vorschauen und E-Mails. Der Ausschluss umfasst den initialen Kommunikations-LLM-Request, nachgeladene Quellen, Zusammenfassungen und wiederverwendeten Kontext. Eine unauffällige fertige LLM-Antwort allein genügt nicht als Nachweis. Es entsteht keine separate Kommunikationsnachricht oder Memo-Speicherung. Eine Benachrichtigung über die fachliche Änderung enthält die Begründung nicht. KOM-AK-04/05 gelten für diese Quellen entsprechend.
 
 ## Abgleich mit bestehenden Dokumenten
 

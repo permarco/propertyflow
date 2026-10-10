@@ -158,6 +158,12 @@ Technische Incidents und Wiederholungen schliessen den Fall nicht. Für offene O
 
 Ein technischer Abbruch oder ein beliebiges BPMN-Endereignis ist nicht ohne fachliche Zuordnung mit einem erfolgreichen Fallabschluss gleichzusetzen. Massgeblich ist der im Fachprozess ausdrücklich vorgesehene Abschluss.
 
+### Optionale interne Begründung manueller Statusänderungen
+
+**Vereinbart am 10.10.2026:** Bei einer manuellen Änderung des aktiven Bearbeitungsstatus kann der Mitarbeiter eine optionale interne Begründung eingeben. Die Aktion bleibt ohne Begründung möglich. Eine eingegebene Begründung wird zusammen mit der erfolgreich geprüften Änderung und deren Mitarbeiteridentität und Zeitpunkt gespeichert und dieser Änderung eindeutig zugeordnet. Sie ist Teil des internen Änderungsnachweises, kein separates Memo und keine externe Kommunikationsnachricht. Mieteransicht, E-Mail und Kommunikations-LLM erhalten sie nicht; die Ausgabe- und Kontextgrenzen aus KOM-01/KOM-02 gelten auch für Ableitungen daraus.
+
+Abbrechen, eine fehlgeschlagene Prüfung oder ein Konflikt speichern weder Statusänderung noch Begründung. Wiederholungen derselben erfolgreichen Aktion erzeugen keinen doppelten Änderungsnachweis. Die separate Bedienung von Abschluss und Wiedereröffnung nach FALL-07 bleibt gültig; dieses Feld gilt für die aktive Statusauswahl.
+
 ### Direkter Übergang in die Bearbeitung
 
 **Bestätigt am 10.10.2026:** Nach Prüfung des aktuellen Fallstands kann der Mitarbeiter über «Status ändern» → «In Bearbeitung» → «Speichern» direkt die weitere Bearbeitung übernehmen, auch ohne Wiedervorlage. Der bestätigte Wechsel von «Mitarbeiterprüfung erforderlich» zu «In Bearbeitung» gilt selbst als bewusste Mitarbeiterentscheidung; eine zusätzliche Aktion «Prüfung erledigt» ist nicht erforderlich. Das Speichern eines Memos allein hat diese Wirkung weiterhin nicht.
@@ -280,7 +286,9 @@ Camunda verwaltet die Wartezeit als Timer im bestehenden führenden Fallprozess 
 
 Die Wiedervorlage dokumentiert die bewusste Mitarbeiterentscheidung, den aktuellen Fallstand bis zum Termin zurückzustellen; Löschen dokumentiert die Wiederaufnahme der Bearbeitung. Die bisherigen Prüfgründe bleiben intern nachvollziehbar. Bereits berücksichtigte Erkenntnisse setzen den Fall nach diesen Mitarbeiteraktionen nicht sofort wieder auf «Mitarbeiterprüfung erforderlich». Neue Erkenntnisse werden weiterhin parallel geprüft und können eine frühere Wiedervorlage erfordern. Warten oder Wiederaufnehmen ist keine pauschale Freigabe von Kosten, Folgehandlungen oder Systemabschluss nach FALL-10 und erledigt keine offene Mieterfrage. Der manuelle Dringlichkeitsvorrang bleibt geschützt.
 
-Terminsetzung, Terminänderung und eine durch neue Erkenntnisse vorgezogene Wiedervorlage bleiben mit Zeitpunkt, Quelle und auslösender Grundlage nachvollziehbar. Die konsistente Abstimmung zwischen gespeichertem Termin, Timer und Mitarbeiterprüfung muss auch bei gleichzeitiger Nachrichtenauswertung, Terminänderung, Löschung, Timerablauf und Abschluss gelten. Überholte oder wiederholte Timerereignisse dürfen keine zusätzliche oder verfrühte Wiedervorlage auslösen.
+**Vereinbart am 10.10.2026 – optionale interne Begründung:** Beim manuellen Setzen, Ändern und Löschen der Wiedervorlage kann der Mitarbeiter eine Begründung angeben. Alle drei Aktionen bleiben ohne Begründung möglich. Eine eingegebene Begründung wird zusammen mit der erfolgreich bestätigten Aktion und deren Mitarbeiteridentität und Zeitpunkt gespeichert. Sie bleibt auch nach Löschung des aktuellen Termins der betreffenden Änderung zugeordnet. Für gemeinsame Speicherung, Fehler, Konflikte, Wiederholungen und ausschliesslich interne Verwendung gelten dieselben Regeln wie für [manuelle Statusänderungen](#optionale-interne-begründung-manueller-statusänderungen). Es entsteht kein separates Memo; Mieteransicht, E-Mail und Kommunikations-LLM erhalten die Begründung nicht.
+
+Terminsetzung, Terminänderung, Terminlöschung und eine durch neue Erkenntnisse vorgezogene Wiedervorlage bleiben mit Zeitpunkt, Quelle und auslösender Grundlage nachvollziehbar. Die konsistente Abstimmung zwischen gespeichertem Termin, Timer und Mitarbeiterprüfung muss auch bei gleichzeitiger Nachrichtenauswertung, Terminänderung, Löschung, Timerablauf und Abschluss gelten. Überholte oder wiederholte Timerereignisse dürfen keine zusätzliche oder verfrühte Wiedervorlage auslösen.
 
 Die genaue Tagesberechnung, Uhrzeit bei einer Datumsangabe, Zeitzonenbehandlung und technische Umsetzung der parallelen Verarbeitung werden noch konkretisiert. Die Timerentscheidung ändert die Verantwortung aus FALL-06 nicht: PropertyFlow hält die fachlichen Falldaten; Camunda führt den technischen Wartezustand.
 
@@ -372,6 +380,10 @@ Eine während der Wartezeit angenommene Mieternachricht wird ohne Warten auf den
 ### FALL-AK-19
 
 Ein Mitarbeiter kann nach Prüfung direkt von «Mitarbeiterprüfung erforderlich» auf «In Bearbeitung» wechseln, ohne eine Wiedervorlage oder zusätzliche Prüfbestätigung anzulegen. Der bestätigte Wechsel bleibt mit Mitarbeiteridentität, Zeitpunkt und geprüftem Fallstand nachvollziehbar. Wiederholte Auswertungen derselben berücksichtigten Prüfgründe lösen keinen sofortigen Rückwechsel aus; neue Erkenntnisse oder neu entstandene Prüfgründe können erneut «Mitarbeiterprüfung erforderlich» auslösen. Ein Memo allein bestätigt die Entscheidung nicht. Bestehende Hinweise bleiben nachvollziehbar; daraus entsteht weder eine pauschale Freigabe von Folgehandlungen oder Systemabschluss noch eine automatische Erledigung offener Mieterfragen. Die Konfliktprüfung und Abstimmung mit Camunda bleiben wirksam.
+
+### FALL-AK-20
+
+Manuelle aktive Statusänderungen sowie Setzen, Ändern und Löschen der Wiedervorlage sind jeweils mit und ohne interne Begründung möglich. Eine eingegebene Begründung wird nur zusammen mit der erfolgreich bestätigten Aktion gespeichert und bleibt mit Änderung, Mitarbeiter und Zeitpunkt intern nachvollziehbar. Nach Terminlöschung bleibt die zugehörige Begründung erhalten. Abbrechen, Fehler und Konflikte speichern weder Aktion noch Begründung; wiederholte Aufrufe erzeugen keinen doppelten Nachweis. Die Begründung erzeugt keine separate Kommunikationsnachricht oder Memo-Speicherung und fehlt in sämtlichen Mieterausgaben, E-Mails und im Kommunikations-LLM-Kontext gemäss KOM-AK-11. Bestehende Status-, Timer- und menschliche Entscheidungsregeln gelten auch bei leerer Begründung.
 
 ## Offene Entscheidungen und Weiterentwicklung
 

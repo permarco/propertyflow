@@ -28,17 +28,25 @@ Dieses Dokument fasst die am 09./10.10.2026 bestätigten Entscheidungen zusammen
 
 | Bereich | Inhalt / Einordnung |
 |---|---|
-| **Kopf über beide Spalten** | Case-ID, ursprünglicher Betreff als Falltitel, letzter bestätigter Bearbeitungsstatus und wirksame Dringlichkeit mit Farbe, Text und Quelle |
+| **Kopf über beide Spalten** | Links Case-ID und ursprünglicher Betreff als Falltitel; rechts daneben letzter bestätigter Status, wirksame Dringlichkeit mit Farbe, Text und Quelle sowie Wiedervorlage als Datum oder «Keine Wiedervorlage». Keine zusätzliche Metadatenzeile unter dem Titel. |
 | **Links: Verlauf** | Separat scrollbar; Fallkommunikation und nachvollziehbare Änderungen, externe Nachrichten, interne Memos und fachliche Ereignisse klar unterscheidbar |
 | **Rechts: Falldaten und Aktionen** | Bleibt beim Scrollen des linken Verlaufs fix stehen; Ursprungsdaten, Zuordnung, relevante Zeitpunkte, Prüfbedarf und zulässige Mitarbeiteraktionen |
-| **Automatische Verarbeitung** | Analyse und Dringlichkeitsbewertung laufen im Camunda-Prozess. Systemnachrichten erscheinen links im Verlauf, die wirksame Dringlichkeit im Kopf und rechts. Menschliche Abklärungen werden über Memos dokumentiert. |
+| **Automatische Verarbeitung** | Analyse und Dringlichkeitsbewertung laufen im Camunda-Prozess. Systemnachrichten erscheinen rechtsbündig innerhalb des linken Verlaufsbereichs; die wirksame Dringlichkeit steht im Kopf und ist im geöffneten Änderungsformular vorausgewählt. Menschliche Abklärungen werden über Memos dokumentiert. |
 | **KI-Formulierungshilfe** | Erzeugt aus einer kurzen externen Mitarbeitereingabe einen Nachrichtenvorschlag mit Streaming und Abbruch. Button neben der gemeinsamen Eingabe zusammen mit «Intern»; Stream darunter, bewusste Übernahme nach vollständiger Ausgabe. |
 
-**Bestätigt am 10.10.2026 – Scrollverhalten auf breiten Bildschirmen:** Der Verlauf in der linken Hälfte ist separat scrollbar. Die rechte Hälfte mit Falldaten und Aktionen bleibt beim Scrollen des Verlaufs fix stehen. Das Scrollen links verschiebt weder die rechte Hälfte noch den gemeinsamen Kopf.
+**Bestätigt am 10.10.2026 – Scrollverhalten auf breiten Bildschirmen:** Nur der Verlauf in der linken Hälfte ist separat scrollbar. «Nachricht verfassen» mit Eingabe, Aktionen und KI-Vorschlag steht als eigener fester Bereich darunter ausserhalb dieses Scrollbereichs. Das Scrollen des Verlaufs verschiebt weder diesen Eingabebereich noch die rechte Hälfte mit Falldaten und Aktionen oder den gemeinsamen Kopf. Die Arbeitsfläche nutzt die verfügbare Bildschirmhöhe bis auf einen schmalen unteren Aussenabstand; zusätzliche Höhe kommt insbesondere dem Verlauf zugute. Linker Eingabebereich und rechter Arbeitsbereich reichen bis zur gemeinsamen unteren Kante.
 
 **Ebenfalls bestätigt:** Wenn der rechte Inhalt die verfügbare Bildschirmhöhe überschreitet, ist die rechte Hälfte ebenfalls unabhängig scrollbar. Scrollen in einer Hälfte verschiebt die andere Hälfte und den gemeinsamen Kopf nicht. Auf schmalen Bildschirmen gilt die bestätigte Reihenfolge Kopf → Falldaten und Aktionen → Verlauf mit Nachrichteneingabe; die Seite wird als Ganzes gescrollt.
 
-Die hier beschriebenen Bedienelemente sind bestätigt. Breiten, Abstände, Farbtöne und Icons werden später gestaltet. Auf schmalen Bildschirmen ist die Anordnung untereinander bestätigt: Kopf → Falldaten und Aktionen → Verlauf mit Nachrichteneingabe. Die Seite wird als Ganzes gescrollt.
+Die hier beschriebenen Bedienelemente und die nachfolgenden Gestaltungsentscheidungen sind bestätigt. Exakte Pixelmasse, Schriftwahl, Farbtöne und Kontrastnachweise werden bei der Umsetzung konkretisiert. Auf schmalen Bildschirmen gilt Kopf → Falldaten und Aktionen → Verlauf mit Nachrichteneingabe; die Seite wird als Ganzes gescrollt.
+
+### 2.1 Gemeinsame Gestaltung und Änderungskarten
+
+**Konsolidierter Gestaltungsstand am 10.10.2026:** Helle Oberfläche mit weissen Karten, dunkler gut lesbarer Schrift, dezenten Rahmen, abgerundeten Ecken und Petrol als Aktionsfarbe. Diese Gestaltungsbasis wird anschliessend auf UI1 und UI2 übertragen; ihre jeweiligen Abläufe bleiben massgeblich. Dringlichkeitsfarben folgen DRING-04: Kritisch rot, Hoch orange, Normal gelb, Niedrig grün, noch nicht bewertet blau. Status und Prüfbedarf sind davon visuell unterscheidbar. Eine zusätzliche Farblegende «Gestaltungsbasis» gehört nicht zur Anwendungsoberfläche.
+
+Geschlossene Karten für Status, Dringlichkeit und Wiedervorlage zeigen nur ihre Bezeichnung und die Änderungsaktion. Sie wiederholen die aktuellen Werte aus dem Kopf nicht. Beim Aufklappen ist der gespeicherte Status bzw. die gespeicherte Dringlichkeit vorausgewählt; bei Wiedervorlage ist ein vorhandener Termin in der Eingabe erkennbar. Auswahländerungen bleiben bis zum erfolgreichen Speichern ungespeichert; der Kopf zeigt weiterhin den bestätigten Stand. «Abbrechen» schliesst die Bearbeitung ohne Übernahme. Die optionale interne Begründung folgt Abschnitt 3. Die Karte «Abschluss» zeigt den Button ohne zusätzlichen Hinweis «Abschluss erfordert Bestätigung»; die Bestätigung beim Auslösen bleibt bestehen.
+
+JPGs unter `design/` illustrieren den Entwurfsstand, sind aber keine eigenständige Anforderungsquelle. Verbindliche Entscheidungen stehen in dieser Screen-Spezifikation und den referenzierten Fachspezifikationen. Abweichungen eines generierten Bildes, insbesondere bei exakten Breiten, ändern diese Vorgaben nicht.
 
 ## 3. Fachlich verbindliche Inhalte
 
@@ -66,9 +74,9 @@ Veröffentlichte externe Nachrichten und gespeicherte interne Memos sind für Mi
 
 **Bestätigt am 10.10.2026:** Es gibt keine Aktion «Entwurf speichern» und keine automatische Entwurfsspeicherung. Externe Nachrichten werden erst mit bewusster Veröffentlichung persistiert und dem Mieter angezeigt (FALL-01, KOM-01/KOM-03). Ungesendete externe Texte bleiben ungespeicherte Eingaben und erscheinen nicht als versendete Nachrichten. Veröffentlichungsstand und E-Mail-Zustellstand sind getrennte Angaben. Eine fehlgeschlagene Zustellung entfernt keine veröffentlichte Nachricht.
 
-**Bestätigt am 10.10.2026 – Verlauf:** Ein gemeinsamer Verlauf links, chronologisch mit ältesten Einträgen oben und neuesten unten. Nachrichten und Memos zeigen Absender und Zeitpunkt. Zusätzlich ist die Herkunft «System» (Camunda-/KI-Verarbeitung) oder «Mensch» erkennbar; die menschliche Absenderrolle unterscheidet Mieter und Immobilienverwaltung. Interne Memos erhalten zusätzlich die textliche Kennzeichnung «Intern». Die Herkunft ersetzt nicht die Sichtbarkeit. Dringlichkeitsänderungen erscheinen als eigene Ereignisse.
+**Bestätigt am 10.10.2026 – Verlauf:** Ein gemeinsamer Verlauf links, chronologisch mit ältesten Einträgen oben und neuesten unten. Mieterblasen stehen links und enthalten linksbündigen Text. Verwaltungs- und Systemblasen sowie Status- und Dringlichkeitsereignisse stehen rechts; auch ihre Inhalte einschliesslich umgebrochener Zeilen sind rechtsbündig. Alle Sprech- und Ereignisblasen sind gleich breit, orientiert an der ersten Mieterblase des Entwurfs (etwa drei Viertel der nutzbaren Verlaufsbreite); nur ihre Höhe hängt vom Inhalt ab. Ereignisse bleiben durch ihre Gestaltung von Kommunikationsnachrichten unterscheidbar. Absender, Herkunft, Zeitpunkt und interne Kennzeichnung liegen vollständig innerhalb der jeweiligen Blase.
 
-**Ebenfalls bestätigt:** Eine vom Mitarbeiter geprüfte und gesendete Nachricht trägt die Herkunft «Mensch», auch bei vorheriger KI-Formulierung. Es gibt keinen zusätzlichen Hinweis «mit KI formuliert». Ein ergänzendes Icon für «Mensch» oder «System» ist eine optionale spätere Gestaltung; die verständliche textliche Kennzeichnung bleibt erhalten. Ungesendete externe Texte bleiben ausschliesslich im gemeinsamen Eingabefeld; es gibt keine gespeicherten externen Entwürfe im Verlauf.
+**Bestätigte Icon-Darstellung:** Ein Personen-Icon ersetzt das Wort «Mensch»; «Mieter» bzw. «Immobilienverwaltung» bleibt als Rolle sichtbar. Ein Zahnrad ersetzt «System» in Nachrichten- und Ereigniskopfzeilen. Ein Schloss kennzeichnet interne Nachrichten, ohne zusätzliches Wort «Intern» in der Blase. Herkunft und Sichtbarkeit bleiben getrennte Merkmale; ein internes Systemmemo trägt Zahnrad und Schloss. Hover und Tastaturfokus zeigen beim Personen-Icon den verlässlich verfügbaren Namen, andernfalls die Rolle; beim Zahnrad «System» und beim Schloss «Interne Nachricht». Die Icons erhalten zugängliche Beschriftungen. Die Ermittlung individueller Mitarbeiteridentitäten bleibt nach ZUG-04 zu konkretisieren. Eine vom Mitarbeiter geprüfte und gesendete Nachricht trägt weiterhin menschliche Herkunft, auch nach KI-Formulierung, ohne Zusatz «mit KI formuliert». Ungesendete externe Texte bleiben ausschliesslich im gemeinsamen Eingabefeld; es gibt keine gespeicherten externen Entwürfe im Verlauf.
 
 **Bestätigt am 09.10.2026 – gemeinsame Eingabe:** Externe Antworten und interne Memos werden in einem gemeinsamen Textfeld erfasst. Ein deutlich beschrifteter Toggle «Intern» bestimmt die Sichtbarkeit: eingeschaltet = internes Memo, ausgeschaltet = externe Antwort. Die Auswahl allein speichert oder veröffentlicht keinen Inhalt. Das Speichern eines internen Memos veröffentlicht keine externe Nachricht und löst keine Mieterbenachrichtigung aus (KOM-01, BEN-01). Eine externe Antwort benötigt weiterhin die bewusste Veröffentlichung. Ein gespeichertes internes Memo bleibt intern; der Toggle erlaubt keine nachträgliche Umwandlung dieses Memos in eine externe Nachricht.
 
@@ -106,7 +114,7 @@ Der Mieter erkennt den Antwortbedarf in der Fallansicht und in der Benachrichtig
 
 **Bestätigt am 10.10.2026 – weitere Bearbeitung:** Sind alle zuvor offenen Rückfragen beantwortet, erhält der weiterhin aktive Fall nach automatischer Verarbeitung «Mitarbeiterprüfung erforderlich», sofern kein zulässiger automatischer Abschluss erfolgt und keine Wiedervorlage läuft. Der Mitarbeiter entscheidet über das weitere Vorgehen. Eine laufende Wiedervorlage bleibt bestehen und kann bei neuen Erkenntnissen nach FALL-11 vorgezogen werden. Massgeblich ist der gespeicherte Folgestatus gemäss [FALL-05](../specifications/fallverwaltung.md#status-nach-beantwortung-aller-rückfragen).
 
-**Bestätigt am 10.10.2026 – Bedienung:** Neben dem Toggle «Intern» steht die Checkbox «Mieterantwort erforderlich». Sie ist beim Öffnen standardmässig ausgeschaltet und nur für externe Nachrichten verfügbar. Bei eingeschaltetem «Intern» kann kein Mieterantwortbedarf gesetzt oder mit dem Memo gespeichert werden. Das Markieren der Checkbox allein speichert nichts; der Antwortbedarf wird erst mit «Nachricht senden» wirksam.
+**Bestätigt am 10.10.2026 – Bedienung:** Neben dem Toggle «Intern» steht der gleich gestaltete Toggle «Mieterantwort erforderlich». Beide sind beim Öffnen ausgeschaltet. Der Antwortbedarf ist nur für externe Nachrichten verfügbar; bei eingeschaltetem «Intern» kann kein Mieterantwortbedarf gesetzt oder mit dem Memo gespeichert werden. Umschalten allein speichert nichts; der Antwortbedarf wird erst mit «Nachricht senden» wirksam.
 
 ### Antwortbedarf aufheben
 
@@ -150,6 +158,8 @@ Eine starke Beschwerde ist nicht allein wegen ihres Tons «Kritisch». Dringlich
 
 **Bestätigt am 10.10.2026:** Abschluss und Wiedereröffnung erfolgen über separate Buttons «Fall abschliessen» und «Fall wiedereröffnen», nicht über die normale Statusauswahl. «Status ändern» dient den aktiven Bearbeitungsstatus. Weitere Übergänge über die hier bestätigten Abläufe hinaus bleiben zu konkretisieren.
 
+**Ergänzt am 10.10.2026 – optionale interne Begründung:** Die aufgeklappte Statusänderung enthält «Begründung (optional, intern)». Die Änderung eines aktiven Bearbeitungsstatus ist mit oder ohne Begründung möglich. Eine eingegebene Begründung wird nur zusammen mit der erfolgreich bestätigten Änderung gespeichert und intern dieser Änderung zugeordnet; sie erzeugt kein separates Memo. Sie erscheint weder beim Mieter noch in E-Mails und wird nicht in die KI-Kommunikationsformulierung übernommen (FALL-06, KOM-01/KOM-02). Abbrechen, Fehler oder Konflikte speichern weder Änderung noch Begründung. Abschluss und Wiedereröffnung behalten die unter FALL-07 vereinbarte separate Bedienung.
+
 ### Wiedervorlage
 
 **Bestätigt am 10.10.2026:** Im rechten Bereich kann der Mitarbeiter für einen aktiven Fall eine optionale Wiedervorlage als Anzahl Tage, beispielsweise «in 3 Tagen», oder als festes Datum setzen. Der bestimmte Termin wird am Fall gespeichert und angezeigt; UI2 erhält die zusätzliche sortierbare Datumsspalte. Setzen führt zum neuen Status «Wartet auf Wiedervorlage». Fachlicher Ablauf und Nachvollziehbarkeit folgen [FALL-11](../specifications/fallverwaltung.md#fall-11-wiedervorlage-und-parallele-nachrichtenverarbeitung); Camunda führt die Wartezeit als Timer im bestehenden Fallprozess.
@@ -159,6 +169,8 @@ Der Mitarbeiter kann das Datum während des aktiven Falls jederzeit ändern oder
 Neue Mieternachrichten erscheinen weiterhin links und werden parallel zur Wartezeit automatisch verarbeitet. Ihr Eingang allein beendet das Warten nicht. Neue Erkenntnisse können eine frühere, bei unmittelbarem Handlungsbedarf sofortige Wiedervorlage auslösen; andernfalls bleibt der gesetzte Termin bestehen. Beim wirksamen Wiedervorlagetermin erhält der aktive Fall «Mitarbeiterprüfung erforderlich». Eine manuelle Terminänderung wird im Timer berücksichtigt; beim Abschluss entfällt die offene Wiedervorlage.
 
 Die Aktualisierung von Nachrichten, Status, Dringlichkeit und Wiedervorlagedatum folgt weiterhin Abschnitt 6 und erhält Mitarbeitereingabe und KI-Stream. Änderungen am Wiedervorlagedatum werden im Popup mit altem und neuem Wert angezeigt; ein gelöschter Termin wird als «Keine Wiedervorlage» erkennbar. Tagesberechnung, Uhrzeit bei festem Datum und die visuelle Gestaltung werden noch konkretisiert.
+
+**Ergänzt am 10.10.2026 – optionale interne Begründung:** Bei Setzen, Ändern und Löschen steht «Begründung (optional, intern)» im Wiedervorlage-Bereich zur Verfügung. «Speichern» übernimmt sie mit der Terminsetzung oder -änderung; «Wiedervorlage löschen» übernimmt sie mit der Löschung. Jede Aktion bleibt ohne Begründung möglich. Die Begründung wird intern der erfolgreich bestätigten Aktion zugeordnet, auch nach Entfernung des Termins, und erzeugt kein separates Memo. Sie bleibt von Mieteransicht, E-Mail und KI-Kommunikationsformulierung ausgeschlossen (FALL-11, KOM-01/KOM-02). Abbrechen, Fehler oder Konflikte speichern weder Aktion noch Begründung.
 
 ### Abschluss und abgeschlossene Fälle
 
@@ -206,7 +218,7 @@ Der vollständige Vorschlag wird vom Mitarbeiter geprüft und kann bearbeitet we
 
 **Verbindliche Kommunikationsgrenze, präzisiert am 10.10.2026:** Das System übernimmt nach KOM-02 keine Mitarbeiter- oder Systemmemos und keine automatisch daraus erzeugten Zusammenfassungen oder Fakten in den KI-Kontext. Der Mitarbeiter darf bewusst eine kurze Sachanweisung zur externen Formulierung eingeben, auch wenn dieselbe Information in einem Memo steht. Beispielsweise ist «Techniker kommt am Dienstag. Bitte Zugang zur Wohnung ermöglichen.» zulässig; nur im Memo vorhandene Kostenfreigaben werden nicht nachgeladen. Der Mitarbeiter prüft den Vorschlag vor dem Senden. Seine Eingabe erlaubt keinen automatischen Zugriff auf das Memo.
 
-**Bestätigt am 10.10.2026 – Position und Beschriftung:** Der Button «Mit KI formulieren» steht direkt neben dem gemeinsamen Eingabefeld, zusammen mit dem Toggle «Intern». Er startet die Formulierung einer externen Nachricht nach UC-004.
+**Bestätigt am 10.10.2026 – Position und Beschriftung:** Der Button «Mit KI formulieren» steht direkt neben dem gemeinsamen Eingabefeld, zusammen mit dem Toggle «Intern». Er startet die Formulierung einer externen Nachricht nach UC-004. Der Bereich darunter trägt nur die Überschrift «KI-Vorschlag», ohne Zusatz «ungespeichert». Der Generierungszustand bleibt erkennbar, beispielsweise «Vollständig». Der Vorschlag bleibt fachlich ungespeichert; Übernahme und Veröffentlichung sind getrennte bewusste Aktionen.
 
 **Bestätigtes Verhalten bei interner Auswahl:** Bei eingeschaltetem «Intern» ist «Mit KI formulieren» deaktiviert. Die Funktion dient ausschliesslich externen Nachrichten. Das Abschalten des Toggles liest keine Memos ein und startet keinen KI-Aufruf. Erst der bewusste Formulierungsaufruf verwendet die vom Mitarbeiter ausgewählte externe Sachanweisung und den nach KOM-02 zulässigen Kontext; gespeicherte Memos bleiben intern.
 
@@ -216,50 +228,48 @@ Der vollständige Vorschlag wird vom Mitarbeiter geprüft und kann bearbeitet we
 
 ## 5. Technischer Wireframe der bestätigten Anordnung
 
-Beispieldaten sind fiktiv. Breiten, Farben und Icons werden später gestaltet.
+Die Skizze zeigt die bestätigte Anordnung; Beispieldaten sind fiktiv. `[Person]`, `[Zahnrad]` und `[Schloss]` stehen hier für die in Abschnitt 3 festgelegten Icons. Gleich breite Blasen enthalten alle Metadaten; Text und Metadaten folgen der jeweiligen Ausrichtung. Details zu Farben und Karten stehen in Abschnitt 2.1.
 
 ~~~text
-PropertyFlow · Mitarbeiterbereich              [Zur Fallübersicht]
-REQ-2026-001 · Heizung funktioniert nicht
-Status: Mitarbeiterprüfung erforderlich · Dringlichkeit: Hoch (System)
+PropertyFlow · Mitarbeiterbereich                                     [Zur Fallübersicht]
+REQ-2026-001 · Heizung funktioniert nicht     Status | Dringlichkeit | Wiedervorlage
+                                            bestätigt | Hoch · System | kein Termin
 
-+----------------------------------------+--------------------------------------+
-| LINKS · VERLAUF                         | RECHTS · FALLDATEN UND AKTIONEN      |
-| separat scrollbar                      | unabhängig scrollbar bei Überlänge  |
-|                                        |                                      |
-| Mensch · Mieter · 10.10.2026, 09:12      | Ursprünglicher Betreff/Beschreibung  |
-| Seit gestern sind die Heizkörper kalt. | Objekt/Wohnung · bestätigte Zuordnung|
-|                                        | [Zuordnung ändern]                   |
-|                                        | Kontaktadresse · Eingang             |
-| System · 10.10.2026, 09:13              | Letzte Aktion des Mieters            |
-| Analyse-/Bearbeitungsnachricht          |                                      |
-|                                        | PRÜFBEDARF                           |
-| Dringlichkeit: nicht bewertet -> Hoch   | Interne Gründe, z. B. Zuordnung offen|
-| Quelle: System · 10.10.2026, 09:13      | Kein externes Auftragsformular       |
-|                                        |                                      |
-| Mensch · Verwaltung · Intern           | STATUS                               |
-| Abklärung als gespeichertes Memo       | Mitarbeiterprüfung erforderlich      |
-|                                        | [Status ändern]                      |
-| GEMEINSAME EINGABE                      | Auswahl aktiver Status · [Speichern] |
-|                                        | WIEDERVORLAGE                        |
-|                                        | In [3] Tagen oder am [Datum]         |
-|                                        | Gespeicherter Termin                 |
-|                                        | [Wiedervorlage ändern]               |
-|                                        | [Speichern] [Wiedervorlage löschen]   |
-| [Mehrzeiliges Textfeld .............]   |                                      |
-| [.................................]    | DRINGLICHKEIT                        |
-| daneben:                               | Hoch · System                        |
-| [Mit KI formulieren]  [ ] Intern       | [Dringlichkeit ändern]               |
-| [ ] Mieterantwort erforderlich         | Vier Stufen · Begründung optional    |
-| [Nachricht senden / Memo speichern]    | [Speichern]                          |
-|                                        |                                      |
-| KI-VORSCHLAG · ungespeichert            | ABSCHLUSS                            |
-| Stream unter dem Textfeld              | [Fall abschliessen]                  |
-| [Abbrechen] während Warten/Streaming    |                                      |
-| [Vorschlag übernehmen] wenn vollständig | Bei abgeschlossenem Fall stattdessen:|
-|                                        | [Fall wiedereröffnen]                |
-+----------------------------------------+--------------------------------------+
++-------------------------------------------------------+-----------------------------------------+
+| VERLAUF · nur dieser Bereich scrollt                  | FALLDATEN UND AKTIONEN                  |
+|                                                       | unabhängig scrollbar bei Überlänge      |
+| +--------------------------------------+              | Ursprungsdaten · bestätigte Zuordnung   |
+| | [Person] Mieter                      |              | [Zuordnung ändern] · Kontakt · Zeiten   |
+| | Zeitpunkt · Nachricht                |              |                                         |
+| +--------------------------------------+              | PRÜFBEDARF · konkrete interne Gründe    |
+|                                                       |                                         |
+|             +--------------------------------------+  | STATUS                 [Status ändern]  |
+|             |                            [Zahnrad] |  | WIEDERVORLAGE   [Wiedervorlage ändern]  |
+|             |                Zeitpunkt · Nachricht |  | DRINGLICHKEIT  [Dringlichkeit ändern]   |
+|             +--------------------------------------+  |                                         |
+|                                                       | Aufgeklappt: gespeicherte Auswahl bzw.  |
+|             +--------------------------------------+  | Termin vorausgewählt; Begründung        |
+|             |                            [Zahnrad] |  | optional, intern; Speichern / Abbrechen |
+|             |             Zeitpunkt · Stufenwechsel | |                                         |
+|             +--------------------------------------+  | Bei Wiedervorlage zusätzlich Löschen    |
+|                                                       |                                         |
+|             +--------------------------------------+  |                                         |
+|             |        [Person] Verwaltung [Schloss] |  |                                         |
+|             |                     Zeitpunkt · Memo |  |                                         |
+|             +--------------------------------------+  |                                         |
+| ────────────────────────────────────────────────────  |                                         |
+| FESTER EINGABEBEREICH                                 |                                         |
+| Nachricht verfassen · Textfeld                        |                                         |
+| [Mit KI formulieren]                                  |                                         |
+| Toggle Intern · Toggle Mieterantwort erforderlich     |                                         |
+| [Nachricht senden / Memo speichern]                   |                                         |
+| KI-Vorschlag · Generierungszustand                    |                                         |
+| [Abbrechen] während Warten/Streaming                  |                                         |
+| [Vorschlag übernehmen] wenn vollständig               | ABSCHLUSS          [Fall abschliessen]  |
++-------------------------------------------------------+-----------------------------------------+
 ~~~
+
+Bei abgeschlossenem Fall steht statt «Fall abschliessen» die Aktion «Fall wiedereröffnen». Die Werte der geschlossenen Änderungskarten stehen nur im Kopf. Der KI-Vorschlag liegt im festen Eingabebereich und bleibt bis zur bewussten Veröffentlichung ungespeichert, ohne diesen Zusatz in der Überschrift.
 
 Die alternativen Aktionen werden zustandsabhängig angezeigt: «Nachricht senden» extern, «Memo speichern» intern. KI-Formulieren und Übernahme sind intern deaktiviert. Während der Nachrichten- oder Memo-Speicherung sind Textfeld, beide Auswahlfelder, KI-Start, Vorschlagsübernahme und Sende-/Speicheraktion deaktiviert. Im abgeschlossenen Zustand sind Nachrichtenschreiben, Memo-Speichern und Dringlichkeitsänderung gesperrt; der vorhandene Verlauf bleibt lesbar. Ein bereits laufender Stream wird durch eine Aktualisierung oder die Speicherung nicht beendet.
 
@@ -302,7 +312,7 @@ Diese Kriterien bilden die bestätigten Fachregeln und Bedienungsentscheidungen 
 
 - **FD-AK-09:** Ein gemeinsames Textfeld mit Toggle «Intern» unterscheidet interne Memos und externe Antworten. Der Toggle ist beim Öffnen ausgeschaltet. Beim Umschalten bleibt der eingegebene Text erhalten; Hinweis und Aktionsbutton passen sich an. Umschalten allein speichert oder veröffentlicht nichts. Gespeicherte Memos bleiben intern; externe Antworten werden erst nach bewusster Veröffentlichung für den Mieter sichtbar.
 
-- **FD-AK-10:** Auf breiten Bildschirmen kann der linke Verlauf separat gescrollt werden, ohne die rechte Hälfte mit Falldaten und Aktionen oder den gemeinsamen Kopf zu verschieben. Bei überlangem rechten Inhalt ist auch die rechte Hälfte unabhängig scrollbar, ohne die linke Hälfte oder den gemeinsamen Kopf zu verschieben. Auf schmalen Bildschirmen stehen Kopf, Falldaten und Aktionen sowie Verlauf mit Nachrichteneingabe in dieser Reihenfolge untereinander; die Seite wird als Ganzes gescrollt.
+- **FD-AK-10:** Auf breiten Bildschirmen kann ausschliesslich der linke Verlauf gescrollt werden, ohne den festen Eingabebereich darunter mit Aktionen und KI-Vorschlag, die rechte Hälfte oder den gemeinsamen Kopf zu verschieben. Beide Arbeitsbereiche nutzen die verfügbare Höhe bis zum unteren Aussenabstand. Bei überlangem rechten Inhalt ist die rechte Hälfte unabhängig scrollbar. Auf schmalen Bildschirmen stehen Kopf, Falldaten und Aktionen sowie Verlauf mit Nachrichteneingabe in dieser Reihenfolge untereinander; die Seite wird als Ganzes gescrollt.
 
 - **FD-AK-11:** Ungesendeter externer Text und ungespeicherte interne Eingaben lösen beim bewussten Verlassen oder Neuladen eine Textverlustwarnung aus, soweit der Browser dies unterstützt. Abbrechen des Seitenwechsels erhält die Eingabe. Die Warnung speichert oder veröffentlicht nichts; leere oder erfolgreich gespeicherte/gesendete Eingaben lösen sie nicht aus.
 
@@ -314,11 +324,15 @@ Diese Kriterien bilden die bestätigten Fachregeln und Bedienungsentscheidungen 
 - **FD-AK-15:** «Mieterantwort erforderlich» ist beim Öffnen ausgeschaltet und nur extern wirksam. Senden einer Rückfrage übernimmt Antwortbedarf und den passenden Wartestatus, ohne vorrangigen Prüfbedarf zu umgehen. Fallansicht und E-Mail machen den Antwortbedarf erkennbar; reine Informationen erledigen keine ältere Rückfrage. «Antwortbedarf aufheben» beendet gezielt den Antwortbedarf einer veröffentlichten Rückfrage gemäss KOM-AK-10, ohne die Nachricht zu löschen, den Fall abzuschliessen oder Eingabe und KI-Stream zurückzusetzen.
 - **FD-AK-16:** «Mit KI formulieren» steht neben der Eingabe und «Intern». Der Stream erscheint darunter, erhält die ausserhalb einer Nachrichten- oder Memo-Speicherung weiterhin bearbeitbare Eingabe und ist wirksam abbrechbar. Eine Speicherung beendet den Stream nicht; FD-AK-14 sperrt dabei Eingabe, KI-Start und Übernahme. Nur ein vollständiger Vorschlag ist extern und ausserhalb einer laufenden Speicherung mit «Vorschlag übernehmen» übernehmbar; Übernahme ersetzt den aktuellen Eingabetext, speichert aber nichts. Intern und während eines laufenden Versuchs ist der Generierungsbutton deaktiviert. Umschalten auf intern beendet den bestehenden Stream nicht, sperrt aber die Übernahme. Die Start-Eingabe des laufenden Versuchs wird durch spätere Änderungen nicht verändert.
 - **FD-AK-17:** Status und Dringlichkeit werden rechts über Änderungsauswahl und «Speichern» angepasst. Abschluss und Wiedereröffnung verwenden separate Buttons mit den vereinbarten Bestätigungen. Wiedereröffnung erhält Case-ID und Historie und führt zu «In Bearbeitung» bzw. bei offenem Prüfbedarf «Mitarbeiterprüfung erforderlich». Abschlussbegründung ist optional als Memo davor, Wiedereröffnungsbegründung optional als Memo danach; die Dialoge enthalten keine zusätzlichen Begründungsfelder. Der erfolgreiche Mitarbeiterabschluss speichert den internen festen Abschlussvermerk samt Mitarbeiter, Zeitpunkt und Quelle nach FALL-AK-12 auch ohne Memo. Er erzeugt dadurch keine zusätzliche Kommunikationsnachricht; ein Systemabschluss behält seinen tatsächlich geprüften Grund.
-- **FD-AK-18:** Verlaufseinträge zeigen Absender, Zeitpunkt, Herkunft System/Mensch und Sichtbarkeit. Mitarbeiterseitig geprüfte und gesendete KI-Formulierungen tragen «Mensch» ohne KI-Zusatz. Systemmemos bleiben intern. Das System übernimmt keine Memos oder daraus abgeleiteten Inhalte in den Kommunikations-LLM-Kontext. Bewusst eingegebene kurze Sachanweisungen sind nach KOM-AK-04/05 auch dann zulässig, wenn dieselbe Information in einem Memo steht; weitere Memo-Inhalte werden nicht nachgeladen. PropertyFlow führt keine externen Beauftragungen aus.
+- **FD-AK-18:** Verlaufseinträge zeigen Absender, Zeitpunkt, Herkunft System/Mensch und Sichtbarkeit. Mitarbeiterseitig geprüfte und gesendete KI-Formulierungen tragen das Personen-Icon ohne KI-Zusatz. Systemmemos bleiben intern. Das System übernimmt keine Memos oder daraus abgeleiteten Inhalte in den Kommunikations-LLM-Kontext. Bewusst eingegebene kurze Sachanweisungen sind nach KOM-AK-04/05 auch dann zulässig, wenn dieselbe Information in einem Memo steht; weitere Memo-Inhalte werden nicht nachgeladen. PropertyFlow führt keine externen Beauftragungen aus.
 
 - **FD-AK-19:** Wiedervorlage in Tagen oder als Datum und der gespeicherte Termin sind in UI3 verfügbar. Der Mitarbeiter kann den Termin im aktiven Fall ändern oder löschen. Setzen und Ändern führen zu «Wartet auf Wiedervorlage», Löschen zu «In Bearbeitung» ohne aktuellen Termin; Historie und Mitarbeiteridentität bleiben nachvollziehbar. Während der Camunda-Timer wartet, erscheinen neue gespeicherte Mieternachrichten weiterhin im Verlauf und werden automatisch verarbeitet. Ohne neuen früheren Handlungsbedarf bleibt der Termin bestehen; entsprechende neue Erkenntnisse ziehen die Wiedervorlage vor. Am wirksamen Termin wird «Mitarbeiterprüfung erforderlich» angezeigt. Terminänderungen werden mit altem/neuem Wert nachgeführt; Änderungen und Löschen sind gegen konkurrierende Einstellungsänderungen abgesichert. Eingabe und Stream bleiben erhalten; Abschluss und Timerkoordination folgen FALL-11.
 
 - **FD-AK-20:** Rechts bei Objekt/Wohnung führt «Zuordnung ändern» zur Auswahl von Objekt und zugehöriger Wohnung. Erst «Speichern» übernimmt die serverseitig geprüfte Zuordnung. Die ursprüngliche Mieterangabe bleibt erkennbar; bestätigte Zuordnung, Mitarbeiter und Zeitpunkt sind nach FALL-AK-04 nachvollziehbar. UI2 und UI3 zeigen nach Aktualisierung denselben gespeicherten Stand. Fehler, eine ungültige Auswahl und konkurrierende Änderungen überschreiben keine gültige Zuordnung. Eingabe und aktiver KI-Stream bleiben erhalten. Ein gewünschter manueller Statuswechsel bleibt separat; Kontaktadresse und persönlicher Fall-Link bleiben unverändert.
+
+- **FD-AK-21:** Manuelle aktive Statusänderung sowie Setzen, Ändern und Löschen der Wiedervorlage bieten «Begründung (optional, intern)» an. Jede Aktion wird mit und ohne Begründung geprüft. Nur die erfolgreich bestätigte Aktion speichert eine eingegebene Begründung mit Bezug zur Änderung, Mitarbeiter und Zeitpunkt; beim Löschen bleibt dieser Nachweis trotz entferntem Termin erhalten. Abbrechen, Fehler und Konflikte erzeugen weder Änderung noch gespeicherte Begründung; Wiederholungen erzeugen keinen doppelten Nachweis. Es entsteht kein separates Memo. Die Begründung ist nur intern lesbar und fehlt in Mieter-HTML, Datenantworten, E-Mails und Kommunikations-LLM-Kontext einschliesslich Ableitungen (KOM-AK-11). Abschluss und Wiedereröffnung behalten ihre bisherigen separaten Abläufe.
+
+- **FD-AK-22:** Status, Dringlichkeit und Wiedervorlage stehen auf breiten Bildschirmen rechts neben dem Falltitel. Geschlossene Änderungskarten wiederholen die Werte nicht. Öffnen zeigt den gespeicherten Wert vorausgewählt; ungespeicherte Auswahl verändert den Kopf nicht. Abbrechen übernimmt nichts. Mieterblasen sind links angeordnet und linksbündig, Verwaltungs-/Systemblasen und Ereignisse rechts angeordnet und rechtsbündig. Alle Blasen sind gleich breit; Quelle, Rolle, Zeitpunkt und interne Kennzeichnung liegen vollständig darin. Personen-, Zahnrad- und Schloss-Icons, Rollen und Tooltips folgen Abschnitt 3 und sind per Tastatur sowie mit zugänglicher Beschriftung verständlich. Beide Eingabe-Toggles haben denselben Stil. Farblegende, Abschluss-Hilfstext und der Überschriftszusatz «ungespeichert» fehlen; fachliche Bestätigung und Veröffentlichung bleiben erforderlich.
 
 ## 8. Abgleich und verbleibende Konkretisierungen
 
@@ -333,7 +347,7 @@ Folgende Punkte gehören zur anschliessenden Prozess- und technischen Ausarbeitu
 - Objekt-/Wohnungsauswahl nach FALL-04: genaue Gestaltung, Stammdatenzugriff und technische Umsetzung der bestätigten Zuordnungsänderung samt Konfliktprüfung und Nachvollziehbarkeit.
 - Technischer Nachweis der Trennung bewusster Mitarbeitereingaben von systemseitig bereitgestelltem KI-Kontext nach KOM-02, einschliesslich Ausschluss automatischer Memo-Übernahme und systemseitiger Memo-Ableitungen; Streaming-/Abbruchvertrag und Koordination konkurrierender Aktionen.
 - E-Mail-Vorlagen mit klar erkennbarem Antwortbedarf; die bereits zentral offene Behandlung der getrennten Benachrichtigungspflichten von Abschlussnachricht und Abschluss.
-- Darstellungsdetails wie Popup-Verhalten bei mehreren Aktualisierungen, Fokusführung, genaue Scrollhöhe, Farbtöne, Icons und Abstände.
+- Darstellungsdetails wie Popup-Verhalten bei mehreren Aktualisierungen, Fokusführung, genaue Scrollhöhe, Farbtöne und Abstände sowie konkrete Grafikdateien der festgelegten Icons. Verhalten und Höhenbegrenzung bei manueller Textbox-Vergrösserung sind noch nicht bestätigt.
 
 Die Erstposition des Verlaufs beim Öffnen sowie das Zurücksetzen einer vorübergehend nicht verfügbaren Antwortbedarfs-Auswahl beim Umschalten auf «Intern» wurden nicht gesondert bestätigt und bleiben als kleine Bedienungsdetails für die spätere Ausarbeitung kenntlich. Die bestehenden Regeln zu Textbestand, externem Antwortbedarf und Zurücksetzen nach erfolgreicher Speicherung gelten verbindlich.
 

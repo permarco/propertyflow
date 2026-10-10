@@ -35,7 +35,7 @@ Menschliche Entscheidungen sind bei Kosten bzw. verbindlicher externer Beauftrag
 
 Prüfbedarf und Dringlichkeitsstufe sind getrennte Angaben. Eine starke Beschwerde wird nicht allein wegen ihres Tons «Kritisch»; eine manuell niedrigere Einstufung beseitigt umgekehrt keine verpflichtende menschliche Prüfung. Der Vorrang manueller Einstufungen nach DRING-06 bleibt erhalten.
 
-Dringlichkeit wird gemäss [UC-002](../use_cases/UC-002-mieteranliegen-anzeigen.md) textlich dargestellt und nicht ausschliesslich über Farbe vermittelt. Die aktuelle Stufe und ihre Änderungsquelle werden unterschieden: «System» für die automatische Prozessbewertung, «Immobilienverwaltung» für die manuelle Anpassung durch einen berechtigten Mitarbeiter. Eine automatisch gespeicherte Dringlichkeit ist keine abschliessende menschliche Entscheidung über die weitere Bearbeitung oder den Fallabschluss.
+Dringlichkeit wird gemäss [UC-002](../use_cases/UC-002-mieteranliegen-anzeigen.md) textlich dargestellt und nicht ausschliesslich über Farbe vermittelt. **Darstellung in UI2 präzisiert am 10.10.2026:** Die Fallübersicht zeigt nur die wirksame Stufe mit Farbe und Text, ohne Bewertungsquelle. Die Quelle bleibt gespeichert und in der Detailansicht bzw. freigegebenen Änderungshistorie nachvollziehbar. Die aktuelle Stufe und ihre Änderungsquelle werden fachlich weiterhin unterschieden: «System» für die automatische Prozessbewertung, «Immobilienverwaltung» für die manuelle Anpassung durch einen berechtigten Mitarbeiter. Eine automatisch gespeicherte Dringlichkeit ist keine abschliessende menschliche Entscheidung über die weitere Bearbeitung oder den Fallabschluss.
 
 ## DRING-04: Farbkennzeichnung
 
