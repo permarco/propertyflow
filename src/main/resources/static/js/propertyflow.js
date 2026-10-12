@@ -5,12 +5,22 @@ const labels = { idle: 'Bereit', waiting: 'Wartet …', streaming: 'Wird formuli
     completed: 'Vollständig', aborted: 'Abgebrochen', error: 'Die Nachricht konnte nicht formuliert werden.' };
 const parse = html => new DOMParser().parseFromString(html, 'text/html');
 const timestamp = () => new Intl.DateTimeFormat('de-CH', { dateStyle: 'short', timeStyle: 'medium', timeZone: 'Europe/Zurich' }).format(new Date());
+let saveNoticeTimer;
+function showSaveNotice(text, error = false, temporary = false) {
+    clearTimeout(saveNoticeTimer);
+    const notice = $('#save-state');
+    if (!notice) return;
+    notice.textContent = text;
+    notice.classList.toggle('error', error);
+    if (temporary) saveNoticeTimer = setTimeout(() => { notice.textContent = ''; }, 5000);
+}
 let saving = false;
 let closed = $('#case-head')?.dataset.closed === 'true';
 const message = $('#message');
 const internal = $('#internal');
 const answer = $('#answer');
 const stream = $('#ai') ? new MockStream(({ state, text }) => {
+    $('#ai').hidden = state === 'idle';
     $('#ai-status').textContent = labels[state];
     $('#ai-status').dataset.state = state;
     $('#ai-output').textContent = text; // Never interpret untrusted generated text as HTML.
@@ -27,8 +37,10 @@ function syncComposer() {
     $('#send').textContent = saving ? 'Wird gespeichert …' : internal?.checked ? 'Memo speichern' : 'Nachricht senden';
     if (internal) {
         internal.disabled = saving || closed;
+        if (internal.checked) answer.checked = false;
         answer.disabled = saving || closed || internal.checked;
         $('#generate').disabled = saving || closed || running || internal.checked || !message.value.trim();
+        $('#discard-proposal').disabled = saving || running || !stream.text;
         $('#adopt').disabled = saving || closed || internal.checked || stream.state !== 'completed';
         $('#message-label').textContent = internal.checked ? 'Interne Nachricht – nur für Mitarbeitende' : 'Externe Nachricht an den Mieter';
     }
@@ -54,9 +66,18 @@ message?.addEventListener('input', () => { syncComposer(); sizeComposer(); });
 internal?.addEventListener('change', syncComposer);
 $('#generate')?.addEventListener('click', () => stream.start(message.value, $('#mock-mode').value));
 $('#abort')?.addEventListener('click', () => stream.abort());
+$('#discard-proposal')?.addEventListener('click', () => {
+    if ($('#discard-proposal').disabled) return;
+    stream.dispose();
+    stream.text = '';
+    stream.publish('idle');
+    message.focus();
+});
 $('#adopt')?.addEventListener('click', () => {
     if ($('#adopt').disabled) return;
     message.value = stream.text;
+    stream.text = '';
+    stream.publish('idle');
     syncComposer(); sizeComposer(); message.focus();
 });
 window.addEventListener('resize', sizeComposer);
@@ -133,9 +154,9 @@ document.addEventListener('submit', async event => {
     const buttons = [...form.querySelectorAll('button')];
     buttons.forEach(b => b.disabled = true);
     syncComposer();
-    $('#save-state').textContent = 'Wird gespeichert …';
+    showSaveNotice('Wird gespeichert …');
     try {
-        const response = await fetch(form.action, { method: 'POST', body: data, headers: { Accept: 'text/html' } });
+        const response = await fetch(form.getAttribute('action'), { method: 'POST', body: data, headers: { Accept: 'text/html' } });
         const page = parse(await response.text());
         if (!response.ok) {
             if ($('#case-head', page)) applyCase(page, false, response.status === 409);
@@ -147,12 +168,10 @@ document.addEventListener('submit', async event => {
             $('input[name=operation]', form).value = crypto.randomUUID();
         }
         applyCase(page, false, true);
-        $('#save-state').textContent = isMessage ? 'Im Demo-Arbeitsspeicher gespeichert.' : 'Änderung gespeichert.';
-        $('#save-state').classList.remove('error');
+        showSaveNotice(isMessage ? 'Im Demo-Arbeitsspeicher gespeichert.' : 'Änderung gespeichert.', false, true);
         if (isMessage) $('#history').scrollTop = $('#history').scrollHeight;
     } catch (error) {
-        $('#save-state').textContent = error.message || 'Speichern momentan nicht möglich. Ihre Eingabe bleibt erhalten.';
-        $('#save-state').classList.add('error');
+        showSaveNotice(error.message || 'Speichern momentan nicht möglich. Ihre Eingabe bleibt erhalten.', true);
     } finally {
         saving = false;
         buttons.forEach(b => b.disabled = false);
@@ -251,7 +270,7 @@ async function refresh() {
         if (!saving) applyCase(page, true);
         lastRead = timestamp();
     } catch (error) {
-        if (error.name !== 'AbortError') $('#save-state').textContent = 'Aktualisierung momentan nicht möglich. Stand: ' + lastRead;
+        if (error.name !== 'AbortError') showSaveNotice('Aktualisierung momentan nicht möglich. Stand: ' + lastRead, true);
     } finally { reading = false; }
 }
 setInterval(refresh, 20000);
