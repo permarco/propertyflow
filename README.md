@@ -16,7 +16,58 @@ automatisch im Camunda-Prozess. Die interaktive KI-Funktion in UI3 hilft beim
 Formulieren einer Nachricht, die der Mitarbeiter prüft und bewusst sendet.
 Die E-Mail-Annahme aus der Projektvision benötigt weiterhin einen eigenen
 Kanalvertrag; die vereinbarten Benachrichtigungen verweisen auf die Fallansicht.
-Die Oberflächen sind fachlich spezifiziert; ihre Implementierung folgt separat.
+Die drei Oberflächen sind als lokale Frontend-Demo mit Testdaten implementiert.
+Die produktiven Integrationen folgen separat.
+
+## Frontend-Demo ohne Datenbank
+
+In IntelliJ die gemeinsame Run-Konfiguration **PropertyFlow - Frontend Demo**
+auswählen und mit ▶ starten. Sie ist unter `.run/` versioniert und erscheint
+auch im Services-Fenster, wenn dort Spring-Boot-Konfigurationen aktiviert sind.
+Sie verwendet das Projekt-JDK, das Profil `frontend-demo`, Port 8081 und den
+kurzen Windows-Socket-Pfad. Ein vorheriger Demo-Prozess auf Port 8081 muss
+zuerst beendet werden.
+
+Starten mit Java 23 oder neuer:
+
+```powershell
+.\mvnw.cmd spring-boot:run '-Dspring-boot.run.profiles=frontend-demo'
+```
+
+Danach [http://127.0.0.1:8081](http://127.0.0.1:8081) öffnen.
+Die Startseite verlinkt Neuerfassung, aktive und abgeschlossene Mieteransicht,
+Mitarbeiterübersicht und Falldetail. Die Demo bindet nur an die lokale Adresse.
+56 fiktive Fälle decken Suche, Filter, Sortierung und Seitennavigation ab.
+Änderungen liegen ausschliesslich im Arbeitsspeicher und verschwinden beim Neustart.
+
+Nur UI3 bietet «Mit KI formulieren». Unter «Lokalen Mock testen» lassen sich
+Erfolg, Fehler während der Ausgabe und eine HTML-Testzeichenfolge auswählen.
+Abbrechen stoppt den lokalen Ausgabetimer; nur vollständige Vorschläge sind
+übernehmbar. Übernahme und bewusstes Senden sind getrennte Aktionen.
+Es werden keine Modell-, Datenbank-, Camunda- oder E-Mail-Aufrufe benötigt.
+
+Die Demo ist kein produktiver Zugangs- oder Workflow-Adapter: Alle lokalen
+Nutzer können den Mitarbeiterbereich öffnen; Demo-Token werden nur im
+Arbeitsspeicher zugeordnet. Hash/verschlüsselte Versandkopie nach ADR-004,
+Mitarbeiterabsicherung, Versand, automatische Analyse und Wiedervorlage-Timer
+bleiben spätere Integrationen. Formular-CSRF, sichere Textausgabe, getrennte
+Mieterdaten und Schreibsperren sind bereits berücksichtigt.
+
+Tests:
+
+```powershell
+.\mvnw.cmd test
+node --test src/test/js/mock-stream.test.mjs
+```
+
+Falls Java unter Windows mit «Unable to establish loopback connection» und
+«UnixDomainSockets / Invalid argument» scheitert, einen kurzen vorhandenen
+temporären Socket-Pfad angeben (hier nach dem ersten Build):
+
+```powershell
+.\mvnw.cmd spring-boot:run '-Dspring-boot.run.profiles=frontend-demo' '-Dspring-boot.run.jvmArguments=-Djdk.net.unixdomain.tmpdir=C:\Dev\propertyflow\target'
+.\mvnw.cmd test '-DargLine=-Djdk.net.unixdomain.tmpdir=C:\Dev\propertyflow\target'
+```
 
 Die fachliche Verantwortung verbleibt bei der Immobilienbewirtschaftung.
 Mitarbeitende und das System können Fälle gemäss den vereinbarten
