@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="PropertyFlow - Frontend Demo" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <module name="propertyflow" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.pertegato.propertyflow.PropertyflowApplication" />
+    <option name="PROGRAM_PARAMETERS" value="--spring.profiles.active=frontend-demo --server.port=8081" />
+    <option name="VM_PARAMETERS" value="-Djdk.net.unixdomain.tmpdir=&quot;$PROJECT_DIR$/target&quot;" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
