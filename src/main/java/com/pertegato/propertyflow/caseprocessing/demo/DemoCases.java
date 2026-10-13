@@ -28,6 +28,15 @@ public class DemoCases {
 
     public record Entry(String id, String role, String text, Instant at, boolean internal, boolean event, boolean answerRequired, String reason) {
         public String time() { return TIME.format(at); }
+        public int previousUrgency() { return urgencyIndex(0); }
+        public int nextUrgency() { return urgencyIndex(1); }
+        private int urgencyIndex(int index) {
+            if (!event || !text.startsWith("Dringlichkeit: ")) return -1;
+            String[] values = text.substring("Dringlichkeit: ".length()).split(" → ", -1);
+            if (values.length != 2 || !URGENCIES.contains(values[0]) || !URGENCIES.contains(values[1])) return -1;
+            return URGENCIES.indexOf(values[index]);
+        }
+
     }
     public record View(String id, String title, String description, String originalUnit, String unit, String email,
                        Instant received, Instant contact, String urgency, String source, String status, LocalDate followUp,

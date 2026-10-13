@@ -9,3 +9,23 @@
 
 /* Expand the assignment editor across both columns of the 2:3 data grid. */
 @media(min-width:768px){.assignment-box{margin-left:calc(-200% / 3 - 16px);width:calc(500% / 3 + 16px)}}
+
+/* Case overview: keep navigation visible while the results scroll. */
+.list-page{height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+.list-page>.app-header{flex-shrink:0}
+.list-page>main{flex:1;min-height:0;display:flex;flex-direction:column}
+.list-page main>h1,.list-page #load-state{flex-shrink:0}
+.list-page .filters{flex-shrink:0;max-height:35dvh;overflow:auto}
+.list-page #results{flex:1;min-height:0;display:flex;flex-direction:column}
+.list-page .result-count{flex-shrink:0;margin:12px 0}
+.list-page .table-card{flex:1;min-height:0;overflow:auto;scrollbar-gutter:stable}
+.list-page th{position:sticky;top:0;z-index:1;background:#f8fafc}
+.list-page .pagination{flex-shrink:0;margin:0;padding:12px 0 0}
+@media(max-height:600px){.list-page>main{padding-top:8px;padding-bottom:8px}.list-page main>h1{font-size:20px;margin-bottom:8px}.list-page .pagination{padding-top:8px}}
+
+.urgency-transition{display:inline-flex;align-items:center;gap:8px;margin-right:10px;vertical-align:middle}.urgency-dot{display:inline-block;width:14px;height:14px;border-radius:50%;flex-shrink:0}.urgency-dot-0{background:#1d4ed8}.urgency-dot-1{background:#dc2626}.urgency-dot-2{background:#f97316}.urgency-dot-3{background:#eab308}.urgency-dot-4{background:#16a34a}
+
+.case-heading{min-width:0}.case-title-row{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.case-title-row .eyebrow{margin:0;white-space:nowrap}.case-title-row h1{font-size:24px;min-width:0;flex:1}.case-head{gap:16px;margin-bottom:12px}
+.detail-page #save-state:not(:empty){position:fixed;right:24px;bottom:24px;z-index:1000;max-width:min(460px,calc(100vw - 32px));margin:0;padding:14px 18px;border-radius:8px;background:#172033;color:#fff;box-shadow:0 6px 24px #17203340;overflow-wrap:anywhere}
+.detail-page #save-state.error:not(:empty){background:#991b1b;color:#fff}
+@media(max-width:767px){.case-title-row h1{font-size:22px}.detail-page #save-state:not(:empty){right:16px;bottom:16px}}

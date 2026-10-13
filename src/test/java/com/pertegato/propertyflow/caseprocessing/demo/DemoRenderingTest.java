@@ -17,6 +17,7 @@ import static org.hamcrest.Matchers.*;
 @ActiveProfiles("frontend-demo")
 class DemoRenderingTest {
     @Autowired WebApplicationContext context;
+    @Autowired DemoCases cases;
     MockMvc mvc;
     @BeforeEach void setup() { mvc = MockMvcBuilders.webAppContextSetup(context).build(); }
     @Test void allScreensRenderWithoutDatabaseAndTenantHasNoMemoOrStream() throws Exception {
@@ -45,5 +46,33 @@ class DemoRenderingTest {
         mvc.perform(get(created.getResponse().getRedirectedUrl()).session(session)).andExpect(status().isOk())
                 .andExpect(content().string(containsString("&lt;script&gt;")))
                 .andExpect(content().string(not(containsString("<img src=x"))));
+    }
+
+    @Test void statusChangesPersistWithOptionalInternalReasonThroughHttp() throws Exception {
+        String token = cases.create("Statusprüfung", "Testwohnung", "status@example.ch", "Test", "status-http-create");
+        String id = cases.tenant(token).id();
+        String path = "/mitarbeiter/faelle/" + id;
+        var result = mvc.perform(get(path)).andReturn();
+        var session = (MockHttpSession) result.getRequest().getSession();
+        String csrf = session.getAttribute("csrf").toString();
+        String reason = "Interner Prüfvermerk <script>privat</script>";
+        int entries = cases.get(id).entries().size();
+        mvc.perform(post(path + "/aktion").session(session).param("csrf", csrf)
+                .param("operation", "status-with-reason").param("version", Long.toString(cases.get(id).version()))
+                .param("action", "status").param("value", "In Bearbeitung").param("reason", reason))
+                .andExpect(status().isSeeOther()).andExpect(redirectedUrl(path));
+        org.junit.jupiter.api.Assertions.assertEquals("In Bearbeitung", cases.get(id).status());
+        org.junit.jupiter.api.Assertions.assertEquals(entries + 1, cases.get(id).entries().size());
+        org.junit.jupiter.api.Assertions.assertEquals(reason, cases.get(id).entries().getLast().reason());
+        mvc.perform(get(path)).andExpect(content().string(containsString("Interner Prüfvermerk &lt;script&gt;privat&lt;/script&gt;")));
+        mvc.perform(get("/mieter/fall/zugang/" + token))
+                .andExpect(content().string(containsString("In Bearbeitung")))
+                .andExpect(content().string(not(containsString("Interner Prüfvermerk"))));
+        mvc.perform(post(path + "/aktion").session(session).param("csrf", csrf)
+                .param("operation", "status-without-reason").param("version", Long.toString(cases.get(id).version()))
+                .param("action", "status").param("value", "Mitarbeiterprüfung erforderlich"))
+                .andExpect(status().isSeeOther());
+        org.junit.jupiter.api.Assertions.assertEquals("Mitarbeiterprüfung erforderlich", cases.get(id).status());
+        org.junit.jupiter.api.Assertions.assertEquals("", cases.get(id).entries().getLast().reason());
     }
 }

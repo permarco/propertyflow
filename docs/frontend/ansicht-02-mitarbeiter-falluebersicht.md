@@ -75,7 +75,7 @@ Interne Problemhinweise bleiben gemäss FALL-05/FALL-06 am Fall nachvollziehbar,
 | 768–1199 px | Kompakte Ansicht mit umgebrochenem Kopf |
 | Unter 768 px | Mobile Ansicht mit einer Spalte |
 
-Unter 1200 px scrollt die ganze Seite; Kopf und Filterbereich sind nicht feststehend. Es gibt kein horizontales Scrollen; lange Wörter und Referenzen dürfen umbrechen. Bedienelemente bleiben mindestens 44 px hoch. Unter 768 px gelten 16 px Seitenrand, 24 px Seitentitel und weiterhin 16 px Nachrichtentext. Die Bildschirmtastatur darf keine Aktionen dauerhaft verdecken; diese bleiben durch Seitenscrollen erreichbar.
+**Geändert am 12.10.2026:** Auf allen Bildschirmbreiten bleiben Anwendungskopf und die untere Seitennavigation sichtbar. Die Fallliste scrollt im verfügbaren Bereich dazwischen; in der Tabellenansicht bleiben auch die Spaltenüberschriften sichtbar. Titel, Filter und Trefferzahl stehen oberhalb der Liste. Bei geringer Höhe ist der Filterbereich auf 35 % der sichtbaren Fensterhöhe begrenzt und separat scrollbar. Es gibt kein horizontales Scrollen; lange Wörter und Referenzen dürfen umbrechen. Bedienelemente bleiben mindestens 44 px hoch. Unter 768 px gelten 16 px Seitenrand, 24 px Seitentitel und weiterhin 16 px Nachrichtentext. Die Bildschirmtastatur darf keine Aktionen dauerhaft verdecken; Filter- und Listenbereich sind unabhängig scrollbar und per Tastatur erreichbar.
 
 Unter 1200 px ersetzen Fallkarten die Tabelle. Jede Karte zeigt dieselben sieben Angaben mit Beschriftungen in der bisherigen Feldreihenfolge; die Case-ID öffnet das Detail. Die Suche steht oben über die ganze Breite. Darunter folgen Dringlichkeitsfilter und Sortierauswahl für Spalte und Richtung einschliesslich Standardsortierung.
 
@@ -85,7 +85,7 @@ Unter 768 px stehen die Filter untereinander. Der Toggle «Abgeschlossene Fälle
 
 #### JPG-Entwürfe für Mobile und Tablet
 
-**Erstellt am 10.10.2026 zur visuellen Abstimmung:** Die folgenden Entwürfe ergänzen die bestätigten Desktop-JPGs. Sie zeigen durchgehende Seitenansichten einschliesslich der durch Seitenscrollen erreichbaren Bereiche. Mobile orientiert sich an einer Browserbreite von 390 CSS-Pixeln, Tablet an 834 CSS-Pixeln; die Bildauflösung ist keine CSS-Massvorgabe. Die bestätigten Responsive-Regeln und Gestaltungswerte bleiben verbindlich. Die Bilder verwenden fiktive Beispieldaten und ausgewählte Verlaufsstände.
+**Erstellt am 10.10.2026 zur visuellen Abstimmung:** Die folgenden Entwürfe ergänzen die bestätigten Desktop-JPGs. Sie zeigen den früheren Stand mit durchgehenden Seitenansichten; für das Scrollverhalten gilt die Änderung vom 12.10.2026 mit festem Kopf und fester Seitennavigation. Mobile orientiert sich an einer Browserbreite von 390 CSS-Pixeln, Tablet an 834 CSS-Pixeln; die Bildauflösung ist keine CSS-Massvorgabe. Die bestätigten Responsive-Regeln und Gestaltungswerte bleiben verbindlich. Die Bilder verwenden fiktive Beispieldaten und ausgewählte Verlaufsstände.
 
 | Zustand | Mobile | Tablet |
 |---|---|---|
