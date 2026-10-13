@@ -75,4 +75,28 @@ class DemoRenderingTest {
         org.junit.jupiter.api.Assertions.assertEquals("Mitarbeiterprüfung erforderlich", cases.get(id).status());
         org.junit.jupiter.api.Assertions.assertEquals("", cases.get(id).entries().getLast().reason());
     }
+
+    @Test void listContextSurvivesDetailAndSavingAndRejectsExternalReturnTarget() throws Exception {
+        String back = "/mitarbeiter/faelle?q=Heizung&urgency=Hoch&closed=true&sort=title&desc=true&page=1";
+        mvc.perform(get("/mitarbeiter/faelle").param("q", "Heizung").param("urgency", "Hoch")
+                .param("closed", "true").param("sort", "title").param("desc", "true"))
+                .andExpect(content().string(containsString("returnTo=")));
+        String id = cases.tenant(cases.create("Rückkehrtest", "Wohnung", "back@example.ch", "Test", "back-create")).id();
+        String path = "/mitarbeiter/faelle/" + id;
+        var response = mvc.perform(get(path).param("returnTo", back))
+                .andExpect(content().string(containsString("href=\"" + back.replace("&", "&amp;") + "\""))).andReturn();
+        var session = (MockHttpSession) response.getRequest().getSession();
+        var saved = mvc.perform(post(path + "/aktion").session(session)
+                .param("csrf", session.getAttribute("csrf").toString()).param("returnTo", back)
+                .param("operation", "back-status").param("version", Long.toString(cases.get(id).version()))
+                .param("action", "status").param("value", "In Bearbeitung"))
+                .andExpect(status().isSeeOther()).andReturn();
+        mvc.perform(get(java.net.URI.create(saved.getResponse().getRedirectedUrl())).session(session))
+                .andExpect(content().string(containsString("href=\"" + back.replace("&", "&amp;") + "\"")));
+        for (String invalid : new String[]{"https://example.com", "//example.com/mitarbeiter/faelle", "/mieter/fall"}) {
+            mvc.perform(get(path).param("returnTo", invalid))
+                    .andExpect(content().string(containsString("href=\"/mitarbeiter/faelle\" class=\"button secondary\">Zur Fallübersicht")));
+        }
+        mvc.perform(get(path)).andExpect(content().string(containsString("href=\"/mitarbeiter/faelle\" class=\"button secondary\">Zur Fallübersicht")));
+    }
 }

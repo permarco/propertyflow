@@ -106,3 +106,7 @@ Diese offenen Umsetzungs- und Konfliktregeln ändern die vereinbarten Auslöser,
 - **DRING-AK-09:** Eine manuelle Einstufung bleibt nach neuen Mieter-Nachrichten und automatischen Neubewertungen wirksam. Ein gezielter Konkurrenztest mit verspätetem Systemergebnis weist nach, dass das System die manuelle Stufe nicht überschreibt. Das getrennte Systemergebnis erzeugt keinen mieteröffentlichen Stufenwechsel oder Änderungs-Mailauftrag. Eine weitere berechtigte manuelle Änderung wird historisiert.
 
 Dies sind Anforderungen an spätere Prüfungen, keine ausgeführten Testnachweise.
+
+### Unveränderte manuelle Einstufung – Präzisierung vom 13.10.2026
+
+Wird eine bereits manuell gesetzte Stufe erneut unverändert gespeichert, entstehen weder ein weiterer Historieneintrag noch eine neue Fallversion; eine dabei eingegebene Begründung wird nicht separat gespeichert. Die erfolgreiche Operations-ID bleibt für Wiederholungsschutz vermerkt. Versions- und Abschlusssperren gelten weiterhin. Wird dagegen eine Systembewertung bei gleicher Stufe erstmals manuell bestätigt, wechselt die Quelle auf «Immobilienverwaltung». Diese Bestätigung wird mit Zeitpunkt und optionaler Begründung intern dokumentiert und aktiviert den manuellen Vorrang. Sie erzeugt keinen mieteröffentlichen Stufenwechsel und keine Dringlichkeitsänderungsmail. Die aktuelle Quelle bleibt in der Detailansicht sichtbar.
