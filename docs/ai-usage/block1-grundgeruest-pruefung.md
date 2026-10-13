@@ -161,7 +161,7 @@ Package-Struktur anzulegen:
 Dieser Vorschlag wurde bewusst nicht umgesetzt.
 
 Die Module sind bereits in der Architektur und in
-`../architecture/module-structure.md` definiert.
+[../architecture/module-structure.md](../architecture/module-structure.md) definiert.
 
 Leere Packages ohne konkrete fachliche Implementierung würden jedoch keinen
 zusätzlichen fachlichen Wert erzeugen.
@@ -216,8 +216,8 @@ Relevante Nachweise befinden sich unter anderem in:
 - `src/main/resources/db/migration/`
 - `src/test/java/com/pertegato/propertyflow/helloworld/`
 - `src/test/resources/application-test.properties`
-- `docs/architecture/adr/ADR-001-grundarchitektur.md`
-- `docs/architecture/adr/ADR-002-camunda8-workflow-orchestrierung.md`
-- `../architecture/module-structure.md`
-- `../project-context.md`
+- [docs/architecture/adr/ADR-001-grundarchitektur.md](../architecture/adr/ADR-001-grundarchitektur.md)
+- [docs/architecture/adr/ADR-002-camunda8-workflow-orchestrierung.md](../architecture/adr/ADR-002-camunda8-workflow-orchestrierung.md)
+- [../architecture/module-structure.md](../architecture/module-structure.md)
+- [../project-context.md](../project-context.md)
 

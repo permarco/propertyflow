@@ -290,7 +290,7 @@ strukturiert. Innerhalb eines Moduls werden Ein-/Ausgabe,
 Anwendungslogik, Fachmodell und Infrastruktur getrennt.
 
 Die detaillierten Struktur- und Abhängigkeitsregeln sind in
-`../module-structure.md` beschrieben.
+[../module-structure.md](../module-structure.md) beschrieben.
 
 ## Konsequenzen
 

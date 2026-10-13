@@ -12,9 +12,9 @@ Die Fälle dienen später dazu, KI-Funktionen und KI-generierten Code
 wiederholbar zu prüfen. In Block 1 liegt der Fokus auf repräsentativen
 Eingaben, erwarteten Eigenschaften und klaren Sicherheitsgrenzen.
 
-Die fachliche Vision ist in `docs/vision.md` beschrieben. Verbindliche
+Die fachliche Vision ist in [docs/vision.md](../vision.md) beschrieben. Verbindliche
 Architektur-, Qualitäts- und Sicherheitsleitplanken sind zusätzlich in
-`../project-context.md` und den akzeptierten ADRs dokumentiert.
+[../project-context.md](../project-context.md) und den akzeptierten ADRs dokumentiert.
 
 ## Bewertungsprinzip
 
@@ -374,3 +374,7 @@ reproduzierbare Tests und Kennzahlen ableiten, unter anderem für:
 Die Evaluationsfälle sollen versioniert weiterentwickelt werden. Änderungen
 an erwarteten Ergebnissen müssen begründet werden, damit spätere
 Modell-, Prompt- oder Implementierungsänderungen vergleichbar bleiben.
+
+## Nachweise der lokalen Frontend-Demo
+
+Der aktuelle Nachweisstand ist im [Block-2-Prüfprotokoll](../ai-usage/block2-oberflaechen-pruefung.md) dokumentiert: [Unit-Tests, Veto und Mutation](../ai-usage/block2-oberflaechen-pruefung.md#ergänzung-vom-12102026-generierte-unit-tests-und-mutation) sowie [Browser, Streaming-Sicherheit, A11y und Performance](../ai-usage/block2-oberflaechen-pruefung.md#ergänzung-browser-qualitätsnachweis-und-präsentationsentscheidung). Die dort genannten Messungen gelten für die lokale Demo; produktive Integrationen und vollständige Sicherheits-/Barrierefreiheitsprüfungen bleiben davon abgegrenzt.

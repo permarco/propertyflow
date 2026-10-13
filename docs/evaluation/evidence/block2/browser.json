@@ -1,0 +1,76 @@
+{
+  "at": "2026-10-12T21:39:34.449Z",
+  "base": "http://127.0.0.1:8082",
+  "browser": "155.0.4283.45",
+  "a11y": [
+    {
+      "route": "/mieter/fall",
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious"
+        }
+      ]
+    },
+    {
+      "route": "/mieter/fall/zugang/demo-aktiver-fall",
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "aria-prohibited-attr",
+          "impact": "serious"
+        },
+        {
+          "id": "color-contrast",
+          "impact": "serious"
+        }
+      ]
+    },
+    {
+      "route": "/mitarbeiter/faelle",
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious"
+        }
+      ]
+    },
+    {
+      "route": "/mitarbeiter/faelle/REQ-2026-001",
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "aria-prohibited-attr",
+          "impact": "serious"
+        },
+        {
+          "id": "color-contrast",
+          "impact": "serious"
+        }
+      ]
+    },
+    {
+      "route": "UI3 with completed stream",
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "aria-prohibited-attr",
+          "impact": "serious"
+        },
+        {
+          "id": "color-contrast",
+          "impact": "serious"
+        }
+      ]
+    }
+  ],
+  "checks": [
+    "Keyboard: message, generate, abort reachable; output stable 1000 ms after abort; adoption disabled",
+    "Error state visible; incomplete response cannot be adopted",
+    "HTML payload remains literal text; 0 child elements and 0 alert dialogs; successful retry"
+  ],
+  "pageErrors": [],
+  "severeViolations": 0
+}

@@ -5,11 +5,11 @@ under `/docs` as the source of truth.
 
 Read at minimum:
 
-- `../docs/project-context.md`
-- `docs/vision.md`
-- `../docs/architecture/c4-context.md`
-- `docs/architecture/c4-container.md`
-- `../docs/architecture/module-structure.md`
+- [../docs/project-context.md](../docs/project-context.md)
+- [docs/vision.md](../docs/vision.md)
+- [../docs/architecture/c4-context.md](../docs/architecture/c4-context.md)
+- [docs/architecture/c4-container.md](../docs/architecture/c4-container.md)
+- [../docs/architecture/module-structure.md](../docs/architecture/module-structure.md)
 - all accepted ADRs under `docs/architecture/adr/`
 
 ## Architecture
@@ -18,7 +18,7 @@ Read at minimum:
 - Do not change architectural decisions without proposing an ADR change.
 - Do not introduce microservices unless explicitly justified by an accepted ADR.
 - Keep external systems isolated from the domain logic through explicit interfaces.
-- Follow the module and dependency rules in `../docs/architecture/module-structure.md`.
+- Follow the module and dependency rules in [../docs/architecture/module-structure.md](../docs/architecture/module-structure.md).
 - Structure backend code by business capability; do not introduce global root-level `controller`, `service`, `repository` or `entity` packages.
 - Do not access another module's persistence implementation directly.
 
@@ -37,7 +37,7 @@ Read at minimum:
 
 - Treat LLM output as untrusted input.
 - Do not send unnecessary tenant or rental data to external LLM providers.
-- Human decisions are mandatory for costs or binding external orders (including technician callouts), very urgent or severe cases, and strong or escalated tenant complaints, as specified in FALL-10 in `docs/specifications/fallverwaltung.md`. Outside these boundaries, only explicitly agreed and server-validated automated actions and closures under FALL-07/FALL-10 are allowed.
+- Human decisions are mandatory for costs or binding external orders (including technician callouts), very urgent or severe cases, and strong or escalated tenant complaints, as specified in FALL-10 in [docs/specifications/fallverwaltung.md](../docs/specifications/fallverwaltung.md). Outside these boundaries, only explicitly agreed and server-validated automated actions and closures under FALL-07/FALL-10 are allowed.
 - Relevant AI decisions must remain auditable.
 - AI or RAG failures must not prevent a tenant request from being persisted
   and manually processed.

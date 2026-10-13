@@ -5,7 +5,7 @@
 Dieses Dokument beschreibt die interne Struktur des PropertyFlow-Backends.
 
 Die Entscheidung für einen modularen Monolithen ist in
-`docs/architecture/adr/ADR-001-grundarchitektur.md` dokumentiert.
+[docs/architecture/adr/ADR-001-grundarchitektur.md](adr/ADR-001-grundarchitektur.md) dokumentiert.
 
 Dieses Dokument konkretisiert diese Entscheidung und definiert:
 
@@ -292,7 +292,7 @@ fachliche Verarbeitung
 ```
 
 Die genaue Entscheidung zur Workflow-Orchestrierung ist in
-`docs/architecture/adr/ADR-002-camunda8-workflow-orchestrierung.md`
+[docs/architecture/adr/ADR-002-camunda8-workflow-orchestrierung.md](adr/ADR-002-camunda8-workflow-orchestrierung.md)
 dokumentiert.
 
 

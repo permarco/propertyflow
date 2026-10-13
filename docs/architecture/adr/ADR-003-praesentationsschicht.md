@@ -57,6 +57,43 @@ CSR-/SPA-Anwendung umzusetzen.
 
 ## Entscheidungsgründe
 
+### Framework-Wahl und Architekturgesetz (Ergänzung vom 12.10.2026)
+
+Die bestehende Entscheidung wird konkretisiert, nicht ersetzt: Spring MVC
+und Thymeleaf rendern HTML auf dem Server; Vanilla JavaScript übernimmt
+Polling, Streaming-Status und Abbruch. Thymeleaf passt zum vorhandenen
+Spring-Boot-Monolithen und dessen Model-/Formularverarbeitung. Gemeinsame
+Template-Fragmente vermeiden doppelte Ansichtslogik. Für die begrenzten
+interaktiven Bereiche rechtfertigt der aktuelle Umfang kein zusätzliches
+React-/Vue-Routing, keinen eigenen Frontend-Build und keinen flächendeckenden
+Client-State. Die Spring-MVC-Anbindung wird in der
+[offiziellen Spring-Dokumentation](https://docs.spring.io/spring-framework/reference/web/webmvc-view/mvc-thymeleaf.html)
+beschrieben.
+
+Der Bezug zu Richards/Fords erstem Architekturgesetz ist ausdrücklich:
+«Everything in software architecture is a trade-off.»
+([Fundamentals of Software Architecture, Kapitel 27](https://www.oreilly.com/library/view/fundamentals-of-software/9781098175504/ch27.html)).
+Hier wird einfache serverseitige Formularverarbeitung gegen zusätzlichen
+Aufwand an der Grenze zu Browserinteraktionen abgewogen. SSR spart einen
+zweiten vollständigen Ansichts-/Routing-Stack; dafür müssen Polling,
+Formularzustand und Streaming gezielt synchronisiert und getestet werden.
+Reines SSR würde den gewünschten wirksamen Streaming-Abbruch erschweren;
+vollständiges CSR würde mehr Client-Zustand und Schnittstellen erfordern.
+Der gewählte Mix akzeptiert den begrenzten Synchronisierungsaufwand.
+
+Die Bewertung folgt Änderbarkeit und Testbarkeit (ADR-001/NFR-01/02),
+betrieblicher Einfachheit (NFR-06) und Benutzerfreundlichkeit (NFR-08).
+Barrierefreiheit, sichere Textausgabe und Ladeverhalten werden an der
+implementierten Demo separat gemessen; SSR allein garantiert keines dieser
+Merkmale. Das [Block-2-Prüfprotokoll](../../ai-usage/block2-oberflaechen-pruefung.md)
+führt Methoden, Ergebnisse und Grenzen der Nachweise.
+
+ADR-003 ergänzt ADR-001 (Deployment-/Modulstruktur) und ADR-002
+(Prozessorchestrierung) um die Präsentationsschicht. ADR-004 behandelt
+separat den Mieterzugriff. Alle bleiben Teil derselben ADR-Sammlung;
+die Auswahl der drei wichtigsten Entscheidungen für den Schlussbericht
+wird damit nicht vorweggenommen.
+
 ### Geringe bis mittlere Interaktivität
 
 Die Kernabläufe von PropertyFlow bestehen hauptsächlich aus dem Erfassen,

@@ -60,6 +60,13 @@ Tests:
 node --test src/test/js/mock-stream.test.mjs
 ```
 
+Die [Block-2-Nachweise](docs/ai-usage/block2-oberflaechen-pruefung.md#ergänzung-browser-qualitätsnachweis-und-präsentationsentscheidung)
+enthalten die Zuordnung der drei Screens zur Render-Strategie, Browserprüfungen
+für Barrierefreiheit und sichere Streaming-Ausgabe sowie Lighthouse-Messungen.
+Dort stehen auch die Reproduktionsschritte für `src/test/browser/`.
+Generierte Unit-Tests, die tatsächliche Veto-Entscheidung und der gezielte
+Mutationsnachweis sind im selben Prüfprotokoll dokumentiert.
+
 Falls Java unter Windows mit «Unable to establish loopback connection» und
 «UnixDomainSockets / Invalid argument» scheitert, einen kurzen vorhandenen
 temporären Socket-Pfad angeben (hier nach dem ersten Build):
@@ -127,7 +134,11 @@ propertyflow/
 │   ├── evaluation/
 │   │   └── evaluationsgrundlage.md
 │   ├── ai-usage/
-│   │   └── block1-grundgeruest-pruefung.md
+│   │   ├── block1-grundgeruest-pruefung.md
+│   │   └── block2-oberflaechen-pruefung.md
+│   ├── frontend/
+│   ├── specifications/
+│   ├── use_cases/
 │   └── architecture/
 │       ├── c4-context.md
 │       ├── c4-container.md
@@ -219,10 +230,10 @@ mvnw.cmd spring-boot:run
 Die Projektdokumentation unter `docs/` ist die fachliche und
 architektonische Source of Truth.
 
-- `docs/vision.md`  
+- [docs/vision.md](docs/vision.md)
   Problemstellung, Vision, Stakeholder und Kernfunktionen
 
-- `docs/project-context.md`  
+- [docs/project-context.md](docs/project-context.md)
   Versionierter, kompakt an arc42 orientierter KI-Rahmen mit Architektur, Stack, Konventionen, NFRs und Sicherheitsleitplanken
 
 - [Fallzugriff und Sicherheit](docs/specifications/fallzugriff-und-sicherheit.md): Persönlicher Tokenlink ohne zeitliche Ablauffrist, Trennung von Mieter- und Mitarbeiterfunktionen sowie bewusster Widerruf und administrativer Ersatz. Für Mitarbeitende gibt es keine Anmeldung; die technische Absicherung des Mitarbeiterbereichs ist noch zu konkretisieren.
@@ -235,40 +246,50 @@ architektonische Source of Truth.
 
 - [Dringlichkeitsbewertung](docs/specifications/dringlichkeitsbewertung.md): Vereinbarte Stufen und Farben, automatische Neubewertung, Vorrang manueller Einstufungen und transparente Änderungshistorie.
 
-- [Screen 01 – Mieter-Fallansicht](docs/frontend/ansicht-01-mieter-fallansicht.md): Erfassung, Kommunikation und lesbare Dringlichkeitshistorie unter dem persönlichen Falllink. Die sichtbare Ansicht aktualisiert aktive und abgeschlossene Fälle alle 20 Sekunden und zeigt nach Wiedereröffnung die Nachrichteneingabe wieder an. Fachliche Bedienung spezifiziert; Umsetzung und visuelle Ausgestaltung folgen.
+- [Screen 01 – Mieter-Fallansicht](docs/frontend/ansicht-01-mieter-fallansicht.md): Erfassung, Kommunikation und lesbare Dringlichkeitshistorie unter dem persönlichen Falllink. Die sichtbare Ansicht aktualisiert aktive und abgeschlossene Fälle alle 20 Sekunden und zeigt nach Wiedereröffnung die Nachrichteneingabe wieder an. Fachliche Bedienung und visuelle Entwürfe sind dokumentiert; die lokale Demo ist implementiert. Produktive Integrationen folgen separat.
 
-- [Screen 02 – Mitarbeiter-Fallübersicht](docs/frontend/ansicht-02-mitarbeiter-falluebersicht.md): Sieben Spalten einschliesslich sortierbarem Wiedervorlagedatum, Suche in veröffentlichten Nachrichten und internen Memos, Filter, Seitennavigation und Aktualisierung alle 20 Sekunden. Umsetzung und visuelle Ausgestaltung folgen.
+- [Screen 02 – Mitarbeiter-Fallübersicht](docs/frontend/ansicht-02-mitarbeiter-falluebersicht.md): Sieben Spalten einschliesslich sortierbarem Wiedervorlagedatum, Suche in veröffentlichten Nachrichten und internen Memos, Filter, Seitennavigation und Aktualisierung alle 20 Sekunden. Visuelle Entwürfe und lokale Demo sind vorhanden; produktive Integrationen folgen separat.
 
-- [Screen 03 – Mitarbeiter-Falldetailansicht](docs/frontend/ansicht-03-mitarbeiter-falldetail.md): Verlauf links sowie Falldaten und Aktionen rechts; externe Nachrichten, interne Memos, KI-Formulierung mit Streaming, manuelle Status-/Dringlichkeitsänderung, Abschluss und Wiedereröffnung. Wiedervorlagen können in Tagen oder als Datum gesetzt, geändert und gelöscht werden; Camunda wartet parallel zur Verarbeitung neuer Mieternachrichten. Fachliche Bedienung spezifiziert; Umsetzung und visuelle Ausgestaltung folgen.
+- [Screen 03 – Mitarbeiter-Falldetailansicht](docs/frontend/ansicht-03-mitarbeiter-falldetail.md): Verlauf links sowie Falldaten und Aktionen rechts; externe Nachrichten, interne Memos, KI-Formulierung mit Streaming, manuelle Status-/Dringlichkeitsänderung, Abschluss und Wiedereröffnung. Wiedervorlagen können in Tagen oder als Datum gesetzt, geändert und gelöscht werden; Camunda wartet parallel zur Verarbeitung neuer Mieternachrichten. Fachliche Bedienung und visuelle Entwürfe sind dokumentiert; die lokale Demo ist implementiert. Produktive Integrationen folgen separat.
 
-- [Block-2-Prüfprotokoll](docs/ai-usage/block2-oberflaechen-pruefung.md): Dokumentierter Abgleich der UI-Spezifikationen mit den Fachregeln und Use Cases; Umsetzungsnachweise folgen später.
+- [Block-2-Prüfprotokoll](docs/ai-usage/block2-oberflaechen-pruefung.md): Dokumentierter Abgleich der UI-Spezifikationen mit den Fachregeln und Use Cases; Unit-Tests, Veto-Notiz sowie Browser- und Performance-Nachweise sind enthalten.
 
-- `docs/evaluation/evaluationsgrundlage.md`  
+- [docs/evaluation/evaluationsgrundlage.md](docs/evaluation/evaluationsgrundlage.md)
   Repräsentative Evaluationsfälle, Guardrails und Human-in-the-Loop-Grenzen
 
-- `docs/ai-usage/block1-grundgeruest-pruefung.md`  
+- [docs/ai-usage/block1-grundgeruest-pruefung.md](docs/ai-usage/block1-grundgeruest-pruefung.md)
   Nachweis der KI-Nutzung beim Skelett: Generierung, Review, Korrekturen und Veto-Entscheidungen
 
-- `docs/architecture/c4-context.md`  
+- [docs/architecture/c4-context.md](docs/architecture/c4-context.md)
   C4 Level 1 – System Context
 
-- `docs/architecture/c4-container.md`  
+- [docs/architecture/c4-container.md](docs/architecture/c4-container.md)
   C4 Level 2 – Container View
 
-- `docs/architecture/module-structure.md`  
+- [docs/architecture/module-structure.md](docs/architecture/module-structure.md)
   Interne Modulstruktur und Abhängigkeitsregeln des Backends
 
-- `docs/architecture/adr/ADR-001-grundarchitektur.md`  
+- [docs/architecture/adr/ADR-001-grundarchitektur.md](docs/architecture/adr/ADR-001-grundarchitektur.md)
   Entscheidung für den modularen Monolithen
 
-- `docs/architecture/adr/ADR-002-camunda8-workflow-orchestrierung.md`  
+- [docs/architecture/adr/ADR-002-camunda8-workflow-orchestrierung.md](docs/architecture/adr/ADR-002-camunda8-workflow-orchestrierung.md)
   Entscheidung für Camunda 8 zur Orchestrierung langlebiger Prozesse
 
-- [ADR-003: Präsentationsschicht](docs/architecture/adr/ADR-003-praesentationsschicht.md)  
+- [ADR-003: Präsentationsschicht](docs/architecture/adr/ADR-003-praesentationsschicht.md)
   Entscheidung für SSR mit Thymeleaf und gezieltem Vanilla JavaScript
 
-- [ADR-004: Tokenbasierter Mieterzugriff](docs/architecture/adr/ADR-004-tokenbasierter-mieterzugriff.md)  
+- [ADR-004: Tokenbasierter Mieterzugriff](docs/architecture/adr/ADR-004-tokenbasierter-mieterzugriff.md)
   Zugang ohne Benutzerkonto über einen wiederverwendbaren persönlichen Link; Hash und verschlüsselte Versandkopie
+
+### Use Cases und gezielte Nachweise
+
+- [UC-001: Mieteranliegen einreichen](docs/use_cases/UC-001-mieteranliegen-einreichen.md)
+- [UC-002: Mitarbeiterübersicht](docs/use_cases/UC-002-mieteranliegen-anzeigen.md)
+- [UC-003: Falldetail](docs/use_cases/UC-003-mieteranliegen-details-anzeigen.md)
+- [UC-004: KI-Formulierung](docs/use_cases/UC-004-ki-analyse-durchfuehren.md)
+- [Generierte Unit-Tests und Veto](docs/ai-usage/block2-oberflaechen-pruefung.md#ergänzung-vom-12102026-generierte-unit-tests-und-mutation)
+- [Browser- und Performance-Nachweise](docs/ai-usage/block2-oberflaechen-pruefung.md#ergänzung-browser-qualitätsnachweis-und-präsentationsentscheidung)
+- [Camunda-Umgebung](infra/camunda/README.md)
 
 ## KI-gestützte Entwicklung
 
@@ -280,7 +301,7 @@ Repository-weite Anweisungen für KI-Werkzeuge befinden sich unter:
 .github/copilot-instructions.md
 ```
 
-`AGENTS.md` verweist auf diese zentralen Instruktionen.
+[AGENTS.md](AGENTS.md) verweist auf diese zentralen Instruktionen.
 
 Die Architekturentscheidungen, Qualitätsanforderungen und
 Sicherheitsgrenzen werden durch die Projektdokumentation vorgegeben und
