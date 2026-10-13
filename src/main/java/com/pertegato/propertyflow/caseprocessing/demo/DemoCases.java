@@ -26,7 +26,18 @@ public class DemoCases {
     private final Map<String, String> tokens = new HashMap<>();
     private final Map<String, String> submissions = new HashMap<>();
 
-    public record Entry(String id, String role, String text, Instant at, boolean internal, boolean event, boolean answerRequired, String reason) {
+    public record Entry(String id, String role, String text, Instant at, boolean internal, boolean event, boolean answerRequired, String reason, String consideredReview, boolean originallyAnswerRequired, String answerEndedBy, Instant answerEndedAt) {
+        public Entry(String id, String role, String text, Instant at, boolean internal, boolean event, boolean answerRequired, String reason) {
+            this(id, role, text, at, internal, event, answerRequired, reason, "");
+        }
+        public Entry(String id, String role, String text, Instant at, boolean internal, boolean event, boolean answerRequired, String reason, String consideredReview) {
+            this(id, role, text, at, internal, event, answerRequired, reason, consideredReview, answerRequired, "", null);
+        }
+        public Entry endAnswer(String cause, Instant when) {
+            if (!answerRequired) return this;
+            return new Entry(id, role, text, at, internal, event, false, reason, consideredReview, originallyAnswerRequired, cause, when);
+        }
+        public String answerEndedTime() { return answerEndedAt == null ? "" : TIME.format(answerEndedAt); }
         public String time() { return TIME.format(at); }
         public int previousUrgency() { return urgencyIndex(0); }
         public int nextUrgency() { return urgencyIndex(1); }
@@ -49,6 +60,7 @@ public class DemoCases {
         public String maskedEmail() { return email.charAt(0) + "***" + email.substring(email.indexOf('@')); }
     }
     public record Page(List<View> items, int total, int page, int pages) {}
+    private record MessageRequest(String text, boolean internal, boolean answer, boolean tenant) {}
     private static class CaseData {
         String id, title, description, originalUnit, unit, email, urgency, source = "System", status, review = "";
         Instant received, contact;
@@ -56,10 +68,11 @@ public class DemoCases {
         long version = 1;
         List<Entry> entries = new ArrayList<>();
         Set<String> operations = new HashSet<>();
+        Map<String, MessageRequest> messageRequests = new HashMap<>();
         View view(boolean tenant) {
             return new View(id, title, description, originalUnit, unit, email, received, contact, urgency, source, status,
                     followUp, tenant ? "" : review, version, entries.stream().filter(e -> !tenant || !e.internal())
-                    .map(e -> tenant ? new Entry(e.id(), e.role(), e.text(), e.at(), false, e.event(), e.answerRequired(), "") : e).toList());
+                    .map(e -> tenant ? new Entry(e.id(), e.role(), e.text(), e.at(), false, e.event(), e.answerRequired(), "", "", e.originallyAnswerRequired(), e.answerEndedBy(), e.answerEndedAt()) : e).toList());
         }
     }
     public DemoCases() {
@@ -157,15 +170,23 @@ public class DemoCases {
         CaseData c = data(token == null ? id : tenant(token).id());
         required(operation, 80);
         operation = "message:" + operation;
-        if (c.operations.contains(operation)) return;
-        active(c);
-        text = required(text, 5000);
         boolean tenant = token != null;
         if (tenant && (internal || answer)) throw new ResponseStatusException(BAD_REQUEST);
+        MessageRequest request = new MessageRequest(text, internal, answer, tenant);
+        MessageRequest previous = c.messageRequests.get(operation);
+        if (previous != null) {
+            if (!previous.equals(request)) {
+                throw new ResponseStatusException(CONFLICT,
+                        "Diese Sendeanfrage wurde bereits mit anderem Inhalt gespeichert. Der geänderte Text wurde nicht gespeichert. Bitte den Verlauf prüfen; Ihre Eingabe bleibt erhalten.");
+            }
+            return;
+        }
+        active(c);
+        text = required(text, 5000);
         c.entries.add(entry(tenant ? "Mieter" : "Immobilienverwaltung", text, Instant.now(), internal, false, !internal && answer, ""));
         if (tenant) c.contact = Instant.now();
         if (answer && !internal && c.review.isBlank() && c.followUp == null) c.status = "Wartet auf Mieterantwort";
-        c.operations.add(operation); c.version++;
+        c.messageRequests.put(operation, request); c.version++;
     }
     private void active(CaseData c) {
         if (c.status.equals("Abgeschlossen")) throw new ResponseStatusException(CONFLICT, "Der Fall ist abgeschlossen. Neue Nachrichten und Änderungen sind gesperrt.");
@@ -178,12 +199,23 @@ public class DemoCases {
         if (c.version != version) throw new ResponseStatusException(CONFLICT, "Konnte nicht erfolgreich gespeichert werden. Der Fall wurde inzwischen geändert.");
         if (reason.length() > 1000) throw new ResponseStatusException(BAD_REQUEST, "Die Begründung ist zu lang.");
         if (!action.equals("reopen")) active(c);
+        Instant changedAt = Instant.now();
         String event;
+        String consideredReview = "";
         boolean internal = false;
         switch (action) {
             case "urgency" -> {
                 if (!URGENCIES.subList(1, 5).contains(value)) throw new ResponseStatusException(BAD_REQUEST);
-                event = "Dringlichkeit: " + c.urgency + " → " + value;
+                if (c.urgency.equals(value)) {
+                    if (c.source.equals("Immobilienverwaltung")) {
+                        c.operations.add(operation);
+                        return;
+                    }
+                    event = "Dringlichkeit manuell bestätigt: " + value + " · Quelle: System → Immobilienverwaltung";
+                    internal = true;
+                } else {
+                    event = "Dringlichkeit: " + c.urgency + " → " + value;
+                }
                 c.urgency = value; c.source = "Immobilienverwaltung";
             }
             case "status" -> {
@@ -191,7 +223,10 @@ public class DemoCases {
                         || (value.equals(STATUSES.get(2)) && c.entries.stream().noneMatch(Entry::answerRequired)))
                     throw new ResponseStatusException(BAD_REQUEST, "Dieser Status benötigt eine Wiedervorlage bzw. offene Rückfrage.");
                 event = "Status: " + c.status + " → " + value; c.status = value;
-                if (value.equals("In Bearbeitung")) c.review = "";
+                if (value.equals("In Bearbeitung")) {
+                    consideredReview = c.review;
+                    c.review = "";
+                }
             }
             case "followUp" -> {
                 LocalDate date;
@@ -200,15 +235,19 @@ public class DemoCases {
                 if (!date.isAfter(LocalDate.now(ZoneId.of("Europe/Zurich")))) throw new ResponseStatusException(BAD_REQUEST, "Der Termin muss in der Zukunft liegen.");
                 event = "Wiedervorlage: " + c.followUp + " → " + date; c.followUp = date; c.status = STATUSES.get(6); internal = true;
             }
-            case "clearFollowUp" -> { event = "Wiedervorlage gelöscht"; c.followUp = null; c.status = "In Bearbeitung"; internal = true; }
+            case "clearFollowUp" -> {
+                if (c.followUp == null) throw new ResponseStatusException(CONFLICT, "Es ist keine Wiedervorlage gesetzt.");
+                event = "Wiedervorlage gelöscht: bisher " + c.followUp.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")) + " → keine Wiedervorlage";
+                c.followUp = null; c.status = "In Bearbeitung"; internal = true;
+            }
             case "unit" -> {
-                String assignment = required(value, 200);
+                String assignment = required(value == null ? null : value.strip(), 200);
                 event = "Zuordnung: " + c.unit + " → " + assignment; c.unit = assignment; internal = true;
             }
             case "close" -> {
                 event = "Status: " + c.status + " → Abgeschlossen"; c.status = "Abgeschlossen"; c.followUp = null;
                 reason = "Vom Mitarbeiter geprüft: keine weitere Bearbeitung erforderlich.";
-                c.entries.replaceAll(e -> new Entry(e.id(), e.role(), e.text(), e.at(), e.internal(), e.event(), false, e.reason()));
+                c.entries.replaceAll(e -> e.endAnswer("Fallabschluss", changedAt));
             }
             case "reopen" -> {
                 if (!c.status.equals("Abgeschlossen")) throw new ResponseStatusException(CONFLICT);
@@ -217,13 +256,17 @@ public class DemoCases {
             }
             case "clearAnswer" -> {
                 if (c.entries.stream().noneMatch(e -> e.id().equals(value) && e.answerRequired())) throw new ResponseStatusException(CONFLICT);
-                c.entries.replaceAll(e -> e.id().equals(value) ? new Entry(e.id(), e.role(), e.text(), e.at(), e.internal(), e.event(), false, e.reason()) : e);
+                c.entries.replaceAll(e -> e.id().equals(value) ? e.endAnswer("Manuell", changedAt) : e);
                 if (c.entries.stream().noneMatch(Entry::answerRequired) && c.review.isBlank() && c.followUp == null) c.status = "In Bearbeitung";
-                event = "Antwortbedarf aufgehoben"; internal = true;
+                event = "Antwortbedarf aufgehoben für Nachricht " + value; internal = true;
             }
             default -> throw new ResponseStatusException(BAD_REQUEST);
         }
-        c.entries.add(entry("Immobilienverwaltung", event, Instant.now(), internal, true, false, reason));
+        if (action.equals("followUp") || action.equals("clearFollowUp")) {
+            consideredReview = c.review;
+            c.review = "";
+        }
+        c.entries.add(new Entry(UUID.randomUUID().toString(), "Immobilienverwaltung", event, changedAt, internal, true, false, reason, consideredReview));
         c.version++; c.operations.add(operation);
     }
 }

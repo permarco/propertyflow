@@ -6,7 +6,7 @@
 **Use Case Name:** Mieteranliegen im Detail anzeigen  
 **Primary Actor:** Immobilienbewirtschaftung  
 **Goal:** Ein ausgewähltes Mieteranliegen mit den für die fachliche Prüfung relevanten Informationen anzeigen.  
-**Status:** Planned
+**Status:** Produktiver Gesamtprozess geplant; lokale Frontend-Demo mit Mock-Daten vorhanden. Die Demo ersetzt keine produktive Datenbank-, KI-, Mail- oder Camunda-Integration. Siehe [Demo-Nachweise](../evaluation/evaluationsgrundlage.md#testabdeckung-der-frontend-demo--ergänzung-vom-13102026).
 
 ## Preconditions
 
@@ -78,7 +78,7 @@ Der Mitarbeiter kann in UI3 eine optionale Wiedervorlage in Tagen oder als feste
 
 ### BR-005: Objekt und Wohnung zuordnen
 
-Bei der Bearbeitung eines aktiven Falls kann der Mitarbeiter rechts in UI3 «Zuordnung ändern» wählen, das Objekt und die zugehörige Wohnung auswählen und mit «Speichern» bestätigen. Eine offene Zuordnung wird damit geklärt oder eine bisherige Zuordnung korrigiert. Die ursprüngliche Mieterangabe bleibt getrennt von der bestätigten Zuordnung nachvollziehbar. Berechtigung, gültige Auswahl, Konfliktprüfung und Speicherung folgen [FALL-04](../specifications/fallverwaltung.md#fall-04-ursprungsdaten-und-zuordnung); UI2 übernimmt den gespeicherten Stand in seine bestehende Spalte. Mitarbeitereingabe und laufender KI-Stream bleiben erhalten. Die Zuordnung ändert weder Kontaktadresse noch persönlichen Fall-Link und ersetzt keine separate manuelle Statusänderung.
+Bei der Bearbeitung eines aktiven Falls kann der Mitarbeiter rechts in UI3 «Ändern» bei «Bestätigte Zuordnung» wählen, einen vorhandenen Vorschlag auswählen oder Freitext eingeben und mit «Zuordnung bestätigen» speichern. Solange keine bestätigte Zuordnung vorliegt, ist das Feld mit der ursprünglichen Mieterangabe vorbelegt; bei späteren Änderungen mit der aktuellen bestätigten Zuordnung. Die Vorbelegung allein bestätigt nichts. Die ursprüngliche Angabe kann unverändert bestätigt werden; ein separater Speicher- oder Bestätigungsschritt entfällt. Eine offene Zuordnung wird damit geklärt oder eine bisherige Zuordnung korrigiert. Die ursprüngliche Mieterangabe bleibt getrennt von der bestätigten Zuordnung nachvollziehbar. Berechtigung, Eingabeprüfung (1–200 Zeichen nach Entfernen äusserer Leerzeichen), Prüfung strukturierter Referenzen bei deren Verwendung, Konfliktprüfung und Speicherung folgen [FALL-04](../specifications/fallverwaltung.md#fall-04-ursprungsdaten-und-zuordnung); UI2 übernimmt den gespeicherten Stand in seine bestehende Spalte. Mitarbeitereingabe und laufender KI-Stream bleiben erhalten. Die Zuordnung ändert weder Kontaktadresse noch persönlichen Fall-Link und ersetzt keine separate manuelle Statusänderung.
 
 ## Gemeinsame fachliche Grundlage
 

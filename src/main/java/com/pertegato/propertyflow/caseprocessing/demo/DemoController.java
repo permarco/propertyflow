@@ -3,6 +3,9 @@ package com.pertegato.propertyflow.caseprocessing.demo;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.*;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
@@ -32,6 +35,7 @@ public class DemoController {
         model.addAttribute("urgencies", DemoCases.URGENCIES);
         model.addAttribute("statuses", DemoCases.STATUSES);
         model.addAttribute("units", DemoCases.UNITS);
+        model.addAttribute("returnTo", safeReturnTo(request.getParameter("returnTo")));
         model.addAttribute("staff", false);
         model.addAttribute("error", null);
     }
@@ -48,7 +52,16 @@ public class DemoController {
         model.addAttribute("staff", true);
         model.addAttribute("q", q); model.addAttribute("urgency", urgency); model.addAttribute("closed", closed);
         model.addAttribute("sort", sort); model.addAttribute("desc", desc);
-        model.addAttribute("result", cases.list(q, urgency, closed, sort, desc, page));
+        var result = cases.list(q, urgency, closed, sort, desc, page);
+        model.addAttribute("result", result);
+        boolean restricted = !q.replaceAll("[^\\p{L}\\p{N}]", "").isEmpty() || !urgency.isEmpty();
+        model.addAttribute("emptyTitle", restricted ? "Keine Fälle für diese Auswahl."
+                : closed ? "Keine Fälle verfügbar." : "Heute nichts zu bearbeiten.");
+        model.addAttribute("emptyHint", restricted ? "Ändern Sie Ihre Suche oder setzen Sie die Filter zurück."
+                : closed ? "Es sind noch keine Fälle vorhanden." : "Sie können abgeschlossene Fälle einblenden.");
+
+        model.addAttribute("listReturnTo", "/mitarbeiter/faelle?q=" + encode(q) + "&urgency=" + encode(urgency)
+                + "&closed=" + closed + "&sort=" + encode(sort) + "&desc=" + desc + "&page=" + result.page());
         model.addAttribute("columns", List.of("Fall", "Objekt / Wohnung", "Eingang", "Letzte Aktion des Mieters", "Wiedervorlage", "Dringlichkeit", "Bearbeitungsstatus"));
         model.addAttribute("keys", List.of("title", "unit", "received", "contact", "followUp", "urgency", "status"));
         return "demo/list";
@@ -87,7 +100,7 @@ public class DemoController {
                    Model model, HttpServletResponse response) {
         try {
             cases.message(id, token, text, internal, answer, operation);
-            return redirect(token == null ? "/mitarbeiter/faelle/" + id : "/mieter/fall/zugang/" + token);
+            return redirect(token == null ? detailUrl(id, model) : "/mieter/fall/zugang/" + token);
         } catch (ResponseStatusException ex) {
             response.setStatus(ex.getStatusCode().value()); model.addAttribute("error", ex.getReason());
             model.addAttribute("draft", text); model.addAttribute("internal", internal); model.addAttribute("answer", answer);
@@ -102,7 +115,7 @@ public class DemoController {
                   Model model, HttpServletResponse response) {
         try {
             cases.change(id, action, action.equals("followUp") && !days.isBlank() ? "days:" + days : value, reason, version, operation);
-            return redirect("/mitarbeiter/faelle/" + id);
+            return redirect(detailUrl(id, model));
         } catch (ResponseStatusException ex) {
             response.setStatus(ex.getStatusCode().value()); model.addAttribute("error", ex.getReason()); return detail(id, model);
         }
@@ -116,6 +129,23 @@ public class DemoController {
         model.addAttribute("staff", false);
         model.addAttribute("error", exception.getReason() == null ? "Diese Aktion ist nicht verfügbar." : exception.getReason());
         return "demo/error";
+    }
+    private static String encode(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
+    }
+    private static String safeReturnTo(String value) {
+        if (value != null && value.length() <= 2000) {
+            try {
+                URI uri = URI.create(value);
+                if (uri.getScheme() == null && uri.getRawAuthority() == null && uri.getRawFragment() == null
+                        && "/mitarbeiter/faelle".equals(uri.getRawPath())) return value;
+            } catch (IllegalArgumentException ignored) { }
+        }
+        return "/mitarbeiter/faelle";
+    }
+    private static String detailUrl(String id, Model model) {
+        String target = (String) model.getAttribute("returnTo");
+        return "/mitarbeiter/faelle/" + id + ("/mitarbeiter/faelle".equals(target) ? "" : "?returnTo=" + encode(target));
     }
     private RedirectView redirect(String url) {
         RedirectView view = new RedirectView(url);

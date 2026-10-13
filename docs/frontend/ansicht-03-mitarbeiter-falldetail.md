@@ -1,7 +1,7 @@
 # Screen 03 – Mitarbeiter-Falldetailansicht
 
 **Projekt:** PropertyFlow – FFHS CAS AISE\
-**Status:** Fachliche Bedienung und Desktop-Gestaltung bestätigt; responsive Darstellung bestätigt; Prozess- und technische Verträge separat\
+**Status:** Fachliche Bedienung und Desktop-Gestaltung bestätigt; responsive Darstellung bestätigt; lokale Frontend-Demo implementiert; produktive Prozess- und Integrationsverträge separat\
 **Stand:** 10.10.2026\
 **Zielgruppe:** Mitarbeitende mit einheitlichen Adminrechten\
 **Darstellung:** Eigene SSR-Seite mit Thymeleaf und gezieltem Vanilla JavaScript
@@ -62,7 +62,7 @@ Das [bestätigte JPG der Mitarbeiter-Falldetailansicht](design/ansicht-03-mitarb
 | 768–1199 px | Kompakte Ansicht mit umgebrochenem Kopf |
 | Unter 768 px | Mobile Ansicht mit einer Spalte |
 
-Unter 1200 px scrollt die ganze Seite; Kopf und Eingabebereiche sind nicht feststehend. Die Desktop-Regel mit mindestens 200 px Verlauf gilt dort nicht. Es gibt kein horizontales Scrollen; lange Wörter und Referenzen dürfen umbrechen. Bedienelemente bleiben mindestens 44 px hoch. Unter 768 px gelten 16 px Seitenrand, 24 px Seitentitel und weiterhin 16 px Nachrichtentext. Die Bildschirmtastatur darf keine Aktionen dauerhaft verdecken; diese bleiben durch Seitenscrollen erreichbar.
+Unter 1200 px scrollt die ganze Seite; Kopf und Eingabebereiche sind nicht feststehend. Die Desktop-Regel mit mindestens 200 px Verlauf gilt dort nicht. Es gibt kein horizontales Scrollen; lange Wörter und Referenzen dürfen umbrechen. Bedienelemente bleiben mindestens 44 px hoch. Unter 768 px gelten 16 px Seitenrand, 24 px allgemeine Seitentitel (kompakte Falltitel in UI1/UI3: 22 px) und weiterhin 16 px Nachrichtentext. Die Bildschirmtastatur darf keine Aktionen dauerhaft verdecken; diese bleiben durch Seitenscrollen erreichbar.
 
 Unter 1200 px wechseln die zwei Spalten zu dieser Reihenfolge: Fallkopf → Falldaten und Aktionen → Verlauf → Nachricht verfassen → KI-Vorschlag. Status, Dringlichkeit und Wiedervorlage stehen unter dem Titel und dürfen umbrechen. Änderungskarten sind beim Öffnen der Ansicht zunächst geschlossen; beim Aufklappen erscheint der gespeicherte Wert vorausgewählt.
 
@@ -86,7 +86,8 @@ Nachrichtentextboxen wachsen unter 1200 px automatisch mit dem Inhalt von mindes
 
 | Textelement | Grösse / Gewicht |
 |---|---|
-| Seiten- und Falltitel | 30 px / 600; auf kleinen Bildschirmen 24 px |
+| Allgemeine Seitentitel | 30 px / 600; unter 768 px 24 px |
+| Kompakte Falltitel in UI1/UI3 | 24 px / 600; unter 768 px 22 px; ersetzt für diese Fallköpfe die frühere Angabe 30/24 px |
 | Kartenüberschrift | 20 px / 600 |
 | Nachrichtentext, Formulare und Tabellen | 16 px / 400 |
 | Buttons und Feldbeschriftungen | 14 px / 600 |
@@ -146,9 +147,9 @@ Ursprünglicher Betreff, Beschreibung, Objekt-/Wohnungsreferenz und Kontaktadres
 
 ### Objekt und Wohnung zuordnen
 
-**Bestätigt am 10.10.2026:** Auf Höhe von «Bestätigte Zuordnung» steht für aktive Fälle rechts «Ändern» mit Aufklapppfeil. Darunter öffnet sich eine abgegrenzte Bearbeitungsbox über die gesamte innere Breite der Falldaten-Karte, über Beschriftungs- und Wertespalte hinweg. Das mit der gespeicherten Zuordnung vorbelegte Textfeld bietet vorhandene Zuordnungen als Vorschläge und erlaubt eine neue Zuordnung als Freitext (1–200 Zeichen nach Entfernen äusserer Leerzeichen). Erst «Speichern» übernimmt die Eingabe; «Abbrechen» verwirft sie und schliesst die Box. Die Aktion dient sowohl der ersten bestätigten Zuordnung als auch einer Korrektur. Die ursprüngliche Mieterangabe bleibt als solche lesbar; die gespeicherte Zuordnung wird separat dargestellt. Auswahl allein speichert nichts.
+**Bestätigt am 10.10.2026:** Auf Höhe von «Bestätigte Zuordnung» steht für aktive Fälle rechts «Ändern» mit Aufklapppfeil. Darunter öffnet sich eine abgegrenzte Bearbeitungsbox über die gesamte innere Breite der Falldaten-Karte, über Beschriftungs- und Wertespalte hinweg. Das Textfeld bietet vorhandene Zuordnungen als Vorschläge und erlaubt eine neue Zuordnung als Freitext (1–200 Zeichen nach Entfernen äusserer Leerzeichen). Solange keine bestätigte Zuordnung vorliegt, ist das Feld mit der ursprünglichen Mieterangabe vorbelegt; bei späteren Änderungen mit der aktuellen bestätigten Zuordnung. Die Vorbelegung allein bestätigt nichts. Erst «Zuordnung bestätigen» speichert und bestätigt die Eingabe in einem Schritt; der Button ersetzt «Speichern», ein zusätzlicher Button entfällt; «Abbrechen» verwirft sie und schliesst die Box. Die Aktion dient sowohl der ersten bestätigten Zuordnung als auch einer Korrektur. Die ursprüngliche Mieterangabe bleibt als solche lesbar; die gespeicherte Zuordnung wird separat dargestellt. Auswahl allein speichert nichts.
 
-Die Aktion folgt [FALL-04](../specifications/fallverwaltung.md#fall-04-ursprungsdaten-und-zuordnung). Der Server prüft Berechtigung, gültige Auswahl und zwischenzeitliche Änderungen. Bei einem Konflikt wird der aktuelle Stand neu geladen und «konnte nicht erfolgreich gespeichert werden» angezeigt. Mitarbeitereingabe, KI-Ausgabe und laufender Stream bleiben erhalten. Nach bestätigtem Speichern zeigen UI3 und die bestehende UI2-Spalte «Objekt/Wohnung» dieselbe Zuordnung. Ein gewünschter manueller Statuswechsel bleibt eine separate Aktion. Kontaktadresse und persönlicher Fall-Link werden nicht geändert.
+Die Aktion folgt [FALL-04](../specifications/fallverwaltung.md#fall-04-ursprungsdaten-und-zuordnung). Der Server prüft Berechtigung, die Länge von 1–200 Zeichen nach Entfernen äusserer Leerzeichen und zwischenzeitliche Änderungen. Nur bei strukturierten Stammdatenreferenzen wird zusätzlich deren Gültigkeit geprüft; Freitext ist ohne solche Referenz zulässig. Bei einem Konflikt wird der aktuelle Stand neu geladen und «konnte nicht erfolgreich gespeichert werden» angezeigt. Mitarbeitereingabe, KI-Ausgabe und laufender Stream bleiben erhalten. Nach bestätigtem Speichern zeigen UI3 und die bestehende UI2-Spalte «Objekt/Wohnung» dieselbe Zuordnung. Ein gewünschter manueller Statuswechsel bleibt eine separate Aktion. Kontaktadresse und persönlicher Fall-Link werden nicht geändert.
 
 ### Kommunikation und Verlauf
 
@@ -266,7 +267,7 @@ Nach Abschluss bleiben die gespeicherten Fallinhalte bei gültiger Berechtigung 
 
 **Bestätigte Aktion:** Bei aktivem Fall steht rechts der separate Button «Fall abschliessen» zur Verfügung; der Abschluss unterliegt den serverseitigen Voraussetzungen aus FALL-07/FALL-10.
 
-**Bestätigt am 10.10.2026 – Abschlussbestätigung:** «Fall abschliessen» öffnet die Bestätigung «Fall wirklich abschliessen? Danach sind keine neuen Nachrichten oder internen Memos möglich.» mit «Abschliessen» und «Abbrechen». Erst «Abschliessen» fordert den fachlichen Abschluss an; Berechtigung, aktueller Fallstand und Abschlussvoraussetzungen werden serverseitig geprüft. «Abbrechen» schliesst die Bestätigung ohne Änderung am Fall. Nach bestätigtem Abschluss gilt die Nachrichtensperre bis zu einer bewussten Wiedereröffnung.
+**Bestätigt am 10.10.2026 – Abschlussbestätigung:** «Fall abschliessen» öffnet die Bestätigung «Fall wirklich abschliessen?» mit «Abschliessen» und «Abbrechen». Erst «Abschliessen» fordert den fachlichen Abschluss an; Berechtigung, aktueller Fallstand und Abschlussvoraussetzungen werden serverseitig geprüft. «Abbrechen» schliesst die Bestätigung ohne Änderung am Fall. Nach bestätigtem Abschluss gilt die Nachrichtensperre bis zu einer bewussten Wiedereröffnung.
 
 **Bestätigt am 10.10.2026 – optionale Abschlussnachricht:** Eine zusätzliche externe Abschlussnachricht ist optional. Der Mitarbeiter sendet sie vor dem Abschluss über das bestehende gemeinsame Textfeld mit «Nachricht senden». Der Abschlussdialog enthält kein zusätzliches Nachrichtenfeld. Der fachliche Abschluss veranlasst unabhängig davon die automatische Abschluss-E-Mail nach BEN-05; sie erzeugt keine nachträgliche Kommunikationsnachricht. Eine bereits gesendete Abschlussnachricht bleibt auch dann veröffentlicht, wenn der anschliessende Abschluss abgebrochen wird oder scheitert.
 
@@ -400,7 +401,7 @@ Diese Kriterien bilden die bestätigten Fachregeln und Bedienungsentscheidungen 
 
 - **FD-AK-11:** Ungesendeter externer Text und ungespeicherte interne Eingaben lösen beim bewussten Verlassen oder Neuladen eine Textverlustwarnung aus, soweit der Browser dies unterstützt. Abbrechen des Seitenwechsels erhält die Eingabe. Die Warnung speichert oder veröffentlicht nichts; leere oder erfolgreich gespeicherte/gesendete Eingaben lösen sie nicht aus.
 
-- **FD-AK-12:** Periodische Leseabrufe alle 20 Sekunden führen gespeicherten Verlauf, Status und Dringlichkeit nach. Neue gespeicherte Mieter- und Systemnachrichten erscheinen links im Verlauf, mit erkennbarer Absenderrolle und Sichtbarkeit. Neue gespeicherte Nachrichten oder Memos sowie erkannte Änderungen von Status oder wirksamer Dringlichkeit zeigen ein Popup mit dem Button «OK» zum Schliessen. Status- und Dringlichkeitsänderungen zeigen den alten und neuen Wert; neue Einträge erhalten einen Hinweis auf neue Daten im Verlauf. Bei gleichzeitiger Änderung beider Werte werden beide angezeigt; «OK» bestätigt keine neue fachliche Änderung. Mitarbeitereingabe und KI-Ausgabe bleiben erhalten; der aktive Stream wird weder abgebrochen noch neu gestartet. Ein währenddessen bestätigter Abschluss sperrt weiterhin das Senden/Speichern serverseitig, ohne die vorhandenen Texte zu löschen.
+- **FD-AK-12:** Periodische Leseabrufe alle 20 Sekunden führen gespeicherten Verlauf, Status und Dringlichkeit nach. Neue gespeicherte Mieternachrichten erscheinen links; Verwaltungs- und Systemnachrichten sowie Ereignisse erscheinen rechts. Absenderrolle und Sichtbarkeit bleiben erkennbar. Automatisch nachgeladene Einträge folgen derselben Anordnung wie beim ersten Laden. Neue gespeicherte Nachrichten oder Memos sowie erkannte Änderungen von Status oder wirksamer Dringlichkeit zeigen ein Popup mit dem Button «OK» zum Schliessen. Status- und Dringlichkeitsänderungen zeigen den alten und neuen Wert; neue Einträge erhalten einen Hinweis auf neue Daten im Verlauf. Bei gleichzeitiger Änderung beider Werte werden beide angezeigt; «OK» bestätigt keine neue fachliche Änderung. Mitarbeitereingabe und KI-Ausgabe bleiben erhalten; der aktive Stream wird weder abgebrochen noch neu gestartet. Ein währenddessen bestätigter Abschluss sperrt weiterhin das Senden/Speichern serverseitig, ohne die vorhandenen Texte zu löschen.
 
 - **FD-AK-13:** Vor dem Speichern einer manuellen Status-/Dringlichkeitsänderung prüft das System auf zwischenzeitlich geänderte Einstellungen. Bei Konflikt wird nichts überschrieben; der aktuelle Einstellungsstand wird neu geladen und «konnte nicht erfolgreich gespeichert werden» angezeigt. Mitarbeitereingabe, KI-Ausgabe und aktiver Stream bleiben erhalten. Eine Änderung zwischen Prüfung und Speicherung darf die Konfliktprüfung nicht umgehen.
 
@@ -412,7 +413,7 @@ Diese Kriterien bilden die bestätigten Fachregeln und Bedienungsentscheidungen 
 
 - **FD-AK-19:** Wiedervorlage in Tagen oder als Datum und der gespeicherte Termin sind in UI3 verfügbar. Der Mitarbeiter kann den Termin im aktiven Fall ändern oder löschen. Setzen und Ändern führen zu «Wartet auf Wiedervorlage», Löschen zu «In Bearbeitung» ohne aktuellen Termin; Historie und Mitarbeiteridentität bleiben nachvollziehbar. Während der Camunda-Timer wartet, erscheinen neue gespeicherte Mieternachrichten weiterhin im Verlauf und werden automatisch verarbeitet. Ohne neuen früheren Handlungsbedarf bleibt der Termin bestehen; entsprechende neue Erkenntnisse ziehen die Wiedervorlage vor. Am wirksamen Termin wird «Mitarbeiterprüfung erforderlich» angezeigt. Terminänderungen werden mit altem/neuem Wert nachgeführt; Änderungen und Löschen sind gegen konkurrierende Einstellungsänderungen abgesichert. Eingabe und Stream bleiben erhalten; Abschluss und Timerkoordination folgen FALL-11.
 
-- **FD-AK-20:** Auf Höhe von «Bestätigte Zuordnung» öffnet «Ändern» mit Pfeil eine Bearbeitungsbox für Auswahlvorschläge oder Freitext. Erst «Speichern» übernimmt die serverseitig geprüfte Zuordnung. Die ursprüngliche Mieterangabe bleibt erkennbar; bestätigte Zuordnung, Mitarbeiter und Zeitpunkt sind nach FALL-AK-04 nachvollziehbar. UI2 und UI3 zeigen nach Aktualisierung denselben gespeicherten Stand. Fehler, eine ungültige Auswahl und konkurrierende Änderungen überschreiben keine gültige Zuordnung. Eingabe und aktiver KI-Stream bleiben erhalten. Ein gewünschter manueller Statuswechsel bleibt separat; Kontaktadresse und persönlicher Fall-Link bleiben unverändert.
+- **FD-AK-20:** Auf Höhe von «Bestätigte Zuordnung» öffnet «Ändern» mit Pfeil eine Bearbeitungsbox für Auswahlvorschläge oder Freitext. Solange keine bestätigte Zuordnung vorliegt, ist das Feld mit der ursprünglichen Mieterangabe vorbelegt; bei späteren Änderungen mit der aktuellen bestätigten Zuordnung. Die Vorbelegung allein bestätigt nichts. Auch die unveränderte ursprüngliche Angabe lässt sich bestätigen. Erst «Zuordnung bestätigen» übernimmt die serverseitig geprüfte Zuordnung, ohne weiteren Bestätigungsschritt. Auswahl und Freitext sind gleichwertig; beide werden nach Entfernen äusserer Leerzeichen auf 1–200 Zeichen geprüft. Die ursprüngliche Mieterangabe bleibt erkennbar; bestätigte Zuordnung, Mitarbeiter und Zeitpunkt sind nach FALL-AK-04 nachvollziehbar. UI2 und UI3 zeigen nach Aktualisierung denselben gespeicherten Stand. Fehler, ungültige Eingaben oder strukturierte Referenzen und konkurrierende Änderungen überschreiben keine gültige Zuordnung. Eingabe und aktiver KI-Stream bleiben erhalten. Ein gewünschter manueller Statuswechsel bleibt separat; Kontaktadresse und persönlicher Fall-Link bleiben unverändert.
 
 - **FD-AK-21:** Manuelle aktive Statusänderung sowie Setzen, Ändern und Löschen der Wiedervorlage bieten «Begründung (optional, intern)» an. Jede Aktion wird mit und ohne Begründung geprüft. Nur die erfolgreich bestätigte Aktion speichert eine eingegebene Begründung mit Bezug zur Änderung, Mitarbeiter und Zeitpunkt; beim Löschen bleibt dieser Nachweis trotz entferntem Termin erhalten. Abbrechen, Fehler und Konflikte erzeugen weder Änderung noch gespeicherte Begründung; Wiederholungen erzeugen keinen doppelten Nachweis. Es entsteht kein separates Memo. Die Begründung ist nur intern lesbar und fehlt in Mieter-HTML, Datenantworten, E-Mails und Kommunikations-LLM-Kontext einschliesslich Ableitungen (KOM-AK-11). Abschluss und Wiedereröffnung behalten ihre bisherigen separaten Abläufe.
 
@@ -430,12 +431,12 @@ Folgende Punkte gehören zur anschliessenden Prozess- und technischen Ausarbeitu
 - Wiedervorlage nach FALL-11: technische Zuordnung zum geprüften Fallstand, Tagesberechnung und Uhrzeit sowie Koordination konkurrierender Änderungen. Der zusätzliche Status, die sortierbare UI2-Spalte, Änderung und Löschung in UI3, Camunda-Timer und parallele Nachrichtenverarbeitung sind vereinbart.
 - Umsetzung der bestätigten inhaltlichen Einzelprüfung offener Rückfragen und der Mitarbeiteraktion «Antwortbedarf aufheben» gemäss KOM-03, der Folgestatus nach vollständiger Beantwortung beziehungsweise manueller Aufhebung gemäss FALL-05 und des Endes offenen Antwortbedarfs beim erfolgreichen Fallabschluss gemäss KOM-04. Die zugehörigen fachlichen Regeln sind bestätigt; technische Koordination und Nachweise folgen bei der Umsetzung.
 - Konfliktprüfung und atomare Speicherung, technische Versionierung, sicherer Umgang mit unklarem Speicherergebnis sowie Wiederholungen ohne Mehrfachwirkung.
-- Objekt-/Wohnungsauswahl nach FALL-04: genaue Gestaltung, Stammdatenzugriff und technische Umsetzung der bestätigten Zuordnungsänderung samt Konfliktprüfung und Nachvollziehbarkeit.
+- Zuordnung nach FALL-04: Stammdatenzugriff für Vorschläge und technische Umsetzung der bestätigten Zuordnungsänderung samt Konfliktprüfung und Nachvollziehbarkeit.
 - Technischer Nachweis der Trennung bewusster Mitarbeitereingaben von systemseitig bereitgestelltem KI-Kontext nach KOM-02, einschliesslich Ausschluss automatischer Memo-Übernahme und systemseitiger Memo-Ableitungen; Streaming-/Abbruchvertrag und Koordination konkurrierender Aktionen.
 - E-Mail-Vorlagen mit klar erkennbarem Antwortbedarf; die bereits zentral offene Behandlung der getrennten Benachrichtigungspflichten von Abschlussnachricht und Abschluss.
 - Darstellungsdetails wie Popup-Verhalten bei mehreren Aktualisierungen, Fokusführung, genaue Scrollhöhe sowie konkrete Grafikdateien der festgelegten Icons. Das Verhalten bei manueller Textbox-Vergrösserung ist in Abschnitt 2 bestätigt; unter 1200 px gilt die bestätigte automatische Textboxhöhe von 96–240 px.
 
-Die Erstposition des Verlaufs beim Öffnen bleibt gesondert zu konkretisieren. Das Zurücksetzen von «Mieterantwort erforderlich» beim Einschalten von «Intern» ist in [Abschnitt 3](#3-fachlich-verbindliche-inhalte) bestätigt. Die bestehenden Regeln zu Textbestand, externem Antwortbedarf und Zurücksetzen nach erfolgreicher Speicherung gelten verbindlich.
+**Bestätigt am 13.10.2026 – Startposition des Verlaufs:** Beim Öffnen der Mitarbeiter-Detailansicht steht der Verlauf am Ende bei den neuesten Einträgen. Wer ältere Einträge liest, behält bei automatischer Aktualisierung seine Leseposition. Wer bereits am Ende ist, sieht auch neu hinzukommende Einträge. Das Zurücksetzen von «Mieterantwort erforderlich» beim Einschalten von «Intern» ist in [Abschnitt 3](#3-fachlich-verbindliche-inhalte) bestätigt. Die bestehenden Regeln zu Textbestand, externem Antwortbedarf und Zurücksetzen nach erfolgreicher Speicherung gelten verbindlich.
 
 JPG-Entwürfe und eine lokale Frontend-Demo liegen vor. Produktive Service-, Speicher- und Integrationsverträge bleiben separat auszuarbeiten.
 
@@ -452,3 +453,31 @@ Gemäss [DRING-04](../specifications/dringlichkeitsbewertung.md#dring-04-farbken
 
 Die lokale Demo und ihre Startanleitung stehen in der [README](../../README.md#frontend-demo-ohne-datenbank). Das [Block-2-Prüfprotokoll](../ai-usage/block2-oberflaechen-pruefung.md#ergänzung-browser-qualitätsnachweis-und-präsentationsentscheidung) enthält ausgeführte Browser-, Streaming-, A11y- und Performance-Prüfungen einschliesslich Grenzen. Fachliche und produktive Prüfziele bleiben in der [Evaluationsgrundlage](../evaluation/evaluationsgrundlage.md) massgebend; die Demo-Nachweise ersetzen keine Produktivfreigabe.
 
+
+### Berücksichtigte Prüfgründe
+
+Gemäss [FALL-06](../specifications/fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow) zeigt die Box «Prüfbedarf» nur offene Gründe. Nach dem Wechsel auf «In Bearbeitung» sowie nach Setzen, Ändern oder Löschen einer Wiedervorlage zeigt das zugehörige Änderungsereignis intern «Berücksichtigter Prüfgrund: …». Die optionale interne Begründung bleibt eine separate Angabe am selben Ereignis. In der Mieteransicht fehlen beide internen Angaben.
+
+### Historische Rückfragen
+
+Nach [KOM: historischem und aktuellem Antwortbedarf](../specifications/fallkommunikation.md#historischer-und-aktueller-antwortbedarf--präzisierung-vom-13102026) bleiben ehemalige Rückfragen als «Ursprünglich: Mieterantwort erforderlich» erkennbar. Daneben stehen Beendigungsgrund und Zeitpunkt. Nur aktuell offene Rückfragen zeigen die aktive Antwortaufforderung; Wiedereröffnung aktiviert ehemalige Rückfragen nicht erneut.
+
+### Gelöschte Wiedervorlage im Verlauf
+
+Das interne Löschereignis zeigt den bisherigen Termin und «keine Wiedervorlage» gemäss [FALL: Nachweis gelöschter Wiedervorlagen](../specifications/fallverwaltung.md#nachweis-gelöschter-wiedervorlagen--präzisierung-vom-13102026). Zeitpunkt und optionale interne Begründung bleiben am Ereignis sichtbar.
+
+### Unveränderte Dringlichkeit speichern
+
+Nach [DRING: unveränderter manueller Einstufung](../specifications/dringlichkeitsbewertung.md#unveränderte-manuelle-einstufung--präzisierung-vom-13102026) erzeugt erneutes Speichern derselben manuellen Stufe keinen Eintrag. Eine gleichbleibende Systembewertung kann manuell bestätigt werden: Der Kopf zeigt danach «Immobilienverwaltung» als Quelle; der Verlauf dokumentiert die Bestätigung ausschliesslich intern, ohne Stufenwechsel-Kreise.
+
+### Korrektur F06 – Rückkehr zur Fallübersicht
+
+Bestätigt und umgesetzt am 13.10.2026: Falllinks führen Suche, Dringlichkeitsfilter, Einblendung abgeschlossener Fälle, Sortierung, Richtung und die tatsächlich angezeigte Seite als Rückkehrziel mit. «Zur Fallübersicht» verwendet dieses Ziel auch nach gespeicherten Detailaktionen; der Ablauf funktioniert ohne JavaScript. Direkt geöffnete Details verwenden die Standardübersicht. Der Server akzeptiert ausschliesslich Rückkehrziele auf dem lokalen Listenpfad. HTTP-/Rendering-Tests prüfen Kontextübernahme, Speichern, Direktaufruf und das Zurückweisen externer/fremder Ziele.
+
+### Korrektur F09 – Aktualisierungsfehler und verweigerter Zugriff
+
+Am 13.10.2026 bestätigt: Bei fehlgeschlagenem Leseabruf bleiben letzter Stand und Eingaben erhalten; «Erneut versuchen» startet einen erneuten Abruf ohne parallele Anfrage. Nach erfolgreicher Detailaktualisierung verschwindet die Lesefehlermeldung. Bei ausdrücklicher Lesezugriffsverweigerung (HTTP 401/403) werden Falldaten ausgeblendet und weitere automatische/manuelle AJAX-Abrufe sowie Speichern gesperrt. Ungesendeter Nachrichtentext bleibt lesbar und kopierbar, ohne Veröffentlichung. Ein bewusster Seiten-Neuaufruf prüft den Zugriff erneut. Ein POST-403 allein wird nicht als Lesezugriffsverlust gewertet, da er auch einen ungültigen CSRF-Nachweis bedeuten kann. Testdateien des parallel arbeitenden Agenten bleiben unverändert.
+
+### Korrektur F10 – Abbrechen nach zwischenzeitlicher Aktualisierung
+
+Am 13.10.2026 bestätigt: Ein offener Editor behält seinen ursprünglichen Fallstand für die Konfliktprüfung. Eine zwischenzeitlich erfolgreich geladene Sidebar wird als aktueller Stand vorgemerkt. «Abbrechen» verwirft die Eingaben dieses Editors und ersetzt ihn durch den neuesten geladenen Stand, einschliesslich Version und vorausgewählten Werten. Andere eingeklappte Entwürfe werden nicht mitverworfen. Bei inzwischen abgeschlossenem Fall wird die Sidebar auf die zulässigen Abschlussaktionen umgestellt. Nachrichtentext, KI-Vorschlag und laufender Stream bleiben erhalten. Ohne neu geladenen Stand gilt weiterhin die bisherige Versionsprüfung. Testdateien des parallel arbeitenden Agenten bleiben unangetastet; Syntaxprüfung und Build-Ressourcenaktualisierung wurden ausgeführt.

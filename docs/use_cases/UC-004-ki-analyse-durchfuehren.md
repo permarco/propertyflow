@@ -6,7 +6,7 @@
 **Use Case Name:** Externe Nachricht mit KI formulieren
 **Primary Actor:** Immobilienbewirtschaftung
 **Goal:** Aus einer kurzen fachlichen Mitarbeitereingabe einen freundlichen externen Nachrichtenvorschlag erzeugen, prüfen und bewusst senden.
-**Status:** Planned
+**Status:** Produktiver Gesamtprozess geplant; lokale Frontend-Demo mit Mock-Daten vorhanden. Die Demo ersetzt keine produktive Datenbank-, KI-, Mail- oder Camunda-Integration. Siehe [Demo-Nachweise](../evaluation/evaluationsgrundlage.md#testabdeckung-der-frontend-demo--ergänzung-vom-13102026).
 **Fachlich präzisiert:** 10.10.2026
 
 ## Geltungsbereich

@@ -60,6 +60,30 @@ Tests:
 node --test src/test/js/mock-stream.test.mjs
 ```
 
+Die Browser-Testreihe benötigt eine laufende, wegwerfbare `frontend-demo`,
+Microsoft Edge und die vorhandenen Browser-Testabhängigkeiten unter
+`target/frontend-tools`. Sie erstellt und verändert lokale Mock-Fälle;
+keine Produktionsinstanz verwenden. Standardadresse ist `http://127.0.0.1:8082`.
+Für parallele Entwicklung die Testinstanz ohne DevTools-Neustarts starten,
+damit die Mock-Daten während der Tests erhalten bleiben:
+
+```powershell
+.\mvnw.cmd spring-boot:run '-Dspring-boot.run.profiles=frontend-demo' '-Dspring-boot.run.arguments=--server.port=8082' '-Dspring-boot.run.jvmArguments=-Dspring.devtools.restart.enabled=false'
+```
+
+In einem zweiten Terminal:
+
+```powershell
+node src/test/browser/run-ui-tests.mjs
+```
+
+Eine andere Testadresse lässt sich vor dem Aufruf über `$env:DEMO_URL` setzen.
+Das Gesamtergebnis steht in `target/frontend-quality/ui-tests.tap`.
+Die separaten Browser-/A11y- und Performance-Prüfungen liefern
+`target/frontend-quality/browser.json` und `performance.json`.
+Die Browser-Testreihe ergänzt Java-, Streaming-, A11y- und Performance-Prüfungen;
+sie ersetzt keine Backend-/Integrations- oder KI-Evaluation.
+
 Die [Block-2-Nachweise](docs/ai-usage/block2-oberflaechen-pruefung.md#ergänzung-browser-qualitätsnachweis-und-präsentationsentscheidung)
 enthalten die Zuordnung der drei Screens zur Render-Strategie, Browserprüfungen
 für Barrierefreiheit und sichere Streaming-Ausgabe sowie Lighthouse-Messungen.
@@ -306,3 +330,7 @@ Repository-weite Anweisungen für KI-Werkzeuge befinden sich unter:
 Die Architekturentscheidungen, Qualitätsanforderungen und
 Sicherheitsgrenzen werden durch die Projektdokumentation vorgegeben und
 nicht an das KI-Werkzeug delegiert.
+
+### Fachlicher Abgleich
+
+Der [fachliche Abgleich vom 13.10.2026](docs/ai-usage/block2-oberflaechen-pruefung.md#fachlicher-abgleich-vom-13102026) dokumentiert die Übereinstimmung von Fachregeln und Demo, verbleibende Implementierungsabweichungen, Dokumentwidersprüche und bewusst ausstehende Produktivintegrationen.

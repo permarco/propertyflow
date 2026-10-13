@@ -475,3 +475,301 @@ abgeleitet.
 ## Dokumentprüfung vom 13.10.2026
 
 Alle 28 Markdown-Dokumente des Repositorys (ohne Build-, IDE- und Abhängigkeitsverzeichnisse) wurden auf lokale Markdown-Datei-/Bildlinks und Abschnittsanker geprüft. Ergebnis nach Korrektur: 412 lokale Verweise, keine fehlenden Ziele oder Abschnittsanker; jedes Markdown-Dokument besitzt mindestens einen eingehenden Verweis. Nicht klickbare Dokumentpfade wurden dort in Links umgewandelt, wo das Ziel eindeutig ist. README, Projektkontext, Screens und Evaluationsgrundlage verweisen nun auf die [Unit-Test-/Veto-Nachweise](#ergänzung-vom-12102026-generierte-unit-tests-und-mutation) und die [Browser-/Performance-Nachweise](#ergänzung-browser-qualitätsnachweis-und-präsentationsentscheidung). Die [UI3-Ergänzungen](../frontend/ansicht-03-mitarbeiter-falldetail.md#9-ergänzungen-zur-darstellung-vom-12102026) sind über eigene Abschnittsanker erreichbar. Veraltete aktuelle Standangaben wurden korrigiert; datierte historische Befunde bleiben erhalten. Externe Webseiten wurden nicht auf Verfügbarkeit geprüft; diese Dokumentprüfung ist kein neuer Anwendungstest oder vollständiger fachlicher Konformitätsnachweis.
+
+
+## Fachlicher Abgleich vom 13.10.2026
+
+### Prüfauftrag, Methode und Aussagegrenze
+
+Prüfung der dokumentierten Fachverträge gegen die lokale Implementierung:
+Projektkontext, Vision, C4/Modulstruktur und ADR-001–004; FALL, KOM, DRING,
+ZUG und BEN; UC-001–004; UI1–UI3; Evaluationsgrundlage und vorhandene Nachweise.
+Der Abgleich umfasst Datenmodell, Controller, Templates, CSS, Browserlogik,
+Mock-Stream und Tests. Die jüngsten bestätigten Bedienungsänderungen gelten
+gegenüber älteren JPGs und Beschreibungen. Historische Prüfprotokolle sind
+Nachweise ihres damaligen Stands, keine aktuellen Freigaben.
+
+**Ergebnis: keine vollständige fachliche Übereinstimmung.** Die folgenden
+Befunde sind aus dem Code und den dokumentierten Verträgen abgeleitet.
+Die bestehende Java-Suite wurde erneut ausgeführt: **19 Tests, 0 Fehler**;
+die Node-Streaming-Suite: **4 Tests, 0 Fehler**. Das beweist nur die geprüften
+Assertions. Neue Browserabläufe, vollständige Screenreader-/Responsive-Tests
+und Produktivintegrationen wurden in dieser Prüfrunde nicht ausgeführt.
+Die Browser-/Lighthouse-Nachweise vom 12.10.2026 bleiben historische Nachweise
+ihres angegebenen Umfangs. Ein erschöpfender Beweis aller möglichen Zustände
+ist damit nicht verbunden. Anwendungscode wurde für diesen Audit nicht geändert.
+
+### Abdeckungsmatrix
+
+| Bereich / Grundlage | Ergebnis im Demo-Umfang |
+|---|---|
+| [Architektur](../architecture/adr/ADR-003-praesentationsschicht.md), C4, Modulstruktur | Spring Boot, Thymeleaf-SSR und gezieltes JavaScript entsprechen der Präsentationsentscheidung. Der Adapter unter caseprocessing/demo ist keine fertige produktive Modul-/Workflow-Implementierung. |
+| [Annahme, FALL-01–04](../specifications/fallverwaltung.md#fall-01-fallidentität-und-erfassungskanal), UC-001, UI1 | Pflichtfelder, serverseitige Prüfung, Ursprungsdaten und Wiederholungsschutz vorhanden; dauerhafte Speicherung und Prozessstart bewusst nicht enthalten. Zuordnungsvertrag widersprüchlich: D01. |
+| [Status, FALL-05–07](../specifications/fallverwaltung.md#fall-05-fachlicher-lebenszyklus), UC-003, UI3 | Aktive Status, separate Abschluss-/Wiedereröffnungsaktion, Versionsprüfung und optionale interne Begründung vorhanden. Prüfgrund-/Statusmodell nicht vollständig konsistent: F01, F03. |
+| [Wiedervorlage, FALL-11](../specifications/fallverwaltung.md#fall-11-wiedervorlage-und-parallele-nachrichtenverarbeitung) | Setzen, Ändern und Löschen im Speicher vorhanden; Timer und automatische Neubewertung bewusst offen. Änderungsnachweis beim Löschen unvollständig: F04. |
+| [Kommunikation, KOM-01–04](../specifications/fallkommunikation.md), UI1/UI3 | Interne Einträge und Begründungen werden aus Mietersicht entfernt; sichere Textausgabe und serverseitige Abschlusssperre vorhanden. Historischer Antwortbedarf wird überschrieben: F02. |
+| [Dringlichkeit, DRING-01–08](../specifications/dringlichkeitsbewertung.md) | Stufen/Farben, manuelle Änderung, Quelle, Kreise und Abschlusssperre vorhanden; echte Analyse fehlt vereinbarungsgemäss. Ereignisse bei unveränderter Stufe: F05. |
+| [Liste, UC-002](../use_cases/UC-002-mieteranliegen-anzeigen.md), UI2 | UND-Teilwortsuche, Sonderzeichennormalisierung, interne Memos, Filter, 50er-Seiten und Sortierung vorhanden. Navigation, Leseposition, Leer- und Fehlerzustände: F06–F09. |
+| [KI-Formulierung, UC-004](../use_cases/UC-004-ki-analyse-durchfuehren.md) | Lokaler Stream mit Warte-/Ausgabe-/Erfolgs-/Abbruch-/Fehlerzustand; kein automatischer Versand; Übernehmen/Löschen, Intern-Sperre und sichere Textausgabe im Code vorhanden. Kein echter LLM-/Serverstream verlangt. |
+| [Zugriff, ZUG-01–08](../specifications/fallzugriff-und-sicherheit.md), ADR-004 | Demo-Tokenzuordnung, CSRF und Cache-/Referrer-Schutz vorhanden. Produktionsschutz, Schlüsselverwaltung, Widerruf und individuelle Mitarbeiteridentität sind ausdrücklich nicht implementiert. Fehlerreaktion im Browser: F09. |
+| [Benachrichtigungen, BEN-01–05](../specifications/benachrichtigungen-und-zustellung.md) | Keine Mailintegration oder Versandpflicht-Persistenz; ausdrücklich vereinbarte Demo-Grenze. Ausbleibende E-Mail ist hier kein neuer Frontendfehler. |
+| [Evaluation](../evaluation/evaluationsgrundlage.md) und Prüfprotokolle | Gezielte Java-/Streaming-/Browsernachweise existieren; sie decken nicht sämtliche Akzeptanzkriterien und fachlichen Randfälle ab. Insbesondere F01–F11 werden durch grüne Tests nicht ausgeschlossen. |
+
+### Bestätigte Implementierungsabweichungen
+
+P1 = fachlicher Daten-/Nachweisverlust, P2 = Funktions- oder Bedienungsabweichung.
+Prioritäten beziehen sich auf die Demo und sind keine Produktionsrisikofreigabe.
+
+**F01 · P1 · Prüfgrund wird gelöscht statt als berücksichtigt erhalten.**
+[FALL-05/06](../specifications/fallverwaltung.md#direkter-übergang-in-die-bearbeitung)
+und FD-AK-05 verlangen weiterhin nachvollziehbare bisherige Gründe.
+[DemoCases.change](../../src/main/java/com/pertegato/propertyflow/caseprocessing/demo/DemoCases.java),
+Zweig status, setzt bei «In Bearbeitung» jedoch review auf den leeren String.
+Beispiel: REQ-2026-001 auf «In Bearbeitung» setzen. Der konkrete Heizungs-Prüfgrund
+verschwindet; das neue Statusereignis speichert ihn nicht.
+Korrektur: Gründe und ihre Berücksichtigung getrennt führen, nicht pauschal löschen.
+
+**F02 · P1 · Ursprüngliche Rückfragekennzeichnung geht verloren.**
+[KOM-04](../specifications/fallkommunikation.md#kom-04-nachrichtensperre-nach-fallabschluss)
+verlangt, ursprüngliche Kennzeichnung und aktuellen Antwortbedarf zu unterscheiden.
+DemoCases.change setzt in close und clearAnswer das einzige Feld answerRequired
+bestehender Einträge auf false. Nach Rückfrage → Abschluss → Wiedereröffnung ist
+die ursprüngliche Kennzeichnung nicht mehr rekonstruierbar. Bei manueller Aufhebung
+nennt auch das neue Ereignis die betroffene Nachrichten-ID nicht.
+Korrektur: ursprüngliche Anforderung unveränderlich halten, Erledigung/Aufhebung
+mit Bezug zur Rückfrage gesondert speichern.
+
+**F03 · P2 · Bereits berücksichtigte Prüfgründe blockieren spätere Fortsetzung.**
+[FALL-11](../specifications/fallverwaltung.md#fall-11-wiedervorlage-und-parallele-nachrichtenverarbeitung)
+behandelt Wiedervorlage und deren Löschung als bewusste Entscheidungen.
+Im Gegensatz zum Statuszweig verändert followUp/clearFollowUp in DemoCases den
+review-Wert nicht. Danach benutzen message und clearAnswer dessen blosse
+Nichtleere als Sperre für den Folgestatus. Reproduktionsfolge:
+REQ-2026-001 → Wiedervorlage setzen → löschen → externe Rückfrage senden.
+Ohne neue Erkenntnis bleibt «In Bearbeitung» statt des erwarteten Wartestatus.
+Das Datenmodell braucht die Trennung aus F01; nicht durch weiteres Löschen lösen.
+
+**F04 · P2 · Gelöschter Wiedervorlagetermin fehlt im Änderungsnachweis.**
+FD-AK-19 in [UI3](../frontend/ansicht-03-mitarbeiter-falldetail.md)
+verlangt den alten/neuen Wert. clearFollowUp speichert nur
+«Wiedervorlage gelöscht», setzt den Termin auf null und übernimmt die Begründung.
+Bei einem Fixture-Termin ohne vorheriges Setzereignis ist das frühere Datum danach
+gar nicht mehr verfügbar. Das Löschereignis muss den bisherigen Termin enthalten.
+
+**F05 · P2 · Speichern derselben Dringlichkeit erzeugt eine fingierte Änderung.**
+[DRING-07](../specifications/dringlichkeitsbewertung.md#dring-07-änderungshistorie-und-mietertransparenz)
+fordert wirksame Stufenänderungen. Der urgency-Zweig schreibt auch bei «Hoch → Hoch»
+ein öffentliches Ereignis. Ein Wechsel der Bewertungsquelle kann intern relevant
+sein, ist aber kein Stufenwechsel. Beides getrennt behandeln und den No-op-Fall testen.
+
+**F06 · P2 · Rückkehr verliert Listenauswahl.**
+UI3 und [UC-002](../use_cases/UC-002-mieteranliegen-anzeigen.md#gemeinsame-fachliche-grundlage)
+verlangen Erhalt von Suche, Filtern, Sortierung und Seite.
+[fragments.html](../../src/main/resources/templates/demo/fragments.html) verlinkt
+«Zur Fallübersicht» stets auf /mitarbeiter/faelle ohne Auswahl; auch die
+[list.html](../../src/main/resources/templates/demo/list.html)-Falllinks transportieren
+keinen Rückkehrkontext. Filter setzen → Detail öffnen → Rückkehr zeigt Standardliste.
+
+**F07 · P2 · Polling setzt Listen-Leseposition zurück.**
+ÜB-AK-11 und [UI2 Abschnitt 5](../frontend/ansicht-02-mitarbeiter-falluebersicht.md#5-aktionen-und-aktualisierung)
+verbieten den Sprung zum Listenanfang. [propertyflow.js](../../src/main/resources/static/js/propertyflow.js),
+loadList, ersetzt stets den gesamten results-Bereich inklusive des Scrollcontainers.
+Es wird ein fokussierter Link gesucht, aber weder scrollTop noch ein sichtbarer
+Fallanker erhalten. Nach unten scrollen und den 20-Sekunden-Abruf abwarten.
+Auch der automatische Wechsel auf die letzte gültige Seite wird nicht erklärt
+(ÜB-AK-12).
+
+**F08 · P2 · Unterschiedliche Leerzustände fehlen.**
+[UC-002 A1](../use_cases/UC-002-mieteranliegen-anzeigen.md#a1-keine-fälle-oder-keine-passenden-treffer)
+unterscheidet «Heute nichts zu bearbeiten», «Keine Fälle für diese Auswahl» und
+«Keine Fälle verfügbar». list.html zeigt immer «Keine passenden Fälle».
+Die Ursache der leeren Treffermenge muss die passende Meldung bestimmen.
+
+**F09 · P2 · Fehler-/Zugriffsreaktionen unvollständig.**
+ÜB-AK-11 fordert bei ausdrücklicher Verweigerung Entfernen der Daten und Stoppen
+der Abrufe. loadList leert bei HTTP 403 zwar results, setzt aber keinen Zustand,
+der weitere Intervalle beendet. refresh für die Detailansicht zeigt lediglich
+eine Fehlermeldung und lässt die alten Falldaten stehen. Die geforderten
+«Erneut versuchen»-Aktionen fehlen ebenfalls. Fehlende produktive Zugriffskontrolle
+ist Demo-Scope; die Browserreaktion auf eine entsprechende Antwort ist trotzdem
+nicht vertragsgemäss implementiert. Diese Pfade benötigen gezielte Fehlersimulation.
+
+**F10 · P2 · Nach abgebrochener Konfliktbearbeitung bleiben Formularversionen veraltet.**
+applyCase in propertyflow.js aktualisiert bei offenem Editor den Kopf, hält aber
+die gesamte Sidebar zurück. Nach Schliessen/Abbrechen hat der Kopf bereits die
+neue Version; weitere unveränderte Polls kehren vor dem Sidebar-Austausch zurück.
+Ein danach neu geöffnetes Formular kann weiterhin die alte Version senden und
+unnötig scheitern. Alte Version während tatsächlicher Bearbeitung behalten,
+aber verworfene/neu begonnene Bearbeitung an den aktuellen Stand anbinden.
+
+**F11 · P2 · Unklares Speicherergebnis plus bearbeiteter Wiederholungsversuch.**
+[FALL-03](../specifications/fallverwaltung.md#fall-03-wiederholung-und-doppelte-einreichung)
+und KOM-03 verlangen sichere Wiederholungen. Der Server merkt nur die
+Operations-ID, nicht deren Inhalt. Speichert ein Request erfolgreich, während
+die Antwort verloren geht, bleibt die ID im Browser erhalten. Ändert der Benutzer
+den Text vor erneutem Senden, ignoriert message den neuen Inhalt als Wiederholung;
+die erfolgreiche Antwort kann danach den geänderten Text im Browser leeren.
+Die Wiederholung identischer Requests ist abgesichert, abweichender Nutzinhalt
+derselben ID dagegen nicht. Idempotenzvertrag mit Payload-Abgleich und eindeutigem
+Wiederholungsergebnis ergänzen.
+
+**F12 · P2 · Zuordnungslänge wird vor statt nach dem Trimmen geprüft.**
+[FALL-04](../specifications/fallverwaltung.md#fall-04-ursprungsdaten-und-zuordnung)
+und UI3 erlauben 1–200 Zeichen nach Entfernen äusserer Leerzeichen.
+DemoCases.required prüft value.length() vor strip(). Eine zulässige 200-Zeichen-
+Zuordnung mit äusseren Leerzeichen wird serverseitig abgelehnt.
+Validierungsreihenfolge und HTML-maxlength-Vertrag angleichen.
+
+### Widersprüche und unvollständige Nachführung der Dokumente
+
+**D01 · Freitextzuordnung:** FALL-04 sagt gleichzeitig «Ein zusätzlicher Freitext
+ersetzt die bestätigte Auswahl nicht» und erlaubt später freie Zuordnung.
+[UC-003 BR-005](../use_cases/UC-003-mieteranliegen-details-anzeigen.md#br-005-objekt-und-wohnung-zuordnen)
+fordert weiterhin nur Objekt-/Wohnungsauswahl. Die aktuelle UI3-Spec, Implementierung
+und bestätigte Benutzerentscheidung erlauben Freitext. Die ältere Aussage zur
+zwingenden Stammdaten-Auswahl und Zusammengehörigkeitsprüfung muss entsprechend
+präzisiert werden; ein Freitext ist keine verifizierte Stammdatenreferenz.
+
+**D02 · Abschlussbestätigung:** FALL-07 nennt noch den Zusatz «Danach sind keine
+neuen Nachrichten oder internen Memos möglich». UI3 FD-AK-22 und die bestätigte
+Gestaltung entfernen diesen Hilfstext; das Template zeigt nur «Fall wirklich
+abschliessen?». Die fachliche Sperre bleibt korrekt, der Wortlaut ist widersprüchlich.
+
+**D03 · UI3-Aktualisierungsrichtung:** FD-AK-12 beschreibt neue Systemnachrichten
+noch links; Abschnitt 3, FD-AK-22, JPG und Template ordnen System-/Verwaltungsblasen
+rechts an. Das Akzeptanzkriterium muss der bestätigten rechten Anordnung folgen.
+
+**D04 · Offene Erstposition trotz Codeentscheidung:** UI3 führt die Erstposition
+des Verlaufs weiter als offen; propertyflow.js scrollt beim Laden ausdrücklich
+ans Ende. Das ist eine getroffene Implementierungsannahme, keine dokumentierte
+fachliche Bestätigung. Entscheidung ausdrücklich festhalten.
+
+**D05 · Standangaben und Darstellungsnachträge:** UI1-Kopf, UI2-Abschlussabschnitt
+und einzelne Use Cases sprechen weiterhin von geplanter Umsetzung, obwohl eine
+Demo existiert. Als Produktivziel kann «Planned» gelten, muss dann aber von der
+fertigen Demo unterschieden werden. Der spätere kompakte Titel verwendet im CSS
+24/22 px, ältere Gestaltungstabellen weiterhin 30/24 px; der Nachtrag sollte die
+geltenden Werte ausdrücklich ersetzen. Auch diese Punkte wurden durch die reine
+Linkprüfung vom selben Tag nicht ausgeschlossen.
+
+### Demo-Grenzen und noch offene fachliche Entscheidungen
+
+Keine neuen Fehler allein aufgrund fehlender Datenbank, E-Mail, Camunda, RAG oder
+echtem LLM: Der Auftrag verlangt statische Daten und lokalen Stream. Dauerhafte
+Annahme, Mail-Outbox, automatische Bewertung, Timerablauf, Prüfung von Mieterantworten,
+Token-Hash/verschlüsselte Versandkopie, Widerruf und individuelle Mitarbeiteridentität
+sind daher **nicht nachgewiesen**, aber als spätere Integrationen kenntlich.
+
+Weitere aktive Statusübergänge, genaue Wiedervorlage-Uhrzeit/Tagesgrenzen und
+Produktionsautorisierung bleiben dokumentiert offen. Beispielsweise beschränkt
+der Mock Wiedervorlagen auf zukünftige Tage und das UI auf maximal 3650 Tage,
+während die zentrale Spezifikation die Detailberechnung offen lässt. Solche
+Implementierungsannahmen dürfen nicht stillschweigend zu Fachentscheidungen werden.
+
+Die Fixtures bilden nicht überall konsistente Zustände ab: Einige Fälle warten
+auf Mieterantwort ohne Rückfrage, andere besitzen eine bewertete Dringlichkeit ohne
+Erstbewertungsereignis; offene Zuordnungen haben meist keinen Prüfhinweis.
+Das kann als reduzierte Beispieldatenmenge dienen, ist aber kein vollständiger
+Nachweis der FALL-/DRING-Regeln. Für Abnahmetests konsistente Szenarien erzeugen.
+
+### Empfohlene Bearbeitungsreihenfolge
+
+1. F01–F03 gemeinsam lösen: Prüfgründe, berücksichtigte Entscheidungen und
+   ursprünglicher/aktueller Antwortbedarf brauchen unterscheidbare Daten.
+2. F11 mit Verlust-der-Antwort-Szenario absichern; anschliessend F04/F05/F12.
+3. F06–F10 mit echten Browserabläufen prüfen und korrigieren.
+4. D01–D05 anhand der bereits bestätigten Entscheidungen nachführen; die noch
+   offene Erstposition und produktive Übergangsregeln separat entscheiden.
+5. Die ergänzten Tests auf den Fachvertrag ausrichten, nicht den derzeitigen
+   fehlerhaften Code als Sollwert festschreiben.
+
+Die Prüfung ist ein Befundbericht, keine Umsetzung dieser Korrekturen und keine
+fachliche oder produktive Freigabe.
+
+### Korrektur F01 – berücksichtigte Prüfgründe
+
+Am 13.10.2026 bestätigt und umgesetzt: Beim Statuswechsel auf «In Bearbeitung» wird der offene Prüfgrund im Statusereignis als separate interne Angabe erhalten. Die Prüfbedarf-Box zeigt ihn danach nicht mehr. Die optionale Begründung wird nicht überschrieben; es entsteht kein separates Memo. Auch spätere Abschluss-/Wiedereröffnungsaktionen erhalten den Nachweis. Die Mietersicht entfernt die Angabe bereits im View-Modell; das Template gibt sie ausschliesslich für Mitarbeitende sicher als Text aus. F03 (Wiedervorlage) bleibt ein eigener, noch nicht behobener Befund.
+
+Die Unit-Tests prüfen Übernahme mit/ohne Begründung, unveränderte frühere Einträge, Ausschluss aus der Mietersicht, folgende Rückfrage ohne alten Prüfblocker, Erhalt nach Abschluss/Wiedereröffnung sowie keine erneute Übernahme des bereits berücksichtigten Grunds. Die vorhandenen Konflikt- und Replaytests bleiben erhalten.
+
+### Korrektur F02 – Rückfragehistorie
+
+Am 13.10.2026 bestätigt und umgesetzt: ursprüngliche Rückfragekennzeichnung, aktueller Bedarf sowie Beendigungsursache/-zeitpunkt sind getrennt. Manuelle Aufhebung referenziert die betroffene Nachricht. Abschluss beendet ausschliesslich offene Bedarfe; Wiedereröffnung reaktiviert sie nicht. UI1 und UI3 zeigen historische Kennzeichnung und Beendigung ohne eine inhaltliche Beantwortung zu behaupten. Ein Regressionstest prüft zwei Rückfragen mit unterschiedlichen Beendigungsgründen, Wiederholung des Abschlusses, Wiedereröffnung und Mietersicht. F01-Nachweise bleiben beim Umbau erhalten.
+
+### Korrektur F03 – Prüfgründe bei Wiedervorlage
+
+Am 13.10.2026 bestätigt und umgesetzt: Setzen, Ändern und Löschen übernehmen offene Prüfgründe als berücksichtigt ins interne Änderungsereignis. Bestehende Mieterfragen bleiben unverändert. Die spätere Statusfortsetzung wird ohne neue Erkenntnisse nicht mehr durch den alten Prüfgrund blockiert. Regressionstests prüfen Terminsetzung/-änderung/-löschung, anschliessende Rückfrage, Mietersicht sowie unveränderten Fall bei Fehler, Konflikt und erfolgreicher Wiederholung. F04 (alter Termin im Löschereignis) bleibt separat offen.
+
+### Korrektur F04 – gelöschter Wiedervorlagetermin
+
+Am 13.10.2026 bestätigt und umgesetzt: Das interne Löschereignis enthält den bisherigen Termin im Format TT.MM.JJJJ und den neuen Zustand «keine Wiedervorlage». Zeitpunkt und optionale Begründung bleiben erhalten. Tests prüfen einen Fixture-Termin ohne vorheriges Setzereignis, unveränderte frühere Historie, Wiederholungsschutz, Abweisung einer neuen Löschung ohne Termin sowie die Variante ohne Begründung und den Ausschluss aus der Mietersicht.
+
+### Korrektur F05 – unveränderte Dringlichkeit
+
+Am 13.10.2026 bestätigt und umgesetzt: Gleiche manuelle Stufe erzeugt keinen Eintrag und keine neue Fallversion. Gleiche Systemstufe wird als Quellenwechsel intern bestätigt, mit optionaler Begründung und ohne fingierten öffentlichen Stufenwechsel. Tests prüfen interne Bestätigung, Mieterausschluss, erneutes Speichern, echten späteren Stufenwechsel, Wiederholung einer vorherigen No-op-Operation sowie Versions- und Abschlusssperre.
+
+### Korrektur F06 – Rückkehr zur Fallübersicht
+
+Bestätigt und umgesetzt am 13.10.2026: Falllinks führen Suche, Dringlichkeitsfilter, Einblendung abgeschlossener Fälle, Sortierung, Richtung und die tatsächlich angezeigte Seite als Rückkehrziel mit. «Zur Fallübersicht» verwendet dieses Ziel auch nach gespeicherten Detailaktionen; der Ablauf funktioniert ohne JavaScript. Direkt geöffnete Details verwenden die Standardübersicht. Der Server akzeptiert ausschliesslich Rückkehrziele auf dem lokalen Listenpfad. HTTP-/Rendering-Tests prüfen Kontextübernahme, Speichern, Direktaufruf und das Zurückweisen externer/fremder Ziele.
+
+### Korrektur F07 – Leseposition bei Aktualisierung
+
+Bestätigt am 13.10.2026: Automatische Aktualisierungen verankern die Liste möglichst am ersten sichtbaren Fall und dessen Abstand zum oberen Rand. Entfällt dieser Fall, wird die bisherige Scrollposition soweit innerhalb der neuen Liste möglich erhalten. Position und Fokus werden unmittelbar vor dem Austausch erfasst, damit Scrollen während einer laufenden Anfrage berücksichtigt wird. Entfällt die aktuelle Seite, erscheint «Die bisherige Seite ist nicht mehr verfügbar. Seite X wird angezeigt.»; Suche, Filter und Sortierung bleiben erhalten. Bewusste Such-, Filter-, Sortier- und Seitenwechsel beginnen dagegen oben. Ein entfallener fokussierter Fall wird gemeldet und der Fokus auf den Ergebnisbereich gesetzt. Implementiert in propertyflow.js; Syntaxprüfung ausgeführt, neue Testdateien bleiben dem parallel arbeitenden Testagenten vorbehalten.
+
+### Korrektur F08 – unterschiedliche Leerzustände
+
+Am 13.10.2026 bestätigt und umgesetzt: Ohne wirksame Suche und Dringlichkeitsfilter zeigt die aktive Standardauswahl «Heute nichts zu bearbeiten.»; bei eingeblendeten abgeschlossenen Fällen «Keine Fälle verfügbar.». Wirksame Suche oder ein Dringlichkeitsfilter ohne Treffer zeigen «Keine Fälle für diese Auswahl.». Nur Sonderzeichen oder Leerzeichen gelten wie bei der Suche als leer. Sortierung beeinflusst die Leermeldung nicht. Passende Hilfstexte verweisen auf das Einblenden abgeschlossener Fälle beziehungsweise das Ändern der Auswahl. Filter und Polling bleiben verfügbar. Die Testdateien des parallel arbeitenden Agenten wurden nicht verändert.
+
+### Korrektur F09 – Aktualisierungsfehler und verweigerter Zugriff
+
+Am 13.10.2026 bestätigt: Bei fehlgeschlagenem Leseabruf bleiben letzter Stand und Eingaben erhalten; «Erneut versuchen» startet einen erneuten Abruf ohne parallele Anfrage. Nach erfolgreicher Detailaktualisierung verschwindet die Lesefehlermeldung. Bei ausdrücklicher Lesezugriffsverweigerung (HTTP 401/403) werden Falldaten ausgeblendet und weitere automatische/manuelle AJAX-Abrufe sowie Speichern gesperrt. Ungesendeter Nachrichtentext bleibt lesbar und kopierbar, ohne Veröffentlichung. Ein bewusster Seiten-Neuaufruf prüft den Zugriff erneut. Ein POST-403 allein wird nicht als Lesezugriffsverlust gewertet, da er auch einen ungültigen CSRF-Nachweis bedeuten kann. Testdateien des parallel arbeitenden Agenten bleiben unverändert.
+
+### Korrektur F10 – Abbrechen nach zwischenzeitlicher Aktualisierung
+
+Am 13.10.2026 bestätigt: Ein offener Editor behält seinen ursprünglichen Fallstand für die Konfliktprüfung. Eine zwischenzeitlich erfolgreich geladene Sidebar wird als aktueller Stand vorgemerkt. «Abbrechen» verwirft die Eingaben dieses Editors und ersetzt ihn durch den neuesten geladenen Stand, einschliesslich Version und vorausgewählten Werten. Andere eingeklappte Entwürfe werden nicht mitverworfen. Bei inzwischen abgeschlossenem Fall wird die Sidebar auf die zulässigen Abschlussaktionen umgestellt. Nachrichtentext, KI-Vorschlag und laufender Stream bleiben erhalten. Ohne neu geladenen Stand gilt weiterhin die bisherige Versionsprüfung. Testdateien des parallel arbeitenden Agenten bleiben unangetastet; Syntaxprüfung und Build-Ressourcenaktualisierung wurden ausgeführt.
+
+### Zwischenauftrag – Mieterentwurf bei erkanntem Abschluss
+
+Am 13.10.2026 bestätigt: UI1 löscht ungesendeten Text bei serverseitig bestätigt erkanntem Abschluss und zeigt nach Wiedereröffnung eine leere Eingabe. UI3 bleibt unverändert. Der widersprechende UI1-Fehlerfall, die Commit-Regel und AK-25 wurden präzisiert; KOM-04 verweist auf die Ausnahme. Im aktuellen JavaScript ist die ausschliesslich auf Mieter bezogene Löschung bereits enthalten; parallele Code- und Teständerungen wurden in diesem Zwischenauftrag nicht verändert. Kein neuer Browsernachweis wurde ausgeführt. Die sequenzielle Befundbearbeitung wird danach bei F11 fortgesetzt.
+
+### Korrektur F11 – abweichende Wiederholung einer Nachricht
+
+Am 13.10.2026 bestätigt und umgesetzt: Der Nachrichten-Mock merkt pro erfolgreicher Absende-ID den Text und die Optionen einschliesslich Absenderrolle. Identische Wiederholungen bleiben ohne Mehrfachwirkung; abweichende Wiederholungen liefern HTTP 409 mit verständlicher Meldung. Der bestehende Browser-Fehlerpfad leert den geänderten Nachrichtentext nicht. Die UI1-Abschlussregel hat weiterhin Vorrang. Anwendung des Payload-Abgleichs auf Erstanlage und sonstige Bearbeitungsaktionen ist nicht Teil dieser Nachrichtenkorrektur. Testdateien des parallel arbeitenden Agenten wurden nicht verändert.
+
+### Korrektur F12 – Länge der bestätigten Zuordnung
+
+Die bestätigte Zuordnung wird vor der serverseitigen Pflichtfeld- und Längenprüfung von äusseren Leerzeichen befreit. Danach gelten 1–200 Zeichen; innere Leerzeichen bleiben erhalten. Dies setzt [FALL-04](../specifications/fallverwaltung.md#fall-04-ursprungsdaten-und-zuordnung) und den [UI3-Zuordnungsvertrag](../frontend/ansicht-03-mitarbeiter-falldetail.md) um. Das Zuordnungsfeld begrenzt den unbereinigten Text nicht mehr mit HTML-maxlength und erläutert die Grenze am Feld. Überlange oder ausschliesslich aus Leerzeichen bestehende Zuordnungen werden weiterhin serverseitig abgelehnt. Andere Pflichtfelder behalten ihre bisherige Validierung. Die Testdateien des parallel arbeitenden Agenten bleiben unverändert.
+
+### Korrektur D01 – Zuordnung bestätigen
+
+Die widersprüchliche Beschränkung auf eine Stammdatenauswahl wurde in [FALL-04](../specifications/fallverwaltung.md#fall-04-ursprungsdaten-und-zuordnung), FALL-AK-04, [UI3](../frontend/ansicht-03-mitarbeiter-falldetail.md#objekt-und-wohnung-zuordnen), FD-AK-20 und [UC-003 BR-005](../use_cases/UC-003-mieteranliegen-details-anzeigen.md#br-005-objekt-und-wohnung-zuordnen) abgeglichen. Vorschlag und Freitext bestätigen dieselbe Fallzuordnung. Ohne bestätigten Wert wird die ursprüngliche Mieterangabe vorbelegt, sonst der aktuelle bestätigte Wert. «Zuordnung bestätigen» ersetzt «Speichern»; Vorbelegen oder Auswählen allein speichert nichts. Die [UI2-Anzeigeregel](../frontend/ansicht-02-mitarbeiter-falluebersicht.md) wurde entsprechend präzisiert. Frühere Revieweinträge dokumentieren den damaligen Stand. Dieser Auftrag ändert nur Dokumentation; Buttonbeschriftung und erstmalige Vorbelegung sind im Frontend noch umzusetzen.
+
+### Implementierungs- und Testnachtrag zur Übergabe vom 13.10.2026
+
+Dieser Nachtrag ordnet die spätere Umsetzung ein; frühere Prüfprotokolle bleiben als historischer Stand erhalten. Grundlage ist die lokale Übergabe `target/frontend-quality/documentation-handoff.txt`, abgeglichen mit aktuellem Code und vorhandenen Tests.
+
+- **UI1-Navigation:** Die frühere Vereinbarung einer Textverlustwarnung ist durch die spätere Benutzerentscheidung ersetzt. Beim manuellen Verlassen oder Neuladen gibt es keine Warnung; ungesendeter Text geht verloren. Normales Polling erhält ihn, erkannter Abschluss löscht ihn, erfolgreiches Senden leert die Textbox. Die UI3-Warnung bleibt bestehen. [UI1 und AK-28](../frontend/ansicht-01-mieter-fallansicht.md) wurden nachgeführt. Nachweise: [Tenant-Navigation](../../src/test/browser/tenant-navigation.test.mjs), [Nachrichten](../../src/test/browser/tenant-message.test.mjs), [Aktualisierung](../../src/test/browser/tenant-refresh.test.mjs) und [Abschluss](../../src/test/browser/tenant-closure.test.mjs).
+- **UI1-Ursprungsangaben:** Der veraltete Block-2-Punkt zu aufklappbaren Ursprungsangaben ist korrigiert: kompakte Angaben im Kopf, Beschreibung als erste Mieternachricht, keine separate Ursprungsansicht.
+- **D01 umgesetzt:** Der damalige Hinweis «noch umzusetzen» unter [Korrektur D01](#korrektur-d01--zuordnung-bestätigen) ist überholt. Das [Detailtemplate](../../src/main/resources/templates/demo/detail.html) enthält «Zuordnung bestätigen» sowie die ursprüngliche Mieterangabe als Vorbelegung bei fehlender bestätigter Zuordnung. Andernfalls erscheint der aktuelle bestätigte Wert. Nach Polling und «Abbrechen» übernimmt der Editor den neuesten bestätigten Seitenleistenstand. Nachweise: [UI-Grenzfälle](../../src/test/browser/ui-boundaries.test.mjs) und [Mitarbeiterabläufe](../../src/test/browser/staff-workflows.test.mjs). Eine erneute Buttonänderung ist nicht erforderlich.
+
+Der gemeinsame Aufruf lautet `node src/test/browser/run-ui-tests.mjs`; Voraussetzungen und Startbefehle stehen in der [README](../../README.md#frontend-demo-ohne-datenbank). Er benötigt eine laufende, wegwerfbare Demo und die Browser-Testabhängigkeiten unter `target/frontend-tools`; Standardadresse ist `http://127.0.0.1:8082`, überschreibbar mit `DEMO_URL`. Tests verändern lokale Mock-Daten; keine Produktionsinstanz verwenden. Bei paralleler Entwicklung DevTools-Neustarts mit `-Dspring-boot.run.jvmArguments=-Dspring.devtools.restart.enabled=false` unterbinden. Der [Teststarter](../../src/test/browser/run-ui-tests.mjs) schreibt `target/frontend-quality/ui-tests.tap`. Weitere, separate Berichte sind `target/frontend-quality/browser.json` und `performance.json`.
+
+Bei dieser Dokumentationspflege wurde der vorhandene TAP-Bericht gelesen: 43 Tests bestanden, keine fehlgeschlagen, übersprungen oder abgebrochen. Die Tests wurden in diesem Auftrag nicht erneut ausgeführt. Die neue Reihe ergänzt die bisherigen Java-, Streaming-, A11y- und Performance-Prüfungen; sie ersetzt keine Backend-/Integrations- oder KI-Evaluation.
+
+**Grenzen der Nachweise:** Die Tests betreffen die Frontend-Demo mit Mock-Fällen. Netzfehler, Rate Limits und Zugriffsverweigerungen werden teilweise im Browser simuliert und belegen keine produktive Autorisierung. Mehrere Polling-Tests beschleunigen die Browseruhr; bestehende Tenant-Tests prüfen auch echte 20-Sekunden-Intervalle. Tab-Sichtbarkeit wird teilweise im Headless-Browser simuliert. Responsive Prüfungen erfolgen bei 390 und 1440 Pixeln in Edge/Chromium. Reale KI-, Mail-, Datenbank- und Camunda-Integrationen bleiben separat zu testen.
+
+### Korrektur D02 – kurze Abschlussbestätigung
+
+Am 13.10.2026 bestätigt: Die Abschlussbestätigung lautet «Fall wirklich abschliessen?» mit «Abschliessen» und «Abbrechen», ohne zusätzlichen Hilfstext. Der ältere Wortlaut wurde in [FALL-07](../specifications/fallverwaltung.md#fall-07-abschluss-und-zeit-danach) und im Abschlussabschnitt von [UI3](../frontend/ansicht-03-mitarbeiter-falldetail.md) an die bestätigte Gestaltung und das bestehende Template angeglichen. Die fachliche Sperre für neue Nachrichten und interne Memos bis zur Wiedereröffnung bleibt unverändert nach [KOM-04](../specifications/fallkommunikation.md#kom-04-nachrichtensperre-nach-fallabschluss) bestehen. Nur Dokumentation geändert; kein neuer Testlauf.
+
+### Korrektur D03 – Anordnung nachgeladener Verlaufseinträge
+
+Am 13.10.2026 bestätigt: [UI3 FD-AK-12](../frontend/ansicht-03-mitarbeiter-falldetail.md) folgt nun derselben Anordnung wie Abschnitt 3 und FD-AK-22: Mieternachrichten links, Verwaltungs- und Systemnachrichten sowie Ereignisse rechts. Absenderrolle und Sichtbarkeit bleiben erkennbar. Die Regel gilt beim ersten Laden und beim Nachladen. Die widersprechende Linksanordnung für Systemnachrichten wurde korrigiert. Nur Dokumentation geändert; kein neuer Testlauf.
+
+### Korrektur D04 – Startposition des Mitarbeiterverlaufs
+
+Am 13.10.2026 bestätigt: [UI3](../frontend/ansicht-03-mitarbeiter-falldetail.md) öffnet den Verlauf bei den neuesten Einträgen am Ende. Automatische Aktualisierung erhält beim Lesen älterer Einträge die Leseposition; wer bereits unten ist, folgt neuen Einträgen. Die bisher als offen bezeichnete Erstposition ist damit fachlich festgelegt und entspricht der bestehenden Implementierung. Nur Dokumentation geändert; kein neuer Testlauf.
+
+### Korrektur D05 – Umsetzungsstand und kompakte Falltitel
+
+Am 13.10.2026 bestätigt: Die aktuellen Standangaben in UI1–UI3 und UC-001–UC-004 unterscheiden die implementierte lokale Frontend-Demo vom weiterhin geplanten produktiven Gesamtprozess. Der vollständige HTTP-Zielvertrag wird nicht pauschal als bereits implementiert ausgewiesen. Historische Prüfprotokolle bleiben erhalten. Die Gestaltungstabellen unterscheiden allgemeine Seitentitel (30 px, unter 768 px 24 px) von den kompakten Falltiteln in UI1/UI3 (24 px, unter 768 px 22 px). Für UI2 gilt bei Fensterhöhe bis 600 px die bestehende Sonderregel von 20 px. Die Falltitelwerte ersetzen ausdrücklich die ältere pauschale Angabe. Grundlage ist das vorhandene CSS; keine Design- oder Codeänderung und kein neuer Testlauf.

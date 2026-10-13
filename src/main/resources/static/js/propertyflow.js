@@ -14,6 +14,41 @@ function showSaveNotice(text, error = false, temporary = false) {
     notice.classList.toggle('error', error);
     if (temporary) saveNoticeTimer = setTimeout(() => { notice.textContent = ''; }, 5000);
 }
+let accessDenied = false;
+function addRetry(notice, retry) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'secondary';
+    button.textContent = 'Erneut versuchen';
+    button.addEventListener('click', () => {
+        if (saving || reading || accessDenied) return;
+        button.disabled = true;
+        retry();
+    });
+    notice.append(' ', button);
+}
+function denyAccess() {
+    accessDenied = true;
+    clearTimeout(saveNoticeTimer);
+    clearTimeout(debounce);
+    debounce = null;
+    readController?.abort();
+    stream?.dispose();
+    for (const selector of ['#case-head', '#history', '#case-sidebar', '#ai', '.footer-note']) {
+        const region = $(selector);
+        if (region) region.hidden = true;
+    }
+    $('#updates')?.close();
+    $('#results')?.replaceChildren();
+    const notice = $('#load-state') || $('#save-state');
+    notice.textContent = 'Zugriff verweigert. Automatische Aktualisierungen und Speichern sind gestoppt. Ungesendete Eingaben bleiben erhalten.';
+    notice.classList.add('error');
+    const reload = document.createElement('a');
+    reload.href = location.href;
+    reload.textContent = 'Seite neu laden';
+    notice.append(' ', reload);
+    syncComposer();
+}
 let saving = false;
 let closed = $('#case-head')?.dataset.closed === 'true';
 const message = $('#message');
@@ -31,6 +66,19 @@ const stream = $('#ai') ? new MockStream(({ state, text }) => {
 
 function syncComposer() {
     if (!message) return;
+    if (accessDenied) {
+        message.disabled = false;
+        message.readOnly = true;
+        $('#send').disabled = true;
+        for (const selector of ['#internal', '#answer', '#generate', '#adopt', '#discard-proposal', '#abort']) {
+            const control = $(selector);
+            if (control) control.disabled = true;
+        }
+        $('#composer-fields').hidden = !message.value;
+        return;
+    }
+    // A confirmed closure discards the tenant's unsent text.
+    if (closed && !internal) message.value = '';
     const running = stream && ['waiting', 'streaming'].includes(stream.state);
     message.disabled = saving || closed;
     $('#send').disabled = saving || closed || !message.value.trim();
@@ -45,7 +93,7 @@ function syncComposer() {
         $('#message-label').textContent = internal.checked ? 'Interne Nachricht – nur für Mitarbeitende' : 'Externe Nachricht an den Mieter';
     }
     $('#closed-notice').hidden = !closed;
-    // Keep an existing draft visible on concurrent closure, but prevent writes.
+    // Staff drafts remain visible but locked; tenant drafts were cleared above.
     $('#composer-fields').hidden = closed && !message.value;
 }
 function sizeComposer() {
@@ -83,7 +131,7 @@ $('#adopt')?.addEventListener('click', () => {
 window.addEventListener('resize', sizeComposer);
 window.addEventListener('pagehide', () => stream?.dispose());
 window.addEventListener('beforeunload', event => {
-    if (message?.value.trim() && !saving) { event.preventDefault(); event.returnValue = ''; }
+    if (internal && message?.value.trim() && !saving) { event.preventDefault(); event.returnValue = ''; }
 });
 syncComposer(); sizeComposer();
 if (message && typeof ResizeObserver !== 'undefined') {
@@ -95,6 +143,7 @@ $('#form-error')?.focus();
 let reading = false;
 let readController;
 let lastRead = timestamp();
+let pendingSidebar = null;
 async function readPage(url, signal) {
     const response = await fetch(url, { signal, headers: { Accept: 'text/html' }, cache: 'no-store' });
     const page = parse(await response.text());
@@ -123,7 +172,13 @@ function applyCase(page, notify = false, forceSidebar = false) {
         replaceRegion('#history', page);
         $('#history').scrollTop = atBottom ? $('#history').scrollHeight : scrollTop;
     }
-    if (forceSidebar || !$('#case-sidebar details[open]')) replaceRegion('#case-sidebar', page);
+    if (forceSidebar || !$('#case-sidebar details[open]')) {
+        replaceRegion('#case-sidebar', page);
+        pendingSidebar = null;
+    } else {
+        // Keep the newest confirmed sidebar while the open editor retains its original version.
+        pendingSidebar = $('#case-sidebar', page)?.cloneNode(true) || null;
+    }
     // Open edit forms retain their original version, so concurrent changes produce a conflict.
     closed = nextHead.dataset.closed === 'true';
     syncComposer();
@@ -139,13 +194,17 @@ document.addEventListener('click', event => {
         const details = button.closest('details');
         $('form', details)?.reset();
         details.open = false;
+        if (pendingSidebar && details.closest('#case-sidebar')) {
+            $('#case-sidebar').replaceWith(pendingSidebar);
+            pendingSidebar = null;
+        }
     }
 });
 document.addEventListener('submit', async event => {
     const form = event.target;
     if (!form.matches('#message-form, .case-action')) return;
     event.preventDefault();
-    if (saving) return;
+    if (saving || accessDenied) return;
     const data = new URLSearchParams(new FormData(form));
     if (event.submitter?.name) data.set(event.submitter.name, event.submitter.value);
     const isMessage = form.id === 'message-form';
@@ -201,51 +260,92 @@ function invalidate() {
     clearTimeout(debounce);
     debounce = null;
 }
-async function loadList(url, updateUrl = true) {
+function captureListPosition() {
+    const container = $('#results .table-card');
+    if (!container) return null;
+    const top = container.getBoundingClientRect().top;
+    const bottom = container.getBoundingClientRect().bottom;
+    const heading = $('thead', container);
+    const visibleTop = heading?.getClientRects().length ? Math.max(top, heading.getBoundingClientRect().bottom) : top;
+    const row = [...container.querySelectorAll('tr[data-case]')].find(row => {
+        const bounds = row.getBoundingClientRect();
+        return bounds.bottom > visibleTop && bounds.top < bottom;
+    });
+    return { scrollTop: container.scrollTop, scrollLeft: container.scrollLeft,
+        caseId: row?.dataset.case, offset: row ? row.getBoundingClientRect().top - top : 0 };
+}
+function restoreListPosition(position) {
+    const container = $('#results .table-card');
+    if (!position || !container) return;
+    container.scrollTop = position.scrollTop;
+    container.scrollLeft = position.scrollLeft;
+    const row = [...container.querySelectorAll('tr[data-case]')].find(row => row.dataset.case === position.caseId);
+    if (row) container.scrollTop += row.getBoundingClientRect().top - container.getBoundingClientRect().top - position.offset;
+}
+async function loadList(url, updateUrl = true, preservePosition = false) {
+    if (accessDenied) return;
     const mine = ++generation;
     readController?.abort();
     readController = new AbortController();
     reading = true;
     $('#load-state').textContent = 'Wird aktualisiert …';
     $('#results').setAttribute('aria-busy', 'true');
-    const active = document.activeElement;
-    const focusHref = active?.closest('#results a')?.getAttribute('href');
     try {
         const page = await readPage(url, readController.signal);
         if (mine !== generation) return;
         if (!$('#results', page)) throw new Error('Die Fallübersicht konnte nicht geladen werden.');
+        // Capture immediately before replacement: the user may scroll or move focus during the request.
+        const active = document.activeElement;
+        const hadResultFocus = $('#results').contains(active);
+        const focusHref = active?.closest('#results a')?.getAttribute('href');
+        const focusCase = active?.closest('tr[data-case]')?.dataset.case;
+        const position = preservePosition ? captureListPosition() : null;
+        const requestedPage = Number(new URL(url).searchParams.get('page') || 1);
+        const actualPage = Number($('#results', page).dataset.page);
         replaceRegion('#results', page);
+        restoreListPosition(position);
         listUrl = new URL(url);
         listUrl.searchParams.set('page', $('#results').dataset.page);
         if (updateUrl) history.replaceState(null, '', listUrl);
         lastRead = timestamp();
-        $('#load-state').textContent = 'Zuletzt aktualisiert am ' + lastRead;
-        if (focusHref) {
-            const link = [...document.querySelectorAll('#results a')].find(a => a.getAttribute('href') === focusHref);
-            (link || $('#results')).focus({ preventScroll: true });
+        let notice = 'Zuletzt aktualisiert am ' + lastRead;
+        if (requestedPage !== actualPage) {
+            notice = 'Die bisherige Seite ist nicht mehr verfügbar. Seite ' + actualPage + ' wird angezeigt.';
         }
+        if (hadResultFocus) {
+            const row = focusCase ? [...document.querySelectorAll('#results tr[data-case]')].find(row => row.dataset.case === focusCase) : null;
+            const link = focusCase ? row?.querySelector('.case-link')
+                : [...document.querySelectorAll('#results a')].find(a => a.getAttribute('href') === focusHref);
+            (link || $('#results')).focus({ preventScroll: true });
+            if (focusCase && !row) notice += ' Der zuvor fokussierte Fall ist nicht mehr in dieser Ansicht.';
+        }
+        $('#load-state').textContent = notice;
     } catch (error) {
         if (error.name !== 'AbortError' && mine === generation) {
-            if (error.status === 403) { $('#results').replaceChildren(); }
-            $('#load-state').textContent = 'Aktualisierung momentan nicht möglich. Stand: ' + lastRead;
+            if (error.status === 403 || error.status === 401) {
+                denyAccess();
+            } else {
+                $('#load-state').textContent = 'Aktualisierung momentan nicht möglich. Stand: ' + lastRead;
+                addRetry($('#load-state'), () => loadList(url, updateUrl, preservePosition));
+            }
         }
     } finally {
         if (mine === generation) { reading = false; $('#results').removeAttribute('aria-busy'); }
     }
 }
 filters?.addEventListener('input', event => {
-    if (event.target.id !== 'q') return;
+    if (accessDenied || event.target.id !== 'q') return;
     invalidate();
     $('#load-state').textContent = 'Suche wird aktualisiert …';
     debounce = setTimeout(() => { debounce = null; loadList(filterUrl()); }, 1000);
 });
 filters?.addEventListener('change', event => {
-    if (event.target.id === 'q') return;
+    if (accessDenied || event.target.id === 'q') return;
     invalidate(); loadList(filterUrl());
 });
-filters?.addEventListener('submit', event => { event.preventDefault(); invalidate(); loadList(filterUrl()); });
+filters?.addEventListener('submit', event => { event.preventDefault(); if (accessDenied) return; invalidate(); loadList(filterUrl()); });
 document.addEventListener('click', event => {
-    if (!filters || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    if (accessDenied || !filters || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
     const link = event.target.closest('#results th a, #results .pagination a, #reset');
     if (!link) return;
     event.preventDefault(); invalidate();
@@ -260,8 +360,8 @@ document.addEventListener('click', event => {
     loadList(url);
 });
 async function refresh() {
-    if (document.hidden || saving || reading || debounce) return;
-    if (filters) { await loadList(listUrl); return; }
+    if (accessDenied || document.hidden || saving || reading || debounce) return;
+    if (filters) { await loadList(listUrl, true, true); return; }
     if (!$('#case-head')) return;
     reading = true;
     readController = new AbortController();
@@ -269,8 +369,16 @@ async function refresh() {
         const page = await readPage(location.href, readController.signal);
         if (!saving) applyCase(page, true);
         lastRead = timestamp();
+        if ($('#save-state button[data-read-retry]')) showSaveNotice('');
     } catch (error) {
-        if (error.name !== 'AbortError') showSaveNotice('Aktualisierung momentan nicht möglich. Stand: ' + lastRead, true);
+        if (error.name !== 'AbortError') {
+            if (error.status === 403 || error.status === 401) denyAccess();
+            else {
+                showSaveNotice('Aktualisierung momentan nicht möglich. Stand: ' + lastRead, true);
+                addRetry($('#save-state'), refresh);
+                $('#save-state button').dataset.readRetry = 'true';
+            }
+        }
     } finally { reading = false; }
 }
 setInterval(refresh, 20000);
