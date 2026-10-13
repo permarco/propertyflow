@@ -1,16 +1,15 @@
 # Evaluations- und Sicherheitsbasis
 
-**Version:** 0.1  
-**Status:** Block 1 – Konzeption
+**Version:** 0.2
+
+**Status:** Qualitative KI-Baseline und ergänzende Frontend-Evaluation (13.10.2026)
 
 ## Zweck
 
 Dieses Dokument definiert eine erste, versionierte Evaluations- und
 Sicherheitsbasis für PropertyFlow.
 
-Die Fälle dienen später dazu, KI-Funktionen und KI-generierten Code
-wiederholbar zu prüfen. In Block 1 liegt der Fokus auf repräsentativen
-Eingaben, erwarteten Eigenschaften und klaren Sicherheitsgrenzen.
+Die qualitativen Fälle aus Block 1 dienen dazu, KI-Funktionen wiederholbar zu prüfen. Sie bleiben als Baseline mit repräsentativen Eingaben, erwarteten Eigenschaften und klaren Sicherheitsgrenzen erhalten. Die Ergänzung aus Block 2 ordnet vorhandene automatisierte Tests der lokalen Frontend-Demo ein; sie belegt keine Ausführung der KI-Evaluationsfälle.
 
 Die fachliche Vision ist in [docs/vision.md](../vision.md) beschrieben. Verbindliche
 Architektur-, Qualitäts- und Sicherheitsleitplanken sind zusätzlich in
@@ -358,7 +357,7 @@ Versandproblemen. Diese Anforderungen sind noch keine ausgeführten Tests.
 
 ## Verwendung in späteren Blöcken
 
-Diese Version 0.1 ist die qualitative Baseline aus Block 1.
+Die qualitativen Fälle EVAL-01 bis EVAL-04 bleiben gegenüber der Baseline 0.1 aus Block 1 unverändert. Version 0.2 ergänzt die Zuordnung vorhandener Frontend-Tests und deren Aussagegrenzen.
 
 Spätere Versionen beziehungsweise ergänzende Testartefakte sollen daraus
 reproduzierbare Tests und Kennzahlen ableiten, unter anderem für:
@@ -378,3 +377,55 @@ Modell-, Prompt- oder Implementierungsänderungen vergleichbar bleiben.
 ## Nachweise der lokalen Frontend-Demo
 
 Der aktuelle Nachweisstand ist im [Block-2-Prüfprotokoll](../ai-usage/block2-oberflaechen-pruefung.md) dokumentiert: [Unit-Tests, Veto und Mutation](../ai-usage/block2-oberflaechen-pruefung.md#ergänzung-vom-12102026-generierte-unit-tests-und-mutation) sowie [Browser, Streaming-Sicherheit, A11y und Performance](../ai-usage/block2-oberflaechen-pruefung.md#ergänzung-browser-qualitätsnachweis-und-präsentationsentscheidung). Die dort genannten Messungen gelten für die lokale Demo; produktive Integrationen und vollständige Sicherheits-/Barrierefreiheitsprüfungen bleiben davon abgegrenzt.
+
+
+## Testabdeckung der Frontend-Demo – Ergänzung vom 13.10.2026
+
+Die folgende Zuordnung beschreibt vorhandene Testartefakte, keine vollständige Erfüllung sämtlicher Akzeptanzkriterien. Die Fachregeln bleiben in den verlinkten Spezifikationen massgeblich. Kriterien mit realen Integrationen sind auch dann offen, wenn ein entsprechender Mock-Ablauf bestanden ist. Die Aussagen «Anforderungen an spätere Tests» in den vorangehenden Abschnitten beziehen sich weiterhin auf den vollständigen fachlichen und produktiven Nachweis; für den Demo-Teil gilt diese differenzierte Zuordnung.
+
+### Kriterien und vorhandene Prüfungen
+
+| Bereich und fachliche Quelle | Vorhandene automatisierte Prüfung | Aussagegrenze |
+|---|---|---|
+| Fallannahme, Wiederholung und Änderungen nach [FALL](../specifications/fallverwaltung.md#prüfkriterien) | [DemoCasesTest](../../src/test/java/com/pertegato/propertyflow/caseprocessing/demo/DemoCasesTest.java), [DemoCasesChangeTest](../../src/test/java/com/pertegato/propertyflow/caseprocessing/demo/DemoCasesChangeTest.java), [Formularvalidierung](../../src/test/browser/intake-validation.test.mjs) | Java-Logik und lokale Mock-Zustände; kein Nachweis dauerhafter Speicherung oder eines Camunda-Prozessstarts. |
+| HTTP-/HTML-Ausgabe der Demo | [DemoRenderingTest](../../src/test/java/com/pertegato/propertyflow/caseprocessing/demo/DemoRenderingTest.java) | Serverantworten im Testprofil; keine produktive Mitarbeiterautorisierung. |
+| [UI1](../frontend/ansicht-01-mieter-fallansicht.md): Senden, Polling, Navigation, Abschluss und Wiedereröffnung | [Nachrichten](../../src/test/browser/tenant-message.test.mjs), [Polling](../../src/test/browser/tenant-refresh.test.mjs), [Abruffehler](../../src/test/browser/tenant-refresh-error.test.mjs), [Navigation](../../src/test/browser/tenant-navigation.test.mjs), [Abschluss](../../src/test/browser/tenant-closure.test.mjs) | Prüft insbesondere Entwurfserhalt beim Polling, Löschung bei erkanntem Abschluss, leere Eingabe nach Wiedereröffnung und Verlassen ohne Warnung. |
+| [UI2](../frontend/ansicht-02-mitarbeiter-falluebersicht.md): Suche, Filter, Sortierung und Seitenwechsel | [Suche](../../src/test/browser/list-search.test.mjs), [Filter](../../src/test/browser/list-filters.test.mjs), [Sortierung](../../src/test/browser/list-sorting.test.mjs), [Seitennavigation](../../src/test/browser/list-pagination.test.mjs), [Robustheit](../../src/test/browser/list-resilience.test.mjs) | Mock-Daten und teilweise simulierte Netzwerk-/Rate-Limit-Fehler; kein Lasttest gegen eine Datenbank. |
+| [UI3](../frontend/ansicht-03-mitarbeiter-falldetail.md), [Kommunikation](../specifications/fallkommunikation.md) und [Dringlichkeit](../specifications/dringlichkeitsbewertung.md) | [Mitarbeiterabläufe](../../src/test/browser/staff-workflows.test.mjs), [Grenzfälle](../../src/test/browser/ui-boundaries.test.mjs), [weitere Interaktionen](../../src/test/browser/remaining-interactions.test.mjs) | Manuelle Änderungen, Zuordnung, interne/externe Nachrichten, Konflikte, KI-Vorschlagsbedienung und Wiederholungen im Mock; keine automatische fachliche KI-Entscheidung. |
+| Lokaler Streaming-Zustandsautomat | [Streaming-Unit-Tests](../../src/test/js/mock-stream.test.mjs) | Statuswechsel, wirksamer Abbruch, Wiederholung, Fehler und veraltete Callbacks; kein echter Modell-Endpunkt. |
+| Sichere Textausgabe, Tastaturbedienung und automatisierte Barrierefreiheit | [Browser-Qualitätsprüfung](../../src/test/browser/frontend-quality.mjs), [UI-Grenzfälle](../../src/test/browser/ui-boundaries.test.mjs) | DOM-/Dialogprüfung und axe-core; sichere HTML-Ausgabe beweist keine Prompt-Injection-Abwehr des LLM. Keine vollständige WCAG-Konformitätsprüfung. |
+| Lokale Frontend-Performance | [Performance-Prüfung](../../src/test/browser/frontend-performance.mjs) | Lighthouse unter dokumentierten lokalen Bedingungen; keine produktiven SLA, Backend-Last- oder End-to-End-KI-Latenzwerte. |
+
+Die bereits festgelegten Qualitätskriterien bleiben bestehen: keine serious/critical axe-Verstösse im geprüften Umfang; HTML-Testausgabe erzeugt keine Kindelemente oder Alert-Dialoge; Lighthouse-Performance-Median aus drei Läufen je Ansicht mindestens 90. Messprofil und Einzelergebnisse stehen zentral im [Browser-Qualitätsnachweis](../ai-usage/block2-oberflaechen-pruefung.md#ergänzung-browser-qualitätsnachweis-und-präsentationsentscheidung).
+
+### Reproduktion und Nachweisführung
+
+Ab Repository-Wurzel werden die Testgruppen getrennt ausgeführt:
+
+```powershell
+.\mvnw.cmd test
+node --test src/test/js/mock-stream.test.mjs
+node src/test/browser/run-ui-tests.mjs
+node src/test/browser/frontend-quality.mjs
+node src/test/browser/frontend-performance.mjs
+```
+
+Für Browserprüfungen sind eine laufende, wegwerfbare `frontend-demo`, die Browser-Testabhängigkeiten unter `target/frontend-tools` und Microsoft Edge erforderlich. Standardadresse ist `http://127.0.0.1:8082`; `DEMO_URL` erlaubt eine andere Testadresse. Die Prüfungen verändern Mock-Daten. Die [README](../../README.md#frontend-demo-ohne-datenbank) dokumentiert Start und Abschalten von DevTools-Neustarts bei paralleler Entwicklung; die [Reproduktionsanleitung](../ai-usage/block2-oberflaechen-pruefung.md#reproduktion-powershell-ab-repository-wurzel) beschreibt die Installation der Browser-Werkzeuge.
+
+| Bericht | Inhalt |
+|---|---|
+| `target/surefire-reports/` | Ergebnisse der Java-Tests |
+| `target/frontend-quality/ui-tests.tap` | Gemeinsamer Browser-Testlauf; umfasst die `.test.mjs`-Dateien, nicht die separaten Qualitäts-/Performance-Skripte |
+| `target/frontend-quality/browser.json` | Browser-, Streaming-Sicherheits- und A11y-Prüfung |
+| `target/frontend-quality/performance.json` und `lighthouse-*.json` | Aggregierte Performancewerte und Einzelmessungen |
+
+Berichte unter `target` sind erzeugte, überschreibbare Artefakte. Dauerhafte Einordnung und Ergebnisse einzelner Läufe werden mit Datum und geprüftem Stand im [Block-2-Prüfprotokoll](../ai-usage/block2-oberflaechen-pruefung.md#implementierungs--und-testnachtrag-zur-übergabe-vom-13102026) geführt. Hier werden keine kopierten Testzahlen als dauerhaft aktueller Stand geführt. «Test vorhanden», «ausgeführt und bestanden» und «noch offen» sind getrennt zu bewerten; ausgelassene oder nicht ausgeführte Tests gelten nicht als bestanden. Bei künftigen Läufen sind Code-/Teststand, Laufzeitumgebung, Aufruf und Ergebnis zu dokumentieren.
+
+### Offene Evaluation und Grenzen
+
+- **EVAL-01 bis EVAL-04 bleiben offen:** Der lokale Antwort-Mock bewertet weder Anliegen noch Winter-/Sommerkontext und belegt keine Faktentreue, Retrieval-Qualität oder Prompt-Injection-Abwehr. Dafür sind reale, versionierte Modell-/Prompt-Konfigurationen und die fachliche Prüfung aller MUSS-Kriterien erforderlich.
+- **Integrationen bleiben offen:** Datenbankpersistenz, Mailzustellung, RAG, Camunda-Timer und Worker-Wiederholungen sowie reale Modellaufrufe müssen separat geprüft werden. Mock-Idempotenz ist kein Nachweis für verteilte Worker-Idempotenz.
+- **Produktive Sicherheitsgrenzen bleiben offen:** Mitarbeiteranmeldung und Autorisierung, sichere Tokenaufbewahrung, Widerruf/Ersatz, Datenschutz beim Providertransfer und Durchsetzung menschlicher Freigaben benötigen eigene Nachweise gemäss [ZUG](../specifications/fallzugriff-und-sicherheit.md) und FALL-10. Simulierte Zugriffsverweigerungen belegen nur die UI-Reaktion.
+- **Browserumfang ist begrenzt:** Responsive Tests verwenden 390 und 1440 Pixel in Edge/Chromium. Teilweise beschleunigte Browseruhren und simulierte Tab-Sichtbarkeit ergänzen echte 20-Sekunden-Pollingtests. Weitere Browser, Zwischenbreiten, reale Mobilgeräte und manuelle Prüfungen mit assistiven Technologien bleiben gesondert zu bewerten.
+
+Diese Ergänzung ändert keine fachlichen Akzeptanzkriterien und dokumentiert keinen neuen Testlauf. Sie verbindet die qualitative Baseline mit vorhandenen Testartefakten und den bereits protokollierten Nachweisen.
