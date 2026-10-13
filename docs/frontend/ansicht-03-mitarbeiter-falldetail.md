@@ -1,7 +1,7 @@
 # Screen 03 – Mitarbeiter-Falldetailansicht
 
 **Projekt:** PropertyFlow – FFHS CAS AISE\
-**Status:** Fachliche Bedienung und Desktop-Gestaltung bestätigt; responsive Darstellung bestätigt; Prozess- und technische Verträge separat\
+**Status:** Fachliche Bedienung und Desktop-Gestaltung bestätigt; responsive Darstellung bestätigt; lokale Frontend-Demo implementiert; produktive Prozess- und Integrationsverträge separat\
 **Stand:** 10.10.2026\
 **Zielgruppe:** Mitarbeitende mit einheitlichen Adminrechten\
 **Darstellung:** Eigene SSR-Seite mit Thymeleaf und gezieltem Vanilla JavaScript
@@ -62,7 +62,7 @@ Das [bestätigte JPG der Mitarbeiter-Falldetailansicht](design/ansicht-03-mitarb
 | 768–1199 px | Kompakte Ansicht mit umgebrochenem Kopf |
 | Unter 768 px | Mobile Ansicht mit einer Spalte |
 
-Unter 1200 px scrollt die ganze Seite; Kopf und Eingabebereiche sind nicht feststehend. Die Desktop-Regel mit mindestens 200 px Verlauf gilt dort nicht. Es gibt kein horizontales Scrollen; lange Wörter und Referenzen dürfen umbrechen. Bedienelemente bleiben mindestens 44 px hoch. Unter 768 px gelten 16 px Seitenrand, 24 px Seitentitel und weiterhin 16 px Nachrichtentext. Die Bildschirmtastatur darf keine Aktionen dauerhaft verdecken; diese bleiben durch Seitenscrollen erreichbar.
+Unter 1200 px scrollt die ganze Seite; Kopf und Eingabebereiche sind nicht feststehend. Die Desktop-Regel mit mindestens 200 px Verlauf gilt dort nicht. Es gibt kein horizontales Scrollen; lange Wörter und Referenzen dürfen umbrechen. Bedienelemente bleiben mindestens 44 px hoch. Unter 768 px gelten 16 px Seitenrand, 24 px allgemeine Seitentitel (kompakte Falltitel in UI1/UI3: 22 px) und weiterhin 16 px Nachrichtentext. Die Bildschirmtastatur darf keine Aktionen dauerhaft verdecken; diese bleiben durch Seitenscrollen erreichbar.
 
 Unter 1200 px wechseln die zwei Spalten zu dieser Reihenfolge: Fallkopf → Falldaten und Aktionen → Verlauf → Nachricht verfassen → KI-Vorschlag. Status, Dringlichkeit und Wiedervorlage stehen unter dem Titel und dürfen umbrechen. Änderungskarten sind beim Öffnen der Ansicht zunächst geschlossen; beim Aufklappen erscheint der gespeicherte Wert vorausgewählt.
 
@@ -86,7 +86,8 @@ Nachrichtentextboxen wachsen unter 1200 px automatisch mit dem Inhalt von mindes
 
 | Textelement | Grösse / Gewicht |
 |---|---|
-| Seiten- und Falltitel | 30 px / 600; auf kleinen Bildschirmen 24 px |
+| Allgemeine Seitentitel | 30 px / 600; unter 768 px 24 px |
+| Kompakte Falltitel in UI1/UI3 | 24 px / 600; unter 768 px 22 px; ersetzt für diese Fallköpfe die frühere Angabe 30/24 px |
 | Kartenüberschrift | 20 px / 600 |
 | Nachrichtentext, Formulare und Tabellen | 16 px / 400 |
 | Buttons und Feldbeschriftungen | 14 px / 600 |
@@ -266,7 +267,7 @@ Nach Abschluss bleiben die gespeicherten Fallinhalte bei gültiger Berechtigung 
 
 **Bestätigte Aktion:** Bei aktivem Fall steht rechts der separate Button «Fall abschliessen» zur Verfügung; der Abschluss unterliegt den serverseitigen Voraussetzungen aus FALL-07/FALL-10.
 
-**Bestätigt am 10.10.2026 – Abschlussbestätigung:** «Fall abschliessen» öffnet die Bestätigung «Fall wirklich abschliessen? Danach sind keine neuen Nachrichten oder internen Memos möglich.» mit «Abschliessen» und «Abbrechen». Erst «Abschliessen» fordert den fachlichen Abschluss an; Berechtigung, aktueller Fallstand und Abschlussvoraussetzungen werden serverseitig geprüft. «Abbrechen» schliesst die Bestätigung ohne Änderung am Fall. Nach bestätigtem Abschluss gilt die Nachrichtensperre bis zu einer bewussten Wiedereröffnung.
+**Bestätigt am 10.10.2026 – Abschlussbestätigung:** «Fall abschliessen» öffnet die Bestätigung «Fall wirklich abschliessen?» mit «Abschliessen» und «Abbrechen». Erst «Abschliessen» fordert den fachlichen Abschluss an; Berechtigung, aktueller Fallstand und Abschlussvoraussetzungen werden serverseitig geprüft. «Abbrechen» schliesst die Bestätigung ohne Änderung am Fall. Nach bestätigtem Abschluss gilt die Nachrichtensperre bis zu einer bewussten Wiedereröffnung.
 
 **Bestätigt am 10.10.2026 – optionale Abschlussnachricht:** Eine zusätzliche externe Abschlussnachricht ist optional. Der Mitarbeiter sendet sie vor dem Abschluss über das bestehende gemeinsame Textfeld mit «Nachricht senden». Der Abschlussdialog enthält kein zusätzliches Nachrichtenfeld. Der fachliche Abschluss veranlasst unabhängig davon die automatische Abschluss-E-Mail nach BEN-05; sie erzeugt keine nachträgliche Kommunikationsnachricht. Eine bereits gesendete Abschlussnachricht bleibt auch dann veröffentlicht, wenn der anschliessende Abschluss abgebrochen wird oder scheitert.
 
@@ -400,7 +401,7 @@ Diese Kriterien bilden die bestätigten Fachregeln und Bedienungsentscheidungen 
 
 - **FD-AK-11:** Ungesendeter externer Text und ungespeicherte interne Eingaben lösen beim bewussten Verlassen oder Neuladen eine Textverlustwarnung aus, soweit der Browser dies unterstützt. Abbrechen des Seitenwechsels erhält die Eingabe. Die Warnung speichert oder veröffentlicht nichts; leere oder erfolgreich gespeicherte/gesendete Eingaben lösen sie nicht aus.
 
-- **FD-AK-12:** Periodische Leseabrufe alle 20 Sekunden führen gespeicherten Verlauf, Status und Dringlichkeit nach. Neue gespeicherte Mieter- und Systemnachrichten erscheinen links im Verlauf, mit erkennbarer Absenderrolle und Sichtbarkeit. Neue gespeicherte Nachrichten oder Memos sowie erkannte Änderungen von Status oder wirksamer Dringlichkeit zeigen ein Popup mit dem Button «OK» zum Schliessen. Status- und Dringlichkeitsänderungen zeigen den alten und neuen Wert; neue Einträge erhalten einen Hinweis auf neue Daten im Verlauf. Bei gleichzeitiger Änderung beider Werte werden beide angezeigt; «OK» bestätigt keine neue fachliche Änderung. Mitarbeitereingabe und KI-Ausgabe bleiben erhalten; der aktive Stream wird weder abgebrochen noch neu gestartet. Ein währenddessen bestätigter Abschluss sperrt weiterhin das Senden/Speichern serverseitig, ohne die vorhandenen Texte zu löschen.
+- **FD-AK-12:** Periodische Leseabrufe alle 20 Sekunden führen gespeicherten Verlauf, Status und Dringlichkeit nach. Neue gespeicherte Mieternachrichten erscheinen links; Verwaltungs- und Systemnachrichten sowie Ereignisse erscheinen rechts. Absenderrolle und Sichtbarkeit bleiben erkennbar. Automatisch nachgeladene Einträge folgen derselben Anordnung wie beim ersten Laden. Neue gespeicherte Nachrichten oder Memos sowie erkannte Änderungen von Status oder wirksamer Dringlichkeit zeigen ein Popup mit dem Button «OK» zum Schliessen. Status- und Dringlichkeitsänderungen zeigen den alten und neuen Wert; neue Einträge erhalten einen Hinweis auf neue Daten im Verlauf. Bei gleichzeitiger Änderung beider Werte werden beide angezeigt; «OK» bestätigt keine neue fachliche Änderung. Mitarbeitereingabe und KI-Ausgabe bleiben erhalten; der aktive Stream wird weder abgebrochen noch neu gestartet. Ein währenddessen bestätigter Abschluss sperrt weiterhin das Senden/Speichern serverseitig, ohne die vorhandenen Texte zu löschen.
 
 - **FD-AK-13:** Vor dem Speichern einer manuellen Status-/Dringlichkeitsänderung prüft das System auf zwischenzeitlich geänderte Einstellungen. Bei Konflikt wird nichts überschrieben; der aktuelle Einstellungsstand wird neu geladen und «konnte nicht erfolgreich gespeichert werden» angezeigt. Mitarbeitereingabe, KI-Ausgabe und aktiver Stream bleiben erhalten. Eine Änderung zwischen Prüfung und Speicherung darf die Konfliktprüfung nicht umgehen.
 
@@ -435,7 +436,7 @@ Folgende Punkte gehören zur anschliessenden Prozess- und technischen Ausarbeitu
 - E-Mail-Vorlagen mit klar erkennbarem Antwortbedarf; die bereits zentral offene Behandlung der getrennten Benachrichtigungspflichten von Abschlussnachricht und Abschluss.
 - Darstellungsdetails wie Popup-Verhalten bei mehreren Aktualisierungen, Fokusführung, genaue Scrollhöhe sowie konkrete Grafikdateien der festgelegten Icons. Das Verhalten bei manueller Textbox-Vergrösserung ist in Abschnitt 2 bestätigt; unter 1200 px gilt die bestätigte automatische Textboxhöhe von 96–240 px.
 
-Die Erstposition des Verlaufs beim Öffnen bleibt gesondert zu konkretisieren. Das Zurücksetzen von «Mieterantwort erforderlich» beim Einschalten von «Intern» ist in [Abschnitt 3](#3-fachlich-verbindliche-inhalte) bestätigt. Die bestehenden Regeln zu Textbestand, externem Antwortbedarf und Zurücksetzen nach erfolgreicher Speicherung gelten verbindlich.
+**Bestätigt am 13.10.2026 – Startposition des Verlaufs:** Beim Öffnen der Mitarbeiter-Detailansicht steht der Verlauf am Ende bei den neuesten Einträgen. Wer ältere Einträge liest, behält bei automatischer Aktualisierung seine Leseposition. Wer bereits am Ende ist, sieht auch neu hinzukommende Einträge. Das Zurücksetzen von «Mieterantwort erforderlich» beim Einschalten von «Intern» ist in [Abschnitt 3](#3-fachlich-verbindliche-inhalte) bestätigt. Die bestehenden Regeln zu Textbestand, externem Antwortbedarf und Zurücksetzen nach erfolgreicher Speicherung gelten verbindlich.
 
 JPG-Entwürfe und eine lokale Frontend-Demo liegen vor. Produktive Service-, Speicher- und Integrationsverträge bleiben separat auszuarbeiten.
 

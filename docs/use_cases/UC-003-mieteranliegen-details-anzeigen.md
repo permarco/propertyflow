@@ -6,7 +6,7 @@
 **Use Case Name:** Mieteranliegen im Detail anzeigen  
 **Primary Actor:** Immobilienbewirtschaftung  
 **Goal:** Ein ausgewähltes Mieteranliegen mit den für die fachliche Prüfung relevanten Informationen anzeigen.  
-**Status:** Planned
+**Status:** Produktiver Gesamtprozess geplant; lokale Frontend-Demo mit Mock-Daten vorhanden. Die Demo ersetzt keine produktive Datenbank-, KI-, Mail- oder Camunda-Integration. Siehe [Demo-Nachweise](../evaluation/evaluationsgrundlage.md#testabdeckung-der-frontend-demo--ergänzung-vom-13102026).
 
 ## Preconditions
 

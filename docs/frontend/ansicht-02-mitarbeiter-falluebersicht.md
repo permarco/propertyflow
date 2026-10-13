@@ -1,7 +1,7 @@
 # Screen 02 – Mitarbeiter-Fallübersicht
 
 **Projekt:** PropertyFlow – FFHS CAS AISE  
-**Status:** Fachliche Spezifikation und Desktop-Gestaltung bestätigt, einschliesslich JPG und konsolidierter Bedienung vom 10.10.2026. Desktop- und responsive Gestaltung sind bestätigt; die technische Umsetzung folgt.
+**Status:** Fachliche Spezifikation und Desktop-Gestaltung bestätigt, einschliesslich JPG und konsolidierter Bedienung vom 10.10.2026. Desktop- und responsive Gestaltung sind bestätigt; die lokale Frontend-Demo implementiert; produktive Integrationen bleiben offen.
 
 **Stand:** 10.10.2026\
 **Zielgruppe:** Berechtigte Mitarbeitende der Immobilienbewirtschaftung  
@@ -75,7 +75,7 @@ Interne Problemhinweise bleiben gemäss FALL-05/FALL-06 am Fall nachvollziehbar,
 | 768–1199 px | Kompakte Ansicht mit umgebrochenem Kopf |
 | Unter 768 px | Mobile Ansicht mit einer Spalte |
 
-**Geändert am 12.10.2026:** Auf allen Bildschirmbreiten bleiben Anwendungskopf und die untere Seitennavigation sichtbar. Die Fallliste scrollt im verfügbaren Bereich dazwischen; in der Tabellenansicht bleiben auch die Spaltenüberschriften sichtbar. Titel, Filter und Trefferzahl stehen oberhalb der Liste. Bei geringer Höhe ist der Filterbereich auf 35 % der sichtbaren Fensterhöhe begrenzt und separat scrollbar. Es gibt kein horizontales Scrollen; lange Wörter und Referenzen dürfen umbrechen. Bedienelemente bleiben mindestens 44 px hoch. Unter 768 px gelten 16 px Seitenrand, 24 px Seitentitel und weiterhin 16 px Nachrichtentext. Die Bildschirmtastatur darf keine Aktionen dauerhaft verdecken; Filter- und Listenbereich sind unabhängig scrollbar und per Tastatur erreichbar.
+**Geändert am 12.10.2026:** Auf allen Bildschirmbreiten bleiben Anwendungskopf und die untere Seitennavigation sichtbar. Die Fallliste scrollt im verfügbaren Bereich dazwischen; in der Tabellenansicht bleiben auch die Spaltenüberschriften sichtbar. Titel, Filter und Trefferzahl stehen oberhalb der Liste. Bei geringer Höhe ist der Filterbereich auf 35 % der sichtbaren Fensterhöhe begrenzt und separat scrollbar. Es gibt kein horizontales Scrollen; lange Wörter und Referenzen dürfen umbrechen. Bedienelemente bleiben mindestens 44 px hoch. Unter 768 px gelten 16 px Seitenrand, 24 px allgemeine Seitentitel (kompakte Falltitel in UI1/UI3: 22 px) und weiterhin 16 px Nachrichtentext. Die Bildschirmtastatur darf keine Aktionen dauerhaft verdecken; Filter- und Listenbereich sind unabhängig scrollbar und per Tastatur erreichbar.
 
 Unter 1200 px ersetzen Fallkarten die Tabelle. Jede Karte zeigt dieselben sieben Angaben mit Beschriftungen in der bisherigen Feldreihenfolge; die Case-ID öffnet das Detail. Die Suche steht oben über die ganze Breite. Darunter folgen Dringlichkeitsfilter und Sortierauswahl für Spalte und Richtung einschliesslich Standardsortierung.
 
@@ -97,7 +97,8 @@ Unter 768 px stehen die Filter untereinander. Der Toggle «Abgeschlossene Fälle
 
 | Textelement | Grösse / Gewicht |
 |---|---|
-| Seiten- und Falltitel | 30 px / 600; auf kleinen Bildschirmen 24 px |
+| Allgemeine Seitentitel | 30 px / 600; unter 768 px 24 px; in UI2 bei Fensterhöhe bis 600 px unabhängig von der Breite 20 px |
+| Kompakte Falltitel in UI1/UI3 | 24 px / 600; unter 768 px 22 px; ersetzt für diese Fallköpfe die frühere Angabe 30/24 px |
 | Kartenüberschrift | 20 px / 600 |
 | Nachrichtentext, Formulare und Tabellen | 16 px / 400 |
 | Buttons und Feldbeschriftungen | 14 px / 600 |
@@ -571,7 +572,7 @@ Entscheidungen, fachliche Prüfung und Verantwortung verbleiben bei Marco. KI al
 
 Die [Dringlichkeitsbewertung](../specifications/dringlichkeitsbewertung.md) führt Stufen, Farben, Bewertungsablauf, Vorrang manueller Anpassungen und transparente Historie. [FALL-07](../specifications/fallverwaltung.md#fall-07-abschluss-und-zeit-danach) erlaubt den Abschluss durch Mitarbeitende sowie durch das System bei bestätigter Behebung ohne weiteren Hilfebedarf oder eindeutig fehlendem Bearbeitungsbedarf der Verwaltung nach Fachregel. Offene menschliche Entscheidungen nach [FALL-10](../specifications/fallverwaltung.md#fall-10-automatisierung-und-menschliche-freigabe) bleiben verbindlich. Beide Abschlusswege liefern den Status «Abgeschlossen» und wirken gleich auf die Listenauswahl: standardmässig ausblenden, über den Toggle weiterhin einsehbar. Eine Abschlussaktion in der Liste ist nicht vorgesehen.
 
-Zentral offen bleiben die technische Synchronisierung konkurrierender Bewertungen, konkrete Prozessübergänge und die technische Konkretisierung der vereinbarten Abschlussregeln. Entscheidungen dazu werden an der jeweiligen fachlichen Quelle ergänzt und hier verlinkt. Die [Mitarbeiter-Falldetailansicht](ansicht-03-mitarbeiter-falldetail.md) ist als UI3 fachlich spezifiziert, einschliesslich Verlauf links, Falldaten und Aktionen rechts sowie Rücknavigation mit erhaltener Listenauswahl. Die drei UI-Spezifikationen wurden mit den bestätigten Fachregeln abgeglichen. Der bestätigte UI2-JPG-Entwurf ist in Abschnitt 8.1 verlinkt; Anwendungscode folgt separat.
+Zentral offen bleiben die technische Synchronisierung konkurrierender Bewertungen, konkrete Prozessübergänge und die technische Konkretisierung der vereinbarten Abschlussregeln. Entscheidungen dazu werden an der jeweiligen fachlichen Quelle ergänzt und hier verlinkt. Die [Mitarbeiter-Falldetailansicht](ansicht-03-mitarbeiter-falldetail.md) ist als UI3 fachlich spezifiziert, einschliesslich Verlauf links, Falldaten und Aktionen rechts sowie Rücknavigation mit erhaltener Listenauswahl. Die drei UI-Spezifikationen wurden mit den bestätigten Fachregeln abgeglichen. Der bestätigte UI2-JPG-Entwurf ist in Abschnitt 8.1 verlinkt; Die lokale Frontend-Demo ist implementiert; produktive Integrationen bleiben separat umzusetzen.
 
 ## Implementierungs- und Qualitätsnachweise
 

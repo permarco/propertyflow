@@ -1,7 +1,7 @@
 # Screen 01 – Mieter-Fallansicht
 
 **Projekt:** PropertyFlow – KI-gestützte Triage und Bearbeitung von Mieteranliegen  
-**Status:** Fachliche Spezifikation abgeschlossen am 09.10.2026; Desktop-Gestaltung am 10.10.2026 bestätigt, einschliesslich kompakter Objekt-/Kontaktangaben im Kopf ohne separate Ursprungsansicht; technische Umsetzung folgt.\
+**Status:** Fachliche Spezifikation abgeschlossen am 09.10.2026; Desktop-Gestaltung am 10.10.2026 bestätigt, einschliesslich kompakter Objekt-/Kontaktangaben im Kopf ohne separate Ursprungsansicht; lokale Frontend-Demo implementiert; produktive Integrationen bleiben offen.\
 **Zielgruppe:** Mieterinnen und Mieter  
 **Darstellung:** Server-Side Rendering (Thymeleaf) mit gezieltem Vanilla JavaScript  
 **Workflow-Orchestrierung:** Camunda 8
@@ -40,7 +40,7 @@ Die folgenden Ansichten bilden den [fachlichen Lebenszyklus nach FALL-05](../spe
 
 ### 2.1 Aufrufe und HTTP-Vertrag
 
-Die folgenden Routen bilden den zentralen [HTTP-Vertrag nach ZUG-07](../specifications/fallzugriff-und-sicherheit.md#zug-07-geplanter-http-vertrag) für diesen Screen ab. Sie sind ein geplanter Vertrag für die spätere Implementierung, keine Aussage über bereits vorhandene Controller. Änderungen des Zugangsmodells werden an der zentralen Quelle gepflegt.
+Die folgenden Routen bilden den zentralen [HTTP-Vertrag nach ZUG-07](../specifications/fallzugriff-und-sicherheit.md#zug-07-geplanter-http-vertrag) für diesen Screen ab. Sie beschreiben den vollständigen Zielvertrag; die lokale Frontend-Demo bildet Teile davon ab, ersetzt aber keine produktive Zugriffs- und Sicherheitsimplementierung. Änderungen des Zugangsmodells werden an der zentralen Quelle gepflegt.
 
 | Methode und Route | Zweck und Verhalten |
 |---|---|
@@ -482,7 +482,7 @@ Die Nachrichteneingabe des aktiven Falls bleibt ausserhalb des scrollbaren Verla
 | 768–1199 px | Kompakte Ansicht mit umgebrochenem Kopf |
 | Unter 768 px | Mobile Ansicht mit einer Spalte |
 
-Unter 1200 px scrollt die ganze Seite; Kopf und Eingabebereiche sind nicht feststehend. Die Desktop-Regel mit mindestens 200 px Verlauf gilt dort nicht. Es gibt kein horizontales Scrollen; lange Wörter und Referenzen dürfen umbrechen. Bedienelemente bleiben mindestens 44 px hoch. Unter 768 px gelten 16 px Seitenrand, 24 px Seitentitel und weiterhin 16 px Nachrichtentext. Die Bildschirmtastatur darf keine Aktionen dauerhaft verdecken; diese bleiben durch Seitenscrollen erreichbar.
+Unter 1200 px scrollt die ganze Seite; Kopf und Eingabebereiche sind nicht feststehend. Die Desktop-Regel mit mindestens 200 px Verlauf gilt dort nicht. Es gibt kein horizontales Scrollen; lange Wörter und Referenzen dürfen umbrechen. Bedienelemente bleiben mindestens 44 px hoch. Unter 768 px gelten 16 px Seitenrand, 24 px allgemeine Seitentitel (kompakte Falltitel in UI1/UI3: 22 px) und weiterhin 16 px Nachrichtentext. Die Bildschirmtastatur darf keine Aktionen dauerhaft verdecken; diese bleiben durch Seitenscrollen erreichbar.
 
 Das Erfassungsformular bleibt einspaltig. Bestehende Fälle zeigen unter 1200 px Titel → Objekt/Kontakt → Status und Dringlichkeit → Verlauf → Nachrichteneingabe. Beim abgeschlossenen Fall ersetzt weiterhin der Abschlusshinweis die Eingabe. Auf Mobil erhalten Nachrichtenblasen beider Seiten dieselbe Breite von maximal 92 % der verfügbaren Verlaufsbreite: Mieter rechts, Verwaltung/System links. Rollen und Zeitangaben dürfen innerhalb der Blase umbrechen. Die Eingabe steht unter dem Verlauf.
 
@@ -506,7 +506,8 @@ Nachrichtentextboxen wachsen unter 1200 px automatisch mit dem Inhalt von mindes
 
 | Textelement | Grösse / Gewicht |
 |---|---|
-| Seiten- und Falltitel | 30 px / 600; auf kleinen Bildschirmen 24 px |
+| Allgemeine Seitentitel | 30 px / 600; unter 768 px 24 px |
+| Kompakte Falltitel in UI1/UI3 | 24 px / 600; unter 768 px 22 px; ersetzt für diese Fallköpfe die frühere Angabe 30/24 px |
 | Kartenüberschrift | 20 px / 600 |
 | Nachrichtentext, Formulare und Tabellen | 16 px / 400 |
 | Buttons und Feldbeschriftungen | 14 px / 600 |

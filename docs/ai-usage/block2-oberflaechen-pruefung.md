@@ -757,3 +757,19 @@ Der gemeinsame Aufruf lautet `node src/test/browser/run-ui-tests.mjs`; Vorausset
 Bei dieser Dokumentationspflege wurde der vorhandene TAP-Bericht gelesen: 43 Tests bestanden, keine fehlgeschlagen, übersprungen oder abgebrochen. Die Tests wurden in diesem Auftrag nicht erneut ausgeführt. Die neue Reihe ergänzt die bisherigen Java-, Streaming-, A11y- und Performance-Prüfungen; sie ersetzt keine Backend-/Integrations- oder KI-Evaluation.
 
 **Grenzen der Nachweise:** Die Tests betreffen die Frontend-Demo mit Mock-Fällen. Netzfehler, Rate Limits und Zugriffsverweigerungen werden teilweise im Browser simuliert und belegen keine produktive Autorisierung. Mehrere Polling-Tests beschleunigen die Browseruhr; bestehende Tenant-Tests prüfen auch echte 20-Sekunden-Intervalle. Tab-Sichtbarkeit wird teilweise im Headless-Browser simuliert. Responsive Prüfungen erfolgen bei 390 und 1440 Pixeln in Edge/Chromium. Reale KI-, Mail-, Datenbank- und Camunda-Integrationen bleiben separat zu testen.
+
+### Korrektur D02 – kurze Abschlussbestätigung
+
+Am 13.10.2026 bestätigt: Die Abschlussbestätigung lautet «Fall wirklich abschliessen?» mit «Abschliessen» und «Abbrechen», ohne zusätzlichen Hilfstext. Der ältere Wortlaut wurde in [FALL-07](../specifications/fallverwaltung.md#fall-07-abschluss-und-zeit-danach) und im Abschlussabschnitt von [UI3](../frontend/ansicht-03-mitarbeiter-falldetail.md) an die bestätigte Gestaltung und das bestehende Template angeglichen. Die fachliche Sperre für neue Nachrichten und interne Memos bis zur Wiedereröffnung bleibt unverändert nach [KOM-04](../specifications/fallkommunikation.md#kom-04-nachrichtensperre-nach-fallabschluss) bestehen. Nur Dokumentation geändert; kein neuer Testlauf.
+
+### Korrektur D03 – Anordnung nachgeladener Verlaufseinträge
+
+Am 13.10.2026 bestätigt: [UI3 FD-AK-12](../frontend/ansicht-03-mitarbeiter-falldetail.md) folgt nun derselben Anordnung wie Abschnitt 3 und FD-AK-22: Mieternachrichten links, Verwaltungs- und Systemnachrichten sowie Ereignisse rechts. Absenderrolle und Sichtbarkeit bleiben erkennbar. Die Regel gilt beim ersten Laden und beim Nachladen. Die widersprechende Linksanordnung für Systemnachrichten wurde korrigiert. Nur Dokumentation geändert; kein neuer Testlauf.
+
+### Korrektur D04 – Startposition des Mitarbeiterverlaufs
+
+Am 13.10.2026 bestätigt: [UI3](../frontend/ansicht-03-mitarbeiter-falldetail.md) öffnet den Verlauf bei den neuesten Einträgen am Ende. Automatische Aktualisierung erhält beim Lesen älterer Einträge die Leseposition; wer bereits unten ist, folgt neuen Einträgen. Die bisher als offen bezeichnete Erstposition ist damit fachlich festgelegt und entspricht der bestehenden Implementierung. Nur Dokumentation geändert; kein neuer Testlauf.
+
+### Korrektur D05 – Umsetzungsstand und kompakte Falltitel
+
+Am 13.10.2026 bestätigt: Die aktuellen Standangaben in UI1–UI3 und UC-001–UC-004 unterscheiden die implementierte lokale Frontend-Demo vom weiterhin geplanten produktiven Gesamtprozess. Der vollständige HTTP-Zielvertrag wird nicht pauschal als bereits implementiert ausgewiesen. Historische Prüfprotokolle bleiben erhalten. Die Gestaltungstabellen unterscheiden allgemeine Seitentitel (30 px, unter 768 px 24 px) von den kompakten Falltiteln in UI1/UI3 (24 px, unter 768 px 22 px). Für UI2 gilt bei Fensterhöhe bis 600 px die bestehende Sonderregel von 20 px. Die Falltitelwerte ersetzen ausdrücklich die ältere pauschale Angabe. Grundlage ist das vorhandene CSS; keine Design- oder Codeänderung und kein neuer Testlauf.
