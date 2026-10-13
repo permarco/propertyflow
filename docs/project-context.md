@@ -38,7 +38,7 @@ abgeschlossen werden. Verpflichtende menschliche Prüfungen bleiben bestehen.
 
 Details:
 
-- `docs/vision.md`
+- [docs/vision.md](vision.md)
 
 ## 2. Randbedingungen
 
@@ -86,13 +86,13 @@ Wesentliche externe Systeme sind:
 Die detaillierte System- und Containerabgrenzung ist in den C4-Diagrammen
 dokumentiert:
 
-- `architecture/c4-context.md`
-- `docs/architecture/c4-container.md`
+- [architecture/c4-context.md](architecture/c4-context.md)
+- [docs/architecture/c4-container.md](architecture/c4-container.md)
 
 Daten- und Vertrauensgrenzen werden zusätzlich in der Evaluations- und
 Sicherheitsbasis konkretisiert:
 
-- `docs/evaluation/evaluationsgrundlage.md`
+- [docs/evaluation/evaluationsgrundlage.md](evaluation/evaluationsgrundlage.md)
 
 ## 4. Lösungsstrategie
 
@@ -115,9 +115,9 @@ Die wichtigsten Architekturentscheidungen der Lösungsstrategie sind:
 
 Details:
 
-- `docs/architecture/adr/ADR-001-grundarchitektur.md`
-- `docs/architecture/adr/ADR-002-camunda8-workflow-orchestrierung.md`
-- `docs/architecture/adr/ADR-003-praesentationsschicht.md`
+- [docs/architecture/adr/ADR-001-grundarchitektur.md](architecture/adr/ADR-001-grundarchitektur.md)
+- [docs/architecture/adr/ADR-002-camunda8-workflow-orchestrierung.md](architecture/adr/ADR-002-camunda8-workflow-orchestrierung.md)
+- [docs/architecture/adr/ADR-003-praesentationsschicht.md](architecture/adr/ADR-003-praesentationsschicht.md)
 - [ADR-004: Tokenbasierter Mieterzugriff](architecture/adr/ADR-004-tokenbasierter-mieterzugriff.md)
 
 ## 5. Bausteinsicht und Modulgrenzen
@@ -150,7 +150,7 @@ Es gelten folgende Strukturregeln:
 
 Details:
 
-- `architecture/module-structure.md`
+- [architecture/module-structure.md](architecture/module-structure.md)
 
 ## 6. Querschnittliche Konzepte
 
@@ -177,7 +177,7 @@ Details:
   [FALL-10](specifications/fallverwaltung.md#fall-10-automatisierung-und-menschliche-freigabe).
   Offener Prüfbedarf darf nicht durch einen Systemabschluss umgangen werden.
 - Sicherheits- und Vertrauensgrenzen werden in
-  `docs/evaluation/evaluationsgrundlage.md` dokumentiert.
+  [docs/evaluation/evaluationsgrundlage.md](evaluation/evaluationsgrundlage.md) dokumentiert.
 
 ### 6.3 Persistenz
 
@@ -249,7 +249,7 @@ Details:
 
 Details:
 
-- `docs/architecture/adr/ADR-003-praesentationsschicht.md`
+- [docs/architecture/adr/ADR-003-praesentationsschicht.md](architecture/adr/ADR-003-praesentationsschicht.md)
 
 ### 6.6 Testbarkeit und Fehlerverhalten
 
@@ -399,7 +399,7 @@ die Immobilienbewirtschaftung schnell und verständlich erkennbar sein.
 Technische KI-Details stehen dabei nicht im Vordergrund.
 
 Die vollständigen Prüfkriterien und Begründungen sind in
-`docs/architecture/adr/ADR-001-grundarchitektur.md` dokumentiert.
+[docs/architecture/adr/ADR-001-grundarchitektur.md](architecture/adr/ADR-001-grundarchitektur.md) dokumentiert.
 
 ## 8. Architekturentscheidungen
 
@@ -436,12 +436,12 @@ Bei generierten oder vorgeschlagenen Änderungen gilt:
 
 Repository-weite KI-Anweisungen:
 
-- `.github/copilot-instructions.md`
+- [.github/copilot-instructions.md](../.github/copilot-instructions.md)
 
 ## 10. Evaluation und Pflege
 
 Die initiale Evaluations- und Sicherheitsbasis für Block 1 ist unter
-`docs/evaluation/evaluationsgrundlage.md` versioniert.
+[docs/evaluation/evaluationsgrundlage.md](evaluation/evaluationsgrundlage.md) versioniert.
 
 Sie definiert repräsentative Fälle, erwartete Eigenschaften, Guardrails und
 Human-in-the-Loop-Grenzen für spätere KI- und Implementierungsprüfungen.
@@ -456,3 +456,7 @@ Deployment und Observability.
 Detailinformationen sollen nicht unnötig dupliziert werden. Wo eine
 versionierte Detailquelle existiert, verweist dieses Dokument auf diese
 Quelle.
+
+## Nachweise der lokalen Frontend-Demo
+
+Der aktuelle Nachweisstand ist im [Block-2-Prüfprotokoll](ai-usage/block2-oberflaechen-pruefung.md) dokumentiert: [Unit-Tests, Veto und Mutation](ai-usage/block2-oberflaechen-pruefung.md#ergänzung-vom-12102026-generierte-unit-tests-und-mutation) sowie [Browser, Streaming-Sicherheit, A11y und Performance](ai-usage/block2-oberflaechen-pruefung.md#ergänzung-browser-qualitätsnachweis-und-präsentationsentscheidung). Die dort genannten Messungen gelten für die lokale Demo; produktive Integrationen und vollständige Sicherheits-/Barrierefreiheitsprüfungen bleiben davon abgegrenzt.

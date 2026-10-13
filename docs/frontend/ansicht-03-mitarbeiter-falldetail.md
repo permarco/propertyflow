@@ -435,10 +435,19 @@ Folgende Punkte gehören zur anschliessenden Prozess- und technischen Ausarbeitu
 - E-Mail-Vorlagen mit klar erkennbarem Antwortbedarf; die bereits zentral offene Behandlung der getrennten Benachrichtigungspflichten von Abschlussnachricht und Abschluss.
 - Darstellungsdetails wie Popup-Verhalten bei mehreren Aktualisierungen, Fokusführung, genaue Scrollhöhe sowie konkrete Grafikdateien der festgelegten Icons. Das Verhalten bei manueller Textbox-Vergrösserung ist in Abschnitt 2 bestätigt; unter 1200 px gilt die bestätigte automatische Textboxhöhe von 96–240 px.
 
-Die Erstposition des Verlaufs beim Öffnen sowie das Zurücksetzen einer vorübergehend nicht verfügbaren Antwortbedarfs-Auswahl beim Umschalten auf «Intern» wurden nicht gesondert bestätigt und bleiben als kleine Bedienungsdetails für die spätere Ausarbeitung kenntlich. Die bestehenden Regeln zu Textbestand, externem Antwortbedarf und Zurücksetzen nach erfolgreicher Speicherung gelten verbindlich.
+Die Erstposition des Verlaufs beim Öffnen bleibt gesondert zu konkretisieren. Das Zurücksetzen von «Mieterantwort erforderlich» beim Einschalten von «Intern» ist in [Abschnitt 3](#3-fachlich-verbindliche-inhalte) bestätigt. Die bestehenden Regeln zu Textbestand, externem Antwortbedarf und Zurücksetzen nach erfolgreicher Speicherung gelten verbindlich.
 
-Es wurden weder Anwendungscode noch stilistische JPG-Entwürfe erstellt. Technische Verträge und visuelle Ausgestaltung folgen separat.
+JPG-Entwürfe und eine lokale Frontend-Demo liegen vor. Produktive Service-, Speicher- und Integrationsverträge bleiben separat auszuarbeiten.
 
-**Präzisierung am 12.10.2026:** Dringlichkeitsänderungen im Verlauf zeigen wie in der JPG-Vorlage einen farbigen Kreis für die alte Stufe, einen Pfeil und einen Kreis für die neue Stufe. Blau = noch nicht bewertet, Rot = kritisch, Orange = hoch, Gelb = normal, Grün = niedrig. Der ausgeschriebene Änderungstext bleibt erhalten; die Kreise sind ergänzend und für Screenreader dekorativ. Die gemeinsame Verlaufsdarstellung gilt auch für freigegebene Dringlichkeitsereignisse in UI1.
+## 9. Ergänzungen zur Darstellung vom 12.10.2026
 
-**Kompakter Kopf und Speicherrückmeldung – 12.10.2026:** Case-ID und Falltitel stehen nebeneinander auf gemeinsamer Grundlinie; lange Titel dürfen umbrechen. Erfolgreiche Speicherrückmeldungen erscheinen als platzsparendes Toast-Popup unten rechts und verschwinden nach fünf Sekunden. Laufende Speicherung und Fehler werden ebenfalls dort angezeigt; Fehler bleiben bis zur nächsten Rückmeldung sichtbar. Die Rückmeldung ist per Live-Region zugänglich und belegt keinen Platz zwischen Kopf und Verlauf.
+### Farbkreise im Verlauf
+
+Gemäss [DRING-04](../specifications/dringlichkeitsbewertung.md#dring-04-farbkennzeichnung) und [DRING-07](../specifications/dringlichkeitsbewertung.md#dring-07-änderungshistorie-und-mietertransparenz): Dringlichkeitsänderungen im Verlauf zeigen wie in der JPG-Vorlage einen farbigen Kreis für die alte Stufe, einen Pfeil und einen Kreis für die neue Stufe. Blau = noch nicht bewertet, Rot = kritisch, Orange = hoch, Gelb = normal, Grün = niedrig. Der ausgeschriebene Änderungstext bleibt erhalten; die Kreise sind ergänzend und für Screenreader dekorativ. Die gemeinsame Verlaufsdarstellung gilt auch für freigegebene Dringlichkeitsereignisse in UI1.
+
+### Kompakter Kopf und Speicherrückmeldung
+ Case-ID und Falltitel stehen nebeneinander auf gemeinsamer Grundlinie; lange Titel dürfen umbrechen. Erfolgreiche Speicherrückmeldungen erscheinen als platzsparendes Toast-Popup unten rechts und verschwinden nach fünf Sekunden. Laufende Speicherung und Fehler werden ebenfalls dort angezeigt; Fehler bleiben bis zur nächsten Rückmeldung sichtbar. Die Rückmeldung ist per Live-Region zugänglich und belegt keinen Platz zwischen Kopf und Verlauf.
+
+## Implementierungs- und Qualitätsnachweise
+
+Die lokale Demo und ihre Startanleitung stehen in der [README](../../README.md#frontend-demo-ohne-datenbank). Das [Block-2-Prüfprotokoll](../ai-usage/block2-oberflaechen-pruefung.md#ergänzung-browser-qualitätsnachweis-und-präsentationsentscheidung) enthält ausgeführte Browser-, Streaming-, A11y- und Performance-Prüfungen einschliesslich Grenzen. Fachliche und produktive Prüfziele bleiben in der [Evaluationsgrundlage](../evaluation/evaluationsgrundlage.md) massgebend; die Demo-Nachweise ersetzen keine Produktivfreigabe.

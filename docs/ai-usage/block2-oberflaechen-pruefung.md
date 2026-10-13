@@ -2,9 +2,9 @@
 
 ## Zweck und Stand
 
-Dieses Dokument hält die KI-Unterstützung bei der Spezifikation der PropertyFlow-Oberflächen und deren Dokumentprüfung fest. Die fachlichen Screens sind noch nicht implementiert. Es werden keine ausgeführten Anwendungs-, Sicherheits-, A11y- oder Performance-Tests behauptet.
+Dieses Dokument hält Spezifikation, Dokumentprüfung und die anschliessenden Nachweise der lokalen Frontend-Demo fest. Die datierten Abschnitte bis 10.10.2026 beschreiben den damaligen Spezifikationsstand, nicht den heutigen Implementierungsstand. Die [Unit-Tests und Veto-Notiz](#ergänzung-vom-12102026-generierte-unit-tests-und-mutation) sowie die [Browser- und Performance-Nachweise](#ergänzung-browser-qualitätsnachweis-und-präsentationsentscheidung) dokumentieren die später ausgeführten Prüfungen und ihre Grenzen.
 
-**Stand:** 10.10.2026
+**Stand:** Nachweise vom 12.10.2026; Dokumentverweise geprüft am 13.10.2026
 
 ## Auftrag und Grundlagen
 
@@ -192,3 +192,286 @@ Der verbleibende Reviewpunkt 10 wurde anhand der bestätigten Regeln bereinigt: 
 Die Prüfrunde der vereinbarten fachlichen UI-Regeln ist damit abgeschlossen. Weiterhin offen bleiben die bereits gekennzeichneten Prozess-, Service- und Speicherverträge, konkrete LLM-Logik, technische Zugangsabsicherung und individuelle Mitarbeiterzuordnung, Parameter wie Wiedervorlage-Uhrzeit sowie visuelle und kleinere Bedienungsdetails. Diese Punkte sind keine abgeschlossenen Implementierungen oder Nachweise. Es wurden keine neuen Fachfunktionen beschlossen und kein Anwendungscode implementiert.
 
 Die abschliessende Dokumentprüfung umfasst 25 Markdown-Dateien mit 295 lokalen Verweisen einschliesslich Abschnittsankern; alle Ziele wurden gefunden und Codeblöcke sind geschlossen. Die Prüfkriterien-IDs der zentralen Regeln und UI-Spezifikationen wurden auf vollständige Folgen geprüft. Die Leerzeichenprüfung der Änderungen ist erfolgreich. Dies ersetzt keine Anwendungs-, Sicherheits-, A11y- oder Performance-Tests; diese folgen mit der Umsetzung.
+
+## Ergänzung vom 12.10.2026: Generierte Unit-Tests und Mutation
+
+Die früheren Aussagen zum reinen Spezifikationsstand beziehen sich auf die
+Prüfrunde vom 10.10.2026. Inzwischen existiert eine lokale Frontend-Demo.
+Der folgende Nachweis betrifft ausschliesslich diese Demo mit Testdaten,
+nicht Datenbank-, Camunda- oder LLM-Integrationen.
+
+### Auftrag und Kontext
+
+Codex erhielt AGENTS.md, die Copilot-Instruktionen, Projektkontext, Vision,
+C4-Sichten, Modulstruktur und ADR-001 bis ADR-004 sowie die relevanten Regeln
+aus FALL-06, KOM-01/KOM-02 und UI3/FD-AK-21. Der begrenzte Prüfauftrag war
+`DemoCases.change`: manuelle Statusänderungen mit optionaler interner
+Begründung, ungültige Übergänge, Versionskonflikte und wiederholte Aufrufe.
+Die Geschäftslogik sollte nicht vorsorglich verändert werden.
+
+Die neue Klasse [DemoCasesChangeTest](../../src/test/java/com/pertegato/propertyflow/caseprocessing/demo/DemoCasesChangeTest.java)
+enthielt zunächst sechs Testmethoden mit insgesamt zehn Testausführungen;
+nach dem unten dokumentierten Veto verbleiben fünf Methoden mit neun
+Testausführungen. Sie verwendet
+pro Test eine echte DemoCases-Instanz mit lokalen Beispieldaten, keine
+gemockten Methoden und keinen Spring-Kontext. Die Prüfungen umfassen den
+Änderungsnachweis ohne separates Memo, die Trennung der internen Begründung
+von Mieterdaten, unveränderte Fallstände bei Ablehnung und Konflikt sowie
+Wiederholungen ohne Mehrfachwirkung oder Rücknahme späterer Entscheidungen.
+
+### Ausgeführter Mutationsnachweis
+
+Bewusst wurde vorübergehend die Entfernung interner Begründungen aus der
+Mietersicht ausgeschaltet. Der gezielte Fehler lag in der Ausgabeprojektion,
+über die der Test die Sichtbarkeit einer durch `change` gespeicherten
+Begründung prüft:
+
+```diff
+- .map(e -> tenant ? new Entry(e.id(), e.role(), e.text(), e.at(), false, e.event(), e.answerRequired(), "") : e).toList());
++ .map(e -> tenant ? new Entry(e.id(), e.role(), e.text(), e.at(), false, e.event(), e.answerRequired(), e.reason()) : e).toList());
+```
+
+| Lauf | Befehl | Ergebnis |
+|---|---|---|
+| Original | `.\mvnw.cmd -q -Dtest=DemoCasesChangeTest test` | 10 Tests, 0 Fehler |
+| Mutation | gleicher Befehl | 10 Tests, 1 Assertion-Fehlschlag, Prozess-Exitcode 1 |
+| Wiederhergestellt | `.\mvnw.cmd -q '-Dtest=DemoCasesTest,DemoCasesChangeTest' test` | 16 Tests, 0 Fehler, 0 übersprungen |
+| Vorhandenes Streaming-Modul | `node --test src/test/js/mock-stream.test.mjs` | 4 Tests erfolgreich |
+
+Die Mutation wurde durch
+`manualStatusChangeStoresOneEventWithOptionalReason(String)[2]` erkannt:
+`expected: <> but was: <Intern: weiteres Vorgehen geprüft>`.
+Die Assertion befindet sich zum Prüfzeitpunkt in Zeile 44.
+Der Produktionsquelltext wurde im Finally-Block bytegenau wiederhergestellt;
+der anschliessende Git-Diff für DemoCases.java war leer. Lokale Rohprotokolle
+liegen unter `target/change-mutation-evidence/` und können durch einen Clean-Build
+entfernt werden. Obige Resultate halten den ausgeführten Nachweis dauerhaft fest.
+
+Dies ist ein erfolgreicher Mutationsnachweis, kein Veto gegen einen Test.
+Die Streaming-Tests prüfen den lokalen Generator und seine Abbruch-/Fehlerpfade;
+sie sind kein Browsernachweis für sichere DOM-Ausgabe oder Barrierefreiheit.
+
+### Veto-Notiz: zusätzliche Anforderung aus KI-Test verworfen
+
+**Entscheidung von Marco:** «Test entfernen: keine zusätzliche Anforderung
+festschreiben». Die Entscheidung erfolgte nach Vorstellung des konkreten
+KI-Vorschlags und seiner fachlichen Begründung; Codex setzte sie anschliessend um.
+
+Der generierte Test `rejectedAttemptDoesNotConsumeOperationId` verlangte,
+dass nach einer abgelehnten Statusänderung eine korrigierte Anfrage mit
+derselben Vorgangskennung erfolgreich sein muss. Der Test bestand gegen
+die aktuelle Demo-Implementierung. Dies allein macht seine Erwartung aber
+nicht zu einer verbindlichen fachlichen Anforderung: FALL-06 verlangt,
+dass die Wiederholung derselben erfolgreichen Aktion keinen doppelten
+Änderungsnachweis erzeugt. Die Wiederverwendung einer Kennung mit einem
+geänderten Inhalt nach Ablehnung ist ein anderer, nicht ausdrücklich
+festgelegter technischer Vertrag.
+
+Deshalb wurde die vollständige Testmethode entfernt. Andernfalls hätte
+der KI-Vorschlag zufällig vorhandenes Implementierungsverhalten als
+Anforderung festgeschrieben und spätere zulässige Änderungen am Umgang
+mit Vorgangskennungen unnötig eingeschränkt. Es wurde weder beschlossen,
+diese Wiederverwendung künftig zu verbieten, noch die Geschäftslogik
+verändert. Die Entscheidung begrenzt ausschliesslich den Testvertrag.
+
+Die wichtigen fachlichen Prüfungen bleiben bestehen: Ungültige Änderungen
+lassen den Fall einschliesslich Verlauf und Version unverändert;
+Wiederholungen erfolgreicher Änderungen erzeugen keine Mehrfachwirkung
+und überschreiben auch keine spätere Mitarbeiterentscheidung. Die frühere
+Rückfrage zur Eignung statischer Demo-Daten führte dagegen zu keinem Veto,
+weil der Ausbildungsauftrag diese ausdrücklich zulässt.
+
+Der folgende gekürzte Diff zeigt den entfernten Kern der Testmethode.
+Im Nachher-Stand entfällt die gesamte Methode ersatzlos; der separate
+Test für identische erfolgreiche Wiederholungen bleibt unverändert:
+
+```diff
+- void rejectedAttemptDoesNotConsumeOperationId() {
+-     // Nach Ablehnung von "Unbekannt" mit "corrected-attempt":
+-     cases.change(ID, "status", "In Bearbeitung", "Korrigiert", before.version(), "corrected-attempt");
+-     var after = cases.get(ID);
+-     assertEquals("In Bearbeitung", after.status());
+-     assertEquals(before.version() + 1, after.version());
+-     assertEquals(before.entries().size() + 1, after.entries().size());
+-     assertEquals("Korrigiert", after.entries().getLast().reason());
+- }
+```
+
+Die gezielte Fehlereinspeisung oben ist davon getrennt: Sie belegt die
+Wirksamkeit eines beibehaltenen Tests und wird nicht als menschliches Veto
+ausgegeben. Die dortigen Zahlen dokumentieren den Lauf vor der Entfernung.
+
+**Kontrolllauf nach Umsetzung des Vetos:**
+`.\mvnw.cmd -q '-Dtest=DemoCasesTest,DemoCasesChangeTest' test`
+endete mit Exitcode 0: neun neue und sechs bestehende Testausführungen,
+insgesamt **15 erfolgreich, keine Fehler, keine übersprungenen Tests**.
+`git diff --check` meldete keine Whitespace-Fehler; DemoCases.java blieb
+unverändert. Damit sind die generierten Unit-Tests, die tatsächliche
+Veto-Entscheidung mit Diff und der Mutationsnachweis dokumentiert.
+
+### Abgleich mit dem vollständigen Block-2-Auftrag
+
+Der folgende Abgleich entstand vor der anschliessenden Qualitätsprüfung;
+die danach erledigten Punkte sind im nächsten Abschnitt mit Ergebnissen belegt.
+
+- Drei Screen-Spezifikationen und visuelle Entwürfe sind unter `docs/frontend/`
+  vorhanden; README beschreibt den Start der lokalen Demo und den lokalen LLM-Mock.
+- Mitarbeiterliste und Falldetail bilden die Master-Detail-Struktur.
+  Ein erneuter interaktiver Browser-Abnahmetest wurde in dieser Prüfrunde nicht ausgeführt.
+- ADR-003 entscheidet SSR mit gezieltem JavaScript und nennt Qualitätsziele
+  und Alternativen. Ein ausdrücklicher Bezug auf ein Gesetz der Softwarearchitektur
+  und eine konkrete Begründung der Framework-Wahl fehlen dort noch.
+- Messbare A11y- und Performance-Kriterien samt ausgeführten Messungen fehlen
+  als Abgabenachweis weiterhin. Die Screen-Dokumente führen sie als offen.
+  Der hier geprüfte Ausschluss interner Begründungen ersetzt auch keinen
+  Browser-Sicherheitsnachweis für die Streaming-Ausgabe.
+
+## Ergänzung: Browser-Qualitätsnachweis und Präsentationsentscheidung
+
+### Drei Hauptbildschirme und Rendering
+
+Die verlinkten Spezifikationen enthalten die Wireframes; zusätzlich liegen
+Desktop-, Tablet- und Mobilentwürfe im Verzeichnis `docs/frontend/design/`.
+
+| Bildschirm | Render-Strategie und Begründung |
+|---|---|
+| [UI1: Mieteransicht einschliesslich Erfassung](../frontend/ansicht-01-mieter-fallansicht.md) | SSR mit Thymeleaf liefert Formular und gespeicherten Verlauf unmittelbar als HTML; gezieltes JavaScript ergänzt Sendezustand und Aktualisierungen. |
+| [UI2: Mitarbeiterliste](../frontend/ansicht-02-mitarbeiter-falluebersicht.md) | SSR mit gezieltem JavaScript hält Suche, Filter und Seitennavigation serverseitig konsistent und aktualisiert die Liste ohne vollständigen Seitenwechsel. |
+| [UI3: Mitarbeiterdetail](../frontend/ansicht-03-mitarbeiter-falldetail.md) | SSR liefert Falldaten und Verlauf; Vanilla JavaScript ergänzt den lokalen LLM-Stream mit Status, Abbruch, Fehlerpfad und sicherer Textausgabe. |
+
+UI2 und UI3 bilden die Master-Detail-Struktur. Die lokale Demo arbeitet mit
+56 fiktiven Fällen im Arbeitsspeicher ohne Datenbank oder echte LLM-Verbindung.
+Die Framework-Begründung, der Trade-off nach Richards/Ford und die Einordnung
+in ADR-001 bis ADR-004 sind in [ADR-003](../architecture/adr/ADR-003-praesentationsschicht.md)
+ergänzt. Es wurde keine neue Architekturentscheidung eingeführt.
+
+### Vor der Messung festgelegte Kriterien
+
+| Bereich | Messbares Kriterium | Methode |
+|---|---|---|
+| Barrierefreiheit | 0 serious/critical Verstösse in den automatisiert prüfbaren WCAG-2.0/2.1-A/AA-Regeln auf den vier Hauptansichten sowie UI3 mit sichtbarem Stream; Eingabe, Stream-Start und Abbruch per Tab/Enter erreichbar | axe-core im echten Browser und automatisierte Tastatureingaben mit Playwright |
+| Frontend-Sicherheit | HTML-Testausgabe erzeugt 0 Kindelemente im Ausgabefeld und 0 Alert-Dialoge; `<img …>` und `<script>…` bleiben lesbarer Text | Lokalen Mock-Modus `unsafe` im UI ausführen und DOM/Text sowie Dialogereignisse prüfen |
+| Performance | Median des Lighthouse-Performancewerts aus drei Läufen je Ansicht mindestens 90 | Lokales Desktop-Profil ohne künstliche CPU-/Netzdrosselung, 1440 × 1000, warmer Server, je Lauf zurückgesetzter Browser-Speicher |
+
+Die Kriterien sind Nachweisgrenzen für die Ausbildungs-Demo, keine neu
+beschlossenen produktiven SLA oder vollständige WCAG-Konformitätsaussage.
+
+### Browser- und Streaming-Ergebnis
+
+Geprüft mit headless Microsoft Edge 155.0.4283.45, Playwright 1.64.0 und
+axe-core/Playwright 4.13.0 gegen eine eigene `frontend-demo`-Instanz auf
+`http://127.0.0.1:8082`, Windows, Java 27. Die bereits laufende Anwendung auf
+8081 wurde nicht beendet oder verändert. Ergebnis des Browserlaufs vom
+12.10.2026, 23:39 Uhr Europe/Zurich:
+
+- Erfassung, aktive Mieteransicht, Mitarbeiterliste, Mitarbeiterdetail und
+  Mitarbeiterdetail mit abgeschlossenem Stream: jeweils **0 axe-Verstösse**
+  der gewählten Regeln, auch keine serious/critical-Verstösse.
+- Nachrichteneingabe, Start und Abbruch wurden über tatsächliche
+  Tab-Navigation und Enter erreicht. Nach Abbruch blieb die Ausgabe über
+  weitere 1000 ms unverändert und Übernahme war gesperrt.
+- Im simulierten Fehlerzustand war die unvollständige Ausgabe nicht
+  übernehmbar; ein anschliessender neuer Versuch wurde erfolgreich beendet.
+- HTML-Testausgabe blieb Text: **0 DOM-Kindelemente, 0 Alert-Dialoge**;
+  **0 unbehandelte JavaScript-Seitenfehler**. Der Stream-Status hat eine
+  `aria-live="polite"`-Region. Es wurde keine Nachricht veröffentlicht.
+
+**Grenzen:** axe meldet zusätzlich manuell zu prüfende Ergebnisse
+(`incomplete`) für Farbkontrast und in Detailansichten für
+`aria-prohibited-attr`. Diese gelten nicht als automatisch bestätigte
+Verstösse, sind aber auch nicht als vollständig geprüft auszugeben.
+Die gezielte Tastaturprüfung ersetzt keinen vollständigen Screenreader-Test.
+Der HTML-Test deckt den lokalen Streaming-Ausgabepfad ab, nicht jeden
+möglichen XSS-Pfad der Anwendung oder externe LLM-Integrationen.
+
+Die ausführbaren Prüfungen liegen in
+[frontend-quality.mjs](../../src/test/browser/frontend-quality.mjs) und
+[frontend-performance.mjs](../../src/test/browser/frontend-performance.mjs).
+Sie ändern keine fachlichen Falldaten. Rohberichte und Screenshot werden
+unter `target/frontend-quality/` erzeugt.
+
+Für die Abgabe sind der [Browserbericht](../evaluation/evidence/block2/browser.json)
+und ein [Screenshot der sicheren Textausgabe](../evaluation/evidence/block2/stream-safe-text.png)
+dauerhaft abgelegt. Werkzeugversionen und transitive Abhängigkeiten stehen in
+[tools-package.json](../../src/test/browser/tools-package.json) und [tools-package-lock.json](../../src/test/browser/tools-package-lock.json).
+
+### Reproduktion (PowerShell ab Repository-Wurzel)
+
+Voraussetzungen: Projekt-JDK, Node.js mit npm, installierter Microsoft Edge.
+Die Werkzeuge sind reine Testabhängigkeiten unter `target/`, keine neuen
+Frontend-Laufzeitabhängigkeiten. Installation und Browserprozesse benötigen
+Netzwerk-/Prozessrechte der lokalen Entwicklungsumgebung.
+
+```powershell
+New-Item -ItemType Directory -Force target/frontend-tools | Out-Null
+Copy-Item src/test/browser/tools-package.json target/frontend-tools/package.json
+Copy-Item src/test/browser/tools-package-lock.json target/frontend-tools/package-lock.json
+npm ci --prefix target/frontend-tools --no-audit --no-fund
+
+# In einem eigenen Terminal starten:
+.\mvnw.cmd spring-boot:run '-Dspring-boot.run.profiles=frontend-demo' '-Dspring-boot.run.arguments=--server.port=8082'
+
+# Nach erfolgreichem Start in einem zweiten Terminal:
+node src/test/browser/frontend-quality.mjs
+node src/test/browser/frontend-performance.mjs
+```
+
+Bei vertrauenswürdigem Unternehmenszertifikat war hier zusätzlich
+`$env:NODE_OPTIONS='--use-system-ca'` für npm erforderlich. TLS-Prüfungen
+wurden nicht deaktiviert. Beide Skripte beenden sich bei verletztem Kriterium
+mit Exitcode 1 und schreiben ihre Berichte vor dem Schliessen des Browsers.
+`DEMO_URL` kann eine andere lokale Demo-Adresse vorgeben; für Lighthouse
+kann `CHROME_PATH` den Browserpfad überschreiben. Die Skripte sind nur für
+die eigene lokale Demo vorgesehen.
+
+### Vollständige Java-Testsuite
+
+Zusätzlich zu den 15 Unit-Testausführungen wurde die vollständige Suite
+einschliesslich drei HTTP-/Rendering-Tests und des Anwendungskontexttests
+ausgeführt: **19 Tests, 0 Fehler, 0 übersprungen**, Exitcode 0.
+Die Demo-Rendering-Tests verwenden keine Datenbank; der separate bestehende
+Anwendungskontexttest verwendet das Testprofil mit einer H2-In-Memory-Datenbank.
+
+Der erste Sandbox-Lauf blieb beim dynamischen Anhängen des Mockito-Agenten
+stehen und wurde beendet. Erfolgreich war der erneute Lauf mit explizitem
+Agenten und lokalen Socket-Rechten (kein Build-/Produktionscode geändert):
+
+```powershell
+.\mvnw.cmd -q test '-DargLine=-Djdk.net.unixdomain.tmpdir=C:\Dev\propertyflow\target -javaagent:C:\Users\MarcoPertegato\.m2\repository\org\mockito\mockito-core\5.23.0\mockito-core-5.23.0.jar'
+```
+
+Die absoluten Pfade sind protokollierte Werte dieser Entwicklungsumgebung
+und müssen auf anderen Rechnern angepasst werden.
+
+### Performance-Ergebnis
+
+Lighthouse 13.5.0, drei Läufe je Route am 12.10.2026 unter dem oben
+festgelegten lokalen Desktop-Profil; Prozess-Exitcode 0.
+Die Werte sind im [Messbericht](../evaluation/evidence/block2/performance.json)
+mit Einzelmessungen erhalten. Ausführliche Lighthouse-Rohberichte liegen
+lokal unter `target/frontend-quality/lighthouse-*.json`.
+
+| Ansicht | Performancewerte der drei Läufe | Median | Median LCP |
+|---|---|---|---|
+| Erfassung | 100 / 100 / 100 | 100 | 73,3 ms |
+| Aktive Mieteransicht | 100 / 100 / 100 | 100 | 74,2 ms |
+| Mitarbeiterliste | 100 / 100 / 100 | 100 | 79,7 ms |
+| Mitarbeiterdetail | 100 / 100 / 100 | 100 | 101,6 ms |
+
+Das Ziel **Median ≥ 90** wurde auf allen vier Ansichten erreicht.
+Lighthouse meldete in allen zwölf Läufen CLS 0 und Total Blocking Time 0 ms.
+Der erste Erfassungslauf lud 36.098 Byte, weitere Erfassungsläufe 31.700 Byte;
+die gemessenen Gesamtgrössen der übrigen Ansichten lagen zwischen 33.486
+und 64.766 Byte. Messwerte können zwischen Rechnern und Läufen variieren.
+
+**Einordnung:** Lokaler Loopback, statische Daten, warmer Server und keine
+künstliche CPU-/Netzdrosselung begünstigen diese Werte. Die Java-Testsuite
+lief während eines Teils der Messung parallel. Es handelt sich weder um
+einen kontrollierten Hardware-Benchmark noch um einen Mobilfunk-, Last-
+oder Produktivnachweis. Die dokumentierten Ergebnisse gelten ausschliesslich
+für dieses Desktop-Demo-Profil; es wird kein allgemeines Ladezeitversprechen
+abgeleitet.
+
+## Dokumentprüfung vom 13.10.2026
+
+Alle 28 Markdown-Dokumente des Repositorys (ohne Build-, IDE- und Abhängigkeitsverzeichnisse) wurden auf lokale Markdown-Datei-/Bildlinks und Abschnittsanker geprüft. Ergebnis nach Korrektur: 412 lokale Verweise, keine fehlenden Ziele oder Abschnittsanker; jedes Markdown-Dokument besitzt mindestens einen eingehenden Verweis. Nicht klickbare Dokumentpfade wurden dort in Links umgewandelt, wo das Ziel eindeutig ist. README, Projektkontext, Screens und Evaluationsgrundlage verweisen nun auf die [Unit-Test-/Veto-Nachweise](#ergänzung-vom-12102026-generierte-unit-tests-und-mutation) und die [Browser-/Performance-Nachweise](#ergänzung-browser-qualitätsnachweis-und-präsentationsentscheidung). Die [UI3-Ergänzungen](../frontend/ansicht-03-mitarbeiter-falldetail.md#9-ergänzungen-zur-darstellung-vom-12102026) sind über eigene Abschnittsanker erreichbar. Veraltete aktuelle Standangaben wurden korrigiert; datierte historische Befunde bleiben erhalten. Externe Webseiten wurden nicht auf Verfügbarkeit geprüft; diese Dokumentprüfung ist kein neuer Anwendungstest oder vollständiger fachlicher Konformitätsnachweis.

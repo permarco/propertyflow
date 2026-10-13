@@ -1,0 +1,140 @@
+{
+  "at": "2026-10-12T21:40:05.314Z",
+  "base": "http://127.0.0.1:8082",
+  "profile": "desktop, provided throttling (no artificial CPU/network slowdown), 1440x1000, fresh storage each run, warm server",
+  "runs": [
+    {
+      "route": "/mieter/fall",
+      "run": 1,
+      "version": "13.5.0",
+      "score": 100,
+      "fcpMs": 73.252,
+      "lcpMs": 73.252,
+      "cls": 0,
+      "tbtMs": 0,
+      "bytes": 36098
+    },
+    {
+      "route": "/mieter/fall",
+      "run": 2,
+      "version": "13.5.0",
+      "score": 100,
+      "fcpMs": 87.611,
+      "lcpMs": 87.611,
+      "cls": 0,
+      "tbtMs": 0,
+      "bytes": 31700
+    },
+    {
+      "route": "/mieter/fall",
+      "run": 3,
+      "version": "13.5.0",
+      "score": 100,
+      "fcpMs": 58.093,
+      "lcpMs": 58.093,
+      "cls": 0,
+      "tbtMs": 0,
+      "bytes": 31700
+    },
+    {
+      "route": "/mieter/fall/zugang/demo-aktiver-fall",
+      "run": 1,
+      "version": "13.5.0",
+      "score": 100,
+      "fcpMs": 74.173,
+      "lcpMs": 74.173,
+      "cls": 0,
+      "tbtMs": 0,
+      "bytes": 33486
+    },
+    {
+      "route": "/mieter/fall/zugang/demo-aktiver-fall",
+      "run": 2,
+      "version": "13.5.0",
+      "score": 100,
+      "fcpMs": 78.754,
+      "lcpMs": 78.754,
+      "cls": 0,
+      "tbtMs": 0,
+      "bytes": 33486
+    },
+    {
+      "route": "/mieter/fall/zugang/demo-aktiver-fall",
+      "run": 3,
+      "version": "13.5.0",
+      "score": 100,
+      "fcpMs": 68.467,
+      "lcpMs": 68.467,
+      "cls": 0,
+      "tbtMs": 0,
+      "bytes": 33486
+    },
+    {
+      "route": "/mitarbeiter/faelle",
+      "run": 1,
+      "version": "13.5.0",
+      "score": 100,
+      "fcpMs": 78.703,
+      "lcpMs": 78.703,
+      "cls": 0,
+      "tbtMs": 0,
+      "bytes": 64766
+    },
+    {
+      "route": "/mitarbeiter/faelle",
+      "run": 2,
+      "version": "13.5.0",
+      "score": 100,
+      "fcpMs": 82.665,
+      "lcpMs": 82.665,
+      "cls": 0,
+      "tbtMs": 0,
+      "bytes": 64766
+    },
+    {
+      "route": "/mitarbeiter/faelle",
+      "run": 3,
+      "version": "13.5.0",
+      "score": 100,
+      "fcpMs": 79.737,
+      "lcpMs": 79.737,
+      "cls": 0,
+      "tbtMs": 0,
+      "bytes": 64766
+    },
+    {
+      "route": "/mitarbeiter/faelle/REQ-2026-001",
+      "run": 1,
+      "version": "13.5.0",
+      "score": 100,
+      "fcpMs": 135.124,
+      "lcpMs": 135.124,
+      "cls": 0,
+      "tbtMs": 0,
+      "bytes": 41479
+    },
+    {
+      "route": "/mitarbeiter/faelle/REQ-2026-001",
+      "run": 2,
+      "version": "13.5.0",
+      "score": 100,
+      "fcpMs": 101.574,
+      "lcpMs": 101.574,
+      "cls": 0,
+      "tbtMs": 0,
+      "bytes": 41479
+    },
+    {
+      "route": "/mitarbeiter/faelle/REQ-2026-001",
+      "run": 3,
+      "version": "13.5.0",
+      "score": 100,
+      "fcpMs": 100.428,
+      "lcpMs": 100.428,
+      "cls": 0,
+      "tbtMs": 0,
+      "bytes": 41479
+    }
+  ],
+  "passed": true
+}

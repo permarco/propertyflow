@@ -22,7 +22,7 @@ Die Annahme und Fortführung des Falls richten sich nach [FALL-02](../specificat
 
 **SSR mit gezielter clientseitiger Interaktivität:** Thymeleaf rendert Erfassungsformular, Falldaten und gespeicherten Verlauf serverseitig. Vanilla JavaScript unterstützt begrenzte Bedienungshilfen wie den Sendezustand und das Kopieren der Case-ID. Neue veröffentlichte Nachrichten und Statusänderungen werden bei aktivem Fall zusätzlich durch periodische Abrufe mit Vanilla JavaScript aktualisiert, ohne die gesamte Seite neu zu laden. Ohne JavaScript bleiben erneuter Aufruf und manuelles Aktualisieren möglich; Details siehe Abschnitt 4.5.1.
 
-Diese Entscheidung folgt `docs/architecture/adr/ADR-003-praesentationsschicht.md` und `../project-context.md`.
+Diese Entscheidung folgt [docs/architecture/adr/ADR-003-praesentationsschicht.md](../architecture/adr/ADR-003-praesentationsschicht.md) und [../project-context.md](../project-context.md).
 
 ## 2. Eine Seite mit drei Zuständen
 
@@ -658,14 +658,14 @@ Nachrichtenblasen: eigene Mieternachrichten `#E5F2FF`, Antworten von Immobilienv
 
 - [Zentrale Spezifikation der Fallkommunikation](../specifications/fallkommunikation.md) – Sichtbarkeit, LLM-Datengrundlage, asynchrone Verarbeitung und Nachrichtensperre.
 
-- `../project-context.md` – verbindlicher KI-/Projektkontext.
-- `docs/architecture/adr/ADR-001-grundarchitektur.md` – modularer Monolith.
-- `docs/architecture/adr/ADR-002-camunda8-workflow-orchestrierung.md` – Camunda 8 und Zuständigkeiten.
-- `docs/architecture/adr/ADR-003-praesentationsschicht.md` – SSR mit Thymeleaf und gezieltem JavaScript.
-- `docs/use_cases/UC-001-mieteranliegen-einreichen.md` – ursprüngliche Anliegen-Erfassung.
-- `docs/use_cases/UC-002-mieteranliegen-anzeigen.md` – Backoffice-Übersicht.
-- `docs/use_cases/UC-003-mieteranliegen-details-anzeigen.md` – Backoffice-Detail.
-- `docs/use_cases/UC-004-ki-analyse-durchfuehren.md` – KI-Formulierungshilfe für externe Nachrichten in der Mitarbeiteransicht; deren Streaming-/Abbruchfunktion gehört nicht zu Screen 01.
+- [../project-context.md](../project-context.md) – verbindlicher KI-/Projektkontext.
+- [docs/architecture/adr/ADR-001-grundarchitektur.md](../architecture/adr/ADR-001-grundarchitektur.md) – modularer Monolith.
+- [docs/architecture/adr/ADR-002-camunda8-workflow-orchestrierung.md](../architecture/adr/ADR-002-camunda8-workflow-orchestrierung.md) – Camunda 8 und Zuständigkeiten.
+- [docs/architecture/adr/ADR-003-praesentationsschicht.md](../architecture/adr/ADR-003-praesentationsschicht.md) – SSR mit Thymeleaf und gezieltem JavaScript.
+- [docs/use_cases/UC-001-mieteranliegen-einreichen.md](../use_cases/UC-001-mieteranliegen-einreichen.md) – ursprüngliche Anliegen-Erfassung.
+- [docs/use_cases/UC-002-mieteranliegen-anzeigen.md](../use_cases/UC-002-mieteranliegen-anzeigen.md) – Backoffice-Übersicht.
+- [docs/use_cases/UC-003-mieteranliegen-details-anzeigen.md](../use_cases/UC-003-mieteranliegen-details-anzeigen.md) – Backoffice-Detail.
+- [docs/use_cases/UC-004-ki-analyse-durchfuehren.md](../use_cases/UC-004-ki-analyse-durchfuehren.md) – KI-Formulierungshilfe für externe Nachrichten in der Mitarbeiteransicht; deren Streaming-/Abbruchfunktion gehört nicht zu Screen 01.
 
 **Durch diese Screen-Spezifikation präzisiert beziehungsweise erweitert:** durchgängige Mieter-Kommunikationsansicht, asynchrone Veröffentlichung von Ergebnissen der Camunda-gesteuerten KI-Verarbeitung, persönlicher Fall-Link, gesperrte Ursprungsdaten, vollständige Mieter-sichtbare Historie, Nachrichtensperre nach Camunda-Abschluss. Bestehende Use-Cases und ADRs müssen bei der Implementierung **konsistent** ergänzt werden, statt konkurrierende Regeln einzuführen.
 
@@ -696,9 +696,9 @@ Die folgenden Vorschläge bleiben dokumentiert, erweitern aber nicht automatisch
 
 **Zusätzliche Grundlagen:**
 
-- `docs/vision.md` – fachlicher Scope, insbesondere optionale KI-Rückfragen.
-- `../architecture/module-structure.md` – Modulgrenzen und Integrationsverträge.
-- `docs/evaluation/evaluationsgrundlage.md` – Vertrauensgrenzen, Guardrails und menschliche Prüfung.
+- [docs/vision.md](../vision.md) – fachlicher Scope, insbesondere optionale KI-Rückfragen.
+- [../architecture/module-structure.md](../architecture/module-structure.md) – Modulgrenzen und Integrationsverträge.
+- [docs/evaluation/evaluationsgrundlage.md](../evaluation/evaluationsgrundlage.md) – Vertrauensgrenzen, Guardrails und menschliche Prüfung.
 
 ### 12.2 Stand und Verbindlichkeit
 
@@ -707,3 +707,7 @@ Die folgenden Vorschläge bleiben dokumentiert, erweitern aber nicht automatisch
 ### 12.3 Abgleich mit übergreifenden KI-/Frontend-Vorgaben
 
 Der Geltungsbereich ist geklärt: Das Mitarbeiterdetail verwendet Streaming und Abbruch gemäss [ADR-003](../architecture/adr/ADR-003-praesentationsschicht.md) und UC-004. Die Mitarbeiterliste aktualisiert gespeicherte Listenwerte. Die Mieteransicht folgt KOM-03 und zeigt gespeicherte Nachrichten und freigegebene Dringlichkeitsereignisse mit periodischer Aktualisierung, ohne direkten Chat-Stream oder KI-/Prozessabbruch. Der [Abgleich](../specifications/fallkommunikation.md#abgleich-mit-bestehenden-dokumenten) ist damit fachlich abgeschlossen; die SSR-Entscheidung bleibt gültig.
+
+## Implementierungs- und Qualitätsnachweise
+
+Die lokale Demo und ihre Startanleitung stehen in der [README](../../README.md#frontend-demo-ohne-datenbank). Das [Block-2-Prüfprotokoll](../ai-usage/block2-oberflaechen-pruefung.md#ergänzung-browser-qualitätsnachweis-und-präsentationsentscheidung) enthält ausgeführte Browser-, Streaming-, A11y- und Performance-Prüfungen einschliesslich Grenzen. Fachliche und produktive Prüfziele bleiben in der [Evaluationsgrundlage](../evaluation/evaluationsgrundlage.md) massgebend; die Demo-Nachweise ersetzen keine Produktivfreigabe.
