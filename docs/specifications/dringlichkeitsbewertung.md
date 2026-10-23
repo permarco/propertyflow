@@ -1,12 +1,12 @@
 # Dringlichkeitsbewertung
 
 **Status:** Stufen, Farben, Bewertungsablauf, manuelle Anpassung und transparente Änderungshistorie vereinbart; technische Umsetzung und konkurrierende Änderungen noch zu konkretisieren.  
-**Stand:** 09.10.2026  
+**Stand:** 21.10.2026 (Farbdefinitionen zentralisiert)<br>
 **Geltungsbereich:** Triage, fachliche Fallbearbeitung und Darstellung der Dringlichkeit in PropertyFlow.
 
 ## Zweck und Verbindlichkeit
 
-Dieses Dokument ist die zentrale Quelle für die vereinbarten Dringlichkeitsstufen und ihre Bedeutung. Screen-Spezifikationen verlinken diese Regeln und beschreiben Darstellung, Sortierung und Filter. Die Stufen sind eine fachliche Festlegung, keine Architekturentscheidung.
+Dieses Dokument ist die zentrale Quelle für die vereinbarten Dringlichkeitsstufen, ihre Bedeutung und sämtliche Dringlichkeitsfarben. Screen-Spezifikationen verlinken diese Regeln und beschreiben Darstellung, Sortierung und Filter. Die Stufen sind eine fachliche Festlegung, keine Architekturentscheidung.
 
 Die [Vision](../vision.md) sieht KI-gestützte Dringlichkeitsbewertung unter fachlicher Verantwortung der Immobilienbewirtschaftung vor. Gemäss [Modulstruktur](../architecture/module-structure.md) verantwortet `triage` die Dringlichkeitsbewertung. Fachlicher Fallstatus und technische Analyse-/Workflow-Zustände bleiben gemäss [FALL-06](fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow) getrennt. Die Bedingungen für Mitarbeiter- und Systemabschlüsse werden gesondert unter FALL-07 geführt.
 
@@ -39,17 +39,21 @@ Dringlichkeit wird gemäss [UC-002](../use_cases/UC-002-mieteranliegen-anzeigen.
 
 ## DRING-04: Farbkennzeichnung
 
-**Vereinbart am 09.10.2026:** Die gesamte folgende Farbzuordnung ist bestätigt:
+**Zentrale Farbdefinition für alle Ansichten:** Die Farbfamilien wurden am 09.10.2026 vereinbart; die in UI1, UI2 und UI3 bestätigten Hintergrund-/Textfarben werden seit 21.10.2026 ausschliesslich hier gepflegt. Die Kreisfarben übernehmen den bestehenden Stand der gemeinsamen Frontend-Demo.
 
-| Stufe / Bewertungszustand | Farbe | Stand |
-|---|---|---|
-| Kritisch | Rot | Vereinbart |
-| Hoch | Orange | Vereinbart |
-| Normal | Gelb | Vereinbart |
-| Niedrig | Grün | Vereinbart |
-| Noch nicht bewertet | Blau | Vereinbart; weiterhin keine Dringlichkeitsstufe |
+| Stufe / Bewertungszustand | Farbfamilie | Hintergrund der Kennzeichnung | Text der Kennzeichnung | Kreis im Änderungsverlauf |
+|---|---|---|---|---|
+| Kritisch | Rot | `#FEE2E2` | `#B91C1C` | `#DC2626` |
+| Hoch | Orange | `#FFEDD5` | `#9A3412` | `#F97316` |
+| Normal | Gelb | `#FEF3C7` | `#854D0E` | `#EAB308` |
+| Niedrig | Grün | `#DCFCE7` | `#166534` | `#16A34A` |
+| Noch nicht bewertet | Blau | `#DBEAFE` | `#1D4ED8` | `#1D4ED8` |
 
-Die Kennzeichnung ergänzt immer den sichtbaren Text. Konkrete Farbtöne, Text-/Hintergrundkombinationen und ausreichende Kontraste werden bei der späteren gemeinsamen Gestaltung festgelegt und geprüft. Die Farbfamilien legen noch keine endgültige visuelle Gestaltung fest.
+Diese Werte gelten einheitlich für Fallköpfe, Fallübersicht, manuelle Stufenauswahl und Änderungshistorie in allen Ansichten, einschliesslich schmaler Darstellung. Hintergrund und Text werden als festes Paar verwendet; die Kreisfarbe ist für die ergänzenden Kreise im Änderungsverlauf vorgesehen, nicht als Ersatz für die Textfarbe. «Noch nicht bewertet» bleibt ein Bewertungszustand und keine fünfte Dringlichkeitsstufe.
+
+Die Kennzeichnung ergänzt immer den sichtbaren Stufentext. Status, Prüfbedarf und Antwortbedarf müssen von der Dringlichkeit unterscheidbar bleiben. Die Kontraste sind an den tatsächlich umgesetzten Komponenten zu prüfen; die Festlegung der Farbwerte ist kein ausgeführter Kontrastnachweis.
+
+**Pflege und Umsetzung:** Andere Dokumente und Wireframes verlinken DRING-04, statt Farbnamen oder Farbcodes erneut festzulegen. Die gemeinsame [CSS-Datei](../../src/main/resources/static/css/propertyflow.css) setzt diese Vorgabe für alle Ansichten mit `urgency-*` und `urgency-dot-*` um (Index 0: noch nicht bewertet, 1: kritisch, 2: hoch, 3: normal, 4: niedrig). Änderungen der Farbdefinition werden hier vorgenommen und in dieser gemeinsamen Umsetzung nachgeführt; ansichtsspezifische Farbabweichungen werden nicht eingeführt. Allgemeine Aktions-, Status- und Nachrichtenfarben gehören nicht zur Dringlichkeitspalette.
 
 ## DRING-05: Erst- und Neubewertung im Prozess
 

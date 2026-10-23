@@ -36,9 +36,11 @@ Dieses Dokument fasst die am 09./10.10.2026 bestätigten Entscheidungen zusammen
 
 **Bestätigt am 10.10.2026 – Scrollverhalten auf breiten Bildschirmen:** Nur der Verlauf in der linken Hälfte ist separat scrollbar. «Nachricht verfassen» mit Eingabe, Aktionen und KI-Vorschlag steht als eigener fester Bereich darunter ausserhalb dieses Scrollbereichs. Das Scrollen des Verlaufs verschiebt weder diesen Eingabebereich noch die rechte Hälfte mit Falldaten und Aktionen oder den gemeinsamen Kopf. Die Arbeitsfläche nutzt die verfügbare Bildschirmhöhe bis auf einen schmalen unteren Aussenabstand; zusätzliche Höhe kommt insbesondere dem Verlauf zugute. Linker Eingabebereich und rechter Arbeitsbereich reichen bis zur gemeinsamen unteren Kante.
 
+**Korrektur vom 21.10.2026 – erreichbare KI-Aktionen:** Reicht die verfügbare Höhe trotz verkleinerter Textbox nicht für Eingabe und KI-Vorschlag, scrollt der Inhalt des fest verankerten Eingabebereichs unabhängig. «Vorschlag übernehmen» und die übrigen Aktionen müssen vollständig erreichbar bleiben. Der Verlauf behält mindestens 200 CSS-Pixel Höhe; Kopf und rechte Spalte werden beim Scrollen des Eingabebereichs nicht verschoben. Die Browser-Regressionstests in `src/test/browser/ai-layout.test.mjs` prüfen lange Vorschläge bei 1440 × 900, 1366 × 768, 1280 × 600 und 390 × 844 Pixeln einschliesslich Übernahme ohne Veröffentlichung.
+
 **Ebenfalls bestätigt:** Wenn der rechte Inhalt die verfügbare Bildschirmhöhe überschreitet, ist die rechte Hälfte ebenfalls unabhängig scrollbar. Scrollen in einer Hälfte verschiebt die andere Hälfte und den gemeinsamen Kopf nicht. Auf schmalen Bildschirmen gilt die bestätigte Reihenfolge Kopf → Falldaten und Aktionen → Verlauf mit Nachrichteneingabe; die Seite wird als Ganzes gescrollt.
 
-Die hier beschriebenen Bedienelemente und die nachfolgenden Gestaltungsentscheidungen sind bestätigt. Schriftwahl, Schriftgrössen, Abstände und Farbcodes sind im Abschnitt «Bestätigte Schriftgrössen, Abstände und Farben» festgelegt. Weitere komponentenspezifische Masse und Kontrastnachweise werden bei der Umsetzung konkretisiert. Auf schmalen Bildschirmen gilt Kopf → Falldaten und Aktionen → Verlauf mit Nachrichteneingabe; die Seite wird als Ganzes gescrollt.
+Die hier beschriebenen Bedienelemente und die nachfolgenden Gestaltungsentscheidungen sind bestätigt. Dringlichkeitsfarben sind in [DRING-04](../specifications/dringlichkeitsbewertung.md#dring-04-farbkennzeichnung) festgelegt; Schriftgrössen, Abstände und übrige Farbcodes sind im Abschnitt «Bestätigte Schriftgrössen, Abstände und Farben» festgelegt. Weitere komponentenspezifische Masse und Kontrastnachweise werden bei der Umsetzung konkretisiert. Auf schmalen Bildschirmen gilt Kopf → Falldaten und Aktionen → Verlauf mit Nachrichteneingabe; die Seite wird als Ganzes gescrollt.
 
 **Bestätigt am 10.10.2026 – Vergrössern der Nachrichtentextbox:** Auf breiten Bildschirmen lässt sich die Textbox durch Ziehen nach unten ausschliesslich in der Höhe vergrössern; seitliches Vergrössern ist ausgeschlossen. Der unten verankerte Eingabebereich wächst dabei nach oben und verkleinert den Verlauf darüber. Der Senden-Button bleibt sichtbar. Der Verlauf behält mindestens 200 CSS-Pixel Höhe. Sobald diese Grenze erreicht ist, lässt sich die Textbox nicht weiter vergrössern; längerer Text scrollt innerhalb der Textbox. Beim Verkleinern erhält der Verlauf den Platz zurück. Nachrichten und ungesendeter Text bleiben erhalten. Kopf und rechte Spalte bleiben unverändert. Aktionen und der sichtbare KI-Vorschlag werden bei der verfügbaren Höhe mitberücksichtigt.
 
@@ -46,7 +48,7 @@ Unter 1200 px wächst die Textbox automatisch mit dem Inhalt von mindestens 96 p
 
 ### 2.1 Gemeinsame Gestaltung und Änderungskarten
 
-**Konsolidierter Gestaltungsstand am 10.10.2026:** Helle Oberfläche mit weissen Karten, dunkler gut lesbarer Schrift, dezenten Rahmen, abgerundeten Ecken und Blau als gemeinsame Aktionsfarbe, passend zu den JPGs (bestätigt am 10.10.2026). Diese gemeinsame Gestaltungsbasis ist in UI1, UI2 und UI3 bestätigt; ihre jeweiligen Abläufe bleiben massgeblich. Dringlichkeitsfarben folgen DRING-04: Kritisch rot, Hoch orange, Normal gelb, Niedrig grün, noch nicht bewertet blau. Status und Prüfbedarf sind davon visuell unterscheidbar. Eine zusätzliche Farblegende «Gestaltungsbasis» gehört nicht zur Anwendungsoberfläche.
+**Konsolidierter Gestaltungsstand am 10.10.2026:** Helle Oberfläche mit weissen Karten, dunkler gut lesbarer Schrift, dezenten Rahmen, abgerundeten Ecken und Blau als gemeinsame Aktionsfarbe, passend zu den JPGs (bestätigt am 10.10.2026). Diese gemeinsame Gestaltungsbasis ist in UI1, UI2 und UI3 bestätigt; ihre jeweiligen Abläufe bleiben massgeblich. Dringlichkeitsfarben folgen [DRING-04](../specifications/dringlichkeitsbewertung.md#dring-04-farbkennzeichnung). Status und Prüfbedarf sind davon visuell unterscheidbar. Eine zusätzliche Farblegende «Gestaltungsbasis» gehört nicht zur Anwendungsoberfläche.
 
 Geschlossene Karten für Status, Dringlichkeit und Wiedervorlage zeigen nur ihre Bezeichnung und die Änderungsaktion. Sie wiederholen die aktuellen Werte aus dem Kopf nicht. Beim Aufklappen ist der gespeicherte Status bzw. die gespeicherte Dringlichkeit vorausgewählt; bei Wiedervorlage ist ein vorhandener Termin in der Eingabe erkennbar. Auswahländerungen bleiben bis zum erfolgreichen Speichern ungespeichert; der Kopf zeigt weiterhin den bestätigten Stand. «Abbrechen» schliesst die Bearbeitung ohne Übernahme. Die optionale interne Begründung folgt Abschnitt 3. Die Karte «Abschluss» zeigt den Button ohne zusätzlichen Hinweis «Abschluss erfordert Bestätigung»; die Bestätigung beim Auslösen bleibt bestehen.
 
@@ -121,15 +123,9 @@ Nachrichtentexte erhalten einen Zeilenabstand von 1,5.
 | Text auf primären Buttons | `#FFFFFF` |
 | Neutrale Statusanzeige | Hintergrund `#E9EEF5`, Text `#42536B` |
 
-| Dringlichkeit | Hintergrund | Text |
-|---|---|---|
-| Kritisch | `#FEE2E2` | `#B91C1C` |
-| Hoch | `#FFEDD5` | `#9A3412` |
-| Normal | `#FEF3C7` | `#854D0E` |
-| Niedrig | `#DCFCE7` | `#166534` |
-| Noch nicht bewertet | `#DBEAFE` | `#1D4ED8` |
+**Dringlichkeitsfarben:** Farbfamilien, Hintergrund-/Textkombinationen und Verlaufskreise sind ausschliesslich in [DRING-04](../specifications/dringlichkeitsbewertung.md#dring-04-farbkennzeichnung) festgelegt.
 
-Die Farbfamilien folgen DRING-04; «Noch nicht bewertet» bleibt ein Bewertungszustand. Die responsive Darstellung ist im entsprechenden Abschnitt bestätigt. Die Kontrastprüfung an den tatsächlich umgesetzten Komponenten steht noch aus.
+Die responsive Darstellung ist im entsprechenden Abschnitt bestätigt. Die Kontrastprüfung an den tatsächlich umgesetzten Komponenten steht noch aus.
 
 Nachrichtenblasen: Mieter und Immobilienverwaltung `#EEF2F7`, Systemnachrichten `#E5F5F3`. Rollen beziehungsweise die vereinbarten Icons und die interne Kennzeichnung bleiben zusätzlich sichtbar.
 
@@ -209,7 +205,7 @@ Es gelten [KOM-03](../specifications/fallkommunikation.md#antwortbedarf-durch-mi
 
 ### Dringlichkeit ändern
 
-Ein Mitarbeiter darf die Dringlichkeit im Detail manuell ändern. Die vier Stufen und Farben folgen DRING-01/DRING-04. «Noch nicht bewertet» bezeichnet fehlende Bewertung und ist keine frei wählbare fünfte Stufe.
+Ein Mitarbeiter darf die Dringlichkeit im Detail manuell ändern. Die vier Stufen folgen [DRING-01](../specifications/dringlichkeitsbewertung.md#dring-01-fachliche-stufen), ihre Farben [DRING-04](../specifications/dringlichkeitsbewertung.md#dring-04-farbkennzeichnung). «Noch nicht bewertet» bezeichnet fehlende Bewertung und ist keine frei wählbare fünfte Stufe.
 
 Eine manuelle Einstufung darf das System nicht überschreiben, auch nicht nach neuen Mieter-Nachrichten oder durch verspätete Analyseergebnisse. Getrennte Systembewertungen können intern nachvollziehbar bleiben; sie ersetzen die wirksame manuelle Stufe nicht. Wirksame Änderungen werden gemäss DRING-07 historisiert.
 

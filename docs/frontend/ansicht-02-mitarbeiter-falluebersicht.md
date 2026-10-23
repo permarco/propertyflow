@@ -63,7 +63,7 @@ Die [Dringlichkeitsbewertung](../specifications/dringlichkeitsbewertung.md) defi
 
 Interne Problemhinweise bleiben gemäss FALL-05/FALL-06 am Fall nachvollziehbar, werden aber nicht in der Übersicht angezeigt, auch nicht als Zusatz in anderen Spalten. Bei aktiven Fällen zeigt der Bearbeitungsstatus «Mitarbeiterprüfung erforderlich» den Prüfbedarf. Die Darstellung der Gründe wird bei Screen 03 konkretisiert. Allgemeine Lade-, Such- und Aktualisierungsfehler der Übersicht bleiben verständlich sichtbar. Es werden keine Live-Abfragen an LLM, Maildienst oder Camunda pro Tabellenzeile vorausgesetzt.
 
-**Farbkennzeichnung – vereinbart:** Die Dringlichkeitsanzeige verwendet die bestätigte zentrale Zuordnung aus [DRING-04](../specifications/dringlichkeitsbewertung.md#dring-04-farbkennzeichnung). Die Bezeichnung bleibt immer als Text sichtbar. UI2 verwendet die bestätigte gemeinsame [Gestaltungsbasis aus UI3](ansicht-03-mitarbeiter-falldetail.md#21-gemeinsame-gestaltung-und-änderungskarten): helle Oberfläche, weisse Karten, dunkle Schrift, dezente Rahmen und Blau für Aktionen, passend zu den JPGs (bestätigt am 10.10.2026). Die Desktop-Listengestaltung ist gemäss Abschnitt 8.1 bestätigt. Farbcodes sind im Abschnitt «Bestätigte Schriftgrössen, Abstände und Farben» festgelegt; Kontrastnachweise folgen in der Umsetzung; die bestätigten Listenfunktionen bleiben massgeblich.
+**Farbkennzeichnung – vereinbart:** Die Dringlichkeitsanzeige verwendet die bestätigte zentrale Zuordnung aus [DRING-04](../specifications/dringlichkeitsbewertung.md#dring-04-farbkennzeichnung). Die Bezeichnung bleibt immer als Text sichtbar. UI2 verwendet die bestätigte gemeinsame [Gestaltungsbasis aus UI3](ansicht-03-mitarbeiter-falldetail.md#21-gemeinsame-gestaltung-und-änderungskarten): helle Oberfläche, weisse Karten, dunkle Schrift, dezente Rahmen und Blau für Aktionen, passend zu den JPGs (bestätigt am 10.10.2026). Die Desktop-Listengestaltung ist gemäss Abschnitt 8.1 bestätigt. Dringlichkeitsfarben sind in [DRING-04](../specifications/dringlichkeitsbewertung.md#dring-04-farbkennzeichnung) festgelegt; die übrigen Farbcodes sind im Abschnitt «Bestätigte Schriftgrössen, Abstände und Farben» festgelegt; Kontrastnachweise folgen in der Umsetzung; die bestätigten Listenfunktionen bleiben massgeblich.
 
 ### Bestätigte responsive Darstellung
 
@@ -132,15 +132,9 @@ Nachrichtentexte erhalten einen Zeilenabstand von 1,5.
 | Text auf primären Buttons | `#FFFFFF` |
 | Neutrale Statusanzeige | Hintergrund `#E9EEF5`, Text `#42536B` |
 
-| Dringlichkeit | Hintergrund | Text |
-|---|---|---|
-| Kritisch | `#FEE2E2` | `#B91C1C` |
-| Hoch | `#FFEDD5` | `#9A3412` |
-| Normal | `#FEF3C7` | `#854D0E` |
-| Niedrig | `#DCFCE7` | `#166534` |
-| Noch nicht bewertet | `#DBEAFE` | `#1D4ED8` |
+**Dringlichkeitsfarben:** Farbfamilien, Hintergrund-/Textkombinationen und Verlaufskreise sind ausschliesslich in [DRING-04](../specifications/dringlichkeitsbewertung.md#dring-04-farbkennzeichnung) festgelegt.
 
-Die Farbfamilien folgen DRING-04; «Noch nicht bewertet» bleibt ein Bewertungszustand. Die responsive Darstellung ist im entsprechenden Abschnitt bestätigt. Die Kontrastprüfung an den tatsächlich umgesetzten Komponenten steht noch aus.
+Die responsive Darstellung ist im entsprechenden Abschnitt bestätigt. Die Kontrastprüfung an den tatsächlich umgesetzten Komponenten steht noch aus.
 
 UI2 verwendet die Tabellen-, Formular-, Status- und Aktionswerte; Nachrichtenblasen gehören nicht zu dieser Ansicht.
 
@@ -254,7 +248,7 @@ Die Übersicht enthält keine Mieter-Zugriffstokens, verschlüsselten Versandkop
 
 **Abgleich am 09.10.2026:** Die Grundansichten und ergänzenden Zustandsausschnitte bilden die bestätigten UI2-Entscheidungen ab. Die Ausschnitte zeigen alternative Zustände derselben Seite; unveränderte Bereiche werden nicht jedes Mal wiederholt.
 
-Die Skizze bildet die vereinbarten Listenfunktionen ab. Für schmale Bildschirme sind Fallblöcke mit sieben Angaben sowie Suche, Filter und Sortierauswahl darüber vereinbart. Die Desktop-Gestaltung ist mit dem JPG in Abschnitt 8.1 bestätigt; Farbfamilien folgen DRING-04. Die gemeinsamen Gestaltungswerte sind im Abschnitt «Bestätigte Schriftgrössen, Abstände und Farben» festgelegt. Die responsive Darstellung ist bestätigt; Kontrastnachweise werden bei der Umsetzung erbracht. Alle Beispieldaten sind fiktiv. «Aktiv» ist die Filtergruppe, die Statusspalte zeigt die fachlichen Bearbeitungsstatus aus FALL-05.
+Die Skizze bildet die vereinbarten Listenfunktionen ab. Für schmale Bildschirme sind Fallblöcke mit sieben Angaben sowie Suche, Filter und Sortierauswahl darüber vereinbart. Die Desktop-Gestaltung ist mit dem JPG in Abschnitt 8.1 bestätigt; Farbfamilien folgen [DRING-04](../specifications/dringlichkeitsbewertung.md#dring-04-farbkennzeichnung). Die gemeinsamen Gestaltungswerte sind im Abschnitt «Bestätigte Schriftgrössen, Abstände und Farben» festgelegt. Die responsive Darstellung ist bestätigt; Kontrastnachweise werden bei der Umsetzung erbracht. Alle Beispieldaten sind fiktiv. «Aktiv» ist die Filtergruppe, die Statusspalte zeigt die fachlichen Bearbeitungsstatus aus FALL-05.
 
 ### 8.1 Breiter Bildschirm – Standardansicht
 
@@ -276,26 +270,26 @@ Suche automatisch nach 1 Sekunde Eingabepause · Filter wirken sofort
 | Fall / Betreff         | Objekt / Wohnung         | Eingang            | Letzte Aktion des          | Wiedervorlage  | Dringlichkeit                | Bearbeitungsstatus       |
 |                        |                          |                    | Mieters                    |                |                              |                          |
 +------------------------+--------------------------+--------------------+----------------------------+----------------+------------------------------+--------------------------+
-| [REQ-2026-003]         | Beispielweg 8, Whg. 2    | 09.10.2026, 10:45  | 09.10.2026, 10:45          | –              | Noch nicht bewertet (Blau)   | Mitarbeiterprüfung       |
+| [REQ-2026-003]         | Beispielweg 8, Whg. 2    | 09.10.2026, 10:45  | 09.10.2026, 10:45          | –              | Noch nicht bewertet          | Mitarbeiterprüfung       |
 | Fenster undicht        |                          |                    |                            |                |                              | erforderlich             |
 +------------------------+--------------------------+--------------------+----------------------------+----------------+------------------------------+--------------------------+
-| [REQ-2026-002]         | Musterweg 4, Wohnung 1   | 09.10.2026, 10:10  | 09.10.2026, 10:50          | –              | Noch nicht bewertet (Blau)   | Mitarbeiterprüfung       |
+| [REQ-2026-002]         | Musterweg 4, Wohnung 1   | 09.10.2026, 10:10  | 09.10.2026, 10:50          | –              | Noch nicht bewertet          | Mitarbeiterprüfung       |
 | Tür klemmt             | Zuordnung bestätigt      |                    |                            |                |                              | erforderlich             |
 +------------------------+--------------------------+--------------------+----------------------------+----------------+------------------------------+--------------------------+
-| [REQ-2026-004]         | Musterweg 6, Wohnung 3   | 09.10.2026, 10:55  | 09.10.2026, 10:55          | –              | Kritisch (Rot)               | In Bearbeitung           |
+| [REQ-2026-004]         | Musterweg 6, Wohnung 3   | 09.10.2026, 10:55  | 09.10.2026, 10:55          | –              | Kritisch                     | In Bearbeitung           |
 | Wasser aus der Decke   | Zuordnung bestätigt      |                    |                            |                |                              |                          |
 +------------------------+--------------------------+--------------------+----------------------------+----------------+------------------------------+--------------------------+
-| [REQ-2026-001]         | Musterstr. 12, Wohnung 4 | 09.10.2026, 09:12  | 09.10.2026, 10:00          | 13.10.2026     | Hoch (Orange)                | Wartet auf               |
+| [REQ-2026-001]         | Musterstr. 12, Wohnung 4 | 09.10.2026, 09:12  | 09.10.2026, 10:00          | 13.10.2026     | Hoch                         | Wartet auf               |
 | Heizung defekt         | Zuordnung bestätigt      |                    |                            |                |                              | Wiedervorlage            |
 +------------------------+--------------------------+--------------------+----------------------------+----------------+------------------------------+--------------------------+
-| [REQ-2026-005]         | Beispielweg 2, Whg. 1    | 09.10.2026, 09:30  | 09.10.2026, 10:30          | 12.10.2026     | Hoch (Orange)                | Wartet auf               |
+| [REQ-2026-005]         | Beispielweg 2, Whg. 1    | 09.10.2026, 09:30  | 09.10.2026, 10:30          | 12.10.2026     | Hoch                         | Wartet auf               |
 | Warmwasser ausgefallen | Zuordnung bestätigt      |                    |                            |                |                              | Wiedervorlage            |
 +------------------------+--------------------------+--------------------+----------------------------+----------------+------------------------------+--------------------------+
 
 [Rückwärts – deaktiviert]                  Seite 1 von 1                  [Vorwärts – deaktiviert]
 ```
 
-Die ersten beiden unbewerteten Fälle stehen nach ältestem letztem Mieterkontakt vor den bewerteten Fällen. Danach folgt Kritisch vor Hoch; innerhalb von Hoch steht der Kontakt um 10:00 vor 10:30. Die Bewertungsquelle wird in der Übersicht nicht dargestellt; Nachvollziehbarkeit und Detaildarstellung folgen weiterhin DRING-03/DRING-07 und UI3. Die ausgeschriebenen Farben erläutern den Entwurf; die Umsetzung verwendet eine Farbkennzeichnung mit sichtbarem Stufentext.
+Die ersten beiden unbewerteten Fälle stehen nach ältestem letztem Mieterkontakt vor den bewerteten Fällen. Danach folgt Kritisch vor Hoch; innerhalb von Hoch steht der Kontakt um 10:00 vor 10:30. Die Bewertungsquelle wird in der Übersicht nicht dargestellt; Nachvollziehbarkeit und Detaildarstellung folgen weiterhin DRING-03/DRING-07 und UI3. Die Farbkennzeichnung der Entwürfe und ihrer Umsetzung folgt [DRING-04](../specifications/dringlichkeitsbewertung.md#dring-04-farbkennzeichnung) mit sichtbarem Stufentext.
 
 Alle sieben Spaltentitel sind anklickbar. Die Skizze zeigt die Standardsortierung ohne manuell gewählte Einzelspalte. Nach dem ersten Klick auf «Fall / Betreff» erscheint **Fall / Betreff ↑**, nach dem zweiten **Fall / Betreff ↓**. Nur die aktuell ausgewählte Spalte zeigt den Richtungspfeil; die aktive Sortierung ist zugänglich am Spaltentitel gekennzeichnet, ohne zusätzlichen sichtbaren Erklärungstext. Der genaue Textvergleich bleibt die technische Konkretisierung aus Abschnitt 4.
 
@@ -326,7 +320,7 @@ Objekt/Wohnung: Beispielweg 8, Whg. 2
 Eingang: 09.10.2026, 10:45
 Letzte Aktion des Mieters: 09.10.2026, 10:45
 Wiedervorlage: – (keine gesetzt)
-Dringlichkeit: Noch nicht bewertet (Blau)
+Dringlichkeit: Noch nicht bewertet
 Änderungsquelle: –
 Bearbeitungsstatus: Mitarbeiterprüfung erforderlich
 
@@ -342,11 +336,11 @@ Die geöffnete Dringlichkeitsauswahl enthält sämtliche vereinbarten Werte. Die
 Dringlichkeit: [Alle v]
 +-----------------------------+
 | Alle                        |
-| Kritisch (Rot)              |
-| Hoch (Orange)               |
-| Normal (Gelb)               |
-| Niedrig (Grün)              |
-| Noch nicht bewertet (Blau)  |
+| Kritisch                    |
+| Hoch                        |
+| Normal                      |
+| Niedrig                     |
+| Noch nicht bewertet         |
 +-----------------------------+
 ```
 
@@ -408,7 +402,7 @@ Suche, Dringlichkeitsfilter und Sortierung bleiben erhalten; der Wechsel beginnt
 | Fall / Betreff         | Objekt / Wohnung         | Eingang            | Letzte Aktion des          | Wiedervorlage  | Dringlichkeit                | Bearbeitungsstatus       |
 |                        |                          |                    | Mieters                    |                |                              |                          |
 +------------------------+--------------------------+--------------------+----------------------------+----------------+------------------------------+--------------------------+
-| [REQ-2026-006]         | Beispielweg 9, Whg. 1    | 08.10.2026, 09:00  | 08.10.2026, 16:00          | –              | Niedrig (Grün)               | Abgeschlossen            |
+| [REQ-2026-006]         | Beispielweg 9, Whg. 1    | 08.10.2026, 09:00  | 08.10.2026, 16:00          | –              | Niedrig                      | Abgeschlossen            |
 | Balkonlampe defekt     |                          |                    |                            |                |                              |                          |
 +------------------------+--------------------------+--------------------+----------------------------+----------------+------------------------------+--------------------------+
 ```
@@ -511,7 +505,7 @@ Der angegebene Stand bleibt der letzte erfolgreiche Lesezeitpunkt. Vorhandene Da
 | Eigene Falldetailseite; keine Problemhinweise oder zusätzlichen Filter | Case-ID ist Link zu UI3; kein Detailpanel, keine Hinweisspalte, kein Hinweis- oder Bearbeitungsstatusfilter |
 | Bedienung ohne JavaScript und per Tastatur | Bestehende SSR-/Zugänglichkeitsregeln aus Abschnitt 9; nur ohne JavaScript zusätzlicher Button «Suchen / Filter anwenden» |
 
-**Ergebnis des Abgleichs:** Die bestätigten sichtbaren Elemente und Bedienungszustände sind in den Grundansichten, Zustandsausschnitten und zugehörigen Erläuterungen enthalten. Fachliche Verarbeitung wie der Schutz manueller Einstufungen bleibt an der zentralen Spezifikation verbindlich; sie erzeugt keine zusätzlichen Bedienelemente in UI2. Die Skizzen sind keine nachgewiesene Implementierung; für Farben, Schrift und Abstände gelten die bestätigten Werte dieser Spezifikation.
+**Ergebnis des Abgleichs:** Die bestätigten sichtbaren Elemente und Bedienungszustände sind in den Grundansichten, Zustandsausschnitten und zugehörigen Erläuterungen enthalten. Fachliche Verarbeitung wie der Schutz manueller Einstufungen bleibt an der zentralen Spezifikation verbindlich; sie erzeugt keine zusätzlichen Bedienelemente in UI2. Die Skizzen sind keine nachgewiesene Implementierung; für Dringlichkeitsfarben gilt [DRING-04](../specifications/dringlichkeitsbewertung.md#dring-04-farbkennzeichnung), für die übrigen Farben, Schrift und Abstände gelten die bestätigten Werte dieser Spezifikation.
 
 ## 9. Technische Leitplanken und spätere Prüfkriterien
 
@@ -520,7 +514,7 @@ Thymeleaf rendert das GET-Formular, Ergebnisse und Links. Gezieltes Vanilla Java
 Als Modulzuordnung wird ein fallbezogener Lesevertrag über `caseprocessing` vorgeschlagen. Der Controller nutzt Anwendungsdienste, öffentliche Modulverträge liefern benötigte Informationen; direkter Zugriff auf fremde Persistenz entfällt gemäss Modulstruktur. PropertyFlow liefert den fachlichen Stand; Camunda bleibt getrennte Hintergrundorchestrierung. Ein konkretes DTO oder Datenbankschema wird hier nicht festgelegt.
 
 - **ÜB-AK-01:** Die Übersicht zeigt je berechtigtem Fall Referenz, Betreff als Kurzbeschreibung, Dringlichkeit bzw. eindeutig fehlende Bewertung und fachlichen Status. Die sieben Spalten aus Abschnitt 3 sind vollständig enthalten. Eine zusätzliche Zusammenfassung, eine Hinweisspalte oder fallbezogene Problemhinweise in anderen Spalten werden weder auf breiten noch auf schmalen Bildschirmen ausgegeben.
-- **ÜB-AK-02:** Dringlichkeit und Status bleiben ohne Farbwahrnehmung verständlich. Die Farbe folgt DRING-04; die Bewertungsquelle wird in UI2 nicht angezeigt. Anzeige, Filter und Sortierung verwenden die wirksame Stufe; eine abweichende Systembewertung überschreibt keine manuelle Einstufung.
+- **ÜB-AK-02:** Dringlichkeit und Status bleiben ohne Farbwahrnehmung verständlich. Die Farbe folgt [DRING-04](../specifications/dringlichkeitsbewertung.md#dring-04-farbkennzeichnung); die Bewertungsquelle wird in UI2 nicht angezeigt. Anzeige, Filter und Sortierung verwenden die wirksame Stufe; eine abweichende Systembewertung überschreibt keine manuelle Einstufung.
 - **ÜB-AK-03:** Standardmässig erscheinen nur aktive Fälle; unbewertete Fälle zuerst, innerhalb dieser Gruppe nach ältestem letztem Mieterkontakt. Bewertete Fälle werden nach Dringlichkeit und danach Letzter Aktion des Mieters (ältester Kontakt zuerst) sortiert. Alle sieben Spalten sind per Spaltentitel sortierbar: erster Klick ↑/aufsteigend, zweiter Klick ↓/absteigend, dritter Klick wieder ↑. Ein Wechsel der Spalte startet aufsteigend; nur die gewählte Spalte zeigt den Richtungspfeil und einen entsprechenden zugänglichen Sortierzustand. «Fall» sortiert nach Betreff A–Z bzw. Z–A. Suche und Filter bleiben erhalten, die Sortierung startet auf Seite 1; der Toggle blendet abgeschlossene Fälle zusätzlich ein und wieder aus. Suche, Filter, Sortierung, Pagination und manuelles Aktualisieren funktionieren ohne JavaScript und erhalten die Auswahl. Der Toggle zeigt seinen Zustand ohne zusätzliche Anzeige «Nur aktive Fälle». «Filter zurücksetzen» ist als rechtsbündiger Button in derselben Filterzeile sichtbar. Es gibt keinen Aktualisieren-Button und keinen sichtbaren Sortiererklärungstext; Browser-Neuladen und automatische Aktualisierung bleiben verfügbar. Noch offene Sortierdetails werden vor Umsetzung ergänzt.
 - **ÜB-AK-04:** Falllink öffnet den richtigen, erneut autorisierten Fall auf einer separaten Detailseite. Direktaufruf und manipulierte Parameter erweitern keine Rechte. Die Gestaltung der Rücknavigation ist Screen 03 vorbehalten.
 - **ÜB-AK-05:** Eine erfolgreich geladene Standardauswahl ohne aktive Fälle zeigt «Heute nichts zu bearbeiten.» auf breiten und schmalen Bildschirmen; dies gilt auch für ein System ohne Fälle. Abgeschlossene Fälle bleiben über den Toggle erreichbar. Ein neuer aktiver Fall wird durch die laufende Aktualisierung sichtbar. Eine erfolglose Suche oder ein einschränkender Filter zeigt dagegen «Keine Fälle für diese Auswahl.»; vorhandene aktive Fälle ausserhalb der Auswahl werden nicht als erledigt dargestellt. Ladefehler und fehlende Zugriffsrechte erzeugen keine dieser Erfolgsmeldungen. Ein Listenfehler wird nicht als erfolgreich geladene Teilliste dargestellt.

@@ -359,7 +359,7 @@ Der Browser ruft **nicht direkt Camunda** auf. Die Fachlogik bleibt im PropertyF
 
 **Status:** Technischer Entwurf zur gemeinsamen Besprechung, keine endgültige Gestaltung. Die fachlichen Regeln aus Abschnitt 4 bleiben massgeblich.
 
-Die Ansicht verwendet eine Hauptspalte. **Vereinbarte Reihenfolge:** Kopf mit Objekt-/Kontaktangaben → Verlauf → Nachrichteneingabe. Nachrichten des Mieters sind rechts angeordnet, veröffentlichte Nachrichten der Verwaltung und von KI/System links. Absender und Datum bleiben als Text erkennbar. Die Desktop-Gestaltung ist gemäss Abschnitt 8.2.5 bestätigt; Schriftgrössen, Abstände und Farbcodes sind im Abschnitt «Bestätigte Schriftgrössen, Abstände und Farben» festgelegt.
+Die Ansicht verwendet eine Hauptspalte. **Vereinbarte Reihenfolge:** Kopf mit Objekt-/Kontaktangaben → Verlauf → Nachrichteneingabe. Nachrichten des Mieters sind rechts angeordnet, veröffentlichte Nachrichten der Verwaltung und von KI/System links. Absender und Datum bleiben als Text erkennbar. Die Desktop-Gestaltung ist gemäss Abschnitt 8.2.5 bestätigt; Dringlichkeitsfarben sind in [DRING-04](../specifications/dringlichkeitsbewertung.md#dring-04-farbkennzeichnung) festgelegt; Schriftgrössen, Abstände und übrige Farbcodes sind im Abschnitt «Bestätigte Schriftgrössen, Abstände und Farben» festgelegt.
 
 ```text
 +------------------------------------------------------------------+
@@ -367,7 +367,7 @@ Die Ansicht verwendet eine Hauptspalte. **Vereinbarte Reihenfolge:** Kopf mit Ob
 +------------------------------------------------------------------+
 | Fall REQ-2026-001                              [In Abklärung]    |
 | Heizung funktioniert nicht                                       |
-| Dringlichkeit: Hoch (Orange) · Geändert durch System              |
+| Dringlichkeit: Hoch · Geändert durch System              |
 |                                                                  |
 | Objekt / Wohnung: Musterstrasse 12, Wohnung 4                    |
 | E-Mail: m***ple.ch                                               |
@@ -381,7 +381,7 @@ Die Ansicht verwendet eine Hauptspalte. **Vereinbarte Reihenfolge:** Kopf mit Ob
 |                          +-----------------------------------+   |
 |                                                                  |
 | [Dringlichkeit geändert · System · 09.10.2026, 09:20]             |
-| Noch nicht bewertet (Blau) → Hoch (Orange)                        |
+| Noch nicht bewertet → Hoch                                 |
 |                                                                  |
 | +-------------------------------------------+                    |
 | | KI-Assistent · 09.10.2026, 09:30           |                   |
@@ -454,7 +454,7 @@ Die Kontaktanzeige verwendet fiktive Daten und die Maskierung aus Abschnitt 4.6:
 - **Nachrichtenreihenfolge:** Alle sichtbaren Nachrichten auf einer Seite; älteste oben, neueste zuunterst. Ältere Einträge bleiben durch Scrollen erreichbar.
 - **Absenderanordnung:** Mieter rechts, Immobilienverwaltung und KI/System links. Textliche Absenderangaben bleiben zusätzlich sichtbar.
 
-Diese Grundanordnung, die maskierte Kontaktanzeige, das Aktualisierungsintervall von 20 Sekunden, die schmale Ansicht, das Fehlerverhalten und das Verlassen ohne Textverlustwarnung sind vereinbart. Die Dringlichkeitsfarben folgen DRING-04; die Desktop-Gestaltung einschliesslich gleich breiter Nachrichtenblasen ist bestätigt. Farbcodes, Schriftgrössen und Abstände sind im Abschnitt «Bestätigte Schriftgrössen, Abstände und Farben» festgelegt. Die automatische Aktualisierung verändert beim Lesen älterer Einträge nicht ungefragt die Leseposition.
+Diese Grundanordnung, die maskierte Kontaktanzeige, das Aktualisierungsintervall von 20 Sekunden, die schmale Ansicht, das Fehlerverhalten und das Verlassen ohne Textverlustwarnung sind vereinbart. Die Dringlichkeitsfarben folgen [DRING-04](../specifications/dringlichkeitsbewertung.md#dring-04-farbkennzeichnung); die Desktop-Gestaltung einschliesslich gleich breiter Nachrichtenblasen ist bestätigt. Die übrigen Farbcodes, Schriftgrössen und Abstände sind im Abschnitt «Bestätigte Schriftgrössen, Abstände und Farben» festgelegt. Die automatische Aktualisierung verändert beim Lesen älterer Einträge nicht ungefragt die Leseposition.
 
 Die fachlichen Zustände Neuerfassung, aktiver und abgeschlossener Fall sind festgelegt. Die Desktop-Gestaltung wurde am 10.10.2026 bestätigt. Die JPGs dokumentieren die drei Zustände; aktive und abgeschlossene Fälle zeigen die Objekt-/Kontaktangaben direkt im Kopf ohne separate Ursprungsansicht.
 
@@ -466,7 +466,7 @@ Die fachlichen Zustände Neuerfassung, aktiver und abgeschlossener Fall sind fes
 | [ansicht-01-mieter-fallansicht-2.jpg](design/ansicht-01-mieter-fallansicht-2.jpg) | Aktiver Fall mit Objekt-/Kontaktangaben im Kopf, Verlauf, offenem Antwortbedarf und Nachrichteneingabe. |
 | [ansicht-01-mieter-fallansicht-3.jpg](design/ansicht-01-mieter-fallansicht-3.jpg) | Abgeschlossener Fall mit lesbarem Verlauf und Abschlusshinweis anstelle der Eingabe. |
 
-Die Entwürfe übernehmen Logo, helle Grundfläche, weisse Karten, dezente Rahmen und Aktionsfarben aus UI2/UI3. Die Neuerfassung verwendet eine zentrierte Formularkarte; bestehende Fälle nutzen die Bildschirmbreite für eine einspaltige Anordnung. Status und Dringlichkeit stehen im Fallkopf rechts. Die Dringlichkeitsquelle bleibt in UI1 sichtbar. «Hoch» ist orange, «Noch nicht bewertet» blau; alle weiteren Stufen folgen DRING-04.
+Die Entwürfe übernehmen Logo, helle Grundfläche, weisse Karten, dezente Rahmen und Aktionsfarben aus UI2/UI3. Die Neuerfassung verwendet eine zentrierte Formularkarte; bestehende Fälle nutzen die Bildschirmbreite für eine einspaltige Anordnung. Status und Dringlichkeit stehen im Fallkopf rechts. Die Dringlichkeitsquelle bleibt in UI1 sichtbar. Alle Dringlichkeitsfarben folgen [DRING-04](../specifications/dringlichkeitsbewertung.md#dring-04-farbkennzeichnung).
 
 Mieternachrichten stehen rechts mit rechtsbündigem Inhalt, Antworten von Immobilienverwaltung und KI/System links. Nachrichtenblasen erhalten dieselbe Breite; Symbole, Rollen und Zeitangaben stehen innerhalb der Blasen. Personen werden durch ein Personensymbol, Systemeinträge durch ein Zahnrad ergänzt; die textlichen Rollen bleiben sichtbar. Einzelne Mitarbeiternamen und interne Informationen werden nicht angezeigt. Der aktuelle Antwortbedarf wird an der betreffenden Nachricht neutral gekennzeichnet, getrennt von den Dringlichkeitsfarben. Nach Abschluss wird keine offene Antwort mehr verlangt.
 
@@ -541,15 +541,9 @@ Nachrichtentexte erhalten einen Zeilenabstand von 1,5.
 | Text auf primären Buttons | `#FFFFFF` |
 | Neutrale Statusanzeige | Hintergrund `#E9EEF5`, Text `#42536B` |
 
-| Dringlichkeit | Hintergrund | Text |
-|---|---|---|
-| Kritisch | `#FEE2E2` | `#B91C1C` |
-| Hoch | `#FFEDD5` | `#9A3412` |
-| Normal | `#FEF3C7` | `#854D0E` |
-| Niedrig | `#DCFCE7` | `#166534` |
-| Noch nicht bewertet | `#DBEAFE` | `#1D4ED8` |
+**Dringlichkeitsfarben:** Farbfamilien, Hintergrund-/Textkombinationen und Verlaufskreise sind ausschliesslich in [DRING-04](../specifications/dringlichkeitsbewertung.md#dring-04-farbkennzeichnung) festgelegt.
 
-Die Farbfamilien folgen DRING-04; «Noch nicht bewertet» bleibt ein Bewertungszustand. Die responsive Darstellung ist im entsprechenden Abschnitt bestätigt. Die Kontrastprüfung an den tatsächlich umgesetzten Komponenten steht noch aus.
+Die responsive Darstellung ist im entsprechenden Abschnitt bestätigt. Die Kontrastprüfung an den tatsächlich umgesetzten Komponenten steht noch aus.
 
 Nachrichtenblasen: eigene Mieternachrichten `#E5F2FF`, Antworten von Immobilienverwaltung und KI/System `#EEF2F7`. Rollen und Icons bleiben zusätzlich sichtbar.
 
@@ -561,7 +555,7 @@ Nachrichtenblasen: eigene Mieternachrichten `#E5F2FF`, Antworten von Immobilienv
 ├──────────────────────────────────────────────────────────┤
 │ REQ-2026-001                          [Abgeschlossen]    │
 │ Heizung funktioniert nicht                               │
-│ Dringlichkeit: Hoch (Orange) · Quelle: System             │
+│ Dringlichkeit: Hoch · Quelle: System             │
 │                                                          │
 │ Objekt / Wohnung: Musterstrasse 12, Wohnung 4            │
 │ E-Mail: m***ple.ch                                       │
@@ -693,7 +687,7 @@ Die folgenden Vorschläge bleiben dokumentiert, erweitern aber nicht automatisch
 
 **Modulverträge:** Als Zuordnungsvorschlag verantwortet `intake` die Annahme und initiale Speicherung und `caseprocessing` die fallbezogene Kommunikation und Anzeige. Gemeinsame Leseverträge werden im Service-Design festgelegt. Controller verwenden Anwendungsdienste; modulübergreifender Austausch erfolgt über öffentliche Schnittstellen ohne direkten Zugriff auf fremde Persistenz.
 
-**Gestaltung:** UI1 verwendet die bestätigte gemeinsame [Gestaltungsbasis aus UI3](ansicht-03-mitarbeiter-falldetail.md#21-gemeinsame-gestaltung-und-änderungskarten): helle Oberfläche, weisse Karten, dunkle Schrift, dezente Rahmen und Blau für Aktionen, passend zu den JPGs (bestätigt am 10.10.2026). Dringlichkeitsfarben folgen DRING-04. Die bestätigte Desktop-Gestaltung ist in Abschnitt 8.2.5 mit drei JPGs verlinkt; UI3-spezifische Mitarbeiteraktionen und interne Kennzeichnungen werden nicht auf die Mieteransicht übertragen. Die vorhandenen ASCII-Wireframes bleiben technische Entwürfe der bestätigten Grundanordnung. Farbcodes, Schrift und Abstände sind im Abschnitt «Bestätigte Schriftgrössen, Abstände und Farben» festgelegt; die Ergänzungen dieses Reviews sind noch nicht vollständig in den ASCII-Entwürfen dargestellt.
+**Gestaltung:** UI1 verwendet die bestätigte gemeinsame [Gestaltungsbasis aus UI3](ansicht-03-mitarbeiter-falldetail.md#21-gemeinsame-gestaltung-und-änderungskarten): helle Oberfläche, weisse Karten, dunkle Schrift, dezente Rahmen und Blau für Aktionen, passend zu den JPGs (bestätigt am 10.10.2026). Dringlichkeitsfarben folgen [DRING-04](../specifications/dringlichkeitsbewertung.md#dring-04-farbkennzeichnung). Die bestätigte Desktop-Gestaltung ist in Abschnitt 8.2.5 mit drei JPGs verlinkt; UI3-spezifische Mitarbeiteraktionen und interne Kennzeichnungen werden nicht auf die Mieteransicht übertragen. Die vorhandenen ASCII-Wireframes bleiben technische Entwürfe der bestätigten Grundanordnung. Die übrigen Farbcodes, Schrift und Abstände sind im Abschnitt «Bestätigte Schriftgrössen, Abstände und Farben» festgelegt; die Ergänzungen dieses Reviews sind noch nicht vollständig in den ASCII-Entwürfen dargestellt.
 
 **Zusätzliche Grundlagen:**
 
