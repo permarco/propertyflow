@@ -104,7 +104,8 @@ function sizeComposer() {
     } else {
         const conversation = $('.conversation');
         const composer = $('#composer');
-        const extra = composer.offsetHeight - message.offsetHeight;
+        // Include overflowing content so the textarea still yields space to AI actions.
+        const extra = composer.scrollHeight + composer.offsetHeight - composer.clientHeight - message.offsetHeight;
         const max = Math.max(96, conversation.clientHeight - 216 - extra);
         message.style.maxHeight = max + 'px';
         if (message.offsetHeight > max) message.style.height = max + 'px';

@@ -47,3 +47,14 @@ Read at minimum:
 - Prefer small, focused changes.
 - Add automated tests for generated business logic.
 - Do not invent requirements.
+
+## Code style and simplicity
+
+- Prefer simple, readable code and direct solutions over clever or overly abstract designs.
+- Implement only current requirements; do not add speculative extension points or functionality for hypothetical future needs.
+- Introduce abstractions only when they provide a concrete benefit or are required by the accepted architecture. Preserve the defined module boundaries and external integration interfaces.
+- Do not add extra layers, generic frameworks, or base classes without a clear, current need.
+- Use meaningful English names and avoid unclear abbreviations.
+- In Java, use `PascalCase` for classes, `camelCase` for methods and variables, `UPPER_SNAKE_CASE` for constants, and lowercase package names.
+- Follow existing project conventions for naming, formatting, and code organization.
+- Use comments to explain why a decision was made, rather than restating what the code does.
