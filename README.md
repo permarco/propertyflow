@@ -317,6 +317,10 @@ architektonische Source of Truth.
 
 ## KI-gestützte Entwicklung
 
+Der [KI-Service-Baustein](docs/ai-usage/ki-service-vertrag.md) kapselt einen
+Spring-AI-Aufruf als internes Analyse-Tool mit Eingabevalidierung, typisierten
+Erfolgs-/Fehlerantworten und einem opt-in Live-Test gegen lokales Ollama.
+
 Für die Entwicklung wird GitHub Copilot eingesetzt.
 
 Repository-weite Anweisungen für KI-Werkzeuge befinden sich unter:
