@@ -58,3 +58,28 @@ Read at minimum:
 - In Java, use `PascalCase` for classes, `camelCase` for methods and variables, `UPPER_SNAKE_CASE` for constants, and lowercase package names.
 - Follow existing project conventions for naming, formatting, and code organization.
 - Use comments to explain why a decision was made, rather than restating what the code does.
+- Do not use `var` in code; prefer explicit types for clarity.
+
+### String constants
+
+- Extract string literals into named constants when they represent a stable contract value, a centrally maintained message or prompt, or the same concept reused in multiple places. Extract long prompts even when used once if this makes the calling code easier to read.
+- In Java, prefer `private static final String` with meaningful English `UPPER_SNAKE_CASE` names. Keep constants in the class or module that owns their meaning; widen visibility only when actual consumers require it. Do not introduce a global constants collection.
+- Do not extract every string mechanically. Keep obvious, one-off local strings and independent test inputs/expected values inline when a constant would add indirection without improving clarity. Identical text does not imply the same semantic constant.
+- Keep environment-dependent values in configuration and secrets outside source code. Use enums for closed sets of domain values rather than introducing string constants for them.
+
+### Java formatting (mandatory)
+
+Apply these rules to all new or modified Java code, including tests and provisional/demo code. These explicit rules take precedence over compact formatting in older files. Keep unrelated files unchanged unless a broader formatting pass is requested.
+
+- Use four spaces per indentation level; do not use tabs. Use eight spaces for continuation indentation where needed.
+- Place opening braces on the declaration or control-statement line and closing braces on their own line. Use braces for all control-statement bodies, even single statements.
+- Put each statement on its own line. Expand methods, constructors and multi-statement lambda bodies over multiple lines; do not compress them into one-liners.
+- Put annotations such as `@Test` and `@Override` on separate lines above their declarations.
+- Use explicit imports, including static imports; do not use wildcard imports. Sort regular imports alphabetically, followed by a blank line and alphabetically sorted static imports. Remove unused imports.
+- Separate methods, constructors and nested type declarations with a blank line. Use blank lines to separate logical steps within a method and constants from instance fields.
+- Format enum constants one per line. Put the closing brace of empty records, interfaces and classes on its own line.
+- Format long builder and fluent call chains with one call per line and consistent continuation indentation. Keep nested builders clearly indented.
+- Aim for a maximum line length of 150 characters. Wrap long argument lists, conditions and array initializers at logical boundaries; allow exceptions for indivisible URLs and literals whose contents must remain unchanged.
+- Use spaces around operators and after commas; do not add spaces just inside parentheses.
+- Format Javadoc as a multiline `/** ... */` block with a leading `*` on each content line. Keep comments concise and explain intent when useful.
+- Preserve behavior, string contents and text-block whitespace semantics during formatting. Review the diff for accidental functional changes and formatting consistency before finishing.
