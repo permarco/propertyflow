@@ -12,6 +12,9 @@ Read at minimum:
 - [../docs/architecture/module-structure.md](../docs/architecture/module-structure.md)
 - all accepted ADRs under `docs/architecture/adr/`
 
+For work on the MCP server, its tools, or agent access, also read the
+[MCP Guidelines](../docs/specifications/MCP_GUIDELINES.md) as a design and review reference.
+
 ## Architecture
 
 - Follow all accepted ADRs.
