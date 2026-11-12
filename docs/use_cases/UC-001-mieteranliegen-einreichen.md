@@ -15,7 +15,7 @@ Dieser Use Case beschreibt die Web-Erfassung. Die sichere Annahme und Zuordnung 
 ## Preconditions
 
 - PropertyFlow ist erreichbar.
-- Die Erfassungsmaske kann ohne Benutzerkonto geöffnet werden.
+- Die Erfassungsmaske und die Einreichung stehen ohne Benutzerkonto zur Verfügung.
 
 ## Main Success Scenario
 
@@ -67,6 +67,10 @@ Dieser Use Case beschreibt die Web-Erfassung. Die sichere Annahme und Zuordnung 
 
 1. Das gültige Anliegen wird gemäss FALL-04 angenommen.
 2. Der aktive Fall erhält «Mitarbeiterprüfung erforderlich» und den Hinweis «Zuordnung offen» gemäss FALL-05. Die Ursprungseingabe bleibt erhalten.
+
+### A6: Einreichung aus einem verifizierten Mieterkonto
+
+Bei einer Einreichung aus einem angemeldeten, verifizierten Mieterkonto übernimmt PropertyFlow die verifizierte E-Mail-Adresse des Kontos als Fall-Kontaktadresse. Der angenommene Fall erscheint gemäss [ZUG-04](../specifications/fallzugriff-und-sicherheit.md#zug-04-rechte-und-vertrauensgrenzen) auch in der Fallübersicht des Kontos. Die dauerhafte Annahme und der persönliche Fall-Link folgen dem Hauptablauf.
 
 ## Postconditions
 

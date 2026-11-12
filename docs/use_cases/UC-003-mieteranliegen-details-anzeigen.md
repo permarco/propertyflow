@@ -10,12 +10,12 @@
 
 ## Preconditions
 
-- Die Immobilienbewirtschaftung nutzt UI3 ohne Anmeldung; alle Mitarbeitenden haben dieselben Adminrechte gemäss ZUG-04.
+- Die Mitarbeiterin oder der Mitarbeiter ist gemäss [UC-006](UC-006-mitarbeiter-anmelden.md) persönlich angemeldet und hat die Mitarbeiterrolle nach [ZUG-04](../specifications/fallzugriff-und-sicherheit.md#zug-04-rechte-und-vertrauensgrenzen).
 - Ein Mieteranliegen wurde in UC-002 ausgewählt oder direkt über seine Referenz aufgerufen.
 
 ## Main Success Scenario
 
-1. Die Immobilienbewirtschaftung öffnet ein Mieteranliegen.
+1. Die Immobilienbewirtschaftung öffnet ein Mieteranliegen. PropertyFlow autorisiert den Aufruf und prüft nachfolgende Lese- und Schreibzugriffe ebenfalls serverseitig.
 2. Das System zeigt die erfassten Angaben des Anliegens.
 3. Das System zeigt den aktuellen Bearbeitungsstatus.
 4. Das System zeigt die Nachrichten der automatischen Camunda-Verarbeitung und die wirksame Dringlichkeit.
@@ -40,6 +40,11 @@ Die Auswahl aus [Screen 02](../frontend/ansicht-02-mitarbeiter-falluebersicht.md
 
 1. Das System zeigt den gespeicherten Fallstand und kennzeichnet ein noch fehlendes Ergebnis der automatischen Verarbeitung.
 2. Die manuelle Bearbeitung bleibt möglich; die automatische Analyse läuft im Camunda-Prozess. Bei Analysefehlern gilt FALL-05. Es gibt keinen manuellen Analysestart in UI3.
+
+### A3: Anmeldung fehlt oder Mitarbeiterberechtigung fehlt
+
+1. PropertyFlow verweigert den Zugriff auf Falldetails und Bearbeitungsaktionen. Abgewiesene Aktionen ändern keine Falldaten.
+2. Bei fehlender oder abgelaufener Anmeldung bietet PropertyFlow die Mitarbeiteranmeldung gemäss UC-006 an. Bei gültiger Anmeldung ohne Mitarbeiterberechtigung erscheint ein Zugriffshinweis.
 
 ## Postconditions
 

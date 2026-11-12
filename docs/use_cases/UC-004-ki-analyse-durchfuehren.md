@@ -17,7 +17,7 @@ Streaming und wirksamer Abbruch betreffen in UI3 die KI-Formulierung einer exter
 
 ## Preconditions
 
-- Der Mitarbeiter befindet sich ohne vorgängige Anmeldung in UI3 eines aktiven Falls gemäss ZUG-04.
+- Der Mitarbeiter ist gemäss [UC-006](UC-006-mitarbeiter-anmelden.md) persönlich angemeldet und befindet sich mit Mitarbeiterberechtigung nach [ZUG-04](../specifications/fallzugriff-und-sicherheit.md#zug-04-rechte-und-vertrauensgrenzen) in UI3 eines aktiven Falls.
 - Die Eingabe ist als extern ausgewählt («Intern» ausgeschaltet).
 - In der Fallansicht läuft keine Nachrichten- oder Memo-Speicherung; währenddessen sind Eingabe, KI-Start und Vorschlagsübernahme gesperrt.
 - Eine kurze, fachlich geprüfte Aussage ist eingegeben, beispielsweise «Wir haben den Techniker aufgeboten». Bei leerem oder ausschliesslich aus Leerzeichen bestehendem Text ist «Mit KI formulieren» deaktiviert; der Server lehnt einen solchen Generierungsversuch ebenfalls ab.
@@ -63,6 +63,10 @@ Die Nachrichtensperre wird beim Senden serverseitig geprüft. Ein verspäteter K
 ### A7: Eingabesperre während der Speicherung
 
 Die Sperre nach [UI3](../frontend/ansicht-03-mitarbeiter-falldetail.md#rückmeldung-nach-senden-oder-memo-speicherung) gilt auch bei gleichzeitig laufender KI-Formulierung: Textfeld, «Intern», «Mieterantwort erforderlich», KI-Start, Vorschlagsübernahme und Sende-/Speicheraktion sind bis zum Ende der Nachrichten- oder Memo-Speicherung deaktiviert. Der bestehende Stream läuft weiter; auch sein Abschluss oder Fehler darf die Eingabe nicht vorzeitig freigeben oder ersetzen. Nach erfolgreicher Speicherung werden Text und Auswahl wie vereinbart zurückgesetzt; nach einem Speicherfehler bleiben sie erhalten. Anschliessend gelten die Bedieneinschränkungen des aktuellen Fall- und KI-Zustands. FD-AK-14 und FD-AK-16 prüfen dieses Zusammenspiel.
+
+### A8: Anmeldung fehlt oder Mitarbeiterberechtigung fehlt
+
+PropertyFlow prüft die Mitarbeiterberechtigung beim Start der KI-Formulierung und erneut beim Senden. Bei fehlender oder abgelaufener Anmeldung bietet PropertyFlow die Mitarbeiteranmeldung gemäss UC-006 an. Eine gültige Anmeldung ohne Mitarbeiterberechtigung führt zu einem Zugriffshinweis. Ein abgewiesener Start liefert keinen Vorschlag. Ein abgewiesener Sendeversuch speichert und veröffentlicht keine Nachricht.
 
 ## Business Rules und Prüfkriterien
 

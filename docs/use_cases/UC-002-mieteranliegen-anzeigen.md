@@ -13,8 +13,8 @@
 
 ## Preconditions
 
-- Die Mitarbeiterin oder der Mitarbeiter nutzt UI2 ohne Anmeldung gemäss ZUG-04.
-- Alle Mitarbeitenden haben dieselben Adminrechte und Zugriff auf sämtliche Fälle und internen Memos gemäss ZUG-04.
+- Die Mitarbeiterin oder der Mitarbeiter ist gemäss [UC-006](UC-006-mitarbeiter-anmelden.md) persönlich angemeldet und hat die Mitarbeiterrolle nach [[ZUG-04](../specifications/fallzugriff-und-sicherheit.md#zug-04-rechte-und-vertrauensgrenzen).
+-]() Die Mitarbeiterrolle berechtigt in UI2 zur Sicht auf sämtliche Fälle und ihre internen Memos gemäss ZUG-04.
 - Im System können null, ein oder mehrere Fälle vorhanden sein.
 
 ## Main Success Scenario
@@ -62,7 +62,7 @@
 
 1. Aufrufer ohne Mitarbeiterberechtigung und Mieter erhalten keine Fallliste, Suchtreffer oder Zähler.
 2. Bei einer ausdrücklichen serverseitigen Zugriffsverweigerung enden automatische Abrufe; Falldaten werden aus dem sichtbaren Ergebnisbereich entfernt. Ein normaler Ladefehler ist davon zu unterscheiden.
-3. Es erscheint ein Zugriffshinweis ohne Anmeldeaufforderung. Eine Mitarbeiteranmeldung und ein Ablauf für deren Erneuerung sind nicht vorgesehen; die technische Trennung zum Mieterzugang folgt der offenen Konkretisierung in ZUG-04.
+3. Fehlt die Anmeldung oder ist sie abgelaufen, bietet PropertyFlow die Mitarbeiteranmeldung gemäss UC-006 an. Eine gültige Anmeldung ohne Mitarbeiterberechtigung führt zu einem Zugriffshinweis.
 
 ## Postconditions
 
@@ -109,7 +109,7 @@ PropertyFlow liefert den gespeicherten fachlichen Stand und prüft jeden Zugriff
 
 - [Fallverwaltung](../specifications/fallverwaltung.md): Fallidentität, acht Status, Problemhinweise, letzter Mieterkontakt und Abgrenzung zum technischen Workflow.
 - [Dringlichkeitsbewertung](../specifications/dringlichkeitsbewertung.md): Stufen und Farben, Erst-/Neubewertung, Vorrang manueller Einstufung und Historie.
-- [Fallzugriff und Sicherheit](../specifications/fallzugriff-und-sicherheit.md): Einheitliche Mitarbeiter-Adminrechte und Trennung vom Mieterzugriff.
+- [Fallzugriff und Sicherheit](../specifications/fallzugriff-und-sicherheit.md): Mitarbeiterrolle, persönliche Anmeldung und Grenzen des Mieterzugriffs.
 - [Fallkommunikation](../specifications/fallkommunikation.md): Nachrichten-/Memo-Sichtbarkeit, Suchumfang und Kommunikations-LLM-Grenze.
 - [Benachrichtigungen und Zustellung](../specifications/benachrichtigungen-und-zustellung.md): Versandhinweise und fachliche Benachrichtigungsauslöser.
 

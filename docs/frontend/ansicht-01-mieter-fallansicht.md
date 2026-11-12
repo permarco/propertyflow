@@ -10,7 +10,7 @@
 
 ## 1. Zweck und Abgrenzung
 
-Diese Seite ist der **einzige Einstieg für Mieterinnen und Mieter** in die Erfassung und Kommunikation zu einem Anliegen. Es gibt **kein Mieterportal, kein Benutzerkonto und keinen Login**. Ein neuer Fall wird zunächst über ein Formular erfasst. Danach bleibt der Benutzer auf derselben funktionalen Seite und sieht den Fall sowie seine fortlaufende Kommunikation. Für den späteren erneuten Zugriff erhält er per E-Mail einen persönlichen Fall-Link.
+Screen 01 ermöglicht die **Einreichung und Fallkommunikation ohne Konto**. Ein neuer Fall wird über das Formular erfasst. Nach der Annahme sieht der Mieter unmittelbar den Fall und seine fortlaufende Kommunikation. Für den späteren Zugriff erhält er per E-Mail einen persönlichen Fall-Link. Ein freiwilliges, per E-Mail verifiziertes Mieterkonto bietet zusätzlich eine Übersicht aller Fälle mit derselben aktuellen Kontaktadresse. Kontoeröffnung und Anmeldung beschreibt [UC-005](../use_cases/UC-005-userkonto-eroeffnen.md). Die Gestaltung der Kontoübersicht ist separat zu konkretisieren.
 
 Die Annahme und Fortführung des Falls richten sich nach [FALL-02](../specifications/fallverwaltung.md#fall-02-erfolgreiche-annahme) und [FALL-05](../specifications/fallverwaltung.md#fall-05-fachlicher-lebenszyklus). Die Seite zeigt den fachlichen Bearbeitungsstand und die freigegebene Kommunikation.
 
@@ -34,7 +34,7 @@ Die folgenden Ansichten bilden den [fachlichen Lebenszyklus nach FALL-05](../spe
 | **Aktiver Fall** | Nach erfolgreichem Erstabsenden oder über persönlichen Fall-Link | Case-ID, Status, Dringlichkeit mit Quelle, Betreff, Objekt/Wohnung und maskierte E-Mail-Adresse im Kopf, chronologischer Verlauf aus Nachrichten und Dringlichkeitsereignissen, Eingabe für neue Nachricht | Weitere Nachrichten jederzeit hinzufügen, solange der Fall aktiv ist |
 | **Abgeschlossener Fall** | Persönlicher Fall-Link nach bestätigtem fachlichem Abschluss in PropertyFlow | Case-ID, Abschlussstatus, Dringlichkeit mit Quelle, ursprüngliches Anliegen und gesamte bisherige freigegebene Historie | Ausschliesslich lesen; keine neuen Nachrichten durch irgendeinen Absender |
 
-**Direkter Übergang:** Nach dem erfolgreichen Erstabsenden gelangt der Mieter **ohne erneute Anmeldung und ohne zuerst die E-Mail öffnen zu müssen** unmittelbar zur aktiven Fallansicht. Der persönliche Link enthält als variablen Zugangswert nur den geheimen Token und wird zusätzlich per E-Mail zugestellt. Die sichere Übergabe richtet sich nach [ZUG-02](../specifications/fallzugriff-und-sicherheit.md#zug-02-ausgabe-und-erstzugriff); ihre technische Umsetzung wird im Service-Block festgelegt.
+**Direkter Übergang:** Nach dem erfolgreichen Erstabsenden gelangt der Mieter unmittelbar zur aktiven Fallansicht. Dafür sind weder eine Anmeldung noch der Abruf der Bestätigungsmail erforderlich. Der persönliche Link enthält als variablen Zugangswert nur den geheimen Token und wird zusätzlich per E-Mail zugestellt. Die sichere Übergabe richtet sich nach [ZUG-02](../specifications/fallzugriff-und-sicherheit.md#zug-02-ausgabe-und-erstzugriff); ihre technische Umsetzung wird im Service-Block festgelegt.
 
 **Ursprungsdaten:** Die Erfassungsfelder werden nach Annahme schreibgeschützt angezeigt. Ergänzungen sind über das Nachrichtenformular möglich; die fachliche Regel definiert [FALL-04](../specifications/fallverwaltung.md#fall-04-ursprungsdaten-und-zuordnung).
 

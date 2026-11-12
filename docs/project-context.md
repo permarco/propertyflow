@@ -316,14 +316,18 @@ werden dort gepflegt. Der persönliche Fall-Link hat keine zeitliche Ablauffrist
 dies ist am 10.10.2026 bestätigt. Weitere technische Schutzparameter bleiben als
 Review-Vorschläge gekennzeichnet. Screens, Use-Cases und Services verweisen auf diese Quelle.
 
-Für Mitarbeitende gibt es keine Anmeldung, keine Mitarbeiterkonten und keine
-Abmeldefunktion. UI2 und UI3 enthalten keinen Ablauf für eine abgelaufene Anmeldung.
-Die technische Absicherung des Mitarbeiterbereichs und die Ermittlung individueller
-Mitarbeiteridentitäten bleiben gemäss ZUG-04 zu konkretisieren.
-Alle Mitarbeitenden haben dieselben Adminrechte auf
-alle Fälle und internen Memos. Die Mitarbeiter-Volltextsuche umfasst gespeicherte
-veröffentlichte externe Nachrichten und interne Memos, keine externen Entwürfe.
-Sie erweitert weder Mieterrechte noch den zulässigen Kommunikations-LLM-Kontext.
+[ZUG-04](specifications/fallzugriff-und-sicherheit.md#zug-04-rechte-und-vertrauensgrenzen)
+beschreibt die Zugriffsmatrix gemäss [ADR-005](architecture/adr/ADR-005-zugriffsmodell.md).
+Ein freiwilliges Mieterkonto zeigt alle Fälle mit derselben aktuellen Kontaktadresse
+wie die verifizierte Konto-Adresse. Für UI2 und UI3 melden sich Mitarbeitende mit
+einem E-Mail-Einmalcode an. Die Verwaltung legt die Konten an und vergibt die
+Mitarbeiterrolle. Die Rolle gewährt einheitliche fachliche Fallrechte. Das Anlegen
+von Mitarbeiterkonten erfordert das zusätzliche Kontoverwaltungsrecht.
+
+Die Mitarbeiter-Volltextsuche umfasst gespeicherte veröffentlichte externe
+Nachrichten und interne Memos. Web und MCP nutzen denselben Anmeldedienst.
+PropertyFlow prüft bei MCP-Aufrufen zusätzlich den delegierten Zugriff des Clients
+auf die Aktion und den konkreten Fall.
 
 ### 6.10 Benachrichtigungen und Zustellung
 

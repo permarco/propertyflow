@@ -182,7 +182,7 @@ Ein Fall wechselt erst nach dem fachlich vorgesehenen Abschluss im Camunda-Ablau
 
 | Abschluss durch | Fachliche Voraussetzung / Beispiel |
 |---|---|
-| **Mitarbeiter** | Ein Mitarbeiter mit der einheitlichen Adminrolle bestätigt den fachlichen Abschluss. Er beurteilt, dass keine weitere Bearbeitung des Falls erforderlich ist. |
+| **Mitarbeiter** | Eine persönlich angemeldete Person mit Mitarbeiterrolle bestätigt den fachlichen Abschluss. Sie beurteilt, dass keine weitere Bearbeitung des Falls erforderlich ist. |
 | **System – Behebung bestätigt** | Eine gespeicherte Mieter-Nachricht bestätigt eindeutig, dass das Problem behoben ist und keine weitere Hilfe benötigt wird, z. B. «Fehler behoben, keine weitere Hilfe nötig». Das System prüft diese Aussage im Zusammenhang des aktuellen Falls. |
 | **System – kein Bearbeitungsbedarf der Verwaltung** | Die fachliche Prüfung ergibt eindeutig, dass das Anliegen gemäss den hinterlegten Fachregeln vom Mieter selbst zu erledigen ist. Beispiel: ein Glühbirnenwechsel, soweit der konkrete Austausch nach diesen Regeln in die Eigenverantwortung des Mieters fällt. |
 

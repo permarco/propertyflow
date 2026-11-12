@@ -260,7 +260,7 @@ architektonische Source of Truth.
 - [docs/project-context.md](docs/project-context.md)
   Versionierter, kompakt an arc42 orientierter KI-Rahmen mit Architektur, Stack, Konventionen, NFRs und Sicherheitsleitplanken
 
-- [Fallzugriff und Sicherheit](docs/specifications/fallzugriff-und-sicherheit.md): Persönlicher Tokenlink ohne zeitliche Ablauffrist, Trennung von Mieter- und Mitarbeiterfunktionen sowie bewusster Widerruf und administrativer Ersatz. Für Mitarbeitende gibt es keine Anmeldung; die technische Absicherung des Mitarbeiterbereichs ist noch zu konkretisieren.
+- [Fallzugriff und Sicherheit](docs/specifications/fallzugriff-und-sicherheit.md): Persönlicher Fall-Link, freiwilliges Mieterkonto, Mitarbeiteranmeldung per E-Mail-Einmalcode und Zugriffsmatrix für Web und MCP.
 
 - [Benachrichtigungen und Zustellung](docs/specifications/benachrichtigungen-und-zustellung.md): E-Mail bei sichtbaren Falländerungen, eigenen Nachrichten und Abschluss; Versandpflicht, Wiederholungen und Fehlerbehandlung.
 
