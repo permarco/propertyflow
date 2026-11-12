@@ -41,14 +41,14 @@ flowchart TB
 
 ## Flussdiagramm · Anmeldung für Web und MCP
 
-Mieter und Mitarbeitende nutzen denselben Anmeldedienst für PropertyFlow-Web und den MCP-Client im LLM-Chat. Solange die Anmeldung im selben Browserprofil gültig ist, genügt sie für beide Zugänge. Die Web-Anwendung verwendet eine Browsersitzung. Der MCP-Client erhält nach Freigabe ein eigenes OAuth-Zugriffstoken für den MCP-Endpunkt über HTTP. Das Verfahren für die erste Mitarbeiteranmeldung ist noch offen.
+Mieter und Mitarbeitende nutzen denselben Anmeldedienst für PropertyFlow-Web und den MCP-Client im LLM-Chat. Solange die Anmeldung im selben Browserprofil gültig ist, genügt sie für beide Zugänge. Die Web-Anwendung verwendet eine Browsersitzung. Der MCP-Client erhält nach Freigabe ein eigenes OAuth-Zugriffstoken für den MCP-Endpunkt über HTTP. Die Verwaltung richtet Mitarbeiterkonten ein. Mitarbeitende melden sich gemäss [UC-006](UC-006-mitarbeiter-anmelden.md) mit einem E-Mail-Einmalcode an.
 
 ```mermaid
 flowchart TD
     Web(["PropertyFlow-Web öffnen"])
     Chat(["PropertyFlow im LLM-Chat verbinden"])
     Sitzung{"Gültige Anmeldung im Browser vorhanden?"}
-    Anmelden["Persönlich anmelden · Mieter: E-Mail-Einmalcode als Vorschlag · Mitarbeitende: Verfahren offen"]
+    Anmelden["Persönlich anmelden · E-Mail-Einmalcode für Mitarbeitende · für Mieter vorgeschlagen"]
     Pruefung{"Anmeldung erfolgreich?"}
     Anmeldung["Sitzung beim gemeinsamen Anmeldedienst eröffnen"]
     Ziel{"Welcher Zugang wurde angefragt?"}
@@ -104,8 +104,8 @@ PropertyFlow erstellt kein zweites Konto. Die Person kann das bestehende Konto �
 
 ## Business Rules und Prüfkriterien
 
-- **BR-001:** Die Fallzuordnung ergibt sich aus der verifizierten Konto-Adresse und der aktuellen Fall-Kontaktadresse. PropertyFlow prüft sie bei jedem Listen-, Detail- und Schreibzugriff im Web und über MCP. Eine vom Client angegebene Adresse kann die Zuordnung nicht ändern.
-- **BR-002:** Das Konto erlaubt nur Mieteraktionen. Der veröffentlichte Fallverlauf bleibt lesbar. Eine externe Nachricht ist nur in einem aktiven Fall zulässig. Der MCP-Client erhält ausschliesslich die freigegebenen Aktionen.
-- **AK-01:** Zwei Fälle mit Adresse A und einen Fall mit Adresse B ohne Anmeldung einreichen. Nach Verifikation eines neuen Kontos mit Adresse A erscheinen genau die beiden Fälle mit Adresse A. Ein direkter Abruf des dritten Falls wird abgelehnt.
-- **AK-02:** Einen ungültigen, abgelaufenen oder bereits verwendeten Nachweis übermitteln. Der Versuch eröffnet keine angemeldete Sitzung und liefert keine Fallinformationen.
-- **AK-03:** Mit dem verifizierten Konto und freigegebenem MCP-Client die Fallübersicht abrufen. Web und MCP verwenden dieselbe Fallmenge und geben nur für Mieter sichtbare Inhalte aus.
+- **UC-005-BR-001:** Die Fallzuordnung ergibt sich aus der verifizierten Konto-Adresse und der aktuellen Fall-Kontaktadresse. PropertyFlow prüft sie bei jedem Listen-, Detail- und Schreibzugriff im Web und über MCP. Eine vom Client angegebene Adresse kann die Zuordnung nicht ändern.
+- **UC-005-BR-002:** Das Konto erlaubt nur Mieteraktionen. Der veröffentlichte Fallverlauf bleibt lesbar. Eine externe Nachricht ist nur in einem aktiven Fall zulässig. Der MCP-Client erhält ausschliesslich die freigegebenen Aktionen.
+- **UC-005-AK-01:** Zwei Fälle mit Adresse A und einen Fall mit Adresse B ohne Anmeldung einreichen. Nach Verifikation eines neuen Kontos mit Adresse A erscheinen genau die beiden Fälle mit Adresse A. Ein direkter Abruf des dritten Falls wird abgelehnt.
+- **UC-005-AK-02:** Einen ungültigen, abgelaufenen oder bereits verwendeten Nachweis übermitteln. Der Versuch eröffnet keine angemeldete Sitzung und liefert keine Fallinformationen.
+- **UC-005-AK-03:** Mit dem verifizierten Konto und freigegebenem MCP-Client die Fallübersicht abrufen. Web und MCP verwenden dieselbe Fallmenge und geben nur für Mieter sichtbare Inhalte aus.

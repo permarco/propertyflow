@@ -79,13 +79,13 @@
 
 ## Business Rules
 
-### BR-001: Dringlichkeit und Bearbeitungsstatus
+### UC-002-BR-001: Dringlichkeit und Bearbeitungsstatus
 
 Stufen, Farben, wirksame Bewertung und Änderungsquelle folgen [DRING-01 bis DRING-07](../specifications/dringlichkeitsbewertung.md). Die Darstellung bleibt auch ohne Farbe verständlich. Eine manuelle Einstufung bleibt für Anzeige, Filter und Sortierung massgeblich und darf nicht durch eine Systembewertung überschrieben werden.
 
 Die acht Bearbeitungsstatus und die intern gespeicherten Gründe für «Mitarbeiterprüfung erforderlich» folgen [FALL-05](../specifications/fallverwaltung.md#fall-05-fachlicher-lebenszyklus). «Aktiv» ist die Gruppe der ersten sieben Status, kein zusätzlicher anzuzeigender Bearbeitungsstatus. Die Liste zeigt den Bearbeitungsstatus, aber keine fallbezogenen Problemhinweise. Technische Analyse- oder Mailzustände werden nicht als Dringlichkeitsstufen behandelt.
 
-### BR-002: Volltextsuche und Filter
+### UC-002-BR-002: Volltextsuche und Filter
 
 Die Suche gehört ausschliesslich zur Mitarbeiterliste und umfasst Falldaten, gespeicherte veröffentlichte externe Nachrichten sowie sämtliche gespeicherten internen Memos. Externe Entwürfe, ungespeicherte Eingaben und KI-Teilantworten sind ausgeschlossen. E-Mail-Zustellung ist keine Voraussetzung für die Durchsuchbarkeit einer veröffentlichten Nachricht. Mehrere Fundstellen desselben Falls ergeben nur einen Listeneintrag.
 
@@ -93,13 +93,13 @@ Die Suche findet vollständige Wörter und Teilwörter und ignoriert dabei Gross
 
 Der Dringlichkeitsfilter bietet «Alle», «Kritisch», «Hoch», «Normal», «Niedrig» und «Noch nicht bewertet». Es gibt keinen zusätzlichen Bearbeitungsstatus- oder Hinweisfilter. Suche und Filter wirken gemeinsam; abgeschlossene Fälle gehören nur bei eingeschaltetem Button zum Suchumfang. Interne Suchbarkeit erweitert keine LLM-Kommunikationsgrundlage nach KOM-02.
 
-### BR-003: Sortierung, Zeitmodell und Seiten
+### UC-002-BR-003: Sortierung, Zeitmodell und Seiten
 
 Standardsortierung und Sortierfunktion aller sieben Spalten folgen Screen 02. Der erste Klick auf einen Spaltentitel sortiert aufsteigend und zeigt ↑, der zweite Klick absteigend und zeigt ↓. Weitere Klicks wechseln die Richtung; bei einer anderen Spalte beginnt die Sortierung aufsteigend. Nur der aktiv gewählte Spaltentitel zeigt den Richtungspfeil. «Fall» sortiert nach ursprünglichem Betreff A–Z bzw. Z–A. Die Sortierauswahl erhält Suche und Filter und beginnt auf Seite 1. «Letzte Aktion des Mieters» verwendet den Zeitvertrag nach FALL-08, nicht den letzten beliebigen Fall- oder Systemzugriff. Suche und Sortierung gelten vor der Aufteilung in Seiten mit maximal 50 Fällen. Weitere Sortierwerte folgen Screen 02; der genaue technische Textvergleich wird bei der Umsetzung konkretisiert; Teilwortsuche und UND-Verknüpfung sind vereinbart.
 
 Die zusätzliche Spalte «Wiedervorlage» folgt FALL-11. Sie zeigt das gespeicherte Datum oder «–», wenn kein Termin gesetzt ist. Sie ist auf- und absteigend sortierbar; Fälle ohne Termin stehen gemäss Screen 02 in beiden Richtungen zuletzt. Neue oder geänderte Termine, automatische Vorverlegungen und Löschungen werden mit der Liste aktualisiert. Bearbeitung und Löschen des Termins erfolgen in UI3.
 
-### BR-004: Aktualisierung und Rechte
+### UC-002-BR-004: Aktualisierung und Rechte
 
 Die schmale Darstellung ist vereinbart: Jeder Fall erscheint als kompakter Block mit den sieben beschrifteten Angaben untereinander. Suche, Filter und eine Sortierauswahl mit ↑/↓ stehen darüber. Case-ID bleibt Link; die Grundfunktionen entsprechen der breiten Ansicht.
 

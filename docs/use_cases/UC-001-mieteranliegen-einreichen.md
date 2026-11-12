@@ -86,14 +86,14 @@ Dieser Use Case beschreibt die Web-Erfassung. Die sichere Annahme und Zuordnung 
 
 ## Business Rules
 
-### BR-001: Verständliche Validierung
+### UC-001-BR-001: Verständliche Validierung
 
 Die Eingabeprüfung folgt [FALL-02](../specifications/fallverwaltung.md#fall-02-erfolgreiche-annahme). Die Oberfläche ordnet Fehler den betroffenen Feldern zu; konkrete Labels und Hilfstexte stehen in Screen 01.
 
-### BR-002: Keine KI-Abhängigkeit für die Erfassung
+### UC-001-BR-002: Keine KI-Abhängigkeit für die Erfassung
 
 Die Annahme und das Verhalten bei ausgefallenen Folgekomponenten richten sich nach [FALL-02](../specifications/fallverwaltung.md#fall-02-erfolgreiche-annahme), [FALL-06](../specifications/fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow) und [FALL-09](../specifications/fallverwaltung.md#fall-09-fehler-und-grenzfälle).
 
-### BR-003: Eindeutige Fallidentität
+### UC-001-BR-003: Eindeutige Fallidentität
 
 Wiederholung, Ursprungsdaten und Zuordnung folgen FALL-01, FALL-03 und FALL-04. Die fachlichen Prüfkriterien FALL-AK-01 bis FALL-AK-04 werden in der zentralen [Fallverwaltung](../specifications/fallverwaltung.md#prüfkriterien) gepflegt.

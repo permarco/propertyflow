@@ -54,7 +54,7 @@ Die Auswahl aus [Screen 02](../frontend/ansicht-02-mitarbeiter-falluebersicht.md
 
 ## Business Rules
 
-### BR-001: KI-Empfehlung ist keine Entscheidung
+### UC-003-BR-001: KI-Empfehlung ist keine Entscheidung
 
 Eine KI-Ausgabe wird als Empfehlung beziehungsweise Unterstützung dargestellt. Vorgeschriebene menschliche Prüfungen und die fachliche Verantwortung verbleiben bei der Immobilienbewirtschaftung. Mitarbeitende können Fälle abschliessen; die vereinbarten Systemabschlüsse folgen den gesonderten, serverseitig geprüften Fachregeln aus [FALL-07](../specifications/fallverwaltung.md#fall-07-abschluss-und-zeit-danach). Eine beliebige KI-Ausgabe ist keine Abschlussberechtigung. Bei Kosten bzw. verbindlicher externer Beauftragung, sehr dringlichen oder schwerwiegenden Fällen sowie starken oder eskalierten Mieterbeschwerden ist die menschliche Entscheidung nach [FALL-10](../specifications/fallverwaltung.md#fall-10-automatisierung-und-menschliche-freigabe) verpflichtend. Offener Prüfbedarf darf nicht durch einen Systemabschluss umgangen werden. Mitarbeiterprüfungen werden über interne Memos dokumentiert; es gibt keine separate Aktion «Prüfung erledigt» und keine externe Auftragsausführung. Statusänderung und Mitarbeiterabschluss folgen der bestätigten Bedienung in Screen 03.
 
@@ -62,21 +62,21 @@ Nach Prüfung kann der Mitarbeiter gemäss [FALL-06](../specifications/fallverwa
 
 Beim erfolgreichen Mitarbeiterabschluss speichert PropertyFlow intern «Vom Mitarbeiter geprüft: keine weitere Bearbeitung erforderlich.» mit Mitarbeiter, Zeitpunkt und Abschlussquelle gemäss FALL-07. Die bewusste Bestätigung bildet die Grundlage. Ein zusätzliches Begründungsfeld oder Pflichtmemo entfällt; eine ausführlichere Erklärung ist vor dem Abschluss freiwillig als Memo möglich. Der Vermerk ist keine Kommunikationsnachricht. Bei Systemabschlüssen bleibt der tatsächlich geprüfte Systemgrund erforderlich.
 
-### BR-003: Wiedereröffnung ausschliesslich durch Mitarbeitende
+### UC-003-BR-003: Wiedereröffnung ausschliesslich durch Mitarbeitende
 
 Ein Mitarbeiter kann einen abgeschlossenen Fall in Screen 03 bewusst wiedereröffnen gemäss FALL-07 und ZUG-04. Case-ID und bisherige Historie bleiben erhalten; die Handlung bleibt mit Zeitpunkt und Mitarbeiteridentität nachvollziehbar. Nach bestätigter Wiedereröffnung gelten die Regeln für aktive Fälle. Mieter und System dürfen den Fall nicht wiedereröffnen. «Fall wiedereröffnen» öffnet die Bestätigung mit «Wiedereröffnen» und «Abbrechen». Nach bestätigter Wiedereröffnung gilt «In Bearbeitung», bei offenem Prüfbedarf «Mitarbeiterprüfung erforderlich». Eine optionale Begründung wird danach als internes Memo erfasst.
 
 Verspätete automatische Ergebnisse aus der Bearbeitung vor dem letzten Abschluss dürfen den wiedereröffneten Fall nicht verändern. Die Weiterbearbeitung richtet sich nach dem aktuellen Fallstand; die gespeicherte Historie bleibt erhalten. Diese fachliche Grenze steht in [FALL-07](../specifications/fallverwaltung.md#verspätete-automatische-ergebnisse-nach-wiedereröffnung); die technische Prozessfortsetzung wird später ausgearbeitet.
 
-### BR-002: Technische KI-Details stehen nicht im Vordergrund
+### UC-003-BR-002: Technische KI-Details stehen nicht im Vordergrund
 
 Die Detailansicht priorisiert fachlich verständliche Informationen wie Dringlichkeit, Empfehlung, Zuständigkeit und Bearbeitungsstatus.
 
-### BR-004: Wiedervorlage mit paralleler Verarbeitung
+### UC-003-BR-004: Wiedervorlage mit paralleler Verarbeitung
 
 Der Mitarbeiter kann in UI3 eine optionale Wiedervorlage in Tagen oder als festes Datum setzen und im aktiven Fall jederzeit ändern oder löschen. PropertyFlow speichert den bestimmten Termin; Camunda wartet im bestehenden Fallprozess über einen Timer. Setzen und Ändern führen zu «Wartet auf Wiedervorlage». Löschen entfernt den aktuellen Termin, beendet die Wartezeit und setzt «In Bearbeitung». UI2 zeigt das gespeicherte Datum in einer zusätzlichen sortierbaren Spalte. Neue Mieternachrichten werden währenddessen weiter automatisch verarbeitet. Neue Erkenntnisse können eine frühere Wiedervorlage erfordern; andernfalls bleibt der Termin bestehen. Am wirksamen Termin erhält der aktive Fall «Mitarbeiterprüfung erforderlich». Terminänderung, Löschung, Abschluss und Nachvollziehbarkeit folgen [FALL-11](../specifications/fallverwaltung.md#fall-11-wiedervorlage-und-parallele-nachrichtenverarbeitung); die Darstellung folgt UI3.
 
-### BR-005: Objekt und Wohnung zuordnen
+### UC-003-BR-005: Objekt und Wohnung zuordnen
 
 Bei der Bearbeitung eines aktiven Falls kann der Mitarbeiter rechts in UI3 «Ändern» bei «Bestätigte Zuordnung» wählen, einen vorhandenen Vorschlag auswählen oder Freitext eingeben und mit «Zuordnung bestätigen» speichern. Solange keine bestätigte Zuordnung vorliegt, ist das Feld mit der ursprünglichen Mieterangabe vorbelegt; bei späteren Änderungen mit der aktuellen bestätigten Zuordnung. Die Vorbelegung allein bestätigt nichts. Die ursprüngliche Angabe kann unverändert bestätigt werden; ein separater Speicher- oder Bestätigungsschritt entfällt. Eine offene Zuordnung wird damit geklärt oder eine bisherige Zuordnung korrigiert. Die ursprüngliche Mieterangabe bleibt getrennt von der bestätigten Zuordnung nachvollziehbar. Berechtigung, Eingabeprüfung (1–200 Zeichen nach Entfernen äusserer Leerzeichen), Prüfung strukturierter Referenzen bei deren Verwendung, Konfliktprüfung und Speicherung folgen [FALL-04](../specifications/fallverwaltung.md#fall-04-ursprungsdaten-und-zuordnung); UI2 übernimmt den gespeicherten Stand in seine bestehende Spalte. Mitarbeitereingabe und laufender KI-Stream bleiben erhalten. Die Zuordnung ändert weder Kontaktadresse noch persönlichen Fall-Link und ersetzt keine separate manuelle Statusänderung.
 

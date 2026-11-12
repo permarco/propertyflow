@@ -624,7 +624,7 @@ Validierungsreihenfolge und HTML-maxlength-Vertrag angleichen.
 
 **D01 · Freitextzuordnung:** FALL-04 sagt gleichzeitig «Ein zusätzlicher Freitext
 ersetzt die bestätigte Auswahl nicht» und erlaubt später freie Zuordnung.
-[UC-003 BR-005](../use_cases/UC-003-mieteranliegen-details-anzeigen.md#br-005-objekt-und-wohnung-zuordnen)
+[UC-003-BR-005](../use_cases/UC-003-mieteranliegen-details-anzeigen.md#uc-003-br-005-objekt-und-wohnung-zuordnen)
 fordert weiterhin nur Objekt-/Wohnungsauswahl. Die aktuelle UI3-Spec, Implementierung
 und bestätigte Benutzerentscheidung erlauben Freitext. Die ältere Aussage zur
 zwingenden Stammdaten-Auswahl und Zusammengehörigkeitsprüfung muss entsprechend
@@ -742,7 +742,7 @@ Die bestätigte Zuordnung wird vor der serverseitigen Pflichtfeld- und Längenpr
 
 ### Korrektur D01 – Zuordnung bestätigen
 
-Die widersprüchliche Beschränkung auf eine Stammdatenauswahl wurde in [FALL-04](../specifications/fallverwaltung.md#fall-04-ursprungsdaten-und-zuordnung), FALL-AK-04, [UI3](../frontend/ansicht-03-mitarbeiter-falldetail.md#objekt-und-wohnung-zuordnen), FD-AK-20 und [UC-003 BR-005](../use_cases/UC-003-mieteranliegen-details-anzeigen.md#br-005-objekt-und-wohnung-zuordnen) abgeglichen. Vorschlag und Freitext bestätigen dieselbe Fallzuordnung. Ohne bestätigten Wert wird die ursprüngliche Mieterangabe vorbelegt, sonst der aktuelle bestätigte Wert. «Zuordnung bestätigen» ersetzt «Speichern»; Vorbelegen oder Auswählen allein speichert nichts. Die [UI2-Anzeigeregel](../frontend/ansicht-02-mitarbeiter-falluebersicht.md) wurde entsprechend präzisiert. Frühere Revieweinträge dokumentieren den damaligen Stand. Dieser Auftrag ändert nur Dokumentation; Buttonbeschriftung und erstmalige Vorbelegung sind im Frontend noch umzusetzen.
+Die widersprüchliche Beschränkung auf eine Stammdatenauswahl wurde in [FALL-04](../specifications/fallverwaltung.md#fall-04-ursprungsdaten-und-zuordnung), FALL-AK-04, [UI3](../frontend/ansicht-03-mitarbeiter-falldetail.md#objekt-und-wohnung-zuordnen), FD-AK-20 und [UC-003-BR-005](../use_cases/UC-003-mieteranliegen-details-anzeigen.md#uc-003-br-005-objekt-und-wohnung-zuordnen) abgeglichen. Vorschlag und Freitext bestätigen dieselbe Fallzuordnung. Ohne bestätigten Wert wird die ursprüngliche Mieterangabe vorbelegt, sonst der aktuelle bestätigte Wert. «Zuordnung bestätigen» ersetzt «Speichern»; Vorbelegen oder Auswählen allein speichert nichts. Die [UI2-Anzeigeregel](../frontend/ansicht-02-mitarbeiter-falluebersicht.md) wurde entsprechend präzisiert. Frühere Revieweinträge dokumentieren den damaligen Stand. Dieser Auftrag ändert nur Dokumentation; Buttonbeschriftung und erstmalige Vorbelegung sind im Frontend noch umzusetzen.
 
 ### Implementierungs- und Testnachtrag zur Übergabe vom 13.10.2026
 

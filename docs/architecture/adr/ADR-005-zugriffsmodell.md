@@ -2,7 +2,7 @@
 
 ## Status
 
-**Vorgeschlagen.** Die fachliche Richtung und die automatische Fallzuordnung anhand der verifizierten E-Mail-Adresse sind am 12.11.2026 abgestimmt. Die technischen Anmeldeverfahren sind noch offen.
+**Vorgeschlagen.** Die fachliche Richtung und die automatische Fallzuordnung anhand der verifizierten E-Mail-Adresse sind am 12.11.2026 abgestimmt. Für Mitarbeitende sind die Kontobereitstellung durch die Verwaltung und die Anmeldung per E-Mail-Einmalcode bestätigt. Technische Details bleiben offen.
 
 ## Kontext
 
@@ -27,7 +27,9 @@ Der persönliche Fall-Link vermittelt seine begrenzten Rechte im Browser. Der MC
 
 ### Mitarbeiteridentität
 
-Der Mitarbeiterbereich setzt für Lesen und Schreiben eine persönliche Anmeldung voraus. PropertyFlow ordnet jedem Mitarbeiter eine stabile interne Benutzer-ID und die vergebene Mitarbeiterrolle zu. Eine E-Mail-Verifikation allein verleiht keine Mitarbeiterrolle. Das konkrete Anmeldeverfahren und die Kontobereitstellung werden im nächsten Entwurfsschritt festgelegt.
+Der Mitarbeiterbereich setzt für Lesen und Schreiben eine persönliche Anmeldung voraus. Die Verwaltung legt das Mitarbeiterkonto an und weist die Mitarbeiterrolle zu. PropertyFlow ordnet dem Konto eine stabile interne Benutzer-ID zu. Die Person meldet sich mit einem kurz gültigen Einmalcode an, den PropertyFlow an die im Mitarbeiterkonto hinterlegte E-Mail-Adresse sendet. Den Ablauf beschreibt [UC-006 «Mitarbeiter anmelden»](../../use_cases/UC-006-mitarbeiter-anmelden.md).
+
+Die erste Person mit Kontoverwaltungsrecht wird bei der Servereinrichtung bestimmt. Danach legen berechtigte Mitarbeitende weitere Konten in der geschützten Kontoverwaltung an. Beide Wege beschreibt [UC-007 «Mitarbeiterkonto anlegen»](../../use_cases/UC-007-mitarbeiterkonto-anlegen.md).
 
 ### Freiwilliges Mieterkonto und Fallzuordnung
 
@@ -72,4 +74,4 @@ Die automatische Fallzuordnung erspart die manuelle Verknüpfung jedes einzelnen
 
 ## Nächster Entscheid
 
-Anmeldeverfahren und Kontobereitstellung für Mitarbeiter, den Ablauf für die E-Mail-Verifikation der Mieterkonten und die Berechtigungsdelegation für MCP festlegen. Anschliessend die Zugriffsregeln in ZUG-04 nachführen und die Schnittstellen-IDs für C4 festlegen.
+Den Ablauf für die E-Mail-Verifikation der Mieterkonten und die Berechtigungsdelegation für MCP konkretisieren. Die Zugriffsregeln in ZUG-04 nachführen und die Schnittstellen-IDs für C4 festlegen.
