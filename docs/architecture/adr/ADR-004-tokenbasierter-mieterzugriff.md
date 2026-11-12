@@ -1,4 +1,4 @@
-# ADR-004: Tokenbasierter Mieterzugriff ohne Benutzerkonto
+# ADR-004: Persönlicher Fall-Link als Mieterzugang ohne Benutzerkonto
 
 ## Status
 
@@ -6,9 +6,11 @@ Akzeptiert – dokumentiert die am 09.10.2026 vereinbarte Zugangsentscheidung. D
 
 **Fachlich konkretisiert am 10.10.2026:** Der persönliche Fall-Link hat keine zeitliche Ablauffrist. Diese bestätigte Festlegung ersetzt den bisherigen offenen Laufzeitvorschlag; das direkte Tokenmodell und die getrennten Regeln für einen bewussten Widerruf bleiben bestehen.
 
+**Geltungsbereich präzisiert am 12.11.2026:** Dieser ADR regelt den persönlichen Fall-Link als Zugang ohne Konto. Mieter können weiterhin ohne Konto ein Anliegen einreichen und über den gültigen Link in einem aktiven Fall antworten. Der zusätzliche Zugang über ein freiwilliges, per E-Mail verifiziertes Mieterkonto sowie Mitarbeiteranmeldung und MCP-Zugriff werden in [ADR-005](ADR-005-zugriffsmodell.md) entworfen.
+
 ## Kontext
 
-Mieterinnen und Mieter sollen neue Anliegen erfassen und einen bestehenden Fall wiederholt aufrufen können. Ein Mieterportal mit Benutzerkonto und Anmeldung ist für diesen Umfang nicht vorgesehen. Der persönliche Falllink wird per E-Mail zugestellt und in späteren Benachrichtigungen wiederverwendet.
+Mieterinnen und Mieter sollen neue Anliegen erfassen und einen bestehenden Fall wiederholt aufrufen können, auch wenn sie kein Konto haben oder gerade nicht angemeldet sind. Der persönliche Fall-Link wird per E-Mail zugestellt und in späteren Benachrichtigungen wiederverwendet.
 
 Die Case-ID wird als lesbare, unveränderliche Fallreferenz benötigt. Sie soll keinen Zugriff gewähren. Ein separater geheimer Zugang muss dem Fall zugeordnet, geprüft und bei Bedarf gesperrt werden können, ohne die Fallidentität zu ändern.
 
@@ -18,7 +20,7 @@ Die detaillierten Regeln sind in [Fallzugriff und Sicherheit](../../specificatio
 
 ## Entscheidung
 
-1. **Zugang ohne Benutzerkonto:** Ein kryptografisch zufälliger, nicht aus der Case-ID ableitbarer Token vermittelt die begrenzte Mieterberechtigung für genau einen Fall. Im vereinbarten Modell gibt es pro Fall genau einen gültigen Mieterzugang.
+1. **Zugang ohne Benutzerkonto:** Ein kryptografisch zufälliger, nicht aus der Case-ID ableitbarer Token vermittelt die begrenzte Mieterberechtigung für genau einen Fall. Im vereinbarten Modell gibt es pro Fall genau einen gültigen Fall-Link-Token.
 2. **Fallidentität und Berechtigung getrennt:** Die Case-ID identifiziert den Fall und erscheint im Inhalt der Ansicht. Nur der gültige geheime Token berechtigt zum Zugriff; Case-ID, Kontaktadresse oder Absende-ID allein genügen nicht.
 3. **Direkte, wiederverwendbare Tokenadresse:** Der persönliche Link lautet `/mieter/fall/zugang/<geheimer-token>`. Ein gültiger GET rendert den Fall direkt unter derselben URL. Es gibt keinen Austausch gegen eine berechtigende Sitzung und keine GET-Weiterleitung auf eine tokenfreie Adresse. Jeder Lese- und Schreibaufruf prüft Token, Fallzuordnung und geltende Rechte erneut. Technische Cookies können dem Formularschutz dienen, ersetzen aber die Tokenprüfung nicht.
 4. **Ein gleichbleibender Link ohne zeitliche Ablauffrist:** Der Token läuft weder durch Zeitablauf noch durch Inaktivität ab. Öffnen und gewöhnliche E-Mail-Benachrichtigungen verbrauchen oder ersetzen ihn nicht; eine Verlängerung ist nicht erforderlich. Ein bewusster Ersatz erzeugt einen neuen unabhängigen Token und sperrt den alten. Die Case-ID und der Verlauf bleiben erhalten.
@@ -39,7 +41,7 @@ Ein Hash allein kann den ursprünglichen Token nicht für spätere E-Mails wiede
 
 | Alternative | Bewertung |
 |---|---|
-| Mieterportal mit Konto und Anmeldung | Könnte personenbezogene Zugriffe und getrennte Empfängerberechtigungen unterstützen, führt aber Registrierung, Kontoverwaltung und zusätzliche Bedienung ein. Für den vereinbarten Umfang verworfen. |
+| Anmeldung als Voraussetzung für den Fallzugriff | Würde eine Registrierung und Kontoverwaltung für jeden Mieter voraussetzen. Für den Zugang per Fall-Link verworfen. Ein freiwilliges Mieterkonto als zusätzlicher Zugangsweg ist Gegenstand von ADR-005. |
 | Fallzugriff allein über eine geheime Case-ID | Vermischt dauerhafte Fallreferenz und widerrufbare Berechtigung. Die lesbare Case-ID soll ohne Weitergabe des Zugangs verwendet werden können. Verworfen. |
 | Case-ID und separater Token gemeinsam in der URL | Technisch möglich, aber die zusätzliche Fall-ID ist für die Zuordnung nicht erforderlich. Die vereinbarte Route enthält nur den Token als variablen Zugangswert. |
 | Token gegen eine Fallsitzung tauschen und auf eine tokenfreie URL weiterleiten | Würde die Geheimnisexposition in der sichtbaren Adresse reduzieren, benötigt jedoch Sitzungsautorisierung und widerspricht der vereinbarten dauerhaft sichtbaren Tokenadresse. Verworfen. |
@@ -69,4 +71,4 @@ Die Spezifikationen bleiben die Quellen für detaillierte Regeln und Prüfkriter
 - [Fallverwaltung](../../specifications/fallverwaltung.md): Fallidentität und Lebenszyklus.
 - [Mieter-Fallansicht](../../frontend/ansicht-01-mieter-fallansicht.md): Darstellung und Bedienung.
 
-Dieser ADR ergänzt ADR-001 bis ADR-003. Die grundlegende Präsentationsarchitektur bleibt in ADR-003 beschrieben. Dieser ADR regelt die Zugangsarchitektur; die Zuordnung interaktiver Funktionen zu einzelnen Ansichten bleibt den Use-Cases und UI-Spezifikationen vorbehalten. Künftige Änderungen an der hier festgelegten Zugangsarchitektur benötigen einen neuen oder ersetzenden ADR; fachliche und technische Detailregeln werden in den verknüpften Spezifikationen gepflegt.
+Dieser ADR ergänzt ADR-001 bis ADR-003 um den fallgebundenen Linkzugriff. [ADR-005](ADR-005-zugriffsmodell.md) beschreibt den geplanten Kontozugriff und die Autorisierung für MCP. Der Fall-Link vermittelt eine begrenzte Browserberechtigung für den zugeordneten Fall. MCP-Zugriffe verwenden das persönliche Konto und die dafür delegierten Rechte. Fachliche und technische Detailregeln werden in den verknüpften Spezifikationen gepflegt.

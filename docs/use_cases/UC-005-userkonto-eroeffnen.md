@@ -1,0 +1,111 @@
+# Use Case: Userkonto eröffnen
+
+## Overview
+
+**Use Case ID:** UC-005  
+**Use Case Name:** Userkonto eröffnen  
+**Primary Actor:** Mieterin / Mieter  
+**Goal:** Ein freiwilliges Mieterkonto mit verifizierter E-Mail-Adresse eröffnen und alle Fälle mit derselben aktuellen Kontaktadresse im Konto sehen.  
+**Status:** Fachlicher Entwurf. Das konkrete Verfahren für Verifikation und Login ist offen.
+
+**Fachliche Grundlage:** [ADR-005](../architecture/adr/ADR-005-zugriffsmodell.md) beschreibt Konto, Fallzuordnung und MCP-Zugriff. [ADR-004](../architecture/adr/ADR-004-tokenbasierter-mieterzugriff.md) regelt den persönlichen Fall-Link. Ein Anliegen kann gemäss [UC-001](UC-001-mieteranliegen-einreichen.md) ohne Konto eingereicht werden.
+
+## Use-Case-Diagramm
+
+```mermaid
+flowchart TB
+    Mieter["Mieterin / Mieter"]
+    Client["MCP-Client"]
+    Mail["E-Mail-Dienst"]
+
+    Mieter -->|"delegiert Zugriff"| Client
+
+    subgraph PropertyFlow["PropertyFlow"]
+        Erfassung(["UC-001 · Mieteranliegen erfassen"])
+        Ergaenzung(["Aktives Mieteranliegen ergänzen"])
+        Konto(["UC-005 · Userkonto eröffnen"])
+        Verifikation(["E-Mail-Adresse verifizieren"])
+        Falluebersicht(["Fälle zur verifizierten E-Mail-Adresse anzeigen"])
+    end
+
+    Mieter ---|"ohne Konto möglich"| Erfassung
+    Mieter ---|"per Fall-Link oder berechtigtem Konto"| Ergaenzung
+    Mieter --- Konto
+    Konto -.->|"beinhaltet"| Verifikation
+    Verifikation ---|"Verifikationsmail"| Mail
+    Konto -.->|"nach erfolgreicher Verifikation"| Falluebersicht
+    Mieter ---|"im angemeldeten Konto"| Falluebersicht
+    Client ---|"mit delegiertem Leserecht"| Falluebersicht
+    Client ---|"mit delegiertem Schreibrecht"| Ergaenzung
+```
+
+## Flussdiagramm · Anmeldung für Web und MCP
+
+Mieter und Mitarbeitende nutzen denselben Anmeldedienst für PropertyFlow-Web und den MCP-Client im LLM-Chat. Solange die Anmeldung im selben Browserprofil gültig ist, genügt sie für beide Zugänge. Die Web-Anwendung verwendet eine Browsersitzung. Der MCP-Client erhält nach Freigabe ein eigenes OAuth-Zugriffstoken für den MCP-Endpunkt über HTTP. Das Verfahren für die erste Mitarbeiteranmeldung ist noch offen.
+
+```mermaid
+flowchart TD
+    Web(["PropertyFlow-Web öffnen"])
+    Chat(["PropertyFlow im LLM-Chat verbinden"])
+    Sitzung{"Gültige Anmeldung im Browser vorhanden?"}
+    Anmelden["Persönlich anmelden · Mieter: E-Mail-Einmalcode als Vorschlag · Mitarbeitende: Verfahren offen"]
+    Pruefung{"Anmeldung erfolgreich?"}
+    Anmeldung["Sitzung beim gemeinsamen Anmeldedienst eröffnen"]
+    Ziel{"Welcher Zugang wurde angefragt?"}
+    Faelle(["Web-Sitzung eröffnen und Fälle gemäss Berechtigung anzeigen"])
+    Freigabe{"Gibt die angemeldete Person dem LLM-Chat Zugriff?"}
+    Token["MCP-Client erhält per OAuth ein Zugriffstoken für MCP über HTTP"]
+    Zugriff(["PropertyFlow prüft bei jedem MCP-Aufruf Token, Rolle, delegierte Aktion und Fallberechtigung"])
+    Ende(["Verbindung endet ohne Zugriffstoken"])
+
+    Web --> Sitzung
+    Chat -->|"öffnet denselben Anmeldedienst im Browser"| Sitzung
+    Sitzung -->|"Ja"| Ziel
+    Sitzung -->|"Nein"| Anmelden --> Pruefung
+    Pruefung -->|"Nein · erneut versuchen"| Anmelden
+    Pruefung -->|"Ja"| Anmeldung --> Ziel
+    Ziel -->|"Web"| Faelle
+    Ziel -->|"LLM-Chat"| Freigabe
+    Freigabe -->|"Ja"| Token --> Zugriff
+    Freigabe -->|"Nein"| Ende
+```
+
+## Preconditions
+
+- Die Mieterin oder der Mieter hat Zugriff auf das Postfach der angegebenen E-Mail-Adresse.
+- Die Kontoeröffnung ist auch ohne einen bereits bestehenden Fall möglich.
+
+## Main Success Scenario
+
+1. Die Mieterin oder der Mieter wählt «Userkonto eröffnen» und gibt die E-Mail-Adresse ein.
+2. PropertyFlow prüft die Eingabe serverseitig und sendet einen einmal verwendbaren, zeitlich begrenzten Verifikationsnachweis an diese Adresse. Die Bestätigung per E-Mail-Code ist ein Vorschlag.
+3. Die Mieterin oder der Mieter bestätigt den Nachweis. PropertyFlow verifiziert die Adresse und aktiviert das Mieterkonto mit einer eindeutigen internen Benutzer-ID.
+4. PropertyFlow eröffnet den angemeldeten Zugang. Die Fallübersicht zeigt alle Fälle, deren aktuelle Kontaktadresse mit der verifizierten Konto-Adresse übereinstimmt. Das schliesst Fälle ein, die vor der Kontoeröffnung ohne Anmeldung erfasst wurden.
+
+## Alternative Flows
+
+### A1: Keine passenden Fälle
+
+Das Konto wird eröffnet und die Fallübersicht ist leer. Künftige Fälle mit derselben Kontaktadresse erscheinen automatisch.
+
+### A2: Adresse ist ungültig oder Verifikation kann nicht abgeschlossen werden
+
+Die Oberfläche zeigt den passenden Hinweis und ermöglicht eine Korrektur oder einen erneuten Verifikationsversuch. Bis zur erfolgreichen Verifikation bleiben das Konto und der Zugriff über das Konto inaktiv. Bestehende Fälle sind weiterhin über ihre gültigen persönlichen Fall-Links erreichbar.
+
+### A3: Für die Adresse besteht bereits ein Konto
+
+PropertyFlow erstellt kein zweites Konto. Die Person kann das bestehende Konto über den vorgesehenen Anmeldeweg nutzen. Vor dem Nachweis der Postfachberechtigung legt die öffentliche Antwort weder den Kontostatus noch vorhandene Fälle offen.
+
+## Postconditions
+
+- Bei Erfolg besteht ein aktives Mieterkonto mit verifizierter E-Mail-Adresse. Die Kontoeröffnung erzeugt keinen neuen Fall und ändert die Daten bestehender Fälle nicht.
+- Die Fallübersicht zeigt nur die gemäss ADR-005 zugehörigen Fälle. Die Berechtigung gilt auch für MCP, sobald der Mieter dem Client die entsprechende Aktion ausdrücklich delegiert.
+- Ohne erfolgreiche Verifikation gewährt PropertyFlow keinen Fallzugriff über das Konto oder einen MCP-Client.
+
+## Business Rules und Prüfkriterien
+
+- **BR-001:** Die Fallzuordnung ergibt sich aus der verifizierten Konto-Adresse und der aktuellen Fall-Kontaktadresse. PropertyFlow prüft sie bei jedem Listen-, Detail- und Schreibzugriff im Web und über MCP. Eine vom Client angegebene Adresse kann die Zuordnung nicht ändern.
+- **BR-002:** Das Konto erlaubt nur Mieteraktionen. Der veröffentlichte Fallverlauf bleibt lesbar. Eine externe Nachricht ist nur in einem aktiven Fall zulässig. Der MCP-Client erhält ausschliesslich die freigegebenen Aktionen.
+- **AK-01:** Zwei Fälle mit Adresse A und einen Fall mit Adresse B ohne Anmeldung einreichen. Nach Verifikation eines neuen Kontos mit Adresse A erscheinen genau die beiden Fälle mit Adresse A. Ein direkter Abruf des dritten Falls wird abgelehnt.
+- **AK-02:** Einen ungültigen, abgelaufenen oder bereits verwendeten Nachweis übermitteln. Der Versuch eröffnet keine angemeldete Sitzung und liefert keine Fallinformationen.
+- **AK-03:** Mit dem verifizierten Konto und freigegebenem MCP-Client die Fallübersicht abrufen. Web und MCP verwenden dieselbe Fallmenge und geben nur für Mieter sichtbare Inhalte aus.

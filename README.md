@@ -311,6 +311,7 @@ architektonische Source of Truth.
 - [UC-002: Mitarbeiterübersicht](docs/use_cases/UC-002-mieteranliegen-anzeigen.md)
 - [UC-003: Falldetail](docs/use_cases/UC-003-mieteranliegen-details-anzeigen.md)
 - [UC-004: KI-Formulierung](docs/use_cases/UC-004-ki-analyse-durchfuehren.md)
+- [UC-005: Userkonto eröffnen](docs/use_cases/UC-005-userkonto-eroeffnen.md)
 - [Generierte Unit-Tests und Veto](docs/ai-usage/block2-oberflaechen-pruefung.md#ergänzung-vom-12102026-generierte-unit-tests-und-mutation)
 - [Browser- und Performance-Nachweise](docs/ai-usage/block2-oberflaechen-pruefung.md#ergänzung-browser-qualitätsnachweis-und-präsentationsentscheidung)
 - [Camunda-Umgebung](infra/camunda/README.md)
