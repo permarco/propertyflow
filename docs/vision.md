@@ -39,12 +39,25 @@ schneller, nachvollziehbarer und mit der richtigen Zuständigkeit zu bearbeiten.
 | Immobilienbewirtschaftung | Anliegen effizient beurteilen, Dringlichkeiten erkennen, Zuständigkeiten klären und die weitere Bearbeitung koordinieren. |
 | Hauswart / Facility Management | Ausreichend abgeklärte und relevante Aufträge mit den für die Bearbeitung notwendigen Informationen erhalten. |
 
+## Zugang und Anmeldung
+
+Mitarbeitende nutzen PropertyFlow nach persönlicher Anmeldung. Mieterinnen
+und Mieter können Anliegen weiterhin ohne Konto über das Webformular
+einreichen und über ihren persönlichen Fall-Link verfolgen. Für den
+zusätzlichen Zugang über einen KI-Assistenten via MCP benötigen sie ein
+angemeldetes Mieterkonto und geben dessen Zugriff ausdrücklich frei.
+
+Die detaillierten Zugriffsregeln stehen in
+[Fallzugriff und Sicherheit](specifications/fallzugriff-und-sicherheit.md#zug-04-rechte-und-vertrauensgrenzen).
+
 ## Core Capabilities
 
 ### 1. Erfassung und Strukturierung von Mieteranliegen
 
 Mieteranliegen werden über ein Webformular oder per E-Mail erfasst
 und als bearbeitbarer Fall in PropertyFlow gespeichert.
+Angemeldete Mieter können Anliegen zusätzlich über einen von ihnen
+autorisierten MCP-Client einreichen und bearbeiten.
 
 **KI-Nutzen:** Die KI analysiert die unstrukturierte Beschreibung und
 extrahiert daraus für die weitere Bearbeitung relevante Informationen wie

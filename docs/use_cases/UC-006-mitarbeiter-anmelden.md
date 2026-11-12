@@ -11,6 +11,8 @@
 
 **Fachliche Grundlage:** [ADR-005](../architecture/adr/ADR-005-zugriffsmodell.md#mitarbeiteridentität) beschreibt Mitarbeiteridentität, gemeinsamen Anmeldedienst und MCP-Autorisierung. Die Mitarbeiterübersicht folgt [UC-002](UC-002-mieteranliegen-anzeigen.md).
 
+Die Felder, Rückmeldungen und Übergänge der Anmeldeansicht beschreibt [Screen 04](../frontend/ansicht-04-login.md).
+
 ## Preconditions
 
 - Ein aktives Mitarbeiterkonto mit der vorgesehenen E-Mail-Adresse und Mitarbeiterrolle wurde gemäss [UC-007](UC-007-mitarbeiterkonto-anlegen.md) eingerichtet.
