@@ -174,11 +174,19 @@ function replaceRegion(selector, page) {
     const current = $(selector), next = $(selector, page);
     if (current && next) current.replaceWith(next.cloneNode(true));
 }
+function editorSummary(details) {
+    if (!details) return null;
+    const fieldId = $('[id]', details)?.id;
+    const current = fieldId ? document.getElementById(fieldId)?.closest('details')
+        : details.classList.contains('confirmation') ? $('#case-sidebar .confirmation') : null;
+    return current?.querySelector('summary');
+}
 function applyCase(page, notify = false, forceSidebar = false) {
     const oldHead = $('#case-head'), nextHead = $('#case-head', page);
     if (!nextHead) throw new Error('Die Fallansicht konnte nicht geladen werden.');
     const changed = oldHead.dataset.version !== nextHead.dataset.version;
     if (!changed && !forceSidebar) return;
+    const active = document.activeElement;
     const changes = [];
     for (const id of ['case-status', 'case-urgency', 'case-followup']) {
         const old = $('#' + id)?.textContent, next = $('#' + id, page)?.textContent;
@@ -202,6 +210,13 @@ function applyCase(page, notify = false, forceSidebar = false) {
     // Open edit forms retain their original version, so concurrent changes produce a conflict.
     closed = nextHead.dataset.closed === 'true';
     syncComposer();
+    // Replacing a region must not send keyboard users back to the document start.
+    if (!active.isConnected) {
+        const replacement = active.id ? document.getElementById(active.id) : null;
+        const target = replacement?.getClientRects().length ? replacement
+            : editorSummary(active.closest('details')) || $('#history');
+        target?.focus({ preventScroll: true });
+    }
     if (notify && changed && $('#case-sidebar')) {
         $('#update-text').textContent = changes.length ? changes.join('\n') : 'Neue Daten im Verlauf.';
         if (!$('#updates').open) $('#updates').showModal();
@@ -218,6 +233,7 @@ document.addEventListener('click', event => {
             $('#case-sidebar').replaceWith(pendingSidebar);
             pendingSidebar = null;
         }
+        editorSummary(details)?.focus();
     }
 });
 document.addEventListener('submit', async event => {
@@ -228,6 +244,9 @@ document.addEventListener('submit', async event => {
     const data = new URLSearchParams(new FormData(form));
     if (event.submitter?.name) data.set(event.submitter.name, event.submitter.value);
     const isMessage = form.id === 'message-form';
+    const restoreFocus = form.contains(document.activeElement);
+    const details = form.closest('details');
+    let failed = false;
     saving = true;
     readController?.abort();
     const buttons = [...form.querySelectorAll('button')];
@@ -256,11 +275,17 @@ document.addEventListener('submit', async event => {
         showSaveNotice(isMessage ? 'Im Demo-Arbeitsspeicher gespeichert.' : 'Änderung gespeichert.', false, true);
         if (isMessage) $('#history').scrollTop = $('#history').scrollHeight;
     } catch (error) {
+        failed = true;
         showSaveNotice(error.message || 'Speichern momentan nicht möglich. Ihre Eingabe bleibt erhalten.', true);
     } finally {
         saving = false;
         buttons.forEach(b => b.disabled = false);
         syncComposer(); sizeComposer();
+        // Respect a deliberate focus move while the request was in flight.
+        if (restoreFocus && !accessDenied && (document.activeElement === document.body || form.contains(document.activeElement))) {
+            const target = failed ? $('#save-state') : isMessage && !closed ? message : editorSummary(details) || $('#history');
+            target?.focus();
+        }
     }
 });
 document.addEventListener('submit', async event => {

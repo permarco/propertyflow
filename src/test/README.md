@@ -139,6 +139,21 @@ Testanwendung neu starten; vorhandene Mailpit-Nachrichten dürfen bleiben.
 
 ## Berichte und ergänzende Prüfungen
 
+Die Tastatur- und Fokusregressionen laufen auch separat:
+
+```powershell
+node src/test/browser/run-ui-tests.mjs keyboard-focus.test.mjs
+```
+
+Die neun Tests erreichen Bedienelemente über Tab und aktivieren sie über Enter.
+Sie prüfen Editor-Abbruch mit und ohne zwischenzeitliche Aktualisierung, Speichern,
+Versionskonflikte, Nachrichtenfehler und die Tastaturkorrektur eines Anlagefehlers.
+Zusätzlich werden der zugängliche Dialogname, Schliessen mit Escape und Enter,
+Rückkehr zum Entwurf samt Schreibposition sowie der Listenfokus nach Aktualisierung
+oder Wegfall eines Falls geprüft. Eine verzögerte Speicherantwort darf einen
+inzwischen weiterbewegten Fokus nicht zurückholen. Die Testuhr wird vor der
+Seitennavigation installiert, damit die echten Polling-Intervalle kontrolliert laufen.
+
 - Browser-Testreihe: `target/frontend-quality/ui-tests.tap`
 - Konto-Screenshots: `target/account-review/`
 - Barrierefreiheit: `node src/test/browser/frontend-quality.mjs`
