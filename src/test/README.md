@@ -72,6 +72,27 @@ $env:DEMO_TENANT_EMAIL = 'tenant@example.test'
 node src/test/browser/run-ui-tests.mjs
 ```
 
+Die drei priorisierten Regressionstestgruppen lassen sich auch gezielt mit gemeinsamem
+Mitarbeiter-Testlogin ausführen:
+
+```powershell
+node src/test/browser/run-ui-tests.mjs session-loss.test.mjs lost-response.test.mjs
+```
+
+`session-loss.test.mjs` meldet echte Mitarbeiter- und Mieterkontositzungen in einem
+zweiten Tab ab. Geprüft werden der nächste Lese- und Schreibzugriff, ausgeblendete
+Falldaten, gestoppte Aktualisierungen, erneute OTP-Anmeldung ohne automatischen
+Schreib-Retry sowie weiterhin zugängliche Tokenlinks. Bei der Fallanlage aus dem Mieterkonto
+bleiben nach der Abmeldung alle Eingaben erhalten; vor der Anlage ist eine explizite Gastadresse erforderlich.
+Die Logout-Tests verwenden eigene Sitzungen und warten bei Bedarf auf die echte
+OTP-Minutenfrist; die gemeinsam genutzte Testsitzung wird nicht abgemeldet.
+
+`lost-response.test.mjs` lässt Anlage und Feldänderung tatsächlich speichern und
+bricht erst danach die Antwort ab. Der erneute Versand erfolgt über die Oberfläche
+mit derselben Operationskennung. Fallanzahl, Verlauf und Feldversion belegen, dass
+kein zusätzlicher Schreibeffekt entsteht. Ohne JavaScript bleibt die native
+Formularübermittlung verfügbar; die Wiederholung bei verlorener Antwort nutzt JavaScript.
+
 `DEMO_TENANT_EMAIL` aktiviert auch den Mieter-Kontotest. Ohne diese Variable wird
 nur dieser zusätzliche Test ausgelassen. Die Selbstregistrierung wird unabhängig
 davon mit einer neuen Testadresse und echtem SMTP-Versand an Mailpit geprüft.

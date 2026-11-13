@@ -8,7 +8,12 @@ import { chromium } from './ui-test-helpers.mjs';
 import { staffStorageState } from './staff-test-login.mjs';
 
 const directory = path.dirname(fileURLToPath(import.meta.url));
-const files = (await readdir(directory)).filter(name => name.endsWith('.test.mjs')).sort()
+const selected = process.argv.slice(2);
+const available = (await readdir(directory)).filter(name => name.endsWith('.test.mjs'));
+for (const name of selected) {
+    if (!available.includes(name)) throw new Error(`Unknown browser test file: ${name}`);
+}
+const files = (selected.length ? selected : available).sort()
     .map(name => path.join(directory, name));
 const browser = await chromium.launch({ channel: 'msedge', headless: true });
 let storageState;

@@ -360,6 +360,11 @@ class StaffAccessWebTest {
         assertEquals(before, cases.get(before.id()));
         mvc.perform(post(route).param("csrf", "expired-session-token")
                         .param("operation", UUID.randomUUID().toString()).param("text", "Nicht speichern"))
+                .andExpect(status().isUnauthorized());
+        assertEquals(before, cases.get(before.id()));
+        session.setAttribute(StaffWebSession.ACCOUNT, staffAccounts.findActiveByEmail(TENANT_EMAIL).orElseThrow().id());
+        mvc.perform(post(route).session(session).param("csrf", "expired-session-token")
+                        .param("operation", UUID.randomUUID().toString()).param("text", "Nicht speichern"))
                 .andExpect(status().isForbidden());
         assertEquals(before, cases.get(before.id()));
     }

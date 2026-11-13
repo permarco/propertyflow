@@ -47,6 +47,10 @@ public class DemoController {
         }
         // Intake renders rejected input again, including an expired account session.
         boolean intakePost = request.getRequestURI().equals(request.getContextPath() + "/mieter/fall");
+        // Report lost account access before checking the stale form's CSRF token.
+        if (request.getRequestURI().startsWith(request.getContextPath() + "/mieter/faelle/")) {
+            accounts.requireTenant(request);
+        }
         if (request.getMethod().equals("POST") && !intakePost
                 && !session.getAttribute("csrf").equals(request.getParameter("csrf"))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Die Anfrage konnte nicht bestätigt werden. Bitte die Seite neu laden.");

@@ -46,7 +46,7 @@ function denyAccess(needsLogin = false) {
         : 'Zugriff verweigert. Automatische Aktualisierungen und Speichern sind gestoppt. Ungesendete Eingaben bleiben erhalten.';
     notice.classList.add('error');
     const reload = document.createElement('a');
-    reload.href = location.href;
+    reload.href = needsLogin && !document.body.classList.contains('staff-page') ? '/anmelden' : location.href;
     reload.textContent = needsLogin ? 'Erneut anmelden' : 'Seite neu laden';
     notice.append(' ', reload);
     syncComposer();
@@ -238,8 +238,7 @@ document.addEventListener('submit', async event => {
         const response = await fetch(form.getAttribute('action'), {
             method: 'POST', body: data, headers: { Accept: 'text/html', 'X-PropertyFlow-Request': 'partial' }
         });
-        if (document.body.classList.contains('staff-page')
-                && (response.status === 401 || response.headers.get('X-PropertyFlow-Access') === 'denied')) {
+        if (response.status === 401 || response.headers.get('X-PropertyFlow-Access') === 'denied') {
             denyAccess(response.status === 401);
             return;
         }
@@ -264,12 +263,49 @@ document.addEventListener('submit', async event => {
         syncComposer(); sizeComposer();
     }
 });
-$('#intake-form')?.addEventListener('submit', event => {
-    if ([...event.target.querySelectorAll('[required]')].some(field => !field.value.trim())) {
-        event.preventDefault(); return;
+document.addEventListener('submit', async event => {
+    const form = event.target;
+    if (!form.matches('#intake-form')) return;
+    event.preventDefault();
+    if (saving || [...form.querySelectorAll('[required]')].some(field => !field.value.trim())) return;
+    const data = new URLSearchParams(new FormData(form));
+    const button = $('button', form);
+    const label = button.textContent;
+    saving = true;
+    button.disabled = true;
+    button.textContent = 'Wird gespeichert …';
+    try {
+        const response = await fetch(form.action, {
+            method: 'POST', body: data, headers: { Accept: 'text/html', 'X-PropertyFlow-Request': 'partial' }
+        });
+        if (response.ok && response.redirected) {
+            location.assign(response.url);
+            return;
+        }
+        const page = parse(await response.text());
+        if (!$('#intake-form', page)) throw new Error('Die Antwort konnte nicht geladen werden.');
+        replaceRegion('header', page);
+        replaceRegion('main', page);
+        $('#form-error')?.focus();
+    } catch {
+        // Keep both the inputs and their operation ID when the server may already
+        // have saved. An explicit retry can then recover the original result.
+        let notice = $('#form-error');
+        if (!notice) {
+            notice = document.createElement('div');
+            notice.id = 'form-error';
+            notice.className = 'error';
+            notice.setAttribute('role', 'alert');
+            notice.tabIndex = -1;
+            form.before(notice);
+        }
+        notice.textContent = 'Die Bestätigung konnte nicht geladen werden. Ihre Eingaben bleiben erhalten. Bitte versuchen Sie das Absenden erneut.';
+        notice.focus();
+    } finally {
+        saving = false;
+        button.disabled = false;
+        button.textContent = label;
     }
-    const button = $('button', event.target);
-    button.disabled = true; button.textContent = 'Wird gespeichert …';
 });
 
 const filters = $('#filters');
@@ -400,7 +436,7 @@ async function refresh() {
     } catch (error) {
         if (error.name !== 'AbortError') {
             if (error.status === 403 || error.status === 401) {
-                denyAccess(error.status === 401 && document.body.classList.contains('staff-page'));
+                denyAccess(error.status === 401);
             }
             else {
                 showSaveNotice('Aktualisierung momentan nicht möglich. Stand: ' + lastRead, true);
