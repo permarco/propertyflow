@@ -71,7 +71,7 @@ Die manuelle Anpassung wird in PropertyFlow gespeichert und mit der Änderungsqu
 
 **Vereinbart:** Eine manuell gesetzte Dringlichkeitsstufe hat Vorrang und darf vom System nicht überschrieben werden. Dies gilt auch nach weiteren Mieter-Nachrichten und bei gleichzeitig oder verspätet eintreffenden automatischen Ergebnissen. Eine weitere manuelle Anpassung durch berechtigte Mitarbeitende bleibt möglich und wird erneut historisiert.
 
-Die automatische Neubewertung nach jeder Mieter-Nachricht bleibt bestehen. Ihr Ergebnis wird getrennt von der wirksamen manuellen Stufe als Systembewertung geführt und ersetzt diese nicht. Ohne Änderung der wirksamen Stufe entsteht kein mieteröffentlicher Stufenwechsel und keine Änderungsmail. Die Darstellung eines abweichenden Systemergebnisses im Mitarbeiterdetail bleibt zu konkretisieren. Ein Zurücksetzen auf automatische Einstufung ist nicht vereinbart; eine solche Funktion wird nicht stillschweigend eingeführt. Alle Mitarbeitenden haben diese Berechtigung über die einheitliche Adminrolle gemäss ZUG-04. Die technische Synchronisierung bleibt festzulegen.
+Die automatische Neubewertung nach jeder Mieter-Nachricht bleibt bestehen. Ihr Ergebnis wird getrennt von der wirksamen manuellen Stufe als Systembewertung geführt und ersetzt diese nicht. Ohne Änderung der wirksamen Stufe entsteht kein mieteröffentlicher Stufenwechsel und keine Änderungsmail. Die Darstellung eines abweichenden Systemergebnisses im Mitarbeiterdetail bleibt zu konkretisieren. Ein Zurücksetzen auf automatische Einstufung ist nicht vereinbart; eine solche Funktion wird nicht stillschweigend eingeführt. Persönlich angemeldete Mitarbeitende haben diese Berechtigung über die Mitarbeiterrolle gemäss ZUG-04. Die technische Synchronisierung bleibt festzulegen.
 
 ## DRING-07: Änderungshistorie und Mietertransparenz
 
@@ -90,7 +90,7 @@ Eine erneute Bewertung mit unveränderter Stufe erzeugt keine fingierte Stufenä
 ## Offene Konkretisierungen
 
 - Kriterien und repräsentative Grenzfälle zur Einordnung in die vereinbarten Stufen.
-- Konkrete Validierung und Übernahme einer automatischen Bewertung; die manuelle Anpassung ist für alle Mitarbeitenden mit einheitlichen Adminrechten vorgesehen.
+- Konkrete Validierung und Übernahme einer automatischen Bewertung; die manuelle Anpassung ist für angemeldete Mitarbeitende mit Mitarbeiterrolle vorgesehen.
 - Technische Synchronisierung konkurrierender Bewertungen und manueller Änderungen, veralteter Ergebnisse sowie mehrerer rasch aufeinanderfolgender Mieter-Nachrichten. Der vereinbarte Vorrang manueller Einstufungen muss auch bei gleichzeitigem Speichern wirksam bleiben.
 - Technische Durchsetzung der bestätigten Änderungssperre im abgeschlossenen Zustand, einschliesslich konkurrierender Abschlüsse und verspäteter Systembewertungen.
 - Technische Werte, Validierung und Service-/Persistenzverträge.

@@ -13,8 +13,8 @@
 
 ## Preconditions
 
-- Die Mitarbeiterin oder der Mitarbeiter nutzt UI2 ohne Anmeldung gemäss ZUG-04.
-- Alle Mitarbeitenden haben dieselben Adminrechte und Zugriff auf sämtliche Fälle und internen Memos gemäss ZUG-04.
+- Die Mitarbeiterin oder der Mitarbeiter ist gemäss [UC-006](UC-006-mitarbeiter-anmelden.md) persönlich angemeldet und hat die Mitarbeiterrolle nach [[ZUG-04](../specifications/fallzugriff-und-sicherheit.md#zug-04-rechte-und-vertrauensgrenzen).
+-]() Die Mitarbeiterrolle berechtigt in UI2 zur Sicht auf sämtliche Fälle und ihre internen Memos gemäss ZUG-04.
 - Im System können null, ein oder mehrere Fälle vorhanden sein.
 
 ## Main Success Scenario
@@ -62,7 +62,7 @@
 
 1. Aufrufer ohne Mitarbeiterberechtigung und Mieter erhalten keine Fallliste, Suchtreffer oder Zähler.
 2. Bei einer ausdrücklichen serverseitigen Zugriffsverweigerung enden automatische Abrufe; Falldaten werden aus dem sichtbaren Ergebnisbereich entfernt. Ein normaler Ladefehler ist davon zu unterscheiden.
-3. Es erscheint ein Zugriffshinweis ohne Anmeldeaufforderung. Eine Mitarbeiteranmeldung und ein Ablauf für deren Erneuerung sind nicht vorgesehen; die technische Trennung zum Mieterzugang folgt der offenen Konkretisierung in ZUG-04.
+3. Fehlt die Anmeldung oder ist sie abgelaufen, bietet PropertyFlow die Mitarbeiteranmeldung gemäss UC-006 an. Eine gültige Anmeldung ohne Mitarbeiterberechtigung führt zu einem Zugriffshinweis.
 
 ## Postconditions
 
@@ -79,13 +79,13 @@
 
 ## Business Rules
 
-### BR-001: Dringlichkeit und Bearbeitungsstatus
+### UC-002-BR-001: Dringlichkeit und Bearbeitungsstatus
 
 Stufen, Farben, wirksame Bewertung und Änderungsquelle folgen [DRING-01 bis DRING-07](../specifications/dringlichkeitsbewertung.md). Die Darstellung bleibt auch ohne Farbe verständlich. Eine manuelle Einstufung bleibt für Anzeige, Filter und Sortierung massgeblich und darf nicht durch eine Systembewertung überschrieben werden.
 
 Die acht Bearbeitungsstatus und die intern gespeicherten Gründe für «Mitarbeiterprüfung erforderlich» folgen [FALL-05](../specifications/fallverwaltung.md#fall-05-fachlicher-lebenszyklus). «Aktiv» ist die Gruppe der ersten sieben Status, kein zusätzlicher anzuzeigender Bearbeitungsstatus. Die Liste zeigt den Bearbeitungsstatus, aber keine fallbezogenen Problemhinweise. Technische Analyse- oder Mailzustände werden nicht als Dringlichkeitsstufen behandelt.
 
-### BR-002: Volltextsuche und Filter
+### UC-002-BR-002: Volltextsuche und Filter
 
 Die Suche gehört ausschliesslich zur Mitarbeiterliste und umfasst Falldaten, gespeicherte veröffentlichte externe Nachrichten sowie sämtliche gespeicherten internen Memos. Externe Entwürfe, ungespeicherte Eingaben und KI-Teilantworten sind ausgeschlossen. E-Mail-Zustellung ist keine Voraussetzung für die Durchsuchbarkeit einer veröffentlichten Nachricht. Mehrere Fundstellen desselben Falls ergeben nur einen Listeneintrag.
 
@@ -93,13 +93,13 @@ Die Suche findet vollständige Wörter und Teilwörter und ignoriert dabei Gross
 
 Der Dringlichkeitsfilter bietet «Alle», «Kritisch», «Hoch», «Normal», «Niedrig» und «Noch nicht bewertet». Es gibt keinen zusätzlichen Bearbeitungsstatus- oder Hinweisfilter. Suche und Filter wirken gemeinsam; abgeschlossene Fälle gehören nur bei eingeschaltetem Button zum Suchumfang. Interne Suchbarkeit erweitert keine LLM-Kommunikationsgrundlage nach KOM-02.
 
-### BR-003: Sortierung, Zeitmodell und Seiten
+### UC-002-BR-003: Sortierung, Zeitmodell und Seiten
 
 Standardsortierung und Sortierfunktion aller sieben Spalten folgen Screen 02. Der erste Klick auf einen Spaltentitel sortiert aufsteigend und zeigt ↑, der zweite Klick absteigend und zeigt ↓. Weitere Klicks wechseln die Richtung; bei einer anderen Spalte beginnt die Sortierung aufsteigend. Nur der aktiv gewählte Spaltentitel zeigt den Richtungspfeil. «Fall» sortiert nach ursprünglichem Betreff A–Z bzw. Z–A. Die Sortierauswahl erhält Suche und Filter und beginnt auf Seite 1. «Letzte Aktion des Mieters» verwendet den Zeitvertrag nach FALL-08, nicht den letzten beliebigen Fall- oder Systemzugriff. Suche und Sortierung gelten vor der Aufteilung in Seiten mit maximal 50 Fällen. Weitere Sortierwerte folgen Screen 02; der genaue technische Textvergleich wird bei der Umsetzung konkretisiert; Teilwortsuche und UND-Verknüpfung sind vereinbart.
 
 Die zusätzliche Spalte «Wiedervorlage» folgt FALL-11. Sie zeigt das gespeicherte Datum oder «–», wenn kein Termin gesetzt ist. Sie ist auf- und absteigend sortierbar; Fälle ohne Termin stehen gemäss Screen 02 in beiden Richtungen zuletzt. Neue oder geänderte Termine, automatische Vorverlegungen und Löschungen werden mit der Liste aktualisiert. Bearbeitung und Löschen des Termins erfolgen in UI3.
 
-### BR-004: Aktualisierung und Rechte
+### UC-002-BR-004: Aktualisierung und Rechte
 
 Die schmale Darstellung ist vereinbart: Jeder Fall erscheint als kompakter Block mit den sieben beschrifteten Angaben untereinander. Suche, Filter und eine Sortierauswahl mit ↑/↓ stehen darüber. Case-ID bleibt Link; die Grundfunktionen entsprechen der breiten Ansicht.
 
@@ -109,7 +109,7 @@ PropertyFlow liefert den gespeicherten fachlichen Stand und prüft jeden Zugriff
 
 - [Fallverwaltung](../specifications/fallverwaltung.md): Fallidentität, acht Status, Problemhinweise, letzter Mieterkontakt und Abgrenzung zum technischen Workflow.
 - [Dringlichkeitsbewertung](../specifications/dringlichkeitsbewertung.md): Stufen und Farben, Erst-/Neubewertung, Vorrang manueller Einstufung und Historie.
-- [Fallzugriff und Sicherheit](../specifications/fallzugriff-und-sicherheit.md): Einheitliche Mitarbeiter-Adminrechte und Trennung vom Mieterzugriff.
+- [Fallzugriff und Sicherheit](../specifications/fallzugriff-und-sicherheit.md): Mitarbeiterrolle, persönliche Anmeldung und Grenzen des Mieterzugriffs.
 - [Fallkommunikation](../specifications/fallkommunikation.md): Nachrichten-/Memo-Sichtbarkeit, Suchumfang und Kommunikations-LLM-Grenze.
 - [Benachrichtigungen und Zustellung](../specifications/benachrichtigungen-und-zustellung.md): Versandhinweise und fachliche Benachrichtigungsauslöser.
 

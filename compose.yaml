@@ -1,3 +1,5 @@
+# Optional database infrastructure for the later persistence stage.
+# Frontend demo / Mailpit: dev/compose.yaml. Test setup: src/test/README.md.
 services:
   postgres:
     image: 'postgres:16'

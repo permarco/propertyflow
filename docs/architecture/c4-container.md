@@ -56,6 +56,7 @@ Die fachlichen Regeln und noch offenen technischen Verträge stehen in
 [Fallkommunikation](../specifications/fallkommunikation.md),
 [Benachrichtigungen](../specifications/benachrichtigungen-und-zustellung.md) und
 [Fallzugriff](../specifications/fallzugriff-und-sicherheit.md).
-Für Mitarbeitende gibt es keine Anmeldung in PropertyFlow; die technische
-Absicherung des Mitarbeiterbereichs und die individuelle Zuordnung von
-Änderungen sind unter ZUG-04 noch zu konkretisieren.
+Der Mitarbeiterbereich setzt eine persönliche Anmeldung per E-Mail-Einmalcode
+voraus. Mitarbeiterrolle, optionale Mieterkonten und delegierte MCP-Zugriffe
+sind in [ZUG-04](../specifications/fallzugriff-und-sicherheit.md#zug-04-rechte-und-vertrauensgrenzen)
+beschrieben.

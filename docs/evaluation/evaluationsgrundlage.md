@@ -410,7 +410,7 @@ node src/test/browser/frontend-quality.mjs
 node src/test/browser/frontend-performance.mjs
 ```
 
-Für Browserprüfungen sind eine laufende, wegwerfbare `frontend-demo`, die Browser-Testabhängigkeiten unter `target/frontend-tools` und Microsoft Edge erforderlich. Standardadresse ist `http://127.0.0.1:8082`; `DEMO_URL` erlaubt eine andere Testadresse. Die Prüfungen verändern Mock-Daten. Die [README](../../README.md#frontend-demo-ohne-datenbank) dokumentiert Start und Abschalten von DevTools-Neustarts bei paralleler Entwicklung; die [Reproduktionsanleitung](../ai-usage/block2-oberflaechen-pruefung.md#reproduktion-powershell-ab-repository-wurzel) beschreibt die Installation der Browser-Werkzeuge.
+Für Browserprüfungen sind eine laufende, wegwerfbare `frontend-demo`, die Browser-Testabhängigkeiten unter `target/frontend-tools` und Microsoft Edge erforderlich. Standardadresse ist `http://127.0.0.1:8082`; `DEMO_URL` erlaubt eine andere Testadresse. Die Prüfungen verändern Mock-Daten. Die [README](../../src/test/README.md) dokumentiert Start und Abschalten von DevTools-Neustarts bei paralleler Entwicklung; die [Reproduktionsanleitung](../ai-usage/block2-oberflaechen-pruefung.md#reproduktion-powershell-ab-repository-wurzel) beschreibt die Installation der Browser-Werkzeuge.
 
 | Bericht | Inhalt |
 |---|---|

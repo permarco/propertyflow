@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="de-CH" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ihr Einmalcode für PropertyFlow</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f2f8fc;color:#172033;font-family:Inter,Arial,sans-serif;">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#f2f8fc">
+    <tr>
+        <td align="center" style="padding:32px 16px;">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#ffffff"
+                   style="max-width:520px;border:1px solid #dce5ef;border-top:4px solid #006fbb;border-radius:10px;">
+                <tr>
+                    <td style="padding:28px 24px 24px;">
+                        <p style="margin:0 0 24px;color:#006fbb;font-size:18px;line-height:24px;font-weight:700;">PropertyFlow</p>
+                        <h1 style="margin:0 0 8px;color:#172033;font-size:26px;line-height:32px;font-weight:700;">Ihr Einmalcode</h1>
+                        <p style="margin:0 0 20px;color:#52627a;font-size:16px;line-height:24px;">
+                            Geben Sie diesen Code auf der PropertyFlow-Anmeldeseite ein.
+                        </p>
+                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                            <tr>
+                                <td align="center" bgcolor="#edf6fc" style="padding:18px 12px;border:1px solid #dce5ef;border-radius:8px;">
+                                    <p style="margin:0;color:#005a99;font-family:'Courier New',monospace;font-size:36px;line-height:44px;font-weight:700;letter-spacing:0.15em;"
+                                       th:text="${code}">123456</p>
+                                </td>
+                            </tr>
+                        </table>
+                        <p style="margin:12px 0 0;color:#52627a;font-size:14px;line-height:21px;">Der Code ist einmal verwendbar.</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding:16px 24px;border-top:1px solid #dce5ef;color:#52627a;font-size:14px;line-height:21px;">
+                        Wenn Sie keinen Code angefordert haben, können Sie diese E-Mail ignorieren.
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

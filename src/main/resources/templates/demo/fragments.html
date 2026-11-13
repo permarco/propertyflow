@@ -3,7 +3,12 @@
 <meta name="referrer" content="no-referrer"><title th:text="${title + ' · PropertyFlow'}">PropertyFlow</title>
 <link rel="stylesheet" th:href="@{/css/propertyflow.css}"><script type="module" th:src="@{/js/propertyflow.js}"></script>
 </head><body>
-<header th:fragment="header" class="app-header"><a href="/" class="brand" aria-label="PropertyFlow Demo-Start"><span class="brand-mark" aria-hidden="true">▰▥</span> PropertyFlow</a><span class="area" th:text="${staff ? 'Mitarbeiterbereich' : 'Mieteranliegen'}"></span><span class="demo-badge">Lokale Demo · Testdaten</span><a th:if="${staff}" th:href="${returnTo}" class="button secondary">Zur Fallübersicht</a></header>
+<header th:fragment="header" class="app-header"><a href="/" class="brand" aria-label="PropertyFlow Demo-Start"><span class="brand-mark" aria-hidden="true">▰▥</span> PropertyFlow</a><span class="area" th:text="${staff ? 'Mitarbeiterbereich' : 'Mieteranliegen'}"></span><span class="demo-badge">Lokale Demo · Testdaten</span><a th:if="${staff}" th:href="${returnTo}" class="button secondary">Zur Fallübersicht</a><div th:replace="~{demo/fragments :: account}"></div></header>
+<div th:fragment="account" class="account-menu" th:if="${currentAccountEmail != null}">
+<a th:if="${tenantSignedIn}" th:href="@{/mieter/faelle}" class="button secondary">Meine Fälle</a>
+<div class="account-identity"><span>Angemeldet als</span><strong th:text="${currentAccountEmail}"></strong></div>
+<form th:action="@{/abmelden}" method="post"><input type="hidden" name="csrf" th:value="${csrf}"><button class="secondary" type="submit">Abmelden</button></form>
+</div>
 <th:block th:fragment="hidden"><input th:if="${staff}" type="hidden" name="returnTo" th:value="${returnTo}"><input type="hidden" name="csrf" th:value="${csrf}"><input type="hidden" name="operation" th:value="${operation}"></th:block>
 <section th:fragment="casehead" id="case-head" class="case-head" th:attr="data-version=${c.version},data-closed=${c.closed}">
 <div class="case-heading"><div class="case-title-row"><div class="eyebrow" th:text="${c.id}"></div><h1 th:text="${c.title}"></h1></div><p th:unless="${staff}" class="muted"><span th:text="${c.originalUnit}"></span> · <span th:text="${c.maskedEmail()}"></span></p></div>

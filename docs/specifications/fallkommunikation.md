@@ -41,7 +41,7 @@ Für alle Komponenten und Ausgabekanäle der Fallkommunikation gelten folgende R
 
 Für beide Sichtbarkeiten gilt die [Nachrichtensperre nach Fallabschluss (KOM-04)](#kom-04-nachrichtensperre-nach-fallabschluss).
 
-**Mitarbeiter-Volltextsuche:** Alle Mitarbeitenden haben dieselben Adminrechte nach ZUG-04. Die Suche in [Screen 02](../frontend/ansicht-02-mitarbeiter-falluebersicht.md) umfasst gespeicherte veröffentlichte externe Nachrichten und sämtliche gespeicherten internen Memos. Externe Entwürfe, ungespeicherte Eingaben und KI-Teilantworten sind ausgeschlossen. «Versendet» meint die Veröffentlichung im Fallverlauf, unabhängig vom E-Mail-Zustellstatus. Die Mieteransicht bietet diese Suche nicht an. Auch ein interner Suchindex darf dem Kommunikations-LLM keine Memos oder Ableitungen daraus bereitstellen; KOM-02 gilt weiterhin.
+**Mitarbeiter-Volltextsuche:** Persönlich angemeldete Mitarbeitende haben mit der Mitarbeiterrolle dieselben fachlichen Suchrechte nach ZUG-04. Die Suche in [Screen 02](../frontend/ansicht-02-mitarbeiter-falluebersicht.md) umfasst gespeicherte veröffentlichte externe Nachrichten und sämtliche gespeicherten internen Memos. Externe Entwürfe, ungespeicherte Eingaben und KI-Teilantworten sind ausgeschlossen. «Versendet» meint die Veröffentlichung im Fallverlauf, unabhängig vom E-Mail-Zustellstatus. Die Mieteransicht bietet diese Suche nicht an. Auch ein interner Suchindex darf dem Kommunikations-LLM keine Memos oder Ableitungen daraus bereitstellen; KOM-02 gilt weiterhin.
 
 ### Antwortbedarf einer externen Mitarbeiternachricht
 

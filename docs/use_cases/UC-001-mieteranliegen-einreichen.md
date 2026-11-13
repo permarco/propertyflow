@@ -15,13 +15,13 @@ Dieser Use Case beschreibt die Web-Erfassung. Die sichere Annahme und Zuordnung 
 ## Preconditions
 
 - PropertyFlow ist erreichbar.
-- Die Erfassungsmaske kann ohne Benutzerkonto geöffnet werden.
+- Die Erfassungsmaske und die Einreichung stehen ohne Benutzerkonto zur Verfügung.
 
 ## Main Success Scenario
 
 1. Die Mieterin oder der Mieter öffnet die Erfassungsmaske.
 2. Das System zeigt das Formular für ein neues Anliegen; das Öffnen legt keinen Fall an.
-3. Die Mieterin oder der Mieter erfasst Betreff, Beschreibung, Objekt-/Wohnungsreferenz und E-Mail-Adresse.
+3. Die Mieterin oder der Mieter erfasst Betreff, Beschreibung und Objekt-/Wohnungsreferenz; ohne Anmeldung zusätzlich die E-Mail-Adresse. Für die Einreichung aus einem verifizierten Mieterkonto gilt A6.
 4. Die Mieterin oder der Mieter sendet das Formular ab.
 5. Das System prüft die Angaben serverseitig und behandelt Wiederholungen gemäss FALL-03.
 6. Das System nimmt das Anliegen dauerhaft gemäss FALL-02 an und vergibt eine Case-ID. Die zuverlässige Übergabe an Camunda und die Bestätigungsbenachrichtigung werden veranlasst.
@@ -68,6 +68,12 @@ Dieser Use Case beschreibt die Web-Erfassung. Die sichere Annahme und Zuordnung 
 1. Das gültige Anliegen wird gemäss FALL-04 angenommen.
 2. Der aktive Fall erhält «Mitarbeiterprüfung erforderlich» und den Hinweis «Zuordnung offen» gemäss FALL-05. Die Ursprungseingabe bleibt erhalten.
 
+### A6: Einreichung aus einem verifizierten Mieterkonto
+
+Bei einer Einreichung aus einem angemeldeten, verifizierten Mieterkonto entfällt das E-Mail-Eingabefeld. PropertyFlow übernimmt die verifizierte E-Mail-Adresse serverseitig aus dem Konto als Fall-Kontaktadresse; mitgesendete Kontaktangaben dürfen sie nicht überschreiben. Der angenommene Fall erscheint gemäss [ZUG-04](../specifications/fallzugriff-und-sicherheit.md#zug-04-rechte-und-vertrauensgrenzen) auch in der Fallübersicht des Kontos. Die dauerhafte Annahme und der persönliche Fall-Link folgen dem Hauptablauf. Kontoanzeige und Abmeldung beschreibt Screen 01.
+
+Bei abgelaufener Anmeldung wird keine Konto-Adresse aus Browserdaten übernommen. Die Eingaben bleiben für eine erneute Anmeldung oder die bewusste Einreichung ohne Konto mit Kontaktadresse erhalten; die fehlgeschlagene kontobasierte Einreichung legt keinen Fall an.
+
 ## Postconditions
 
 ### Success Postconditions
@@ -86,14 +92,14 @@ Dieser Use Case beschreibt die Web-Erfassung. Die sichere Annahme und Zuordnung 
 
 ## Business Rules
 
-### BR-001: Verständliche Validierung
+### UC-001-BR-001: Verständliche Validierung
 
 Die Eingabeprüfung folgt [FALL-02](../specifications/fallverwaltung.md#fall-02-erfolgreiche-annahme). Die Oberfläche ordnet Fehler den betroffenen Feldern zu; konkrete Labels und Hilfstexte stehen in Screen 01.
 
-### BR-002: Keine KI-Abhängigkeit für die Erfassung
+### UC-001-BR-002: Keine KI-Abhängigkeit für die Erfassung
 
 Die Annahme und das Verhalten bei ausgefallenen Folgekomponenten richten sich nach [FALL-02](../specifications/fallverwaltung.md#fall-02-erfolgreiche-annahme), [FALL-06](../specifications/fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow) und [FALL-09](../specifications/fallverwaltung.md#fall-09-fehler-und-grenzfälle).
 
-### BR-003: Eindeutige Fallidentität
+### UC-001-BR-003: Eindeutige Fallidentität
 
 Wiederholung, Ursprungsdaten und Zuordnung folgen FALL-01, FALL-03 und FALL-04. Die fachlichen Prüfkriterien FALL-AK-01 bis FALL-AK-04 werden in der zentralen [Fallverwaltung](../specifications/fallverwaltung.md#prüfkriterien) gepflegt.

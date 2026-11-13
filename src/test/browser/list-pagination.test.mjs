@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
 import path from 'node:path';
+import { staffStorageState } from './staff-test-login.mjs';
 
 const require = createRequire(path.resolve('target/frontend-tools/package.json'));
 const { chromium } = require('playwright');
@@ -13,7 +14,8 @@ const base = process.env.DEMO_URL || 'http://127.0.0.1:8082';
 test('UI2: 51 Treffer auf zwei Seiten; Navigation erhält Suche, Filter und Sortierung', { timeout: 60000 }, async () => {
     const browser = await chromium.launch({ channel: 'msedge', headless: true });
     try {
-        const context = await browser.newContext({ locale: 'de-CH', viewport: { width: 1440, height: 900 } });
+        const context = await browser.newContext({ locale: 'de-CH', viewport: { width: 1440, height: 900 },
+            storageState: await staffStorageState(browser) });
         const page = await context.newPage();
         await page.goto(`${base}/mieter/fall`);
         const csrf = await page.locator('#intake-form input[name=csrf]').inputValue();

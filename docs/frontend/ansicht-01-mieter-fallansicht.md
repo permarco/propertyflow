@@ -10,7 +10,7 @@
 
 ## 1. Zweck und Abgrenzung
 
-Diese Seite ist der **einzige Einstieg für Mieterinnen und Mieter** in die Erfassung und Kommunikation zu einem Anliegen. Es gibt **kein Mieterportal, kein Benutzerkonto und keinen Login**. Ein neuer Fall wird zunächst über ein Formular erfasst. Danach bleibt der Benutzer auf derselben funktionalen Seite und sieht den Fall sowie seine fortlaufende Kommunikation. Für den späteren erneuten Zugriff erhält er per E-Mail einen persönlichen Fall-Link.
+Screen 01 ermöglicht die **Einreichung und Fallkommunikation ohne Konto**. Ein neuer Fall wird über das Formular erfasst. Nach der Annahme sieht der Mieter unmittelbar den Fall und seine fortlaufende Kommunikation. Für den späteren Zugriff erhält er per E-Mail einen persönlichen Fall-Link. Ein freiwilliges, per E-Mail verifiziertes Mieterkonto bietet zusätzlich eine Übersicht aller Fälle mit derselben aktuellen Kontaktadresse. Kontoeröffnung und Anmeldung beschreibt [UC-005](../use_cases/UC-005-userkonto-eroeffnen.md). Die Gestaltung der Kontoübersicht ist separat zu konkretisieren.
 
 Die Annahme und Fortführung des Falls richten sich nach [FALL-02](../specifications/fallverwaltung.md#fall-02-erfolgreiche-annahme) und [FALL-05](../specifications/fallverwaltung.md#fall-05-fachlicher-lebenszyklus). Die Seite zeigt den fachlichen Bearbeitungsstand und die freigegebene Kommunikation.
 
@@ -24,6 +24,14 @@ Die Annahme und Fortführung des Falls richten sich nach [FALL-02](../specificat
 
 Diese Entscheidung folgt [docs/architecture/adr/ADR-003-praesentationsschicht.md](../architecture/adr/ADR-003-praesentationsschicht.md) und [../project-context.md](../project-context.md).
 
+### Angemeldetes Konto und Abmeldung
+
+**Präzisiert am 12.11.2026:** Screen 01 unterstützt auch die Einreichung aus einem angemeldeten, verifizierten Mieterkonto. In allen drei Seitenzuständen steht oben rechts im Seitenkopf «Angemeldet als» mit der verifizierten E-Mail-Adresse des aktuellen Kontos sowie der Schaltfläche **«Abmelden»**. Auf schmalen Bildschirmen darf dieser Bereich umbrechen; Kontoanzeige und Abmeldung bleiben sichtbar und per Tastatur bedienbar. Die Kontoanzeige stammt ausschliesslich aus dem serverseitig geprüften Sitzungskontext. Ohne Anmeldung wird keine Benutzeridentität aus einem Fall-Link oder der Fall-Kontaktadresse abgeleitet und kein Abmelden-Button angezeigt.
+
+Die eigene Konto-Adresse im Seitenkopf ist von der weiterhin maskierten Kontaktadresse des angezeigten Falls zu unterscheiden. Ein persönlicher Fall-Link kann einen anderen Fall öffnen und bestätigt keine Benutzeridentität.
+
+«Abmelden» beendet die lokale Browsersitzung serverseitig über eine CSRF-geschützte Schreibaktion und führt anschliessend zum öffentlichen Neuerfassungsformular ohne Kontodaten. Ungesendete Eingaben werden dabei nicht gespeichert. Weitere kontobasierte Zugriffe, auch aus bereits geöffneten Tabs, benötigen erneut eine gültige Anmeldung. Persönliche Fall-Links und separat erteilte MCP-Delegationen werden dadurch nicht widerrufen. Die genaue Logout-Route und ein möglicher übergreifender Logout am gemeinsamen Anmeldedienst bleiben im technischen Zugriffsvertrag zu konkretisieren.
+
 ## 2. Eine Seite mit drei Zuständen
 
 Die folgenden Ansichten bilden den [fachlichen Lebenszyklus nach FALL-05](../specifications/fallverwaltung.md#fall-05-fachlicher-lebenszyklus) ab. «Neuer Fall» ist der Formularzustand vor erfolgreicher Annahme.
@@ -34,7 +42,7 @@ Die folgenden Ansichten bilden den [fachlichen Lebenszyklus nach FALL-05](../spe
 | **Aktiver Fall** | Nach erfolgreichem Erstabsenden oder über persönlichen Fall-Link | Case-ID, Status, Dringlichkeit mit Quelle, Betreff, Objekt/Wohnung und maskierte E-Mail-Adresse im Kopf, chronologischer Verlauf aus Nachrichten und Dringlichkeitsereignissen, Eingabe für neue Nachricht | Weitere Nachrichten jederzeit hinzufügen, solange der Fall aktiv ist |
 | **Abgeschlossener Fall** | Persönlicher Fall-Link nach bestätigtem fachlichem Abschluss in PropertyFlow | Case-ID, Abschlussstatus, Dringlichkeit mit Quelle, ursprüngliches Anliegen und gesamte bisherige freigegebene Historie | Ausschliesslich lesen; keine neuen Nachrichten durch irgendeinen Absender |
 
-**Direkter Übergang:** Nach dem erfolgreichen Erstabsenden gelangt der Mieter **ohne erneute Anmeldung und ohne zuerst die E-Mail öffnen zu müssen** unmittelbar zur aktiven Fallansicht. Der persönliche Link enthält als variablen Zugangswert nur den geheimen Token und wird zusätzlich per E-Mail zugestellt. Die sichere Übergabe richtet sich nach [ZUG-02](../specifications/fallzugriff-und-sicherheit.md#zug-02-ausgabe-und-erstzugriff); ihre technische Umsetzung wird im Service-Block festgelegt.
+**Direkter Übergang:** Nach dem erfolgreichen Erstabsenden gelangt der Mieter unmittelbar zur aktiven Fallansicht. Dafür sind weder eine Anmeldung noch der Abruf der Bestätigungsmail erforderlich. Der persönliche Link enthält als variablen Zugangswert nur den geheimen Token und wird zusätzlich per E-Mail zugestellt. Die sichere Übergabe richtet sich nach [ZUG-02](../specifications/fallzugriff-und-sicherheit.md#zug-02-ausgabe-und-erstzugriff); ihre technische Umsetzung wird im Service-Block festgelegt.
 
 **Ursprungsdaten:** Die Erfassungsfelder werden nach Annahme schreibgeschützt angezeigt. Ergänzungen sind über das Nachrichtenformular möglich; die fachliche Regel definiert [FALL-04](../specifications/fallverwaltung.md#fall-04-ursprungsdaten-und-zuordnung).
 
@@ -64,13 +72,13 @@ Die folgenden Routen bilden den zentralen [HTTP-Vertrag nach ZUG-07](../specific
 | **Betreff** | Kurze, aussagekräftige Bezeichnung des Anliegens, z. B. «Heizung funktioniert nicht». | Ja | Nicht leer oder nur Leerzeichen; Maximallänge als Implementierungsregel festlegen (Vorschlag: 150 Zeichen). |
 | **Beschreibung** | Freitext mit Fehlerbild, Beobachtungen, Zeitpunkt und gegebenenfalls Auswirkungen, z. B. «Seit gestern sind alle Heizkörper kalt». | Ja | Nicht leer oder nur Leerzeichen; serverseitige Längenbegrenzung (Vorschlag: 5'000 Zeichen); als **Text**, niemals ungeprüftes HTML behandeln. |
 | **Objekt-/Wohnungsreferenz** | Identifikation der betroffenen Liegenschaft und Wohnung, z. B. «Musterstrasse 12, Wohnung 4». | Ja | Nicht leer; für Block 2 Freitext mit Mock-Wert, spätere Prüfung/Zuordnung durch Backend. |
-| **E-Mail-Adresse** | Kontaktadresse des Mieters für die Zustellung des persönlichen Fall-Links und spätere Benachrichtigungen. | Ja | Erforderlich; syntaktisch gültige E-Mail; serverseitig prüfen; keine Offenlegung anderer Fälle über diese Adresse. |
+| **E-Mail-Adresse** | Kontaktadresse für persönlichen Fall-Link und Benachrichtigungen. | Nur ohne Anmeldung als Eingabe erforderlich | Ohne Anmeldung syntaktisch prüfen. Bei angemeldetem, verifiziertem Mieterkonto entfällt das Eingabefeld; der Dienst übernimmt die verifizierte Konto-Adresse serverseitig. Eine mitgesendete Adresse darf sie nicht überschreiben. |
 
 **Absendeaktion:** Schaltfläche **«Anliegen absenden»**. Sie ist während des laufenden Absendens gegen wiederholtes Anklicken gesperrt und der Fortschritt wird sichtbar angezeigt. Dies ergänzt, ersetzt aber **nicht** den serverseitigen Schutz gegen Doppelanlage.
 
 ### 3.2 Ablauf beim ersten Absenden
 
-1. Mieter füllt die vier Felder aus und klickt auf **«Anliegen absenden»**.
+1. Mieter erfasst Betreff, Beschreibung und Objekt-/Wohnungsreferenz; ohne Anmeldung zusätzlich die E-Mail-Adresse. Bei angemeldetem, verifiziertem Mieterkonto übernimmt der Dienst die Kontaktadresse aus dem Konto. Der Mieter klickt auf **«Anliegen absenden»**.
 2. Während der Anfrage erscheint ein Sendezustand; bei Feldfehlern bleiben Eingaben erhalten und werden verständlich markiert.
 3. Die Annahme erfolgt nach [FALL-02](../specifications/fallverwaltung.md#fall-02-erfolgreiche-annahme). Nach bestätigter Speicherung zeigt die Anwendung **«Ihr Anliegen wurde gespeichert»** und die Case-ID.
 4. Die Weiterleitung gemäss Abschnitt 2.1 öffnet unmittelbar die aktive Fallansicht; die ursprünglichen Felder sind schreibgeschützt. Der Mieter muss dafür nicht zuerst den E-Mail-Link öffnen.
@@ -89,7 +97,8 @@ Für Wiederholungen und unklare Sendeergebnisse gilt [FALL-03](../specifications
 
 ### 3.4 Ergänzende Eingabe- und Bedienungsregeln
 
-- Der bestehende Feldumfang von vier Feldern bleibt bestehen. Name, Telefonnummer und separate Adressfelder aus dem früheren Review sind optionale Vorschläge, keine zusätzlichen Pflichtfelder.
+- Ohne Anmeldung bestehen vier Eingabefelder, mit verifiziertem Mieterkonto drei. Name, Telefonnummer und separate Adressfelder aus dem früheren Review sind optionale Vorschläge, keine zusätzlichen Pflichtfelder.
+- Ist die Anmeldung beim Absenden nicht mehr gültig, wird keine Konto-Adresse aus versteckten Feldern oder alten Browserdaten übernommen und kein Fall mit vermuteter Identität angelegt. Die Eingaben bleiben für eine erneute Anmeldung oder die bewusste Einreichung ohne Konto mit Kontaktadresse erhalten.
 - Für die Objekt-/Wohnungsreferenz gilt als Review-Vorschlag eine Grenze von 200 Zeichen, für die E-Mail-Adresse von 254 Zeichen. Alle Grenzen werden serverseitig geprüft.
 - Auch eine kurze Beschreibung wie «Heizung kaputt» bleibt erfassbar. Fehlende fachliche Details dürfen nicht erfunden werden.
 - Eine syntaktisch gültige E-Mail bestätigt keine Identität oder Mietberechtigung. Die eingegebene Adresse ist zunächst unbestätigt; sensible Mieterstammdaten dürfen darüber nicht automatisch veröffentlicht werden.
@@ -462,7 +471,7 @@ Die fachlichen Zustände Neuerfassung, aktiver und abgeschlossener Fall sind fes
 
 | Entwurf | Zustand |
 |---|---|
-| [ansicht-01-mieter-fallansicht-1.jpg](design/ansicht-01-mieter-fallansicht-1.jpg) | Neuerfassung mit den vier Pflichtfeldern, Datenschutzhinweis, Notfallhinweis und «Anliegen absenden». |
+| [ansicht-01-mieter-fallansicht-1.jpg](design/ansicht-01-mieter-fallansicht-1.jpg) | Neuerfassung ohne Anmeldung mit vier Pflichtfeldern, Datenschutzhinweis, Notfallhinweis und «Anliegen absenden». Die Kontovariante mit drei Feldern, Kontoanzeige und Abmeldung ist noch nicht im Bild dargestellt. |
 | [ansicht-01-mieter-fallansicht-2.jpg](design/ansicht-01-mieter-fallansicht-2.jpg) | Aktiver Fall mit Objekt-/Kontaktangaben im Kopf, Verlauf, offenem Antwortbedarf und Nachrichteneingabe. |
 | [ansicht-01-mieter-fallansicht-3.jpg](design/ansicht-01-mieter-fallansicht-3.jpg) | Abgeschlossener Fall mit lesbarem Verlauf und Abschlusshinweis anstelle der Eingabe. |
 
@@ -592,7 +601,10 @@ Nachrichtenblasen: eigene Mieternachrichten `#E5F2FF`, Antworten von Immobilienv
 
 ## 10. Akzeptanzkriterien
 
-- **AK-01:** Beim Aufruf von `GET /mieter/fall` sieht der Mieter das Neuerfassungsformular mit Betreff, Beschreibung, Objekt-/Wohnungsreferenz und E-Mail-Adresse. Der Tokenlink öffnet dagegen nach gültiger Prüfung den bestehenden Fall, obwohl er keine Case-ID enthält.
+- **AK-01:** Beim Aufruf von `GET /mieter/fall` sieht der Mieter Betreff, Beschreibung und Objekt-/Wohnungsreferenz. Ohne Anmeldung ist zusätzlich die E-Mail-Adresse erforderlich. Mit verifiziertem Mieterkonto fehlt dieses Eingabefeld; die serverseitig übernommene Kontaktadresse entspricht dem Konto, auch bei manipulierten zusätzlichen Formularfeldern. Der Tokenlink öffnet nach gültiger Prüfung den bestehenden Fall, obwohl er keine Case-ID enthält.
+- **AK-30:** In allen drei Zuständen zeigt eine gültige Anmeldung oben rechts das aktuelle Konto und «Abmelden», auch auf schmalen Bildschirmen. Ohne Anmeldung erscheinen weder Kontoidentität noch Abmelden-Button. Die Identität wird niemals aus dem geöffneten Fall-Link abgeleitet.
+- **AK-31:** Erfolgreiches Abmelden invalidiert die lokale Browsersitzung und öffnet die öffentliche Neuerfassung ohne Kontodaten. Alte Sitzungszugriffe gewähren keine Kontorechte mehr. GET und fehlender CSRF-Nachweis lösen keine Abmeldung aus. Gültige Fall-Links und unabhängig erteilte MCP-Delegationen behalten ihre eigenen Gültigkeitsregeln.
+- **AK-32:** Bei vor dem Absenden abgelaufener Anmeldung wird keine veraltete Konto-Adresse verwendet. Es entsteht kein Fall mit vermuteter Identität; Eingaben bleiben für erneute Anmeldung oder bewusste Einreichung ohne Konto erhalten.
 - **AK-02:** Ungültige Pflichtfelder verhindern die Annahme und führen zu verständlichen, feldbezogenen Fehlermeldungen ohne Verlust der eingegebenen Werte.
 - **AK-03:** Nach bestätigter Annahme ist die Case-ID sichtbar. Die fachlichen Annahme-, Wiederholungs- und Prozessstartregeln werden zentral mit [FALL-AK-01](../specifications/fallverwaltung.md#fall-ak-01), [FALL-AK-02](../specifications/fallverwaltung.md#fall-ak-02) und [FALL-AK-03](../specifications/fallverwaltung.md#fall-ak-03) geprüft.
 - **AK-04:** Nach dem Erstabsenden wird auf derselben funktionalen Seite unmittelbar die aktive Fallansicht angezeigt; der persönliche Fall-Link wird per E-Mail versendet.
@@ -668,7 +680,7 @@ Nachrichtenblasen: eigene Mieternachrichten `#E5F2FF`, Antworten von Immobilienv
 
 ### 12.1 Bewahrte Vorschläge und offene Entscheidungen aus dem Chat
 
-Die folgenden Vorschläge bleiben dokumentiert, erweitern aber nicht automatisch den aktuellen Umfang mit vier Erfassungsfeldern:
+Die folgenden Vorschläge bleiben dokumentiert, erweitern aber nicht automatisch den aktuellen Umfang mit vier Erfassungsfeldern ohne Anmeldung beziehungsweise drei mit verifiziertem Mieterkonto:
 
 | Vorschlag | Ursprünglich vorgeschlagene Validierung | Einordnung |
 |---|---|---|
@@ -705,7 +717,7 @@ Der Geltungsbereich ist geklärt: Das Mitarbeiterdetail verwendet Streaming und 
 
 ## Implementierungs- und Qualitätsnachweise
 
-Die lokale Demo und ihre Startanleitung stehen in der [README](../../README.md#frontend-demo-ohne-datenbank). Das [Block-2-Prüfprotokoll](../ai-usage/block2-oberflaechen-pruefung.md#ergänzung-browser-qualitätsnachweis-und-präsentationsentscheidung) enthält ausgeführte Browser-, Streaming-, A11y- und Performance-Prüfungen einschliesslich Grenzen. Fachliche und produktive Prüfziele bleiben in der [Evaluationsgrundlage](../evaluation/evaluationsgrundlage.md) massgebend; die Demo-Nachweise ersetzen keine Produktivfreigabe.
+Die lokale Demo und ihre Startanleitung stehen in der [README](../../dev/README.md). Das [Block-2-Prüfprotokoll](../ai-usage/block2-oberflaechen-pruefung.md#ergänzung-browser-qualitätsnachweis-und-präsentationsentscheidung) enthält ausgeführte Browser-, Streaming-, A11y- und Performance-Prüfungen einschliesslich Grenzen. Fachliche und produktive Prüfziele bleiben in der [Evaluationsgrundlage](../evaluation/evaluationsgrundlage.md) massgebend; die Demo-Nachweise ersetzen keine Produktivfreigabe.
 
 ### Historische Rückfragen
 
@@ -714,3 +726,16 @@ Nach [KOM: historischem und aktuellem Antwortbedarf](../specifications/fallkommu
 ### Ungesendeter Mietertext bei Abschluss
 
 **Bestätigt am 13.10.2026:** Sobald UI1 einen fachlichen Fallabschluss anhand eines erfolgreichen Leseabrufs oder einer bestätigten Serverantwort auf einen Sendeversuch erkennt, wird der ungesendete Mietertext gelöscht und die Nachrichteneingabe ausgeblendet. Der Abschlusshinweis ersetzt die Eingabe. Nach erkannter Wiedereröffnung erscheint die Eingabe leer; alter Text wird nicht wiederhergestellt. Gespeicherte Nachrichten bleiben unverändert. Ein blosser Netzwerkfehler oder ein unklarer Request-Ausgang gilt nicht als bestätigter Abschluss und löscht keine Eingabe. Diese Regel gilt ausschliesslich für UI1. In UI3 bleiben Mitarbeitertext und KI-Vorschlag bei zwischenzeitlichem Abschluss wie bisher erhalten, das Senden bleibt gesperrt (siehe [UC-004 A5](../use_cases/UC-004-ki-analyse-durchfuehren.md#a5-zwischenzeitlicher-abschluss)).
+
+### Demo-Kontozugang – Umsetzung vom 13.11.2026
+
+Die lokale Demo unterstützt die Selbstregistrierung unter `/registrieren` mit E-Mail-Einmalcode,
+Kontoanzeige und CSRF-geschütztem `POST /abmelden`. Der Dienst übernimmt bei
+angemeldeten Mietern die Konto-Adresse; ohne Anmeldung bleibt das E-Mail-Feld
+bestehen. Mitarbeiterkonten und Mieterkonten haben getrennte Rechte.
+Konfiguration und Tests stehen in der [README](../../src/test/README.md).
+«Meine Fälle» unter `/mieter/faelle` zeigt nach Verifikation alle eigenen Anliegen,
+auch frühere Gast-Einreichungen. Detail- und Nachrichtenzugriff prüfen die Zuordnung
+bei jeder Anfrage. OAuth-/MCP-Delegation und dauerhafte Kontospeicherung fehlen weiterhin. Der bisherige
+Fall-Link-Zugang bleibt bestehen. Die Gestaltungsvorlagen oben zeigen weiterhin
+den älteren Formularstand ohne Kontoanzeige.

@@ -27,7 +27,7 @@ function addRetry(notice, retry) {
     });
     notice.append(' ', button);
 }
-function denyAccess() {
+function denyAccess(needsLogin = false) {
     accessDenied = true;
     clearTimeout(saveNoticeTimer);
     clearTimeout(debounce);
@@ -41,11 +41,13 @@ function denyAccess() {
     $('#updates')?.close();
     $('#results')?.replaceChildren();
     const notice = $('#load-state') || $('#save-state');
-    notice.textContent = 'Zugriff verweigert. Automatische Aktualisierungen und Speichern sind gestoppt. Ungesendete Eingaben bleiben erhalten.';
+    notice.textContent = needsLogin
+        ? 'Bitte melden Sie sich erneut an. Automatische Aktualisierungen und Speichern sind gestoppt.'
+        : 'Zugriff verweigert. Automatische Aktualisierungen und Speichern sind gestoppt. Ungesendete Eingaben bleiben erhalten.';
     notice.classList.add('error');
     const reload = document.createElement('a');
     reload.href = location.href;
-    reload.textContent = 'Seite neu laden';
+    reload.textContent = needsLogin ? 'Erneut anmelden' : 'Seite neu laden';
     notice.append(' ', reload);
     syncComposer();
 }
@@ -146,7 +148,9 @@ let readController;
 let lastRead = timestamp();
 let pendingSidebar = null;
 async function readPage(url, signal) {
-    const response = await fetch(url, { signal, headers: { Accept: 'text/html' }, cache: 'no-store' });
+    const response = await fetch(url, {
+        signal, headers: { Accept: 'text/html', 'X-PropertyFlow-Request': 'partial' }, cache: 'no-store'
+    });
     const page = parse(await response.text());
     if (!response.ok) throw Object.assign(new Error($('.error, [role=alert]', page)?.textContent || 'Aktualisierung momentan nicht möglich.'), { status: response.status });
     return page;
@@ -216,7 +220,14 @@ document.addEventListener('submit', async event => {
     syncComposer();
     showSaveNotice('Wird gespeichert …');
     try {
-        const response = await fetch(form.getAttribute('action'), { method: 'POST', body: data, headers: { Accept: 'text/html' } });
+        const response = await fetch(form.getAttribute('action'), {
+            method: 'POST', body: data, headers: { Accept: 'text/html', 'X-PropertyFlow-Request': 'partial' }
+        });
+        if (document.body.classList.contains('staff-page')
+                && (response.status === 401 || response.headers.get('X-PropertyFlow-Access') === 'denied')) {
+            denyAccess(response.status === 401);
+            return;
+        }
         const page = parse(await response.text());
         if (!response.ok) {
             if ($('#case-head', page)) applyCase(page, false, response.status === 409);
@@ -324,7 +335,7 @@ async function loadList(url, updateUrl = true, preservePosition = false) {
     } catch (error) {
         if (error.name !== 'AbortError' && mine === generation) {
             if (error.status === 403 || error.status === 401) {
-                denyAccess();
+                denyAccess(error.status === 401);
             } else {
                 $('#load-state').textContent = 'Aktualisierung momentan nicht möglich. Stand: ' + lastRead;
                 addRetry($('#load-state'), () => loadList(url, updateUrl, preservePosition));
@@ -373,7 +384,9 @@ async function refresh() {
         if ($('#save-state button[data-read-retry]')) showSaveNotice('');
     } catch (error) {
         if (error.name !== 'AbortError') {
-            if (error.status === 403 || error.status === 401) denyAccess();
+            if (error.status === 403 || error.status === 401) {
+                denyAccess(error.status === 401 && document.body.classList.contains('staff-page'));
+            }
             else {
                 showSaveNotice('Aktualisierung momentan nicht möglich. Stand: ' + lastRead, true);
                 addRetry($('#save-state'), refresh);

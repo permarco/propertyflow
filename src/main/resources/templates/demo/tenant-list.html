@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="de-CH" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{demo/fragments :: head('Meine Fälle')}"></head>
+<body>
+<header th:replace="~{demo/fragments :: header}"></header>
+<main class="narrow">
+    <section class="card">
+        <h1>Meine Fälle</h1>
+        <p>Hier finden Sie alle Anliegen zu Ihrer verifizierten E-Mail-Adresse – auch früher ohne Konto eingereichte Anliegen.</p>
+        <p><a class="button" th:href="@{/mieter/fall}">Neues Anliegen melden</a></p>
+        <p th:if="${#lists.isEmpty(cases)}" class="notice">Sie haben noch keine Fälle.</p>
+        <article th:each="c : ${cases}" class="card tenant-case">
+            <p class="eyebrow" th:text="${c.id}"></p>
+            <h2><a th:href="@{/mieter/faelle/{id}(id=${c.id})}" th:text="${c.title}"></a></h2>
+            <p th:text="${c.originalUnit}"></p>
+            <p><span class="badge" th:text="${c.status}"></span> · <time th:text="${c.receivedText()}"></time></p>
+        </article>
+    </section>
+</main>
+</body>
+</html>

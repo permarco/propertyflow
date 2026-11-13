@@ -316,14 +316,18 @@ werden dort gepflegt. Der persönliche Fall-Link hat keine zeitliche Ablauffrist
 dies ist am 10.10.2026 bestätigt. Weitere technische Schutzparameter bleiben als
 Review-Vorschläge gekennzeichnet. Screens, Use-Cases und Services verweisen auf diese Quelle.
 
-Für Mitarbeitende gibt es keine Anmeldung, keine Mitarbeiterkonten und keine
-Abmeldefunktion. UI2 und UI3 enthalten keinen Ablauf für eine abgelaufene Anmeldung.
-Die technische Absicherung des Mitarbeiterbereichs und die Ermittlung individueller
-Mitarbeiteridentitäten bleiben gemäss ZUG-04 zu konkretisieren.
-Alle Mitarbeitenden haben dieselben Adminrechte auf
-alle Fälle und internen Memos. Die Mitarbeiter-Volltextsuche umfasst gespeicherte
-veröffentlichte externe Nachrichten und interne Memos, keine externen Entwürfe.
-Sie erweitert weder Mieterrechte noch den zulässigen Kommunikations-LLM-Kontext.
+[ZUG-04](specifications/fallzugriff-und-sicherheit.md#zug-04-rechte-und-vertrauensgrenzen)
+beschreibt die Zugriffsmatrix gemäss [ADR-005](architecture/adr/ADR-005-zugriffsmodell.md).
+Ein freiwilliges Mieterkonto zeigt alle Fälle mit derselben aktuellen Kontaktadresse
+wie die verifizierte Konto-Adresse. Für UI2 und UI3 melden sich Mitarbeitende mit
+einem E-Mail-Einmalcode an. Die Verwaltung legt die Konten an und vergibt die
+Mitarbeiterrolle. Die Rolle gewährt einheitliche fachliche Fallrechte. Das Anlegen
+von Mitarbeiterkonten erfordert das zusätzliche Kontoverwaltungsrecht.
+
+Die Mitarbeiter-Volltextsuche umfasst gespeicherte veröffentlichte externe
+Nachrichten und interne Memos. Web und MCP nutzen denselben Anmeldedienst.
+PropertyFlow prüft bei MCP-Aufrufen zusätzlich den delegierten Zugriff des Clients
+auf die Aktion und den konkreten Fall.
 
 ### 6.10 Benachrichtigungen und Zustellung
 
@@ -460,3 +464,17 @@ Quelle.
 ## Nachweise der lokalen Frontend-Demo
 
 Der aktuelle Nachweisstand ist im [Block-2-Prüfprotokoll](ai-usage/block2-oberflaechen-pruefung.md) dokumentiert: [Unit-Tests, Veto und Mutation](ai-usage/block2-oberflaechen-pruefung.md#ergänzung-vom-12102026-generierte-unit-tests-und-mutation) sowie [Browser, Streaming-Sicherheit, A11y und Performance](ai-usage/block2-oberflaechen-pruefung.md#ergänzung-browser-qualitätsnachweis-und-präsentationsentscheidung). Die dort genannten Messungen gelten für die lokale Demo; produktive Integrationen und vollständige Sicherheits-/Barrierefreiheitsprüfungen bleiben davon abgegrenzt.
+
+
+### Mieterkonto in der lokalen Umsetzung (13.11.2026)
+
+Die Frontend-Demo implementiert [UC-005](use_cases/UC-005-userkonto-eroeffnen.md)
+mit Selbstregistrierung und E-Mail-Einmalcode. Erst nach erfolgreicher Verifikation
+entsteht ein Mieterkonto. «Meine Fälle» ermittelt die Fallmenge aus der serverseitigen
+Konto-Adresse und der aktuellen Fall-Kontaktadresse; Detail- und Nachrichtenzugriffe
+prüfen dieselbe Zuordnung. Mieter sehen keine internen Memos und können keine
+Mitarbeiteraktionen ausführen. Neue Anliegen übernehmen die Kontaktadresse aus der
+Sitzung. Gast-Einreichung und persönlicher Fall-Link bleiben nutzbar.
+Konten und Fälle bleiben im Arbeitsspeicher; dauerhafte Speicherung und MCP-Delegation
+sind nicht Bestandteil dieses Implementierungsstands. Anleitung und Prüfungen:
+[Entwicklung](../dev/README.md), [Tests](../src/test/README.md).

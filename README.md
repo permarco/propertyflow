@@ -19,86 +19,14 @@ Kanalvertrag; die vereinbarten Benachrichtigungen verweisen auf die Fallansicht.
 Die drei Oberflächen sind als lokale Frontend-Demo mit Testdaten implementiert.
 Die produktiven Integrationen folgen separat.
 
-## Frontend-Demo ohne Datenbank
+## Einstieg
 
-In IntelliJ die gemeinsame Run-Konfiguration **PropertyFlow - Frontend Demo**
-auswählen und mit ▶ starten. Sie ist unter `.run/` versioniert und erscheint
-auch im Services-Fenster, wenn dort Spring-Boot-Konfigurationen aktiviert sind.
-Sie verwendet das Projekt-JDK, das Profil `frontend-demo`, Port 8081 und den
-kurzen Windows-Socket-Pfad. Ein vorheriger Demo-Prozess auf Port 8081 muss
-zuerst beendet werden.
+- [Entwicklung und Demo](dev/README.md): Mailpit, Mieterregistrierung, Mitarbeiterkonto und Start in IntelliJ oder per Maven.
+- [Tests](src/test/README.md): Java-, JavaScript- und Browserprüfungen mit separatem Test-Mailpit.
+- [Camunda-Infrastruktur](infra/camunda/README.md): separate Workflow-Umgebung.
 
-Starten mit Java 23 oder neuer:
-
-```powershell
-.\mvnw.cmd spring-boot:run '-Dspring-boot.run.profiles=frontend-demo'
-```
-
-Danach [http://127.0.0.1:8081](http://127.0.0.1:8081) öffnen.
-Die Startseite verlinkt Neuerfassung, aktive und abgeschlossene Mieteransicht,
-Mitarbeiterübersicht und Falldetail. Die Demo bindet nur an die lokale Adresse.
-56 fiktive Fälle decken Suche, Filter, Sortierung und Seitennavigation ab.
-Änderungen liegen ausschliesslich im Arbeitsspeicher und verschwinden beim Neustart.
-
-Nur UI3 bietet «Mit KI formulieren». Unter «Lokalen Mock testen» lassen sich
-Erfolg, Fehler während der Ausgabe und eine HTML-Testzeichenfolge auswählen.
-Abbrechen stoppt den lokalen Ausgabetimer; nur vollständige Vorschläge sind
-übernehmbar. Übernahme und bewusstes Senden sind getrennte Aktionen.
-Es werden keine Modell-, Datenbank-, Camunda- oder E-Mail-Aufrufe benötigt.
-
-Die Demo ist kein produktiver Zugangs- oder Workflow-Adapter: Alle lokalen
-Nutzer können den Mitarbeiterbereich öffnen; Demo-Token werden nur im
-Arbeitsspeicher zugeordnet. Hash/verschlüsselte Versandkopie nach ADR-004,
-Mitarbeiterabsicherung, Versand, automatische Analyse und Wiedervorlage-Timer
-bleiben spätere Integrationen. Formular-CSRF, sichere Textausgabe, getrennte
-Mieterdaten und Schreibsperren sind bereits berücksichtigt.
-
-Tests:
-
-```powershell
-.\mvnw.cmd test
-node --test src/test/js/mock-stream.test.mjs
-```
-
-Die Browser-Testreihe benötigt eine laufende, wegwerfbare `frontend-demo`,
-Microsoft Edge und die vorhandenen Browser-Testabhängigkeiten unter
-`target/frontend-tools`. Sie erstellt und verändert lokale Mock-Fälle;
-keine Produktionsinstanz verwenden. Standardadresse ist `http://127.0.0.1:8082`.
-Für parallele Entwicklung die Testinstanz ohne DevTools-Neustarts starten,
-damit die Mock-Daten während der Tests erhalten bleiben:
-
-```powershell
-.\mvnw.cmd spring-boot:run '-Dspring-boot.run.profiles=frontend-demo' '-Dspring-boot.run.arguments=--server.port=8082' '-Dspring-boot.run.jvmArguments=-Dspring.devtools.restart.enabled=false'
-```
-
-In einem zweiten Terminal:
-
-```powershell
-node src/test/browser/run-ui-tests.mjs
-```
-
-Eine andere Testadresse lässt sich vor dem Aufruf über `$env:DEMO_URL` setzen.
-Das Gesamtergebnis steht in `target/frontend-quality/ui-tests.tap`.
-Die separaten Browser-/A11y- und Performance-Prüfungen liefern
-`target/frontend-quality/browser.json` und `performance.json`.
-Die Browser-Testreihe ergänzt Java-, Streaming-, A11y- und Performance-Prüfungen;
-sie ersetzt keine Backend-/Integrations- oder KI-Evaluation.
-
-Die [Block-2-Nachweise](docs/ai-usage/block2-oberflaechen-pruefung.md#ergänzung-browser-qualitätsnachweis-und-präsentationsentscheidung)
-enthalten die Zuordnung der drei Screens zur Render-Strategie, Browserprüfungen
-für Barrierefreiheit und sichere Streaming-Ausgabe sowie Lighthouse-Messungen.
-Dort stehen auch die Reproduktionsschritte für `src/test/browser/`.
-Generierte Unit-Tests, die tatsächliche Veto-Entscheidung und der gezielte
-Mutationsnachweis sind im selben Prüfprotokoll dokumentiert.
-
-Falls Java unter Windows mit «Unable to establish loopback connection» und
-«UnixDomainSockets / Invalid argument» scheitert, einen kurzen vorhandenen
-temporären Socket-Pfad angeben (hier nach dem ersten Build):
-
-```powershell
-.\mvnw.cmd spring-boot:run '-Dspring-boot.run.profiles=frontend-demo' '-Dspring-boot.run.jvmArguments=-Djdk.net.unixdomain.tmpdir=C:\Dev\propertyflow\target'
-.\mvnw.cmd test '-DargLine=-Djdk.net.unixdomain.tmpdir=C:\Dev\propertyflow\target'
-```
+Die Frontend-Demo benötigt keine Datenbank und keinen laufenden Camunda-Server.
+Die Anwendung läuft lokal auf Port 8081, die separate Browser-Testinstanz auf 8082.
 
 Die fachliche Verantwortung verbleibt bei der Immobilienbewirtschaftung.
 Mitarbeitende und das System können Fälle gemäss den vereinbarten
@@ -173,6 +101,11 @@ propertyflow/
 │           ├── ADR-003-praesentationsschicht.md
 │           └── ADR-004-tokenbasierter-mieterzugriff.md
 │
+├── dev/
+│   ├── README.md
+│   ├── compose.yaml
+│   └── compose.test.yaml
+│
 ├── infra/
 │   └── camunda/
 │       ├── docker-compose.yaml
@@ -190,65 +123,6 @@ propertyflow/
 └── mvnw.cmd
 ```
 
-## Lokale Entwicklungsumgebung
-
-### Voraussetzungen
-
-Für die lokale Entwicklung werden benötigt:
-
-- Java
-- Docker / Docker Compose
-- Git
-
-Maven muss nicht separat installiert werden, da das Projekt den Maven
-Wrapper verwendet.
-
-## Camunda 8 starten
-
-Die lokale Camunda-8-Umgebung befindet sich unter:
-
-```text
-infra/camunda/
-```
-
-Camunda starten:
-
-```bash
-cd infra/camunda
-docker compose up -d
-```
-
-Status prüfen:
-
-```bash
-docker compose ps
-```
-
-Camunda stoppen:
-
-```bash
-docker compose down
-```
-
-Die Docker-Compose-Konfiguration ist ausschliesslich für die lokale
-Entwicklung vorgesehen.
-
-## PropertyFlow starten
-
-Vom Projekt-Root aus:
-
-```bash
-./mvnw clean test
-./mvnw spring-boot:run
-```
-
-Unter Windows:
-
-```powershell
-mvnw.cmd clean test
-mvnw.cmd spring-boot:run
-```
-
 ## Dokumentation
 
 Die Projektdokumentation unter `docs/` ist die fachliche und
@@ -260,7 +134,7 @@ architektonische Source of Truth.
 - [docs/project-context.md](docs/project-context.md)
   Versionierter, kompakt an arc42 orientierter KI-Rahmen mit Architektur, Stack, Konventionen, NFRs und Sicherheitsleitplanken
 
-- [Fallzugriff und Sicherheit](docs/specifications/fallzugriff-und-sicherheit.md): Persönlicher Tokenlink ohne zeitliche Ablauffrist, Trennung von Mieter- und Mitarbeiterfunktionen sowie bewusster Widerruf und administrativer Ersatz. Für Mitarbeitende gibt es keine Anmeldung; die technische Absicherung des Mitarbeiterbereichs ist noch zu konkretisieren.
+- [Fallzugriff und Sicherheit](docs/specifications/fallzugriff-und-sicherheit.md): Persönlicher Fall-Link, freiwilliges Mieterkonto, Mitarbeiteranmeldung per E-Mail-Einmalcode und Zugriffsmatrix für Web und MCP.
 
 - [Benachrichtigungen und Zustellung](docs/specifications/benachrichtigungen-und-zustellung.md): E-Mail bei sichtbaren Falländerungen, eigenen Nachrichten und Abschluss; Versandpflicht, Wiederholungen und Fehlerbehandlung.
 
@@ -275,6 +149,8 @@ architektonische Source of Truth.
 - [Screen 02 – Mitarbeiter-Fallübersicht](docs/frontend/ansicht-02-mitarbeiter-falluebersicht.md): Sieben Spalten einschliesslich sortierbarem Wiedervorlagedatum, Suche in veröffentlichten Nachrichten und internen Memos, Filter, Seitennavigation und Aktualisierung alle 20 Sekunden. Visuelle Entwürfe und lokale Demo sind vorhanden; produktive Integrationen folgen separat.
 
 - [Screen 03 – Mitarbeiter-Falldetailansicht](docs/frontend/ansicht-03-mitarbeiter-falldetail.md): Verlauf links sowie Falldaten und Aktionen rechts; externe Nachrichten, interne Memos, KI-Formulierung mit Streaming, manuelle Status-/Dringlichkeitsänderung, Abschluss und Wiedereröffnung. Wiedervorlagen können in Tagen oder als Datum gesetzt, geändert und gelöscht werden; Camunda wartet parallel zur Verarbeitung neuer Mieternachrichten. Fachliche Bedienung und visuelle Entwürfe sind dokumentiert; die lokale Demo ist implementiert. Produktive Integrationen folgen separat.
+
+- [Screen 04 – Anmeldung](docs/frontend/ansicht-04-login.md): E-Mail-Einmalcode, Rückmeldungen und Rückkehr zur angeforderten Seite sind in der lokalen Demo umgesetzt. Die MCP-Freigabe ist als Zielablauf beschrieben.
 
 - [Block-2-Prüfprotokoll](docs/ai-usage/block2-oberflaechen-pruefung.md): Dokumentierter Abgleich der UI-Spezifikationen mit den Fachregeln und Use Cases; Unit-Tests, Veto-Notiz sowie Browser- und Performance-Nachweise sind enthalten.
 
@@ -307,10 +183,15 @@ architektonische Source of Truth.
 
 ### Use Cases und gezielte Nachweise
 
+Geschäftsregeln (`BR`) und Akzeptanzkriterien (`AK`) beginnen mit der Nummer ihres Use Cases, zum Beispiel `UC-001-BR-001` und `UC-005-AK-01`.
+
 - [UC-001: Mieteranliegen einreichen](docs/use_cases/UC-001-mieteranliegen-einreichen.md)
 - [UC-002: Mitarbeiterübersicht](docs/use_cases/UC-002-mieteranliegen-anzeigen.md)
 - [UC-003: Falldetail](docs/use_cases/UC-003-mieteranliegen-details-anzeigen.md)
 - [UC-004: KI-Formulierung](docs/use_cases/UC-004-ki-analyse-durchfuehren.md)
+- [UC-005: Userkonto eröffnen](docs/use_cases/UC-005-userkonto-eroeffnen.md)
+- [UC-006: Mitarbeiter anmelden](docs/use_cases/UC-006-mitarbeiter-anmelden.md)
+- [UC-007: Mitarbeiterkonto anlegen](docs/use_cases/UC-007-mitarbeiterkonto-anlegen.md)
 - [Generierte Unit-Tests und Veto](docs/ai-usage/block2-oberflaechen-pruefung.md#ergänzung-vom-12102026-generierte-unit-tests-und-mutation)
 - [Browser- und Performance-Nachweise](docs/ai-usage/block2-oberflaechen-pruefung.md#ergänzung-browser-qualitätsnachweis-und-präsentationsentscheidung)
 - [Camunda-Umgebung](infra/camunda/README.md)

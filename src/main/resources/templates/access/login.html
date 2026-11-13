@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="de-CH" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${registration ? 'Userkonto eröffnen · PropertyFlow' : 'Anmelden · PropertyFlow'}">Anmelden · PropertyFlow</title>
+    <link rel="stylesheet" th:href="@{/css/propertyflow.css}">
+</head>
+<body>
+<header class="app-header">
+    <a th:href="@{/}" class="brand"><span class="brand-mark" aria-hidden="true">▰▥</span> PropertyFlow</a>
+    <span class="area">Anmeldung</span>
+    <div th:replace="~{demo/fragments :: account}"></div>
+</header>
+<main class="login-page">
+    <section class="card login-card" aria-labelledby="login-title">
+        <h1 id="login-title" th:text="${registration ? 'Userkonto eröffnen' : 'Anmelden'}">Anmelden</h1>
+        <p th:if="${error != null}" id="login-error" class="error" role="alert" th:text="${error}"></p>
+        <th:block th:unless="${codeStep}">
+            <p th:text="${registration ? 'Eröffnen Sie ein freiwilliges Mieterkonto. Bestätigen Sie Ihre E-Mail-Adresse mit dem zugesandten Einmalcode.' : 'Geben Sie die E-Mail-Adresse Ihres Kontos ein.'}"></p>
+            <form id="login-code-request" th:action="@{${loginBase + '/code'}}" method="post">
+                <input type="hidden" name="csrf" th:value="${csrf}">
+                <label for="login-email">E-Mail-Adresse</label>
+                <input id="login-email" name="email" type="email" maxlength="254" autocomplete="email" required
+                       placeholder="name@beispiel.ch" th:attr="aria-describedby=${error != null ? 'login-error' : null}">
+                <div class="actions login-primary"><button type="submit">Code anfordern</button></div>
+            </form>
+        </th:block>
+        <th:block th:if="${codeStep}">
+            <p class="notice" role="status" th:text="${registration ? 'Wenn die Anfrage verarbeitet werden kann, senden wir einen Einmalcode. Damit eröffnen oder öffnen Sie Ihr Konto.' : 'Wenn für diese Adresse ein berechtigtes Konto besteht, senden wir einen Einmalcode.'}"></p>
+            <form id="login-code-verify" th:action="@{${loginBase + '/pruefen'}}" method="post">
+                <input type="hidden" name="csrf" th:value="${csrf}">
+                <label for="login-code">Einmalcode</label>
+                <input id="login-code" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required
+                       placeholder="Code aus der E-Mail" th:attr="aria-describedby=${error != null ? 'login-error' : null}">
+                <div class="actions login-primary"><button type="submit" th:text="${registration ? 'E-Mail bestätigen' : 'Anmelden'}">Anmelden</button></div>
+            </form>
+            <div class="login-options">
+                <a th:href="@{${loginBase}}">E-Mail-Adresse ändern</a>
+                <form th:action="@{${loginBase + '/code'}}" method="post">
+                    <input type="hidden" name="csrf" th:value="${csrf}">
+                    <button class="login-link" type="submit">Neuen Code anfordern</button>
+                </form>
+            </div>
+        </th:block>
+        <p th:unless="${registration}">Noch kein Konto? <a th:href="@{/registrieren}">Userkonto eröffnen</a></p>
+        <p th:if="${registration}">Bereits registriert? <a th:href="@{/anmelden}">Mit Konto anmelden</a></p>
+    </section>
+</main>
+</body>
+</html>
