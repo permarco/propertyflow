@@ -1,6 +1,6 @@
 # KI-Baustein: KI-Aufruf als Service/Tool
 
-Stand: 23.10.2026. Lernbaustein im Modul `triage`, ohne HTTP-Freigabe oder
+Stand: 13.11.2026. Lernbaustein im Modul `triage`, ohne HTTP-Freigabe oder
 Änderung fachlicher Falldaten. Grundlage sind ADR-001, die Modulstruktur und
 DRING-01/02. Die bestehenden Oberflächen bleiben eine separate Demo.
 
@@ -10,11 +10,12 @@ DRING-01/02. Die bestehenden Oberflächen bleiben eine separate Demo.
 AnalyzeTool.Response analyze(AnalyzeTool.Request request)
 ```
 
-Das Eingabeschema ist der Java-Record `Request(String text)`: Request und Text
-müssen vorhanden sein, der Text darf nicht ausschliesslich aus Whitespace
-bestehen und höchstens 4000 UTF-16-Codeeinheiten umfassen. Die Längenprüfung
-erfolgt vor dem Entfernen äusserer Leerzeichen. Ungültige Eingaben verursachen
-keinen Modellaufruf.
+Das Eingabeschema ist der Java-Record `Request(String text)`. Request und Text
+müssen vorhanden sein. Der Text muss Inhalt haben und darf höchstens
+2’000 UTF-16-Codeeinheiten umfassen. Wie bei [FALL-02](../specifications/fallverwaltung.md#fall-02-erfolgreiche-annahme)
+werden CRLF und einzelne CR vor der Längenprüfung zu LF vereinheitlicht.
+Die Längenprüfung erfolgt vor dem Entfernen äusserer Leerzeichen. Nur gültige
+Eingaben erreichen das Modell.
 
 Die versiegelte Antwortschnittstelle erlaubt genau zwei Varianten:
 
@@ -25,7 +26,7 @@ Die versiegelte Antwortschnittstelle erlaubt genau zwei Varianten:
 
 | Fehlercode | Meldung |
 |---|---|
-| `INVALID_INPUT` | text muss 1 bis 4000 Zeichen enthalten und darf nicht leer sein. |
+| `INVALID_INPUT` | text muss 1 bis 2000 Zeichen enthalten und darf nicht leer sein. |
 | `MODEL_UNAVAILABLE` | KI-Analyse derzeit nicht verfügbar. Bitte manuell prüfen. |
 | `INVALID_MODEL_OUTPUT` | KI-Antwort entspricht nicht dem Vertrag. Bitte manuell prüfen. |
 
@@ -71,7 +72,7 @@ Modellausgaben ab. Der Live-Test wird ohne ausdrückliches Opt-in übersprungen.
 
 ## Grenzen und Review
 
-Ausgeführter Live-Nachweis vom 23.10.2026, 23:02 Europe/Zurich:
+Ausgeführter Live-Nachweis vom 23.10.2026, 23:02 Europe/Zurich, mit der damaligen Grenze von 4’000 UTF-16-Codeeinheiten:
 
 ```text
 Ollama success call: Success[urgency=KRITISCH]
@@ -97,7 +98,7 @@ jede semantische Prompt-Injection. Nur synthetische, nicht personenbezogene
 Testdaten wurden für den Nachweis vorgesehen; eine automatische Anonymisierung
 ist nicht implementiert.
 
-Vor einer produktiven Einbindung müssen Intake-Persistenz vor der Analyse,
+Vor einer produktiven Einbindung müssen die dauerhafte Fallanlage vor der Analyse,
 Datenminimierung, Auditpersistenz (Modellversion, Prompt-Version
 `triage-urgency-v1`, Zeitpunkt und spätere Entscheidung), fachliche Freigaben
 und Camunda-Anbindung umgesetzt werden. Das Tool ist bewusst nicht als

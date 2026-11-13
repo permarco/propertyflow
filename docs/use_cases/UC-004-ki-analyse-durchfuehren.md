@@ -11,7 +11,7 @@
 
 ## Geltungsbereich
 
-Die automatische Fallanalyse und Dringlichkeitsbewertung erfolgen im Camunda-Fallprozess. Der Mitarbeiter startet in UI3 keine separate Fallanalyse. Die Ergebnisse der automatischen Verarbeitung liegen zur Mitarbeiterbearbeitung bereits vor; bei Fehlern bleiben Speicherung und manuelle Bearbeitung gemäss FALL-05 möglich.
+Die automatische Fallanalyse und Dringlichkeitsbewertung erfolgen im Camunda-Fallprozess. Der Mitarbeiter startet in UI3 keine separate Fallanalyse. Die Ergebnisse der automatischen Verarbeitung liegen zur Mitarbeiterbearbeitung bereits vor; bei Analysefehlern kann der laufende Camunda-Prozess den gespeicherten Fall zur Mitarbeiterprüfung übergeben. [FALL-06](../specifications/fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow)
 
 Streaming und wirksamer Abbruch betreffen in UI3 die KI-Formulierung einer externen Nachricht. Der Abbruch beendet diesen Formulierungsversuch, nicht den führenden Camunda-Fallprozess. SSR und gezieltes JavaScript folgen ADR-003; die dort bisher als Analyse bezeichnete interaktive Funktion wird fachlich als Formulierungshilfe konkretisiert.
 
@@ -28,9 +28,9 @@ end
 
 MITARBEITER --- UC
 UC --- MODELL
-classDef participant fill:#f2f8fc,stroke:#334155,color:#172033
-classDef goal fill:#dbeaf7,stroke:#6d8eae,color:#172033
-style PF stroke:#006fbb,stroke-width:2px,color:#172033
+classDef participant fill:#1e293b,stroke:#94a3b8,color:#ffffff
+classDef goal fill:#334155,stroke:#6d8eae,color:#ffffff
+style PF fill:#1e293b,stroke:#006fbb,stroke-width:2px,color:#ffffff
 ```
 
 ## Preconditions

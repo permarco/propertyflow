@@ -4,7 +4,7 @@
 
 Akzeptiert – dokumentiert die am 09.10.2026 vereinbarte Zugangsentscheidung. Die technische Implementierung und die noch offenen Sicherheitsparameter sind damit nicht als fertig bestätigt.
 
-**Fachlich konkretisiert am 10.10.2026:** Der persönliche Fall-Link hat keine zeitliche Ablauffrist. Diese bestätigte Festlegung ersetzt den bisherigen offenen Laufzeitvorschlag; das direkte Tokenmodell und die getrennten Regeln für einen bewussten Widerruf bleiben bestehen.
+**Fachlich konkretisiert am 10.10.2026:** Der persönliche Fall-Link hat keine zeitliche Ablauffrist. **Präzisiert am 13.11.2026:** Beim administrativen Ersatz aktiviert PropertyFlow den neuen Link und sperrt den bisherigen in derselben Datenbanktransaktion. [UC-024](../../use_cases/UC-024-fall-link-widerrufen-oder-ersetzen.md)
 
 **Geltungsbereich präzisiert am 12.11.2026:** Dieser ADR regelt den persönlichen Fall-Link als Zugang ohne Konto. Mieter können weiterhin ohne Konto ein Anliegen einreichen und über den gültigen Link in einem aktiven Fall antworten. Der zusätzliche Zugang über ein freiwilliges, per E-Mail verifiziertes Mieterkonto sowie Mitarbeiteranmeldung und MCP-Zugriff werden in [ADR-005](ADR-005-zugriffsmodell.md) entworfen.
 
@@ -61,7 +61,7 @@ Ein Hash allein kann den ursprünglichen Token nicht für spätere E-Mails wiede
 
 ## Abgrenzung und offene Konkretisierungen
 
-Die fehlende zeitliche Ablauffrist ist bestätigt. Dieser ADR legt kein konkretes Tokenformat, Hash-/Verschlüsselungsverfahren, keine Schlüsselrotation, Rate Limits oder Löschfristen fest. Die hierzu in der Zugangs-Spezifikation genannten Werte bleiben Review-Vorschläge. Kontaktbestätigung, Identitätsprüfung bei einem administrativen Linkersatz und die Behandlung wartender Mails bei ungültigem Zugang werden vor produktivem Einsatz konkretisiert. Eine UI3-Aktion «Fall-Link ersetzen» ist nicht vorgesehen.
+Die fehlende zeitliche Ablauffrist ist bestätigt. Dieser ADR legt kein konkretes Tokenformat, Hash-/Verschlüsselungsverfahren, keine Schlüsselrotation, Rate Limits oder Löschfristen fest. Die hierzu in der Zugangs-Spezifikation genannten Werte bleiben Review-Vorschläge. Kontaktbestätigung und Identitätsprüfung beim administrativen Linkersatz werden vor produktivem Einsatz konkretisiert. Eine UI3-Aktion «Fall-Link ersetzen» ist nicht vorgesehen.
 
 Die Spezifikationen bleiben die Quellen für detaillierte Regeln und Prüfkriterien:
 

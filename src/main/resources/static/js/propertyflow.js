@@ -54,6 +54,12 @@ function denyAccess(needsLogin = false) {
 let saving = false;
 let closed = $('#case-head')?.dataset.closed === 'true';
 const message = $('#message');
+const messageLengthHint = $('#message-length-hint');
+const maxMessageLength = Number(message?.dataset.maxLength);
+const messageLengthHintText = messageLengthHint?.textContent;
+const messageLengthError = messageLengthHint
+    ? `Die Nachricht darf höchstens ${new Intl.NumberFormat('de-CH').format(maxMessageLength).replace("'", '’')} Zeichen enthalten.`
+    : '';
 const internal = $('#internal');
 const answer = $('#answer');
 const stream = $('#ai') ? new MockStream(({ state, text }) => {
@@ -81,6 +87,15 @@ function syncComposer() {
     }
     // A confirmed closure discards the tenant's unsent text.
     if (closed && !internal) message.value = '';
+    if (messageLengthHint) {
+        const tooLong = message.value.length > maxMessageLength;
+        const feedback = tooLong ? messageLengthError : messageLengthHintText;
+        message.setCustomValidity(tooLong ? messageLengthError : '');
+        if (tooLong) message.setAttribute('aria-invalid', 'true');
+        else message.removeAttribute('aria-invalid');
+        messageLengthHint.classList.toggle('error', tooLong);
+        if (messageLengthHint.textContent !== feedback) messageLengthHint.textContent = feedback;
+    }
     const running = stream && ['waiting', 'streaming'].includes(stream.state);
     message.disabled = saving || closed;
     $('#send').disabled = saving || closed || !message.value.trim();

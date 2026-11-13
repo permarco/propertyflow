@@ -31,7 +31,11 @@
 <h2>Nachricht verfassen</h2><form id="message-form" th:action="${postUrl}" method="post">
 <th:block th:replace="~{demo/fragments :: hidden}"/>
 <label for="message" id="message-label" th:text="${staff ? 'Externe Nachricht an den Mieter' : 'Ihre Nachricht'}"></label>
-<textarea id="message" name="text" required maxlength="5000" rows="3" th:text="${draft}" placeholder="Ihre Nachricht …"></textarea>
+<textarea id="message" name="text" required rows="3" placeholder="Ihre Nachricht …"
+    th:attr="maxlength=${staff ? 5000 : null},data-max-length=${messageMaxLength},aria-describedby=${messageMaxLength == null ? null : 'message-length-hint'}"
+    th:text="${draft == null ? '' : (messageMaxLength == null ? draft : '&#10;' + draft)}"></textarea>
+<small th:if="${messageMaxLength != null}" id="message-length-hint" role="status"
+    th:text="|Maximal ${messageMaxLength} Zeichen.|">Maximal 2000 Zeichen.</small>
 <div class="actions"><button th:if="${staff}" type="button" id="generate" class="secondary" disabled>✦ Mit KI formulieren</button><label th:if="${staff}" class="toggle"><input type="checkbox" role="switch" id="internal" name="internal" value="true" th:checked="${internal}">Intern</label><label th:if="${staff}" class="toggle"><input type="checkbox" role="switch" id="answer" name="answer" value="true" th:checked="${answer}">Mieterantwort erforderlich</label><button id="send" class="push-right">Nachricht senden</button></div>
 </form></div>
 <section th:if="${staff}" id="ai" class="ai-panel" hidden aria-label="KI-Formulierungshilfe">

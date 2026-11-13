@@ -26,9 +26,9 @@ end
 AKTEUR ---|"prüft Empfehlung"| UC
 CAMUNDA ---|"veranlasst Empfehlung"| UC
 UC --- MODELL
-classDef participant fill:#f2f8fc,stroke:#334155,color:#172033
-classDef goal fill:#dbeaf7,stroke:#6d8eae,color:#172033
-style PF stroke:#006fbb,stroke-width:2px,color:#172033
+classDef participant fill:#1e293b,stroke:#94a3b8,color:#ffffff
+classDef goal fill:#334155,stroke:#6d8eae,color:#ffffff
+style PF fill:#1e293b,stroke:#006fbb,stroke-width:2px,color:#ffffff
 ```
 
 ## Preconditions
@@ -48,7 +48,7 @@ style PF stroke:#006fbb,stroke-width:2px,color:#172033
 
 - **Eindeutige und zulässige Aktion.** PropertyFlow kann nach serverseitiger Prüfung eine direkte Antwort mit Systemabschluss oder eine Rückfrage bei offenem Fall ausführen. Die Beispiele und Voraussetzungen stehen in [ADR-002](../architecture/adr/ADR-002-camunda8-workflow-orchestrierung.md#beispiel--zuständigkeit-und-vorgehen-empfehlen). Die Regeln für die automatische Veröffentlichung sind im Kommunikationsvertrag zu präzisieren.
 - **Fallangaben oder Quellen fehlen, sind unklar oder widersprüchlich.** Der Fall bleibt aktiv. Die Immobilienbewirtschaftung prüft den Fall und entscheidet über das weitere Vorgehen.
-- **Wissenssuche oder Modell fällt aus.** Die Fallannahme und die manuelle Bearbeitung bleiben möglich.
+- **Wissenssuche oder Modell fällt aus.** Die Fallannahme bleibt möglich. Der laufende Camunda-Prozess kann den Fall zur Mitarbeiterprüfung übergeben.
 - **Vorgeschriebene menschliche Entscheidung.** Die Immobilienbewirtschaftung prüft den Fall nach FALL-10 und trifft die erforderliche Entscheidung.
 
 ## Postconditions
@@ -61,4 +61,4 @@ style PF stroke:#006fbb,stroke-width:2px,color:#172033
 - **UC-018-BR-001:** PropertyFlow verwendet freigegebene Wissensquellen und stellt dem Modell nur die benötigten Daten bereit. Die Empfehlung bleibt auf Modell, Prompt-Fassung und verwendete Quellen zurückführbar.
 - **UC-018-BR-002:** Für die Umsetzung einer Empfehlung gelten die Freigabe- und Abschlussregeln aus [FALL-10](../specifications/fallverwaltung.md#fall-10-automatisierung-und-menschliche-freigabe) und [FALL-07](../specifications/fallverwaltung.md#fall-07-abschluss-und-zeit-danach).
 - **UC-018-AK-01:** Eine Empfehlung mit freigegebener Quelle im Falldetail prüfen. Das Ergebnis ist als Empfehlung erkennbar und die zugrunde liegende Quelle ist nachvollziehbar.
-- **UC-018-AK-02:** Die Wissenssuche ausfallen lassen. Der Fall bleibt gespeichert und manuell bearbeitbar.
+- **UC-018-AK-02:** Die Wissenssuche ausfallen lassen. Der Fall bleibt gespeichert und der laufende Camunda-Prozess stellt die Mitarbeiteraufgabe bereit.

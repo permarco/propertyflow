@@ -30,7 +30,7 @@ class DemoCasesBoundaryTest {
                         .map(value -> Arguments.of(field, value))),
                 Stream.of(Arguments.of(0, "t".repeat(151)), Arguments.of(1, "u".repeat(201)),
                         Arguments.of(2, "invalid"), Arguments.of(2, "a@b@c.ch"),
-                        Arguments.of(2, "a".repeat(250) + "@b.ch"), Arguments.of(3, "d".repeat(5001)),
+                        Arguments.of(2, "a".repeat(250) + "@b.ch"), Arguments.of(3, "d".repeat(2001)),
                         Arguments.of(4, "o".repeat(81))));
     }
 
@@ -52,18 +52,22 @@ class DemoCasesBoundaryTest {
     @Test
     void submissionAcceptsExactMaximumLengths() {
         String email = "a".repeat(249) + "@b.ch";
-        String token = cases.create("scope", "t".repeat(150), "u".repeat(200), email, "d".repeat(5000), "o".repeat(80));
+        String description = "d".repeat(1997) + "\n\uD83D\uDE80";
+        String formDescription = description.replace("\n", "\r\n");
+        String token = cases.create("scope", "t".repeat(150), "u".repeat(200), email, formDescription, "o".repeat(80));
         DemoCases.View stored = cases.tenant(token);
         assertEquals("t".repeat(150), stored.title());
         assertEquals("u".repeat(200), stored.originalUnit());
         assertEquals(email, stored.email());
-        assertEquals("d".repeat(5000), stored.description());
+        assertEquals(description, stored.description());
         assertEquals(1, stored.entries().size());
+        assertEquals(description, stored.entries().getFirst().text());
+        assertEquals(token, cases.create("scope", "t".repeat(150), "u".repeat(200), email, description, "o".repeat(80)));
     }
 
     static Stream<Arguments> invalidMessages() {
         return Stream.of(Arguments.of("", "operation"), Arguments.of("   ", "operation"),
-                Arguments.of("x".repeat(5001), "operation"), Arguments.of("Text", ""),
+                Arguments.of("x".repeat(2001), "operation"), Arguments.of("Text", ""),
                 Arguments.of("Text", "   "), Arguments.of("Text", "o".repeat(81)));
     }
 
@@ -80,14 +84,27 @@ class DemoCasesBoundaryTest {
     }
 
     @Test
-    void messageAcceptsExactMaximumLengthsAndIdenticalRetryHasNoEffect() {
-        String text = "m".repeat(5000);
+    void tenantMessageAcceptsExactMaximumAfterNewlineNormalizationAndIdenticalRetryHasNoEffect() {
+        String text = "m".repeat(1997) + "\n\uD83D\uDE80";
         String operation = "o".repeat(80);
-        cases.message(null, "demo-aktiver-fall", text, false, false, operation);
+        cases.message(null, "demo-aktiver-fall", text.replace("\n", "\r\n"), false, false, operation);
         DemoCases.View saved = cases.get("REQ-2026-001");
         assertEquals(text, saved.entries().getLast().text());
         cases.message(null, "demo-aktiver-fall", text, false, false, operation);
         assertEquals(saved, cases.get(saved.id()));
+    }
+
+    @Test
+    void staffMessageAcceptsItsOwnMaximumLength() {
+        String id = "REQ-2026-001";
+        String text = "m".repeat(5000);
+        cases.message(id, null, text, false, false, "staff-message");
+        DemoCases.View saved = cases.get(id);
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> cases.message(id, null, text + "m", false, false, "over-staff-limit"));
+        assertEquals(BAD_REQUEST, error.getStatusCode());
+        assertEquals(text, saved.entries().getLast().text());
+        assertEquals(saved, cases.get(id));
     }
 
     @ParameterizedTest

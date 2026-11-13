@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted
+Akzeptiert. Am 13.11.2026 um die ausschliessliche Prozessführung und das Verhalten bei Camunda-Ausfall präzisiert. Der Integrationsentscheid zu SS-003 ist in dieser Fassung zusammengeführt. Die BPMN-Modellierung und Umsetzung stehen aus.
+
+[Entscheidung](#entscheidung) · [Integrationsprinzipien](#integrationsprinzipien) · [Sequenzdiagramm zum Fallstart](#sequenzdiagramm--fallstart-und-zuordnung) · [Prüfung der Integration](#prüfung-der-integration)
 
 ## Kontext
 
@@ -44,15 +46,16 @@ behandelten Technologien eingesetzt und evaluiert werden können.
 
 ### NFR-03 – Zuverlässigkeit / Robustheit
 
-Ein Mieteranliegen darf nicht verloren gehen oder unbearbeitbar werden,
-wenn eine KI-, RAG- oder andere externe Komponente vorübergehend
-nicht verfügbar ist.
+Ein Mieteranliegen muss auch bei vorübergehendem Ausfall von Camunda,
+KI, Retrieval oder E-Mail dauerhaft angenommen werden können. Die
+Fallbearbeitung setzt verfügbare Prozesssteuerung voraus.
 
 **Bedeutung für die Workflow-Architektur:**
 
 Der Prozesszustand muss unabhängig von einzelnen Worker-Ausführungen
 persistiert werden können. Fehler müssen wiederholt oder kontrolliert
-zur manuellen Bearbeitung überführt werden können.
+bei verfügbarer Prozesssteuerung in eine Mitarbeiteraufgabe überführt
+werden können.
 
 
 ### NFR-04 – Nachvollziehbarkeit / Auditierbarkeit
@@ -287,6 +290,20 @@ Camunda übernimmt insbesondere:
 - technische Fehlerzustände
 - menschliche Aufgaben und Freigabeschritte
 
+**Verbindliche Prozessführung:** PropertyFlow nimmt neue Anliegen unabhängig
+von Camunda dauerhaft an und speichert sie als «Eingegangen». Der Prozessstart
+erfolgt asynchron über SS-003. Für alle folgenden fachlichen Statuswechsel ist
+der führende Camunda-Prozess zuständig. Mitarbeitende führen die dort
+freigegebenen fachlichen Aktionen aus. Camunda entscheidet über den nächsten
+Schritt und veranlasst den Statuswechsel. PropertyFlow prüft den Übergang,
+speichert den fachlichen Status und stellt ihn für die Ansichten bereit.
+
+Vor dem Prozessstart und bei einem Camunda-Ausfall können berechtigte
+Mitarbeitende Fälle lesen. Fachliche Bearbeitungsaktionen bleiben
+serverseitig gesperrt. Das gilt für Web und MCP. Bei Wiederanlauf holt
+PropertyFlow ausstehende Starts nach. Der konkrete Mitarbeiterablauf und
+die Prüfkriterien stehen in [FALL-06](../../specifications/fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow).
+
 Die fachliche Geschäftslogik verbleibt in PropertyFlow.
 
 
@@ -344,6 +361,89 @@ Beispiel:
 
 
 ## Integrationsprinzipien
+
+Der technische Vertrag zu Startkennung, Nachrichtenfeldern und Fehlerabbildung ist unter [SS-003](../schnittstellenentwurf-block-3.md#ss-003--camunda-integrationsvertrag) beschrieben.
+
+### Asynchroner Fallstart und Zuordnung
+
+PropertyFlow speichert den Fall mit «Eingegangen» und den dauerhaften Startauftrag gemeinsam. Die Bestätigung an den Mieter folgt auf den Datenbank-Commit. Ein asynchroner Starter prüft regelmässig die offenen Startaufträge und verwendet für jeden Versuch desselben Auftrags dieselbe gespeicherte Startkennung. Camunda verhindert damit einen weiteren Start, solange die zugehörige Instanz aktiv ist.
+
+Der erste Camunda-Job-Worker ordnet seine Instanz dem Fall zu. Er speichert den `processInstanceKey` am Fall und erledigt den Startauftrag in derselben Datenbanktransaktion. Bei einem vorübergehenden Speicherfehler wird der Job mit Wartezeit wiederholt, bis die Zuordnung gespeichert ist. Bis dahin bleibt der Fall auf «Eingegangen», und der Prozess wartet vor der fachlichen Bearbeitung. Eine Wiederholung für dieselbe bereits gespeicherte Instanz bestätigt die Zuordnung. Eine abweichende Instanz darf die gespeicherte Zuordnung nicht überschreiben oder den Fall weiterbearbeiten.
+
+Die Startkennung identifiziert den Startauftrag. Der `processInstanceKey` bezeichnet die konkrete Ausführung des Fallprozesses. Die Case-ID ist die fachliche Referenz, die BPMN-Prozess-ID bezeichnet das Prozessmodell.
+
+### Sequenzdiagramm · Fallstart und Zuordnung
+
+```mermaid
+---
+config:
+  sequence:
+    mirrorActors: false
+    wrap: true
+---
+sequenceDiagram
+    actor M as Mieter
+    participant I as PropertyFlow · Intake
+    participant DB as PropertyFlow-Datenbank
+    participant S as PropertyFlow · Starter
+    participant C as Camunda
+    participant W as PropertyFlow · Job Worker
+
+    M->>I: Anliegen einreichen
+    I->>DB: Fall als «Eingegangen» und Startauftrag<br/>mit Startkennung gemeinsam speichern
+    DB-->>I: Commit bestätigt
+    I-->>M: Fallannahme mit Case-ID bestätigen
+
+    Note over S,C: Prozessstart asynchron zur Einreichung
+    S->>DB: Offenen Startauftrag lesen
+    DB-->>S: Case-ID und gespeicherte Startkennung
+    S->>C: Fallprozess starten<br/>Startkennung als businessId verwenden
+    C->>C: Instanz starten und Zuordnungsjob bereitstellen
+    alt Startantwort kommt an
+        C-->>S: Start bestätigt
+    else Startantwort geht verloren
+        C--xS: Startantwort
+    end
+
+    loop Bis die Zuordnung gespeichert ist
+        W->>C: Zuordnungsjob übernehmen
+        C-->>W: Case-ID, Startkennung und processInstanceKey
+        W->>DB: Instanzschlüssel speichern und<br/>Startauftrag in derselben Transaktion erledigen
+        alt Datenbankfehler
+            DB-->>W: Speicherung fehlgeschlagen
+            W->>C: Job mit Wartezeit erneut einplanen
+            opt Starter findet den Auftrag weiterhin offen
+                S->>DB: Offenen Startauftrag erneut lesen
+                DB-->>S: Dieselbe Startkennung
+                S->>C: Start mit derselben businessId erneut versuchen
+                C-->>S: 409 · Instanz bereits aktiv
+            end
+        else Speicherung erfolgreich
+            DB-->>W: Commit bestätigt
+        end
+    end
+
+    W->>C: Jobabschluss mit processInstanceKey melden
+    C->>C: Fachliche Bearbeitung fortsetzen
+```
+
+### Synchrone Nachrichtenkorrelation
+
+PropertyFlow ermittelt den `processInstanceKey` der aktuell zugeordneten Instanz serverseitig. Wenn PropertyFlow eine fachliche Aktion oder ein Ereignis an diese Instanz übergibt, wartet es synchron auf die Korrelation. Das gilt insbesondere für Mitarbeiteraktionen über Web und MCP. Camunda muss im aktuellen BPMN-Schritt eine passende wartende Stelle für die Nachricht haben. Das BPMN-Modell legt je unterstützter Aktion und Ereignis fest, an welchen Stellen sie zulässig sind, wie der Prozess fortsetzt und wie er fachliche Fehler behandelt. Es gelten die Prozessfreigaben und die Regeln für kritische Aktionen. [FALL-06](../../specifications/fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow) · [FALL-10](../../specifications/fallverwaltung.md#fall-10-automatisierung-und-menschliche-freigabe)
+
+Bei «Bearbeitung fortsetzen» liefert PropertyFlow dem Browser nach erfolgreicher Berechtigungsprüfung `200`, sobald Camunda die Korrelation mit der erwarteten Instanz bestätigt hat. `400` bedeutet eine ungültige Aktion oder eine fehlende passende wartende Stelle. `500` bedeutet einen technischen Fehler oder Timeout. Bei einem Timeout kann Camunda die Nachricht bereits korreliert haben. Die Oberfläche lädt den gespeicherten Fallstand neu. Nach der Korrelation veranlasst Camunda den Statuswechsel. Der neue Status erscheint nach dem Speichern durch den PropertyFlow-Dienst.
+
+Den Mitarbeiterablauf beschreibt [UC-012](../../use_cases/UC-012-fall-fachlich-steuern.md#synchroner-vertrag-für-die-mitarbeiteraktion).
+
+### Wiedervorlage
+
+Der führende Fallprozess wartet auf den wirksamen Timer oder eine neue
+Mieternachricht. Sobald eine während der Wartezeit gespeicherte Nachricht
+korreliert ist, hebt Camunda die Wiedervorlage auf und veranlasst die
+Mitarbeiterprüfung. Der Übergang wartet auf keine automatische Auswertung.
+Erreicht der Timer den Prozess zuerst, wird die während der Wartezeit
+gespeicherte Nachricht bei der bereits ausgelösten Prüfung berücksichtigt.
+Pro Wiedervorlage entsteht höchstens eine Mitarbeiteraufgabe. [FALL-11](../../specifications/fallverwaltung.md#fall-11-wiedervorlage)
 
 ### Job Worker
 
@@ -503,6 +603,13 @@ Mehrfachausführung berücksichtigen.
 Beispielsweise darf ein wiederholter Worker-Aufruf nicht mehrfach denselben
 externen Auftrag erzeugen.
 
+Bei einer Dringlichkeitsbewertung speichert PropertyFlow das Ergebnis zusammen
+mit dem Camunda-Job-Schlüssel in einer Datenbanktransaktion. Der Worker meldet
+den Abschluss erst nach dem Commit. Wird derselbe Job erneut zugestellt und
+liegt sein Ergebnis bereits vor, verwendet der Worker die gespeicherte
+Bewertung und meldet nur den Abschluss an Camunda. Die Wiederholung löst
+keinen Modellaufruf und keine weitere fachliche Änderung aus.
+
 
 ### Fehlerbehandlung
 
@@ -525,7 +632,9 @@ Kritische fachliche Aktionen dürfen nicht ausschliesslich aufgrund einer
 KI-Ausgabe ausgeführt werden.
 
 Der BPMN-Prozess enthält deshalb explizite menschliche Prüf- und
-Freigabeschritte.
+Freigabeschritte. In einer Mitarbeiterprüfung wartet er auf die fachliche
+Entscheidung. Der Worker prüft beim Schreiben die Zuordnung zum aktuellen
+Prozessschritt, damit verspätete Aufträge keine spätere Entscheidung verändern.
 
 Beispiel:
 
@@ -567,11 +676,16 @@ RAG / Empfehlung
 - Camunda 8 muss zusätzlich betrieben werden
 - die lokale Entwicklungsumgebung wird komplexer
 - Camunda 8 muss zusätzlich überwacht und abgesichert werden
+- ein Camunda-Ausfall unterbricht die Fallbearbeitung durch Mitarbeitende
 - Entwickler müssen das Job-Worker- und Client-Modell von Camunda 8 kennen
 - gegenüber Camunda 7 müssen neue APIs und Konzepte erlernt werden
 - zwischen PropertyFlow und Camunda existiert keine gemeinsame lokale
   Datenbanktransaktion
 - Idempotenz und verteilte Fehlerfälle müssen bewusst behandelt werden
+
+### Preis der synchronen Korrelation
+
+Die synchrone Korrelation macht die Antwortzeit und Verfügbarkeit von Bearbeitungsaktionen von Camunda abhängig. Der Prozess muss für jede vorgesehene Übergabe einen passenden Nachrichtenempfang modellieren. Ein gepufferter Versand könnte Nachrichten bei vorübergehend fehlender Warteposition zwischenspeichern. Für Bearbeitungsaktionen ist die sofortige Rückmeldung zur Korrelation massgeblich. Beim Intake erlaubt der dauerhafte Startauftrag die Bestätigung auch bei unerreichbarem Camunda.
 
 
 ## Auswirkungen auf die Architektur
@@ -612,6 +726,16 @@ Der modulare Monolith aus ADR-001 bleibt bestehen.
 Camunda 8 ist nicht Bestandteil des modularen Monolithen selbst.
 
 
+## Prüfung der Integration
+
+- Camunda abschalten, ein Anliegen einreichen und den gespeicherten Fall als «Eingegangen» abrufen. Nach Wiederanlauf wird der Prozess gestartet und die Instanz dem Fall zugeordnet.
+- Camunda den Prozess starten lassen, die Startantwort verwerfen und die Zuordnung im ersten Worker vorübergehend an einem Datenbankfehler scheitern lassen. Den Starter währenddessen erneut ausführen. Nach Behebung des Fehlers muss der Worker den ursprünglichen Prozess zuordnen und den Startauftrag erledigen. Der ausführliche Prüffall steht unter [SS-003](../schnittstellenentwurf-block-3.md#prüffall--verlorene-startantwort-und-datenbankfehler).
+- Die Abschlussmeldung eines bereits gespeicherten Bewertungsjobs vor Camunda unterbrechen. Bei erneuter Zustellung meldet der Worker den Abschluss mit der gespeicherten Bewertung. Den Nachweis für Modellaufruf, Verlauf und Mailauftrag beschreibt [E3](../schnittstellenentwurf-block-3.md#prüffall--bewertungsjob-erneut-zugestellt).
+- Zwei Fallprozesse mit derselben wartenden Aktion starten. «Bearbeitung fortsetzen» für einen Fall muss zur zugeordneten Instanz korrelieren. PropertyFlow liefert `200`. Solange der Worker noch nicht gespeichert hat, zeigt der Abruf den bisherigen Fallstatus. Der andere Fall bleibt unverändert.
+- Die Aktion bei einem Prozess ohne passenden Nachrichteneingang senden. PropertyFlow liefert `400`. Der Fall bleibt unverändert und es entsteht keine weitere Prozessinstanz.
+- Die Camunda-Antwort nach erfolgreicher Korrelation verwerfen. PropertyFlow liefert `500`, wiederholt die Nachricht nicht automatisch und zeigt beim nächsten Abruf den von einem Worker bereits gespeicherten Fallstand.
+
+
 ## Kriterien für eine Neubewertung
 
 Die Entscheidung wird überprüft, wenn mindestens eine der folgenden
@@ -630,8 +754,8 @@ Bedingungen eintritt:
 
 ## Nicht Bestandteil dieses ADR
 
-Dieses ADR entscheidet über den Einsatz von Camunda 8 als
-Workflow-Orchestrierung.
+Dieses ADR entscheidet über den Einsatz von Camunda 8 und die Prinzipien
+seiner Anbindung über SS-003.
 
 Folgende Entscheidungen werden separat getroffen:
 
@@ -639,7 +763,7 @@ Folgende Entscheidungen werden separat getroffen:
 - lokale Entwicklungsumgebung für Camunda 8
 - Authentifizierung und Autorisierung gegenüber Camunda
 - konkrete BPMN-Prozessmodelle
-- konkrete Retry- und Incident-Strategie
+- konkrete Wartezeiten für Wiederholungen und allgemeine Incident-Strategie
 - detaillierte Job-Worker-Struktur
-- Transactional-Outbox-Pattern, falls eine zuverlässige Kopplung von
-  PropertyFlow-Datenänderungen und externen Ereignissen erforderlich wird
+- technische Ausgestaltung des dauerhaften Startauftrags und allfälliger
+  weiterer transaktionaler Folgeaufträge

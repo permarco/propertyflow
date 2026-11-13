@@ -1,6 +1,7 @@
 package com.pertegato.propertyflow.caseprocessing.demo;
 
 import com.pertegato.propertyflow.access.web.CurrentAccount;
+import com.pertegato.propertyflow.intake.contract.CaseDescription;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -94,13 +95,17 @@ public class DemoController {
     }
     @GetMapping("/mieter/fall")
     String intake(Model model) {
-        if (!model.containsAttribute("fields")) model.addAttribute("fields", Map.of("title", "", "unit", "", "email", "", "description", ""));
+        if (!model.containsAttribute("fields")) {
+            model.addAttribute("fields", Map.of("title", "", "unit", "", "email", "", "description", ""));
+        }
+        model.addAttribute("descriptionMaxLength", CaseDescription.MAX_LENGTH);
         return "demo/intake";
     }
     @GetMapping("/mieter/fall/zugang/{token}")
     String tenant(@PathVariable String token, Model model) {
         model.addAttribute("c", cases.tenant(token));
         model.addAttribute("postUrl", "/mieter/fall/zugang/" + token + "/nachrichten");
+        model.addAttribute("messageMaxLength", DemoCases.TENANT_MESSAGE_MAX_LENGTH);
         return "demo/detail";
     }
 
@@ -114,6 +119,7 @@ public class DemoController {
     String tenantCase(@PathVariable String id, HttpServletRequest request, Model model) {
         model.addAttribute("c", cases.tenantCase(id, accounts.requireTenant(request).email()));
         model.addAttribute("postUrl", "/mieter/faelle/" + id + "/nachrichten");
+        model.addAttribute("messageMaxLength", DemoCases.TENANT_MESSAGE_MAX_LENGTH);
         return "demo/detail";
     }
 
@@ -149,7 +155,7 @@ public class DemoController {
             model.addAttribute("error", ex.getReason());
             model.addAttribute("fields", fields);
             model.addAttribute("operation", fields.get("operation"));
-            return "demo/intake";
+            return intake(model);
         }
     }
     @PostMapping({"/mitarbeiter/faelle/{id}/nachrichten", "/mieter/fall/zugang/{token}/nachrichten"})

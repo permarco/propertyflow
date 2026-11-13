@@ -19,9 +19,9 @@ subgraph PF["PropertyFlow"]
 end
 
 MITARBEITER --- UC
-classDef participant fill:#f2f8fc,stroke:#334155,color:#172033
-classDef goal fill:#dbeaf7,stroke:#6d8eae,color:#172033
-style PF stroke:#006fbb,stroke-width:2px,color:#172033
+classDef participant fill:#1e293b,stroke:#94a3b8,color:#ffffff
+classDef goal fill:#334155,stroke:#6d8eae,color:#ffffff
+style PF fill:#1e293b,stroke:#006fbb,stroke-width:2px,color:#ffffff
 ```
 
 ## Preconditions
@@ -40,6 +40,8 @@ style PF stroke:#006fbb,stroke-width:2px,color:#172033
 
 Die Auswahl aus [Screen 02](../frontend/ansicht-02-mitarbeiter-falluebersicht.md) öffnet eine eigene Detailseite. [Screen 03](../frontend/ansicht-03-mitarbeiter-falldetail.md) hält die bestätigte Grundanordnung und Bedienung fest: Falltitel, Status und Dringlichkeit oben, Verlauf links sowie Falldaten und Aktionen rechts. «Zur Fallübersicht» erhält Suche, Filter, Sortierung und zuletzt gewählte Seite gemäss den UI2-Regeln. Die manuelle Dringlichkeitsänderung erfolgt über «Dringlichkeit ändern», Stufenauswahl und «Speichern» nach [DRING-06](../specifications/dringlichkeitsbewertung.md#dring-06-manuelle-anpassung): Systembewertungen dürfen die manuelle Einstufung nicht überschreiben; wirksame Änderungen werden nach DRING-07 historisiert und dem Mieter angezeigt. Die optionale Begründung bleibt intern. Visuelle Ausgestaltung und technische Umsetzung folgen separat.
 
+UI3 zeigt den zuletzt in PropertyFlow bestätigten Fallstand und bietet die vom Camunda-Fallprozess freigegebenen Aktionen an. Bei ausstehendem Prozessstart oder unerreichbarem Camunda bleibt die Ansicht für Mitarbeitende lesend. PropertyFlow weist Schreibaktionen in dieser Situation auch bei einem direkten Aufruf ab. [FALL-06](../specifications/fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow)
+
 ## Alternative Flows
 
 ### A1: Anliegen nicht gefunden
@@ -55,7 +57,7 @@ Die Auswahl aus [Screen 02](../frontend/ansicht-02-mitarbeiter-falluebersicht.md
 **Trigger:** Für das Anliegen liegt noch kein Analyseergebnis vor.
 
 1. Das System zeigt den gespeicherten Fallstand und kennzeichnet ein noch fehlendes Ergebnis der automatischen Verarbeitung.
-2. Die manuelle Bearbeitung bleibt möglich; die automatische Analyse läuft im Camunda-Prozess. Bei Analysefehlern gilt FALL-05. Es gibt keinen manuellen Analysestart in UI3.
+2. Die automatische Analyse läuft im Camunda-Prozess. Bei Analysefehlern kann der Prozess den Fall gemäss FALL-05 zur Mitarbeiterprüfung übergeben. UI3 bietet für die Analyse einen lesenden Ergebnisstand.
 
 ### A3: Anmeldung fehlt oder Mitarbeiterberechtigung fehlt
 
@@ -79,7 +81,7 @@ Die Auswahl aus [Screen 02](../frontend/ansicht-02-mitarbeiter-falluebersicht.md
 
 Eine KI-Ausgabe wird als Empfehlung beziehungsweise Unterstützung dargestellt. Vorgeschriebene menschliche Prüfungen und die fachliche Verantwortung verbleiben bei der Immobilienbewirtschaftung. Mitarbeitende können Fälle abschliessen; die vereinbarten Systemabschlüsse folgen den gesonderten, serverseitig geprüften Fachregeln aus [FALL-07](../specifications/fallverwaltung.md#fall-07-abschluss-und-zeit-danach). Eine beliebige KI-Ausgabe ist keine Abschlussberechtigung. Bei Kosten bzw. verbindlicher externer Beauftragung, sehr dringlichen oder schwerwiegenden Fällen sowie starken oder eskalierten Mieterbeschwerden ist die menschliche Entscheidung nach [FALL-10](../specifications/fallverwaltung.md#fall-10-automatisierung-und-menschliche-freigabe) verpflichtend. Offener Prüfbedarf darf nicht durch einen Systemabschluss umgangen werden. Mitarbeiterprüfungen werden über interne Memos dokumentiert; es gibt keine separate Aktion «Prüfung erledigt» und keine externe Auftragsausführung. Statusänderung und Mitarbeiterabschluss folgen der bestätigten Bedienung in Screen 03.
 
-Nach Prüfung kann der Mitarbeiter gemäss [FALL-06](../specifications/fallverwaltung.md#direkter-übergang-in-die-bearbeitung) auch ohne Wiedervorlage direkt von «Mitarbeiterprüfung erforderlich» auf «In Bearbeitung» wechseln. Der bestätigte manuelle Statuswechsel ist die bewusste Mitarbeiterentscheidung. Bereits berücksichtigte Prüfgründe führen nicht sofort zurück zur Prüfung; neue Erkenntnisse können sie erneut auslösen. Der geprüfte Fallstand bleibt nachvollziehbar; eine zusätzliche Prüfbestätigung ist nicht erforderlich.
+Bei «Mitarbeiterprüfung erforderlich» kann der Mitarbeiter die freigegebene Aktion «Bearbeitung fortsetzen» bestätigen, wenn das weitere Vorgehen feststeht. Camunda übernimmt die Entscheidung und veranlasst den Übergang auf «In Bearbeitung». Der PropertyFlow-Dienst speichert den Status und hält fest, welche Prüfgründe berücksichtigt wurden. Neue Erkenntnisse können erneut eine Prüfung auslösen. [FALL-06](../specifications/fallverwaltung.md#direkter-übergang-in-die-bearbeitung)
 
 Beim erfolgreichen Mitarbeiterabschluss speichert PropertyFlow intern «Vom Mitarbeiter geprüft: keine weitere Bearbeitung erforderlich.» mit Mitarbeiter, Zeitpunkt und Abschlussquelle gemäss FALL-07. Die bewusste Bestätigung bildet die Grundlage. Ein zusätzliches Begründungsfeld oder Pflichtmemo entfällt; eine ausführlichere Erklärung ist vor dem Abschluss freiwillig als Memo möglich. Der Vermerk ist keine Kommunikationsnachricht. Bei Systemabschlüssen bleibt der tatsächlich geprüfte Systemgrund erforderlich.
 
@@ -93,13 +95,13 @@ Verspätete automatische Ergebnisse aus der Bearbeitung vor dem letzten Abschlus
 
 Die Detailansicht priorisiert fachlich verständliche Informationen wie Dringlichkeit, Empfehlung, Zuständigkeit und Bearbeitungsstatus.
 
-### UC-003-BR-004: Wiedervorlage mit paralleler Verarbeitung
+### UC-003-BR-004: Wiedervorlage und neue Mieternachrichten
 
-Der Mitarbeiter kann in UI3 eine optionale Wiedervorlage in Tagen oder als festes Datum setzen und im aktiven Fall jederzeit ändern oder löschen. PropertyFlow speichert den bestimmten Termin; Camunda wartet im bestehenden Fallprozess über einen Timer. Setzen und Ändern führen zu «Wartet auf Wiedervorlage». Löschen entfernt den aktuellen Termin, beendet die Wartezeit und setzt «In Bearbeitung». UI2 zeigt das gespeicherte Datum in einer zusätzlichen sortierbaren Spalte. Neue Mieternachrichten werden währenddessen weiter automatisch verarbeitet. Neue Erkenntnisse können eine frühere Wiedervorlage erfordern; andernfalls bleibt der Termin bestehen. Am wirksamen Termin erhält der aktive Fall «Mitarbeiterprüfung erforderlich». Terminänderung, Löschung, Abschluss und Nachvollziehbarkeit folgen [FALL-11](../specifications/fallverwaltung.md#fall-11-wiedervorlage-und-parallele-nachrichtenverarbeitung); die Darstellung folgt UI3.
+Der Mitarbeiter kann in UI3 eine optionale Wiedervorlage in Tagen oder als festes Datum setzen, ändern oder löschen, wenn der Prozess die jeweilige Aktion freigibt. Camunda führt die Wartezeit im bestehenden Fallprozess und veranlasst die zugehörigen Statuswechsel. UI2 zeigt das gespeicherte Datum in einer zusätzlichen sortierbaren Spalte. Bei einer neu gespeicherten Mieternachricht hebt Camunda die laufende Wiedervorlage auf und legt den Fall sofort zur Mitarbeiterprüfung vor. Terminänderung, Löschung, Abschluss und Nachvollziehbarkeit folgen [UC-013](UC-013-wiedervorlage-verwalten.md) und [FALL-11](../specifications/fallverwaltung.md#fall-11-wiedervorlage).
 
 ### UC-003-BR-005: Objekt und Wohnung zuordnen
 
-Bei der Bearbeitung eines aktiven Falls kann der Mitarbeiter rechts in UI3 «Ändern» bei «Bestätigte Zuordnung» wählen, einen vorhandenen Vorschlag auswählen oder Freitext eingeben und mit «Zuordnung bestätigen» speichern. Solange keine bestätigte Zuordnung vorliegt, ist das Feld mit der ursprünglichen Mieterangabe vorbelegt; bei späteren Änderungen mit der aktuellen bestätigten Zuordnung. Die Vorbelegung allein bestätigt nichts. Die ursprüngliche Angabe kann unverändert bestätigt werden; ein separater Speicher- oder Bestätigungsschritt entfällt. Eine offene Zuordnung wird damit geklärt oder eine bisherige Zuordnung korrigiert. Die ursprüngliche Mieterangabe bleibt getrennt von der bestätigten Zuordnung nachvollziehbar. Berechtigung, Eingabeprüfung (1–200 Zeichen nach Entfernen äusserer Leerzeichen), Prüfung strukturierter Referenzen bei deren Verwendung, Konfliktprüfung und Speicherung folgen [FALL-04](../specifications/fallverwaltung.md#fall-04-ursprungsdaten-und-zuordnung); UI2 übernimmt den gespeicherten Stand in seine bestehende Spalte. Mitarbeitereingabe und laufender KI-Stream bleiben erhalten. Die Zuordnung ändert weder Kontaktadresse noch persönlichen Fall-Link und ersetzt keine separate manuelle Statusänderung.
+Bei einer vom Prozess freigegebenen Zuordnung kann der Mitarbeiter rechts in UI3 «Ändern» bei «Bestätigte Zuordnung» wählen, einen vorhandenen Vorschlag auswählen oder Freitext eingeben. Mit «Zuordnung bestätigen» übergibt er die fachliche Aktion. Solange keine bestätigte Zuordnung vorliegt, ist das Feld mit der ursprünglichen Mieterangabe vorbelegt; bei späteren Änderungen mit der aktuellen bestätigten Zuordnung. Die Vorbelegung allein bestätigt nichts. Auch die ursprüngliche Angabe kann bestätigt werden. Eine offene Zuordnung wird damit geklärt oder eine bisherige Zuordnung korrigiert. Die ursprüngliche Mieterangabe bleibt getrennt von der bestätigten Zuordnung nachvollziehbar. Berechtigung, Eingabeprüfung (1–200 Zeichen nach Entfernen äusserer Leerzeichen), Prüfung strukturierter Referenzen bei deren Verwendung, Konfliktprüfung und Speicherung folgen [FALL-04](../specifications/fallverwaltung.md#fall-04-ursprungsdaten-und-zuordnung); UI2 übernimmt den gespeicherten Stand in seine bestehende Spalte. Mitarbeitereingabe und laufender KI-Stream bleiben erhalten. Kontaktadresse und persönlicher Fall-Link folgen ihren eigenen Änderungsregeln.
 
 ## Gemeinsame fachliche Grundlage
 

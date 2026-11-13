@@ -20,9 +20,9 @@ end
 
 AKTEUR --- UC
 UC --- MAIL
-classDef participant fill:#f2f8fc,stroke:#334155,color:#172033
-classDef goal fill:#dbeaf7,stroke:#6d8eae,color:#172033
-style PF stroke:#006fbb,stroke-width:2px,color:#172033
+classDef participant fill:#1e293b,stroke:#94a3b8,color:#ffffff
+classDef goal fill:#334155,stroke:#6d8eae,color:#ffffff
+style PF fill:#1e293b,stroke:#006fbb,stroke-width:2px,color:#ffffff
 ```
 
 ## Preconditions

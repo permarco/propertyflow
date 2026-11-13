@@ -53,16 +53,16 @@ Verantwortlichkeiten strukturiert werden.
 
 ### Intake
 
-Das Modul `intake` ist für die Erfassung und initiale Verwaltung von
-Mieteranliegen verantwortlich.
+Das Modul `intake` ist für die Entgegennahme neuer Mieteranliegen
+verantwortlich. Es ruft die Fallanlage in `caseprocessing` synchron auf.
 
 Typische Verantwortlichkeiten:
 
 - Entgegennahme neuer Mieteranliegen
 - Validierung der Eingangsdaten
 - initiale Zuordnung von Mieter und Mietobjekt
-- persistente Speicherung des Mieteranliegens
-- Bereitstellung des Anliegens für die weitere Verarbeitung
+- Übergabe der geprüften Einreichung an `caseprocessing` über den öffentlichen Vertrag zur Fallanlage
+- Bestätigung der Annahme nach erfolgreicher Fallanlage
 
 
 ### Triage
@@ -95,11 +95,13 @@ Typische Verantwortlichkeiten:
 
 ### Case Processing
 
-Das Modul `caseprocessing` unterstützt die weitere Bearbeitung eines Falls
-durch die Immobilienbewirtschaftung.
+Das Modul `caseprocessing` besitzt den Fall ab der Anlage und über seinen
+gesamten Lebenszyklus. Es stellt die Fallanlage für `intake` bereit und
+unterstützt die weitere Bearbeitung durch die Immobilienbewirtschaftung.
 
 Typische Verantwortlichkeiten:
 
+- Vergabe der Case-ID und gemeinsame Speicherung des Falls mit «Eingegangen» und des Camunda-Startauftrags in einer Datenbanktransaktion
 - Darstellung des fachlichen Bearbeitungszustands
 - menschliche Prüfung von KI-Empfehlungen
 - Annahme, Korrektur oder Ablehnung einer Empfehlung
@@ -264,8 +266,13 @@ Fachlogik des Moduls wesentlich zu verändern.
 
 ## Camunda-Integration
 
-Camunda 8 ist für die technische Orchestrierung langlebiger Prozesse
+Camunda 8 ist für die Orchestrierung des Fallprozesses und die
+Veranlassung aller fachlichen Statuswechsel nach der Fallanlage
 verantwortlich.
+
+Mitarbeiteraktionen setzen eine Freigabe durch den zugehörigen Prozess voraus.
+Web und MCP sperren fachliche Bearbeitungsaktionen vor dem Prozessstart und
+bei Camunda-Ausfall gemäss [FALL-06](../specifications/fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow).
 
 Job Worker befinden sich auf der Integrationsgrenze zwischen Camunda und
 der PropertyFlow-Fachlogik.
@@ -325,6 +332,24 @@ Für die Module gelten folgende Regeln:
 
 ## Interne Schnittstellenverträge
 
+Die [C4-Komponentenansicht](c4-3-components.md) zeigt die Kommunikationswege.
+Die [Schnittstellenübersicht](schnittstellenentwurf-block-3.md#schnittstellenübersicht)
+führt die bisher erfassten Verbindungen und den Stand ihrer Verträge.
+
+### Fallanlage · Intake und Case Processing
+
+`intake` übergibt die geprüften Einreichungsdaten und die Absende-ID über einen
+synchronen Java-Aufruf an den öffentlichen Anwendungsdienst von `caseprocessing`.
+`caseprocessing` vergibt die Case-ID und speichert den Fall mit «Eingegangen»
+sowie den Startauftrag in derselben Datenbanktransaktion. Nach dem Commit gibt
+der Dienst das Annahmeergebnis an `intake` zurück. Für Wiederholungen gilt
+[FALL-03](../specifications/fallverwaltung.md#fall-03-wiederholung-und-doppelte-einreichung).
+
+Der asynchrone Starter übergibt den gespeicherten Startauftrag nach dem Commit
+über [SS-003](schnittstellenentwurf-block-3.md#ss-003--camunda-integrationsvertrag)
+an Camunda. Die Annahmebestätigung hängt vom Datenbank-Commit ab und kann
+bereits erfolgen, während der Camunda-Start noch aussteht.
+
 ### Erstbewertung · Job Worker und Triage
 
 **Entwurf für die Integration.** Der Java-Vertrag der Triage ist als Prototyp
@@ -334,8 +359,8 @@ geplant. [Triage-Vertrag](../ai-usage/ki-service-vertrag.md#aufruf-und-vertrag) 
 
 | Aufruf | Kommunikation | Eingabe und Ergebnis |
 | --- | --- | --- |
-| Fallannahme → Camunda über `SS-003` | Asynchron zur Einreichung | Intake speichert Fall und Prozessstartauftrag gemeinsam. Die HTTP-Bestätigung hängt vom Commit ab. PropertyFlow übergibt den Startauftrag mit der Case-ID im Hintergrund. |
-| Job Worker → Triage | Synchroner Java-Aufruf in PropertyFlow | Der Worker erhält die Case-ID aus dem Job, bezieht den für die Bewertung nötigen Anliegenstext über den zuständigen Anwendungsdienst und ruft `AnalyzeTool.analyze(Request)` auf. Triage liefert eine validierte Dringlichkeitsstufe oder einen typisierten Fehler. |
+| Fallannahme → Camunda über `SS-003` | Asynchron zur Einreichung | Der Starter übergibt den bei der [Fallanlage](#fallanlage--intake-und-case-processing) gespeicherten Startauftrag im Hintergrund mit der Case-ID an Camunda. |
+| Job Worker → Triage | Synchroner Java-Aufruf in PropertyFlow | Der Worker erhält die Case-ID aus dem Job, bezieht den für die Bewertung nötigen Anliegenstext über den zuständigen Anwendungsdienst und ruft `AnalyzeTool.analyze(Request)` auf. Der [Triage-Vertrag](../ai-usage/ki-service-vertrag.md#aufruf-und-vertrag) unterstützt die volle Beschreibungslänge gemäss [FALL-02](../specifications/fallverwaltung.md#fall-02-erfolgreiche-annahme). Triage liefert eine validierte Dringlichkeitsstufe oder einen typisierten Fehler. |
 | Triage → `AnalysisModel` | Synchroner Java-Aufruf im Modul `triage` | Der Port erhält den minimierten Anliegenstext. Sein Adapter ruft den Modellanbieter über `SS-005` auf und liefert die Modellausgabe zur Validierung an Triage zurück. |
 
 Der synchrone Modellaufruf belegt während der Wartezeit einen Worker-Platz.

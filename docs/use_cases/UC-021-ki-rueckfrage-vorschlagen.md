@@ -25,9 +25,9 @@ end
 
 AKTEUR --- UC
 UC --- MODELL
-classDef participant fill:#f2f8fc,stroke:#334155,color:#172033
-classDef goal fill:#dbeaf7,stroke:#6d8eae,color:#172033
-style PF stroke:#006fbb,stroke-width:2px,color:#172033
+classDef participant fill:#1e293b,stroke:#94a3b8,color:#ffffff
+classDef goal fill:#334155,stroke:#6d8eae,color:#ffffff
+style PF fill:#1e293b,stroke:#006fbb,stroke-width:2px,color:#ffffff
 ```
 
 ## Preconditions
@@ -45,12 +45,12 @@ style PF stroke:#006fbb,stroke-width:2px,color:#172033
 ## Alternative Flows
 
 - **Die erforderlichen Angaben liegen bereits vor.** Es gibt keinen neuen Rückfragevorschlag für diese Angaben.
-- **Das Modell fällt aus oder gibt einen unbrauchbaren Vorschlag aus.** Der Fall bleibt zur manuellen Bearbeitung zugänglich.
+- **Das Modell fällt aus oder gibt einen unbrauchbaren Vorschlag aus.** Der Fall bleibt gespeichert. Der laufende Camunda-Prozess kann eine Mitarbeiterprüfung vorsehen.
 - **Menschliche Prüfung ist vorgeschrieben.** Die Regeln nach FALL-10 gelten weiterhin.
 
 ## Postconditions
 
-- Ein gezielter Rückfragevorschlag liegt zur weiteren Prüfung vor oder der Fall kann manuell weiterbearbeitet werden.
+- Ein gezielter Rückfragevorschlag liegt zur weiteren Prüfung vor oder der laufende Fallprozess ermöglicht die weitere Prüfung durch Mitarbeitende.
 - Die fachliche Wirkung einer tatsächlich veröffentlichten Rückfrage folgt den Regeln für Fallkommunikation und Antwortbedarf.
 
 ## Business Rules und Prüfkriterien

@@ -2,12 +2,12 @@
 
 **Stand** · 13.11.2026. Die folgenden Prüffälle sind für spätere Integrationstests vorgesehen.
 
-Die drei Fälle konkretisieren die Prozessausgänge aus [ADR-002](../architecture/adr/ADR-002-camunda8-workflow-orchestrierung.md#beispiel--zuständigkeit-und-vorgehen-empfehlen) und [UC-018](../use_cases/UC-018-zustaendigkeit-und-vorgehen-empfehlen.md). Die Fachregeln und Freigaben in den Beispielen sind kontrollierte Testdaten. Die produktiven Regeln für die automatische Veröffentlichung werden im Kommunikationsvertrag konkretisiert.
+PF-01 bis PF-03 konkretisieren die Prozessausgänge aus [ADR-002](../architecture/adr/ADR-002-camunda8-workflow-orchestrierung.md#beispiel--zuständigkeit-und-vorgehen-empfehlen) und [UC-018](../use_cases/UC-018-zustaendigkeit-und-vorgehen-empfehlen.md). Die Fachregeln und Freigaben in den Beispielen sind kontrollierte Testdaten. Die produktiven Regeln für die automatische Veröffentlichung werden im Kommunikationsvertrag konkretisiert. PF-04 prüft die Aufhebung einer Wiedervorlage nach [FALL-11](../specifications/fallverwaltung.md#fall-11-wiedervorlage).
 
 ## Gemeinsamer Testaufbau
 
 - Ein aktiver Fall ist mit seiner Case-ID gespeichert und einem laufenden Camunda-Fallprozess zugeordnet. Zu Beginn gibt es für die Meldung noch keinen Antwort- oder Abschlussnachweis.
-- Der Test steuert die Wissensquellen und die Ausgabe am Modellport. Camunda und die PropertyFlow-Dienste verarbeiten den Auftrag. Geprüft werden der gespeicherte Fallstand, sichtbare Nachrichten und die Fortsetzung des Prozesses. Für den Nachrichtentext zählen die fachlichen Aussagen.
+- In PF-01 bis PF-03 steuert der Test die Wissensquellen und die Ausgabe am Modellport. Camunda und die PropertyFlow-Dienste verarbeiten den Auftrag. Geprüft werden der gespeicherte Fallstand, sichtbare Nachrichten und die Fortsetzung des Prozesses. Für den Nachrichtentext zählen die fachlichen Aussagen.
 - Als Wiederholungsprüfung wird derselbe fachliche Folgeauftrag erneut zugestellt. Nachricht, Antwortbedarf, Abschluss und zugehörige logische Benachrichtigungsaufträge dürfen dadurch nicht doppelt entstehen.
 
 Die [Evaluationsgrundlage](evaluationsgrundlage.md#bewertungsprinzip) beschreibt die fachliche Beurteilung von KI-Ausgaben. Die hier vorgegebenen Modellausgaben prüfen den Prozess und seine Prüfregeln. Ein Lauf mit einem echten Modell kann zusätzlich zeigen, ob es die Zuständigkeit und fehlende Angaben korrekt erkennt.
@@ -67,7 +67,24 @@ Bei einer Zusage klärt die Immobilienbewirtschaftung die Kosten und entscheidet
 
 - Der vorgeschlagene Abschluss wird bei der serverseitigen Prüfung abgewiesen, weil die Fallangaben die Zuordnung nicht belegen.
 - Der fehlende Nachweis zur Zuständigkeit ist im Mitarbeiterdetail als Prüfgrund nachvollziehbar. Camunda führt den Fall zur fachlichen Prüfung weiter.
-- PropertyFlow veröffentlicht keine automatische Zuständigkeitsauskunft und erzeugt keinen Abschlussnachweis oder Abschlussmailauftrag. Der Fall bleibt manuell bearbeitbar.
+- PropertyFlow veröffentlicht keine automatische Zuständigkeitsauskunft und erzeugt keinen Abschlussnachweis oder Abschlussmailauftrag. Der Camunda-Prozess stellt eine Mitarbeiteraufgabe für die weitere Prüfung bereit.
 - Auch bei Wiederholung desselben Auftrags bleibt die unbelegte Zuordnung ohne Abschlusswirkung.
 
 [FALL-05 · Fachlicher Lebenszyklus](../specifications/fallverwaltung.md#fall-05-fachlicher-lebenszyklus) · [FALL-07 · Abschluss](../specifications/fallverwaltung.md#fall-07-abschluss-und-zeit-danach) · [FALL-10 · Menschliche Freigabe](../specifications/fallverwaltung.md#fall-10-automatisierung-und-menschliche-freigabe)
+
+## PF-04 · Mieternachricht während der Wiedervorlage
+
+> Danke für die Rückmeldung.
+
+**Testdaten** · Für einen aktiven Fall läuft eine Wiedervorlage mit Termin um 10:00 Uhr. Die Nachricht geht um 09:59 Uhr ein. Die automatische Auswertung ist bis nach der Mitarbeiterübergabe blockiert.
+
+**Erwarteter Ausgang** · Die Nachricht ist im Fallverlauf gespeichert. Camunda beendet die Wiedervorlage und legt den bestehenden Fall sofort zur Mitarbeiterprüfung vor. PropertyFlow speichert den Status «Mitarbeiterprüfung erforderlich» ohne aktuellen Wiedervorlagetermin.
+
+**Prüfkriterien**
+
+- Bei rechtzeitiger Nachrichtenkorrelation ist die Mitarbeiteraufgabe bereits vor dem ursprünglichen Termin verfügbar. Die automatische Auswertung bleibt für diese Prüfung blockiert.
+- UI2 und UI3 zeigen nach ihrem nächsten erfolgreichen Abruf den neuen Status ohne aktuellen Termin. Die frühere Terminsetzung und die Aufhebung bleiben in der internen Historie nachvollziehbar.
+- Nachrichtenereignis und Timerablauf in beiden Reihenfolgen nahezu gleichzeitig zustellen. Danach beide erneut zustellen. Die Nachricht bleibt gespeichert, der Termin ist aufgehoben und es entsteht genau eine Mitarbeiteraufgabe für diese Wiedervorlage. Die Case-ID und die führende Prozessinstanz bleiben dieselben.
+- Ein verspätetes automatisches Ergebnis ändert den Fallstand während der Mitarbeiterprüfung nicht. Die manuelle Einstufung der Dringlichkeit bleibt wirksam.
+
+[FALL-11 · Wiedervorlage](../specifications/fallverwaltung.md#fall-11-wiedervorlage) · [UC-013](../use_cases/UC-013-wiedervorlage-verwalten.md)

@@ -2,27 +2,115 @@
 
 **Status:** Entwurf für PropertyFlow. Nach dem fachlichen Review geht Abschnitt 4 unverändert in Artefakt 5 des FFHS-Blocks 3 «Services» ein. Die Grundlage ist die Kursübung «TRANSFER».
 
-Dieses Dokument verbindet die fachliche Modulzerlegung mit dem Entwurf des
-HTTP-Vertrags, einem MCP-Werkzeug und dem Architekturentscheid zur asynchronen
-Erstbewertung. Die Systemanbindungen im Überblick stehen in der
-[C4-Containeransicht](c4-container.md#schnittstellen-in-der-anwendung). Die
-bisher beschriebenen internen Verträge stehen in der
-[Modulstruktur](module-structure.md#interne-schnittstellenverträge).
+Die [Schnittstellenübersicht](#schnittstellenübersicht) erfasst die sechs
+nummerierten Verbindungen aus der [C4-Containeransicht](c4-2-container.md#schnittstellen-in-der-anwendung)
+und die bisher erkennbaren internen Kommunikationswege. Die
+[C4-Komponentenansicht](c4-3-components.md) zeigt, welche Module und Adapter
+daran beteiligt sind. Die Abschnitte 1 bis 4 vertiefen den Entwurf für Block 3.
+
+## Schnittstellenübersicht
+
+### Verbindungen über die Anwendungsgrenze
+
+| ID | Wer kommuniziert? | Wofür? | Stand |
+| --- | --- | --- | --- |
+| **SS-001** | Browser ↔ PropertyFlow-Web | Anliegen einreichen und ergänzen, Fälle ansehen und bearbeiten, Anmeldung und Kontozugriff. | Web-Routen in der Demo. Der [zentrale HTTP-Endpunkt](#2-zentraler-http-endpunkt) ist als API-Entwurf beschrieben. Der vollständige OpenAPI-Vertrag steht aus. |
+| **SS-002** | PropertyFlow → E-Mail-Dienst | Einmalcodes und Benachrichtigungen zu gespeicherten Falländerungen senden. | Einmalcodes per SMTP in der Demo. [Statusmail aus dem Fallprozess](#ss-002--statusmail-aus-dem-fallprozess) spezifiziert. Die Umsetzung steht aus. |
+| **SS-003** | PropertyFlow ↔ Camunda | Asynchroner Prozessstart nach Intake, synchrone Korrelation von Nachrichten mit der bestehenden Fallprozessinstanz und Ausführung der Camunda-Jobs durch PropertyFlow-Worker. | [ADR-002](adr/ADR-002-camunda8-workflow-orchestrierung.md#integrationsprinzipien) hält die Orchestrierung und die Integrationsprinzipien fest. Der [Integrationsvertrag SS-003](#ss-003--camunda-integrationsvertrag) beschreibt die technischen Details. Die Umsetzung steht aus. |
+| **SS-004** | MCP-Client → PropertyFlow | Mit delegiertem Zugriff freigegebene Fallfunktionen ausführen. | [«Fallstand abrufen»](#ss-004--mcp-werkzeug-fallstand-abrufen) ist als erstes Werkzeug für Mieter spezifiziert. Die Umsetzung steht aus. |
+| **SS-005** | PropertyFlow → LLM-Anbieter | Modell für Dringlichkeit, Empfehlung, Nachrichtenformulierung und optional KI-Rückfragen aufrufen. | [Triage-Port](../ai-usage/ki-service-vertrag.md#aufruf-und-vertrag) als isolierter Prototyp. Die weiteren Modellaufrufe sind in den [Use Cases](../use_cases/README.md#llm-aufrufe-durch-propertyflow) beschrieben. Ihre technischen Verträge sind offen. |
+| **SS-006** | PropertyFlow → Immobilienverwaltungssystem | Erforderliche Stammdaten für die Fallzuordnung beziehen. | [Fachliche Zuordnung](../specifications/fallverwaltung.md#fall-04-ursprungsdaten-und-zuordnung) beschrieben. Anbindung und Vertrag offen. |
+
+Weitere dokumentierte Anbindungen sind die Fachdatenbank über JDBC, der
+geplante [E-Mail-Eingang](../use_cases/UC-020-mieteranliegen-per-e-mail-entgegennehmen.md)
+und die Wissensbasis für [Recommendation](module-structure.md#recommendation).
+Die Datenbank ist ein eigener Container. Der sichere Vertrag für eingehende
+E-Mails und die Anbindung der Wissensbasis sind noch offen.
+
+### SS-002 · Statusmail aus dem Fallprozess
+
+Bei einem sichtbaren Statuswechsel speichert der Status-Worker den neuen Status und den Verlaufseintrag in PropertyFlow. Nach dem Datenbank-Commit gibt er die Referenz des gespeicherten Wechsels an Camunda zurück. Bei erneuter Ausführung desselben Jobs verwendet er die gespeicherte Referenz. Der Fallprozess führt danach den Send Task für die Statusmail aus. Bei unverändertem Status überspringt der Prozess diesen Task.
+
+Der wiederverwendbare Mail-Worker in PropertyFlow erhält die Referenz und den Benachrichtigungstyp. Beim Versand lädt er über den zuständigen Anwendungsdienst aus der Falldatenbank den ursprünglichen Statuswechsel, die aktuell bestätigte Fall-Kontaktadresse und den gültigen persönlichen Fall-Link. Bei einer geprüften Adresskorrektur desselben Mieters verwendet er die neue Adresse. Die Rückmeldung des E-Mail-Dienstes erfasst PropertyFlow gemäss BEN-04. [BEN-02](../specifications/benachrichtigungen-und-zustellung.md#ben-02-empfänger-inhalt-und-persönlicher-link) · [BEN-04](../specifications/benachrichtigungen-und-zustellung.md#ben-04-wiederholungen-und-zustellnachweis)
+
+Nach einem bestätigten Linkersatz verwendet der Mail-Worker für ausstehende Statusmails den neuen Link. [UC-024](../use_cases/UC-024-fall-link-widerrufen-oder-ersetzen.md#business-rules-und-prüfkriterien)
+
+An der externen Schnittstelle SS-002 übergibt der SMTP-Adapter dem E-Mail-Dienst die fertige Nachricht mit Empfänger, Betreff und Text. PropertyFlow unterscheidet bestätigte Annahme durch den Maildienst, fehlgeschlagene Übergabe und unklaren Ausgang, etwa bei einem Verbindungsabbruch nach möglicher Annahme. [C4-Containeransicht](c4-2-container.md#schnittstellen-in-der-anwendung) · [BEN-04](../specifications/benachrichtigungen-und-zustellung.md#ben-04-wiederholungen-und-zustellnachweis)
+
+### SS-003 · Camunda-Integrationsvertrag
+
+**Prozessstart nach Intake.** PropertyFlow speichert den Fall mit «Eingegangen» und den Startauftrag mit einer festen Startkennung gemeinsam. Die Bestätigung der Fallannahme folgt auf den Commit. Ein asynchroner Starter prüft regelmässig offene Startaufträge. Bei jedem Startversuch verwendet er dieselbe Startkennung als `businessId` und adressiert dieselbe BPMN-Prozessdefinition im selben Camunda-Tenant. Case-ID und Startkennung stehen dem ersten Worker als Prozessvariablen zur Verfügung. In Camunda 8.9 wird dafür die Business-ID-Eindeutigkeitsprüfung aktiviert. Existiert bereits eine aktive Hauptinstanz mit dieser Kennung, antwortet Camunda mit `409`. Sowohl bei erfolgreicher Startantwort als auch bei diesem Konflikt bleibt der Auftrag offen, bis der Worker die Zuordnung gespeichert hat. Die Prüfung in Camunda gilt für aktive Hauptinstanzen. Die dauerhafte Zuordnung in PropertyFlow schützt den Fall vor Mehrfachwirkung auch nach Prozessende. [Camunda 8.9 – Business-ID-Eindeutigkeit](https://docs.camunda.io/docs/8.9/components/concepts/process-instance-creation/#uniqueness-control)
+
+**Erster Job: Instanz zuordnen.** Der Worker ermittelt den passenden Startauftrag anhand der Case-ID und der Startkennung. Er speichert den `processInstanceKey` und erledigt den Auftrag atomar in PropertyFlow. Er meldet den Jobabschluss nach dem Commit und stellt den Schlüssel für die spätere Nachrichtenkorrelation im Prozess bereit. Bei einem vorübergehenden Datenbankfehler gibt der Worker denselben Job mit Wartezeit zur Wiederholung frei. Die Zahl verbleibender Camunda-Versuche bleibt für diesen Fehler positiv, damit der Job bis zur erfolgreichen Speicherung automatisch erneut ausgeführt wird. Bis zur Zuordnung bleibt der Fall auf «Eingegangen», und der Prozess wartet vor der fachlichen Bearbeitung. Eine erneute Ausführung mit demselben `processInstanceKey` bestätigt die bestehende Zuordnung. Ein anderer Schlüssel darf sie nicht überschreiben und keine fachliche Verarbeitung auslösen. [Camunda 8.9 – Jobwiederholungen](https://docs.camunda.io/docs/8.9/components/concepts/job-workers/#completing-or-failing-jobs)
+
+**Nachricht an den laufenden Fallprozess.** Für «Bearbeitung fortsetzen» und weitere fachliche Übergaben an eine bestehende Instanz verwendet PropertyFlow in Camunda 8.9 `POST /v2/messages/correlation`. Der Adapter bestimmt den `processInstanceKey` aus der gespeicherten Zuordnung. Er sendet den für die Aktion definierten Nachrichtennamen und den Prozessinstanzschlüssel als Zeichenfolge im Feld `correlationKey`. Der BPMN-Nachrichtenempfang muss denselben Namen und Schlüssel verwenden und am aktuellen Schritt geöffnet sein. Dazu stellt der Prozess den Schlüssel vor dem Öffnen des Empfangs als Prozessvariable bereit, beispielsweise über einen initialen Worker. Camunda korreliert die Nachricht sofort oder weist sie ohne Pufferung ab. Die Nachrichtennamen für bestehende Fälle sind wartenden Schritten vorbehalten. PropertyFlow prüft den in der Antwort gelieferten `processInstanceKey` gegen die erwartete Instanz. Das BPMN-Modell und seine Tests müssen pro Aktion und Instanz eine eindeutige wartende Stelle sicherstellen. [Camunda 8.9 – Nachrichtenkorrelation](https://docs.camunda.io/docs/8.9/apis-tools/orchestration-cluster-api-rest/specifications/correlate-message/) · [Camunda 8.9 – Nachrichtenempfang](https://docs.camunda.io/docs/8.9/components/concepts/messages/#message-subscriptions)
+
+Für die Web-Aktion «Bearbeitung fortsetzen» gilt nach erfolgreicher Berechtigungsprüfung diese Abbildung:
+
+| HTTP-Antwort von PropertyFlow | Bedingung und Verhalten |
+| --- | --- |
+| `200` | Camunda bestätigt die Korrelation mit der erwarteten Fallprozessinstanz. Das UI lädt den Fallstand aus PropertyFlow neu. Es zeigt «In Bearbeitung», sobald der Worker den Status gespeichert hat. |
+| `400` | Die Aktion ist fachlich ungültig oder Camunda findet keine passende wartende Stelle und antwortet `404`. PropertyFlow meldet die Ablehnung. |
+| `500` | Ein technischer Fehler, ein unerwarteter Instanzschlüssel oder ein Timeout verhindert die Bestätigung. Bei einem Timeout kann die Korrelation bereits erfolgt sein. Das UI lädt den gespeicherten Stand neu. PropertyFlow wiederholt die Aktion nicht automatisch. |
+
+Job Worker beziehen ihre Aufträge über die Camunda-Worker-Schnittstelle und melden den Abschluss oder Fehler für den jeweiligen Job. Camunda ordnet diese Meldungen über den Job-Schlüssel zu. Die Prozessinstanz aus dem Job dient PropertyFlow zur Prüfung der Fallzuordnung. [Camunda 8.9 – Job Worker](https://docs.camunda.io/docs/8.9/apis-tools/java-client/job-worker/)
+
+**Erneut zugestellter Bewertungsjob.** PropertyFlow speichert die Dringlichkeitsbewertung eindeutig pro Camunda-Job-Schlüssel. Ergebnis, Job-Schlüssel und die zugehörigen fachlichen Änderungen werden gemeinsam gespeichert. Bei erneuter Zustellung liest der Worker zuerst das Ergebnis zu diesem Schlüssel. Liegt es vor, meldet er Camunda nur den Jobabschluss mit dem gespeicherten Ergebnis. Er ruft das Modell dabei nicht erneut auf und erzeugt weder einen neuen Verlaufseintrag noch einen weiteren Mailauftrag. Liegt noch kein Ergebnis vor, gilt der reguläre Bewertungspfad. Auch bei gleichzeitiger Verarbeitung darf für denselben Schlüssel nur eine Bewertung fachlich wirksam werden. [ADR-002](adr/ADR-002-camunda8-workflow-orchestrierung.md#idempotenz)
+
+Das BPMN-Modell muss die vorgesehenen Aktionen und Ereignisse je Prozessschritt und ihre Folgeschritte abdecken. Nachrichtennamen, konkrete Wartepositionen und die Behandlung von Wiedereröffnungen nach Prozessende werden je Ablauf spezifiziert. [ADR-002](adr/ADR-002-camunda8-workflow-orchestrierung.md#synchrone-nachrichtenkorrelation) · [UC-012](../use_cases/UC-012-fall-fachlich-steuern.md#synchroner-vertrag-für-die-mitarbeiteraktion)
+
+**Mieterergänzung zu einem bestehenden Fall.** PropertyFlow nimmt eine neue Ergänzung nur an, wenn der zugeordnete Fallprozess läuft und Camunda erreichbar ist. PropertyFlow prüft beides serverseitig vor der Annahme. Steht der Start noch aus oder ist Camunda bei der Prüfung nicht erreichbar, weist PropertyFlow den Sendeversuch ohne Speicherung der Nachricht ab. Der Text bleibt im Formular. Der Mieter kann ihn erneut absenden, sobald beide Voraussetzungen erfüllt sind. Nach der Speicherung übergibt PropertyFlow den Nachrichteneingang an die zugeordnete Instanz und wartet bei diesem Aufruf synchron auf die Korrelation. Den Prüffall für Prozessstart und Ausfall definiert [UC-009](../use_cases/UC-009-mieteranliegen-ergaenzen.md#business-rules-und-prüfkriterien). Für Neueinreichungen gilt der asynchrone Prozessstart.
+
+#### Prüffall · Verlorene Startantwort und Datenbankfehler
+
+1. Ein Anliegen einreichen. PropertyFlow bestätigt die Case-ID. Der Fall ist als «Eingegangen» gespeichert, und der Startauftrag ist offen.
+2. Camunda den Fallprozess starten lassen und die Startantwort an den Starter verwerfen. Die Zuordnung beim ersten Worker gezielt an einem vorübergehenden Datenbankfehler scheitern lassen. Der Startauftrag bleibt für den Starter lesbar.
+3. Den Starter erneut laufen lassen, solange der Worker die Zuordnung noch nicht speichern kann. Der Starter verwendet dieselbe Startkennung. In Camunda existiert genau eine aktive Hauptinstanz für den Auftrag. In PropertyFlow bleibt der Fall auf «Eingegangen». Camunda hat noch keine Erstbewertung ausgelöst.
+4. Den Datenbankfehler aufheben. Der erste Worker wiederholt den Job für dieselbe Instanz und speichert deren Schlüssel zusammen mit dem erledigten Startauftrag. Danach überspringt der Starter den Auftrag, und der ursprüngliche Prozess setzt die Bearbeitung fort.
+5. Den Zuordnungsjob nach dem Commit erneut zustellen. Die Zuordnung und der erledigte Auftrag bleiben erhalten. Die Wiederholung erzeugt keine zusätzliche fachliche Änderung.
+
+#### Prüffall · Bewertungsjob erneut zugestellt
+
+1. Einen Bewertungsjob für einen Fall ohne bisherige Bewertung auslösen. Das Testmodell liefert «Hoch». Prüfen, dass PropertyFlow «Hoch» zusammen mit dem Job-Schlüssel gespeichert hat und genau ein Dringlichkeitseintrag und ein zugehöriger Mailauftrag entstanden sind.
+2. Nach dem Datenbank-Commit die erste Abschlussmeldung des Workers vor Camunda abfangen. Den Worker neu starten und Camunda denselben Job mit demselben Schlüssel erneut zustellen lassen.
+3. Prüfen, dass der Worker den Abschluss mit der gespeicherten Bewertung «Hoch» meldet und Camunda den Job abschliesst. Der Zähler des Testmodells bleibt bei einem Aufruf. Die gespeicherte Bewertung, der Verlauf und der Mailauftrag bleiben unverändert.
+
+### Interne Kommunikationswege
+
+| Aufruf oder Übergabe | Fachlicher Zweck und Stand |
+| --- | --- |
+| Web und MCP → Anwendungsdienste | Dieselben Fachregeln für Fallzugriff und Änderungen. Die Dienste prüfen Identität, Fallberechtigung und Aktion. [ZUG-04](../specifications/fallzugriff-und-sicherheit.md#gemeinsame-anmeldung-und-mcp-delegation) |
+| Intake → Case Processing | Intake ruft die Fallanlage synchron auf. Case Processing speichert Fall und Startauftrag gemeinsam und bestätigt die Anlage nach dem Commit. [Modulvertrag](module-structure.md#fallanlage--intake-und-case-processing) · [UC-001](../use_cases/UC-001-mieteranliegen-einreichen.md) |
+| Startauftrag → Prozessübergabe | Der Starter übergibt den gespeicherten Auftrag asynchron zur Einreichung an Camunda. [SS-003](#ss-003--camunda-integrationsvertrag) · [Asynchrone Erstbewertung](#4-architekturentscheid-für-artefakt-5) |
+| Job Worker → Triage → Modellport | Der Worker ruft Triage synchron auf. Triage nutzt den internen Port `AnalysisModel` für die Modellanbindung über SS-005. [Entwurf des internen Vertrags](module-structure.md#erstbewertung--job-worker-und-triage) |
+| Job Worker → Recommendation | Empfehlung anhand von Fallangaben und freigegebenen Wissensquellen erstellen. Der genaue Jobzuschnitt und der technische Vertrag sind offen. [UC-018](../use_cases/UC-018-zustaendigkeit-und-vorgehen-empfehlen.md) |
+| Job Worker → Fallbearbeitung | Durch Camunda veranlasste Übergänge und Ergebnisse am aktuellen Fallstand prüfen und speichern. Bei der Dringlichkeit behält eine manuelle Einstufung Vorrang. [Entwurf des internen Vertrags](module-structure.md#erstbewertung--job-worker-und-triage) |
+| Web oder MCP → Camunda über SS-003 | PropertyFlow wartet bei berechtigten Mitarbeiterentscheidungen synchron auf die Korrelation mit der zugehörigen Instanz. Camunda veranlasst den anschliessenden Statuswechsel. Vor Prozessstart und bei Camunda-Ausfall sind fachliche Bearbeitungsaktionen gesperrt. [FALL-06](../specifications/fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow) |
+| Fallkommunikation → Prozessübergabe | Die Annahme einer Ergänzung setzt einen laufenden Fallprozess und erreichbares Camunda voraus. PropertyFlow übergibt die gespeicherte Mieternachricht an den bestehenden Prozess und wartet beim Camunda-Aufruf auf die Korrelation. Bei laufender Wiedervorlage hebt Camunda sie auf und veranlasst sofort die Mitarbeiterprüfung. Neubewertung und Prüfung offener Rückfragen folgen den Freigaben des Fallprozesses. [UC-009](../use_cases/UC-009-mieteranliegen-ergaenzen.md) · [FALL-11](../specifications/fallverwaltung.md#fall-11-wiedervorlage) · [KOM-03](../specifications/fallkommunikation.md#kom-03-asynchrone-fallkommunikation) · [SS-003](#ss-003--camunda-integrationsvertrag) |
+| Mitarbeiter-Falldetail → Formulierungshilfe | Die Immobilienbewirtschaftung startet einen Formulierungsversuch. Der Vorschlag wird gestreamt. Die Anbindung an das Modell ist geplant, der technische Streaming-Vertrag ist offen. [UC-004](../use_cases/UC-004-ki-analyse-durchfuehren.md) |
+| Gespeicherte Falländerung → Versandfunktion | Bei einem sichtbaren Statuswechsel beauftragt der Fallprozess den Mail-Worker über einen Send Task. Der Worker lädt die Versanddaten über den zuständigen PropertyFlow-Anwendungsdienst. Die Übergabe für weitere Auslöser ist offen. [SS-002](#ss-002--statusmail-aus-dem-fallprozess) · [BEN-03](../specifications/benachrichtigungen-und-zustellung.md#ben-03-speicherung-und-zuverlässige-übergabe) |
 
 ## 1. Fachlicher Schnitt
+
+Die Skizze vertieft den Ablauf von der Fallannahme bis zur Erstbewertung.
 
 ```mermaid
 flowchart LR
     M[Mieter] -->|Anliegen einreichen| I[Intake]
+    I -->|Fallanlage synchron aufrufen| F[Case Processing]
+    F -->|Annahme nach Commit| I
     I -->|Case-ID nach dauerhafter Annahme| M
-    I -->|Fallreferenz und dauerhafter Folgeauftrag| C[Camunda-Fallprozess]
-    C -->|Auftrag zur Erstbewertung| T[Triage]
-    T -->|Validierte Bewertung oder typisierter Fehler| C
+    F -->|Gespeicherter Startauftrag| A[Asynchroner Starter in PropertyFlow]
+    A -->|Prozessstart mit Case-ID| C[Camunda-Fallprozess]
+    W[Job Worker in PropertyFlow] <-->|Job übernehmen und Ergebnis melden| C
+    W -->|Bewertung aufrufen| T[Triage]
+    T -->|Bewertung oder typisierter Fehler| W
 ```
 
 | Modul | Änderungsgrund | Vertrag und Lastprofil |
 | --- | --- | --- |
-| `intake` | Erfassungskanäle und Eingaberegeln ändern sich mit den Anforderungen an die Fallannahme. | Prüft und speichert die Einreichung, vergibt die Case-ID und meldet den Erfolg nach dem Commit zurück. Die Antwortzeit hängt vor allem von Validierung und Datenbank ab. |
+| `intake` | Erfassungskanäle und Eingaberegeln ändern sich mit den Anforderungen an die Fallannahme. | Prüft die Einreichung, ruft die Fallanlage synchron auf und meldet den Erfolg nach dem Commit zurück. Die Antwortzeit hängt vor allem von Validierung und Datenbank ab. |
+| `caseprocessing` | Regeln für die Fallanlage und den Fallverlauf ändern sich mit der fachlichen Bearbeitung. | Besitzt den Fall ab der Anlage, vergibt die Case-ID und speichert Fall und Startauftrag in einer Transaktion. |
 | `triage` | Die Bewirtschaftung präzisiert die Einstufung. Modell und Prompt können unabhängig davon wechseln. | Bewertet den freigegebenen, minimierten Anliegenstext. Liefert `KRITISCH`, `HOCH`, `NORMAL`, `NIEDRIG` oder einen typisierten Fehler. Jeder Aufruf beansprucht Modelllaufzeit. |
 
 Die Module haben unterschiedliche Änderungsgründe und koppeln sich über explizite Auftrags- und Ergebnisverträge. Die dauerhafte Annahme bleibt bei einem Modell- oder Workflow-Ausfall möglich. Das gemeinsame Backend-Deployment folgt [ADR-001](adr/ADR-001-grundarchitektur.md).
@@ -33,7 +121,7 @@ Die Module haben unterschiedliche Änderungsgründe und koppeln sich über expli
 
 | Aspekt | Entwurf |
 | --- | --- |
-| Anfrage | Betreff, Beschreibung und Objekt-/Wohnungsreferenz gemäss [FALL-02](../specifications/fallverwaltung.md#fall-02-erfolgreiche-annahme), dazu eine serverseitig geprüfte Absende-ID als Idempotenzschlüssel. Ohne Anmeldung zusätzlich die Kontaktadresse; mit verifiziertem Mieterkonto wird sie serverseitig aus dem geprüften Konto übernommen und nicht als Nutzereingabe benötigt. |
+| Anfrage | Betreff, Beschreibung und Objekt-/Wohnungsreferenz gemäss [FALL-02](../specifications/fallverwaltung.md#fall-02-erfolgreiche-annahme), dazu eine serverseitig geprüfte Absende-ID als Idempotenzschlüssel. Die Beschreibung umfasst höchstens 2’000 UTF-16-Codeeinheiten nach Zeilenumbruchnormalisierung. Ohne Anmeldung zusätzlich die Kontaktadresse; mit verifiziertem Mieterkonto wird sie serverseitig aus dem geprüften Konto übernommen und nicht als Nutzereingabe benötigt. |
 | Erfolg | `201` nach dauerhafter Speicherung mit der Case-ID. Bei identischer Wiederholung dieselbe Case-ID und dieselbe Annahmeantwort. |
 | Fehler | `422` bei ungültigen Feldern, `409` bei geändertem Inhalt mit derselben Absende-ID, `503` bei vorübergehend nicht verfügbarer Speicherung. Die Antworten verwenden eine gemeinsame Fehlerform. |
 | Wiederholung | Dieselbe Absende-ID mit demselben Inhalt erzeugt genau einen Fall und einen fachlichen Folgeauftrag gemäss [FALL-03](../specifications/fallverwaltung.md#fall-03-wiederholung-und-doppelte-einreichung). Gültigkeitsbereich und Aufbewahrungsdauer im OpenAPI-Entwurf präzisieren. |
@@ -48,7 +136,21 @@ Zu prüfen sind die Übernahme der Konto-Adresse ohne E-Mail-Eingabe, ein manipu
 
 ## 3. Werkzeug für einen Agenten
 
-**Vorschlag.** Ein lesendes MCP-Werkzeug ruft den Bewertungsstand eines Falls ab. Es gibt nur den Analysezustand und die für den Akteur zulässige wirksame Dringlichkeit aus. Der Dienst validiert die Case-ID, prüft den technischen Akteur und dessen Zugriff auf den konkreten Fall und protokolliert Erfolg und Ablehnung. Für diesen Lesezugriff ist keine menschliche Einzelfreigabe vorgesehen. Kritische Aktionen wie Fallabschluss und verbindliche Beauftragung liegen ausserhalb dieses Werkzeugs. Die dazu geltenden Freigaberegeln gehören ins Sicherheitskonzept.
+### SS-004 · MCP-Werkzeug «Fallstand abrufen»
+
+Der MCP-Client übergibt die **Case-ID**. Der Anwendungsdienst validiert die Eingabe und prüft bei jedem Aufruf das Zugriffstoken, das aktuelle Mieterkonto und das an den Client delegierte Leserecht. Der Abruf ist nur zulässig, wenn die aktuell verifizierte E-Mail-Adresse des Kontos mit der aktuellen Kontaktadresse des Falls übereinstimmt. Die Identität stammt aus dem geprüften Anmeldekontext. [ZUG-04](../specifications/fallzugriff-und-sicherheit.md#gemeinsame-anmeldung-und-mcp-delegation) · [UC-023](../use_cases/UC-023-mcp-zugriff-delegieren.md)
+
+Die erfolgreiche Antwort enthält genau drei Angaben aus dem gespeicherten Fallstand.
+
+| Angabe | Bedeutung |
+| --- | --- |
+| Case-ID | Referenz des abgerufenen Falls. |
+| Bearbeitungsstatus | Aktuell gespeicherter fachlicher Status des Falls. |
+| Wirksame Dringlichkeit | Aktuell gültige Stufe unter Berücksichtigung des Vorrangs einer manuellen Einstufung. Liegt keine wirksame Einstufung vor, lautet die Angabe «Noch nicht bewertet». [DRING-02](../specifications/dringlichkeitsbewertung.md#dring-02-noch-nicht-bewertet) · [DRING-06](../specifications/dringlichkeitsbewertung.md#dring-06-manuelle-anpassung) |
+
+Der Abruf ist rein lesend und benötigt nach erteilter Delegation keine menschliche Einzelfreigabe. PropertyFlow protokolliert Erfolg und Ablehnung ohne Zugangstokens oder Fallinhalte. Für eine fremde oder nicht vorhandene Case-ID liefert das Werkzeug dieselbe neutrale Fehlerrückmeldung ohne Falldaten.
+
+**Prüffall UC-023-AK-04 · Fremde Case-ID.** Ein Mieterkonto mit gültiger Delegation ruft zuerst einen eigenen Fall ab und erhält genau die drei vereinbarten Angaben. Derselbe Client verwendet anschliessend die Case-ID eines existierenden Falls mit anderer Kontaktadresse. Der Dienst verweigert den Zugriff. Die Rückmeldung enthält keine Falldaten und ist von der Rückmeldung für eine gültig formatierte, nicht vorhandene Case-ID nicht unterscheidbar.
 
 ## 4. Architekturentscheid für Artefakt 5
 
@@ -56,7 +158,7 @@ Zu prüfen sind die Übernahme der Konto-Adresse ohne E-Mail-Eingabe, ein manipu
 
 ### Folgt aus
 
-FALL-02 und NFR-03 geben der dauerhaften Annahme und manuellen Bearbeitbarkeit Vorrang vor einer sofort verfügbaren Bewertung. FALL-03 verlangt dieselbe Case-ID bei identischer Wiederholung. DRING-05 und [ADR-002](adr/ADR-002-camunda8-workflow-orchestrierung.md) legen die Bewertung in den Camunda-Fallprozess. DRING-06 gibt der manuellen Einstufung Vorrang vor einem verspäteten KI-Ergebnis.
+FALL-02 und NFR-03 geben der dauerhaften Annahme Vorrang vor einer sofort verfügbaren Bewertung. Bei einem Modellfehler kann der laufende Camunda-Prozess eine Mitarbeiterprüfung veranlassen. FALL-03 verlangt dieselbe Case-ID bei identischer Wiederholung. DRING-05 und [ADR-002](adr/ADR-002-camunda8-workflow-orchestrierung.md) legen die Bewertung in den Camunda-Fallprozess. DRING-06 gibt der manuellen Einstufung Vorrang vor einem verspäteten KI-Ergebnis.
 
 ### Entscheid und Prüfung je Teilentscheid
 
@@ -66,18 +168,18 @@ Die Prüfungen sind geplant. Jede Zeile beschreibt einen beobachtbaren Nachweis 
 | --- | --- | --- |
 | E1 | Intake bestätigt die Einreichung nach dem lokalen Commit von Fall und rekonstruierbarem Prozessstartauftrag, unabhängig von der Erreichbarkeit von Camunda und Modell. | **Integrationstest:** Bei unerreichbarem Camunda und Modell einreichen, die Case-ID bestätigen lassen und nach Anwendungsneustart Fall und ausstehenden Folgeauftrag nachweisen. Bei erzwungenem Datenbankfehler bleibt die Annahme unbestätigt. |
 | E2 | Camunda orchestriert die Erstbewertung asynchron anhand der Case-ID, wobei der Job Worker den Triage-Service über dessen fachlichen Vertrag aufruft. | **Integrationstest:** Den ausstehenden Auftrag nach Wiederanlauf übergeben und im Camunda-Testprozess genau den vorgesehenen Bewertungsjob auslösen. Der Job lädt die Bewertungsdaten in PropertyFlow über die Case-ID. |
-| E3 | Identische Einreichungswiederholungen und erneut zugestellte Prozessstart- oder Bewertungsaufträge behalten dieselbe fachliche Identität und wirken höchstens einmal. | **Integrationstest:** Dieselbe Absende-ID parallel einreichen, nach verloren gegangener Startantwort die Prozessübergabe erneut versuchen und denselben Bewertungsjob erneut ausführen. Genau eine Case-ID, einen führenden Fallprozess und eine fachlich wirksame Bewertung prüfen. |
-| E4 | Bei einem Modellfehler bleibt der aktive Fall bearbeitbar und erhält den Prüfgrund nach FALL-05, während manuelle Einstufungen auch bei verspäteten KI-Ergebnissen wirksam bleiben. | **Integrationstest:** Einen Modell-Timeout auslösen, den Status «Mitarbeiterprüfung erforderlich» samt Prüfgrund prüfen und den Fall manuell bearbeiten. Eine manuelle Einstufung setzen und ein verspätetes KI-Ergebnis zustellen. Die wirksame Stufe muss der manuellen Einstufung entsprechen. |
+| E3 | Identische Einreichungswiederholungen und erneut zugestellte Prozessstart- oder Bewertungsaufträge behalten dieselbe fachliche Identität und wirken höchstens einmal. Ein erneut zugestellter Bewertungsjob verwendet sein gespeichertes Ergebnis und meldet nur den Abschluss. | **Integrationstest:** Dieselbe Absende-ID parallel einreichen und die Prüffälle [verlorene Startantwort und Datenbankfehler](#prüffall--verlorene-startantwort-und-datenbankfehler) und [erneut zugestellter Bewertungsjob](#prüffall--bewertungsjob-erneut-zugestellt) ausführen. Genau eine Case-ID, einen führenden Fallprozess und eine fachlich wirksame Bewertung prüfen. |
+| E4 | Bei einem Modellfehler führt Camunda den aktiven Fall mit dem Prüfgrund nach FALL-05 zur Mitarbeiterprüfung, während manuelle Einstufungen auch bei verspäteten KI-Ergebnissen wirksam bleiben. | **Integrationstest:** Einen Modell-Timeout auslösen, den Status «Mitarbeiterprüfung erforderlich» samt Prüfgrund und zugehörige Mitarbeiteraufgabe prüfen. Eine manuelle Einstufung setzen und ein verspätetes KI-Ergebnis zustellen. Die wirksame Stufe muss der manuellen Einstufung entsprechen. |
 
 ### Preis
 
-Die Bewertung steht bei der Einreichungsbestätigung unter Umständen noch aus. Die Anwendung muss offene Folgeaufträge dauerhaft halten, nach einem Neustart weiterverarbeiten und doppelte Zustellungen beherrschen. Wiederanlauf und Abbau des Rückstaus verursachen zusätzliche Arbeit und müssen überprüfbar sein.
+Die Bewertung steht bei der Einreichungsbestätigung unter Umständen noch aus. Die Anwendung muss offene Folgeaufträge dauerhaft halten, nach einem Neustart weiterverarbeiten und doppelte Zustellungen beherrschen. Bei einem Camunda-Ausfall können Mitarbeitende Fälle lesen. Die Fallbearbeitung pausiert bis zum Wiederanlauf. Der Abbau des Rückstaus muss überprüfbar sein.
 
 ### Störfall · Camunda antwortet zehn Minuten lang nicht
 
 Die Fallannahme läuft weiter, solange die lokale Datenbank verfügbar ist. Pro gültiger Neueinreichung entsteht ein ausstehender Prozessstartauftrag. Bei `r` gültigen Neueinreichungen pro Minute beträgt der zusätzliche Rückstau nach zehn Minuten ungefähr `10 × r`. Identische Wiederholungen zählen dabei einmal. Für PropertyFlow liegt hier noch keine gemessene Eingangsrate vor. Im Ausfalltest werden die tatsächlich angenommenen Fälle und die offenen Aufträge gezählt.
 
-Der Mieter erhält weiterhin seine Annahmebestätigung. In der Fallansicht kann «Noch nicht bewertet» erscheinen. Die Bewirtschaftung kann bestätigte Fälle manuell bearbeiten. Nach Wiederanlauf werden die ausstehenden Aufträge erneut übergeben. Der Test prüft, ob der Rückstau abgebaut wird und pro Fall höchstens ein führender Prozess entsteht.
+Der Mieter erhält weiterhin seine Annahmebestätigung. In der Fallansicht kann «Noch nicht bewertet» erscheinen. Die Bewirtschaftung kann bestätigte Fälle lesen. Bearbeitungsaufrufe für neue und bereits laufende Fälle werden bei ausgefallenem Camunda serverseitig abgewiesen. Nach Wiederanlauf werden die ausstehenden Aufträge erneut übergeben. Der Test prüft, ob der Rückstau abgebaut wird und pro Fall höchstens ein führender Prozess entsteht.
 
 ### Revidieren, wenn
 

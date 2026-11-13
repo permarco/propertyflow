@@ -11,6 +11,8 @@ import java.util.stream.Stream;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -34,6 +36,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -309,6 +312,38 @@ class StaffAccessWebTest {
         assertEquals(false, message.internal());
         assertEquals(false, message.answerRequired());
         assertEquals(before.entries().size() + 1, cases.get(before.id()).entries().size());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void overlongTenantMessageKeepsDraftAndAllowsCorrectedRetry(boolean useAccount) throws Exception {
+        MockHttpSession session = submissionSession();
+        if (useAccount) {
+            session.setAttribute(StaffWebSession.ACCOUNT, staffAccounts.findActiveByEmail(TENANT_EMAIL).orElseThrow().id());
+        }
+        String token = submitCase(session, UUID.randomUUID().toString(), "Nachrichtenlänge");
+        DemoCases.View before = cases.get(cases.tenant(token).id());
+        String caseUrl = useAccount ? "/mieter/faelle/" + before.id() : "/mieter/fall/zugang/" + token;
+        String route = caseUrl + "/nachrichten";
+        String csrf = session.getAttribute(StaffWebSession.CSRF).toString();
+        String operation = UUID.randomUUID().toString();
+        String accepted = "m".repeat(1997) + "\n\uD83D\uDE80";
+        String draft = " " + accepted.replace("\n", "\r\n");
+
+        mvc.perform(post(route).session(session).param("csrf", csrf).param("operation", operation).param("text", draft))
+                .andExpect(status().isBadRequest())
+                .andExpect(model().attribute("draft", draft))
+                .andExpect(model().attribute("messageMaxLength", 2000))
+                .andExpect(content().string(containsString("Die Nachricht darf höchstens 2’000 Zeichen enthalten.")));
+        assertEquals(before, cases.get(before.id()));
+
+        mvc.perform(post(route).session(session).param("csrf", csrf).param("operation", operation)
+                        .param("text", accepted.replace("\n", "\r\n")))
+                .andExpect(status().isSeeOther())
+                .andExpect(redirectedUrl(caseUrl));
+        DemoCases.View saved = cases.get(before.id());
+        assertEquals(before.entries().size() + 1, saved.entries().size());
+        assertEquals(accepted, saved.entries().getLast().text());
     }
 
     @Test

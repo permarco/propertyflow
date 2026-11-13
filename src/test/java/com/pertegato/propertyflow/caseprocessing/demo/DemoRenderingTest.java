@@ -5,9 +5,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
@@ -53,6 +55,27 @@ class DemoRenderingTest {
         mvc.perform(get("/mieter/fall/zugang/ungueltig")).andExpect(status().isNotFound())
                 .andExpect(content().string(not(containsString("Heizung"))));
     }
+
+    @Test
+    void intakeRendersDescriptionLimitAndRejectsOversizedPost() throws Exception {
+        MvcResult form = mvc.perform(get("/mieter/fall"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("maxlength=\"2000\"")))
+                .andReturn();
+        MockHttpSession session = (MockHttpSession) form.getRequest().getSession();
+
+        mvc.perform(post("/mieter/fall").session(session)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .param("csrf", session.getAttribute("csrf").toString())
+                .param("operation", "render-description-limit")
+                .param("title", "Titel")
+                .param("unit", "Testwohnung")
+                .param("email", "test@example.ch")
+                .param("description", "d".repeat(2001)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("maxlength=\"2000\"")));
+    }
+
     @Test void csrfRequiredAndHtmlIsEscapedAfterPostRedirectGet() throws Exception {
         mvc.perform(post("/mieter/fall")).andExpect(status().isForbidden());
         var result = mvc.perform(get("/mieter/fall")).andReturn();
