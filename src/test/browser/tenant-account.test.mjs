@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { mkdir } from 'node:fs/promises';
 import { existingCodeMessages, waitForCode } from './mailpit.mjs';
-import { fixture, base } from './ui-test-helpers.mjs';
+import { fixture, base, submit } from './ui-test-helpers.mjs';
 
 test('tenant account: OTP, responsive identity, trusted email and logout', {
     skip: !process.env.DEMO_TENANT_EMAIL,
@@ -39,6 +39,13 @@ test('tenant account: OTP, responsive identity, trusted email and logout', {
     const caseUrl = base + created.headers().location;
     await page.goto(caseUrl);
     assert.equal(await page.locator('.account-identity strong').textContent(), email);
+    const caseId = await page.locator('#case-head .eyebrow').textContent();
+    await page.goto(`${base}/mieter/faelle/${caseId}`);
+    assert.equal((await context.request.get(`${base}/mitarbeiter/faelle`)).status(), 403);
+    await page.locator('#message').fill('Nachricht aus dem angemeldeten Mieterkonto');
+    assert.equal(await submit(page, page.locator('#send')), 303);
+    await page.reload();
+    assert.equal(await page.locator('#history article').filter({ hasText: 'Nachricht aus dem angemeldeten Mieterkonto' }).count(), 1);
     const logout = page.waitForResponse(r => r.request().method() === 'POST' && r.url().endsWith('/abmelden'));
     await page.getByRole('button', { name: 'Abmelden', exact: true }).click();
     assert.equal((await logout).status(), 303);

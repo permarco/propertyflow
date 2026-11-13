@@ -10,9 +10,15 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.hamcrest.Matchers.*;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(properties = "propertyflow.staff.bootstrap.email=" + DemoRenderingTest.STAFF_EMAIL)
 @ActiveProfiles("frontend-demo")
@@ -62,7 +68,7 @@ class DemoRenderingTest {
     }
 
     @Test void statusChangesPersistWithOptionalInternalReasonThroughHttp() throws Exception {
-        String token = cases.create("Statusprüfung", "Testwohnung", "status@example.ch", "Test", "status-http-create");
+        String token = cases.create("test-scope", "Statusprüfung", "Testwohnung", "status@example.ch", "Test", "status-http-create");
         String id = cases.tenant(token).id();
         String path = "/mitarbeiter/faelle/" + id;
         var result = mvc.perform(get(path)).andReturn();
@@ -94,7 +100,7 @@ class DemoRenderingTest {
         mvc.perform(get("/mitarbeiter/faelle").param("q", "Heizung").param("urgency", "Hoch")
                 .param("closed", "true").param("sort", "title").param("desc", "true"))
                 .andExpect(content().string(containsString("returnTo=")));
-        String id = cases.tenant(cases.create("Rückkehrtest", "Wohnung", "back@example.ch", "Test", "back-create")).id();
+        String id = cases.tenant(cases.create("test-scope", "Rückkehrtest", "Wohnung", "back@example.ch", "Test", "back-create")).id();
         String path = "/mitarbeiter/faelle/" + id;
         var response = mvc.perform(get(path).param("returnTo", back))
                 .andExpect(content().string(containsString("href=\"" + back.replace("&", "&amp;") + "\""))).andReturn();

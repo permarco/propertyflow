@@ -17,7 +17,7 @@ test('UI4: Mitarbeiterdaten und Schreibaktionen erfordern eine Anmeldung', async
 
 for (const screen of ['tenant', 'list', 'staff']) {
     test(`${screen}: Zugriffsverweigerung entfernt Falldaten und stoppt Abrufe`, async t => {
-        const { page, context } = await fixture(t);
+        const { page, context } = await fixture(t, { staff: screen !== 'tenant' });
         await freeze(page);
         const c = await createCase(page, context, screen === 'staff');
         if (screen === 'list') await page.goto(`${base}/mitarbeiter/faelle`);
@@ -43,7 +43,7 @@ for (const screen of ['tenant', 'list', 'staff']) {
 }
 
 test('UI1: ungültiger Link zeigt keine Fallinhalte und bietet keinen Composer', async t => {
-    const { page } = await fixture(t);
+    const { page } = await fixture(t, { staff: false });
     assert.equal((await page.goto(`${base}/mieter/fall/zugang/ungueltig`)).status(), 404);
     assert.equal(await page.locator('#history').count(), 0);
     assert.equal(await page.locator('#message').count(), 0);
@@ -103,21 +103,23 @@ test('UI1/UI2/UI3: HTML in Nachrichten, Betreff und Objekt bleibt Text', async t
 });
 
 test('Ohne JavaScript: Anliegen, Nachricht sowie gefilterte Listennavigation funktionieren', async t => {
-    const { page, context } = await fixture(t, { javaScriptEnabled: false });
+    const { page, context } = await fixture(t, { staff: false, javaScriptEnabled: false });
     const c = await createCase(page, context, false);
     await page.locator('#message').fill('Nachricht ohne JavaScript');
     await Promise.all([page.waitForNavigation(), page.locator('#send').click()]);
     assert.equal(await page.locator('#history article').filter({ hasText: 'Nachricht ohne JavaScript' }).count(), 1);
     assert.equal(await page.locator('#message').inputValue(), '');
-    await page.goto(`${base}/mitarbeiter/faelle`);
-    await page.locator('#q').fill(c.id);
-    await Promise.all([page.waitForNavigation(), page.getByRole('button', { name: 'Suchen / Filter anwenden' }).click()]);
-    assert.equal(await page.locator('#results tr[data-case]').count(), 1);
-    await page.locator('.case-link').click();
-    await page.waitForURL('**/' + c.id + '?**');
-    assert.equal(await page.locator('#case-head .eyebrow').textContent(), c.id);
-    await page.getByRole('link', { name: 'Zur Fallübersicht' }).click();
-    assert.equal(await page.locator('#q').inputValue(), c.id);
+    const staff = await fixture(t, { javaScriptEnabled: false });
+    const staffPage = staff.page;
+    await staffPage.goto(`${base}/mitarbeiter/faelle`);
+    await staffPage.locator('#q').fill(c.id);
+    await Promise.all([staffPage.waitForNavigation(), staffPage.getByRole('button', { name: 'Suchen / Filter anwenden' }).click()]);
+    assert.equal(await staffPage.locator('#results tr[data-case]').count(), 1);
+    await staffPage.locator('.case-link').click();
+    await staffPage.waitForURL('**/' + c.id + '?**');
+    assert.equal(await staffPage.locator('#case-head .eyebrow').textContent(), c.id);
+    await staffPage.getByRole('link', { name: 'Zur Fallübersicht' }).click();
+    assert.equal(await staffPage.locator('#q').inputValue(), c.id);
 });
 
 for (const width of [390, 1440]) {

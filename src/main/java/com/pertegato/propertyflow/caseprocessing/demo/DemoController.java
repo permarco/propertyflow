@@ -141,7 +141,8 @@ public class DemoController {
     Object create(@RequestParam Map<String, String> fields, Model model, HttpServletRequest request, HttpServletResponse response) {
         try {
             String email = accounts.submissionEmail(request, fields.get("email"), Boolean.parseBoolean(fields.get("accountSubmission")));
-            String token = cases.create(fields.get("title"), fields.get("unit"), email, fields.get("description"), fields.get("operation"));
+            String token = cases.create(accounts.submissionScope(request), fields.get("title"), fields.get("unit"), email,
+                    fields.get("description"), fields.get("operation"));
             return redirect("/mieter/fall/zugang/" + token);
         } catch (ResponseStatusException ex) {
             response.setStatus(ex.getStatusCode().value());

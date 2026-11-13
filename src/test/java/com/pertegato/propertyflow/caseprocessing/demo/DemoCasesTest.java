@@ -2,7 +2,12 @@ package com.pertegato.propertyflow.caseprocessing.demo;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
-import static org.junit.jupiter.api.Assertions.*;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DemoCasesTest {
     @Test void searchFindsWordsAcrossFieldsAndMemosWithPunctuationIgnored() {
@@ -37,11 +42,12 @@ class DemoCasesTest {
         cases.change(c.id(), "reopen", "", "", cases.get(c.id()).version(), "reopen");
         cases.message(null, "demo-aktiver-fall", "Wieder offen", false, false, "tenant");
     }
-    @Test void creationValidatesAndDeduplicatesWithoutChangingOriginalData() {
+    @Test
+    void creationValidatesAndDeduplicatesWithoutChangingOriginalData() {
         DemoCases cases = new DemoCases();
-        assertThrows(ResponseStatusException.class, () -> cases.create(" ", "Wohnung", "a@b.ch", "Test", "bad"));
-        String token = cases.create("<script>alert(1)</script>", "Wohnung", "a@b.ch", "Test", "create");
-        assertEquals(token, cases.create("Anders", "Anders", "a@b.ch", "Anders", "create"));
+        assertThrows(ResponseStatusException.class, () -> cases.create("test-scope", " ", "Wohnung", "a@b.ch", "Test", "bad"));
+        String token = cases.create("test-scope", "<script>alert(1)</script>", "Wohnung", "a@b.ch", "Test", "create");
+        assertEquals(token, cases.create("test-scope", "<script>alert(1)</script>", "Wohnung", "a@b.ch", "Test", "create"));
         assertEquals("<script>alert(1)</script>", cases.tenant(token).title());
         cases.message(null, token, "Zusatz", false, false, "extra");
         assertEquals("Test", cases.tenant(token).description());

@@ -7,6 +7,7 @@ import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -237,14 +238,138 @@ class StaffAccessWebTest {
     }
 
     @Test
+    void submissionOperationsAreIsolatedBetweenAccountsAndGuestSessions() throws Exception {
+        String operation = UUID.randomUUID().toString();
+        MockHttpSession first = submissionSession();
+        first.setAttribute(StaffWebSession.ACCOUNT, staffAccounts.findActiveByEmail(TENANT_EMAIL).orElseThrow().id());
+        MockHttpSession second = submissionSession();
+        second.setAttribute(StaffWebSession.ACCOUNT,
+                staffAccounts.activateVerifiedTenant("isolation-" + UUID.randomUUID() + "@example.test").id());
+        MockHttpSession guest = submissionSession();
+        MockHttpSession otherGuest = submissionSession();
+        long before = cases.list("", "", true, "default", false, 1).total();
+
+        String firstToken = submitCase(first, operation, "Fall A");
+        DemoCases.View original = cases.tenant(firstToken);
+        String secondToken = submitCase(second, operation, "Fall B");
+        String guestToken = submitCase(guest, operation, "Gastfall");
+        String otherGuestToken = submitCase(otherGuest, operation, "Anderer Gastfall");
+
+        assertEquals(4, Stream.of(firstToken, secondToken, guestToken, otherGuestToken).distinct().count());
+        assertEquals(original, cases.tenant(firstToken));
+        assertEquals("Fall B", cases.tenant(secondToken).title());
+        assertEquals("Gastfall", cases.tenant(guestToken).title());
+        assertEquals("Anderer Gastfall", cases.tenant(otherGuestToken).title());
+        assertEquals(firstToken, submitCase(first, operation, "Fall A"));
+        assertEquals(secondToken, submitCase(second, operation, "Fall B"));
+        assertEquals(guestToken, submitCase(guest, operation, "Gastfall"));
+        assertEquals(otherGuestToken, submitCase(otherGuest, operation, "Anderer Gastfall"));
+        assertEquals(before + 4, cases.list("", "", true, "default", false, 1).total());
+        mvc.perform(get("/mieter/faelle/" + original.id()).session(second))
+                .andExpect(status().isNotFound());
+
+        MockHttpSession sameAccount = submissionSession();
+        sameAccount.setAttribute(StaffWebSession.ACCOUNT, first.getAttribute(StaffWebSession.ACCOUNT));
+        assertEquals(firstToken, submitCase(sameAccount, operation, "Fall A"));
+    }
+
+    @Test
+    void tenantAccountCannotPublishStaffMessagesAndLeavesCaseUnchanged() throws Exception {
+        MockHttpSession session = submissionSession();
+        session.setAttribute(StaffWebSession.ACCOUNT, staffAccounts.findActiveByEmail(TENANT_EMAIL).orElseThrow().id());
+        String token = submitCase(session, UUID.randomUUID().toString(), "Zugriffstest");
+        DemoCases.View before = cases.get(cases.tenant(token).id());
+        mvc.perform(post(LIST + "/" + before.id() + "/nachrichten").session(session)
+                        .param("csrf", session.getAttribute(StaffWebSession.CSRF).toString())
+                        .param("operation", UUID.randomUUID().toString()).param("text", "Nicht speichern"))
+                .andExpect(status().isForbidden());
+        assertEquals(before, cases.get(before.id()));
+    }
+
+    @Test
+    void anonymousTokenCannotSetStaffFlagsButCanSendAnExternalMessage() throws Exception {
+        MockHttpSession session = submissionSession();
+        String token = submitCase(session, UUID.randomUUID().toString(), "Gastzugriff");
+        DemoCases.View before = cases.get(cases.tenant(token).id());
+        String operation = UUID.randomUUID().toString();
+        String route = "/mieter/fall/zugang/" + token + "/nachrichten";
+        for (String flag : new String[] {"internal", "answer"}) {
+            mvc.perform(post(route).session(session)
+                            .param("csrf", session.getAttribute(StaffWebSession.CSRF).toString())
+                            .param("operation", operation).param("text", "Meine Nachricht").param(flag, "true"))
+                    .andExpect(status().isBadRequest());
+            assertEquals(before, cases.get(before.id()));
+        }
+        mvc.perform(post(route).session(session)
+                        .param("csrf", session.getAttribute(StaffWebSession.CSRF).toString())
+                        .param("operation", operation).param("text", "Meine Nachricht"))
+                .andExpect(status().isSeeOther());
+        DemoCases.Entry message = cases.get(before.id()).entries().getLast();
+        assertEquals("Mieter", message.role());
+        assertEquals(false, message.internal());
+        assertEquals(false, message.answerRequired());
+        assertEquals(before.entries().size() + 1, cases.get(before.id()).entries().size());
+    }
+
+    @Test
+    void accountMessageRequiresAuthenticationEvenWithValidGuestCsrf() throws Exception {
+        MockHttpSession session = submissionSession();
+        DemoCases.View before = cases.get("REQ-2026-001");
+        String route = "/mieter/faelle/" + before.id() + "/nachrichten";
+        mvc.perform(post(route).session(session)
+                        .param("csrf", session.getAttribute(StaffWebSession.CSRF).toString())
+                        .param("operation", UUID.randomUUID().toString()).param("text", "Nicht speichern"))
+                .andExpect(status().isUnauthorized());
+        assertEquals(before, cases.get(before.id()));
+        mvc.perform(post(route).param("csrf", "expired-session-token")
+                        .param("operation", UUID.randomUUID().toString()).param("text", "Nicht speichern"))
+                .andExpect(status().isForbidden());
+        assertEquals(before, cases.get(before.id()));
+    }
+
+    @Test
+    void directHttpSubmissionRejectsOversizedInputWithoutConsumingOperation() throws Exception {
+        MockHttpSession session = submissionSession();
+        String operation = UUID.randomUUID().toString();
+        long before = cases.list("", "", true, "default", false, 1).total();
+        mvc.perform(post("/mieter/fall").session(session)
+                        .param("csrf", session.getAttribute(StaffWebSession.CSRF).toString())
+                        .param("operation", operation).param("title", "x".repeat(151)).param("unit", "Wohnung")
+                        .param("description", "Beschreibung").param("email", TENANT_EMAIL))
+                .andExpect(status().isBadRequest());
+        assertEquals(before, cases.list("", "", true, "default", false, 1).total());
+        String token = submitCase(session, operation, "Korrigierte Eingabe");
+        assertEquals("Korrigierte Eingabe", cases.tenant(token).title());
+        assertEquals(before + 1, cases.list("", "", true, "default", false, 1).total());
+    }
+
+    private MockHttpSession submissionSession() throws Exception {
+        MvcResult form = mvc.perform(get("/mieter/fall")).andExpect(status().isOk()).andReturn();
+        return (MockHttpSession) form.getRequest().getSession(false);
+    }
+
+    private String submitCase(MockHttpSession session, String operation, String title) throws Exception {
+        MvcResult created = mvc.perform(post("/mieter/fall").session(session)
+                        .param("csrf", session.getAttribute(StaffWebSession.CSRF).toString())
+                        .param("operation", operation).param("title", title).param("unit", "Wohnung 2")
+                        .param("description", "Beschreibung für " + title).param("email", TENANT_EMAIL)
+                        .param("accountSubmission", "false").param("submissionScope", "forged-scope"))
+                .andExpect(status().isSeeOther()).andReturn();
+        String location = created.getResponse().getHeader("Location");
+        assertNotNull(location);
+        return location.substring(location.lastIndexOf('/') + 1);
+    }
+
+    @Test
     void selfRegistrationVerifiesAddressAndProtectsExistingCasesAndMessages() throws Exception {
         String email = "registered-" + UUID.randomUUID() + "@example.test";
-        String firstToken = cases.create("Erstes eigenes Anliegen", "Wohnung 1", email.toUpperCase(), "Kalt", UUID.randomUUID().toString());
-        String secondToken = cases.create("Zweites eigenes Anliegen", "Wohnung 2", email, "Nass", UUID.randomUUID().toString());
+        String firstToken = cases.create("test-scope", "Erstes eigenes Anliegen", "Wohnung 1", email.toUpperCase(),
+                "Kalt", UUID.randomUUID().toString());
+        String secondToken = cases.create("test-scope", "Zweites eigenes Anliegen", "Wohnung 2", email, "Nass", UUID.randomUUID().toString());
         String firstId = cases.tenant(firstToken).id();
         String secondId = cases.tenant(secondToken).id();
         cases.message(firstId, null, "Geheime interne Notiz", true, false, UUID.randomUUID().toString());
-        String foreignId = cases.tenant(cases.create("Fremdes Anliegen", "Wohnung 3", "foreign@example.test",
+        String foreignId = cases.tenant(cases.create("test-scope", "Fremdes Anliegen", "Wohnung 3", "foreign@example.test",
                 "Privat", UUID.randomUUID().toString())).id();
 
         MvcResult page = mvc.perform(get("/registrieren")).andExpect(status().isOk()).andReturn();

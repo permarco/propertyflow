@@ -44,6 +44,12 @@ public class CurrentAccount {
         return tenant.map(Account::email).orElse(guestEmail);
     }
 
+    public String submissionScope(HttpServletRequest request) {
+        // A guest's contact address is unverified and must never identify a retry owner.
+        return find(request).map(account -> "account:" + account.id())
+                .orElseGet(() -> "session:" + request.getSession().getId());
+    }
+
     public Account requireTenant(HttpServletRequest request) {
         Account account = find(request).orElseThrow(() -> new ResponseStatusException(
                 HttpStatus.UNAUTHORIZED, "Bitte melden Sie sich an, um Ihre Fälle zu sehen."));

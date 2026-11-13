@@ -19,6 +19,12 @@ export async function fixture(t, options = {}) {
     const storageState = staff ? await staffStorageState(browser) : undefined;
     const context = await browser.newContext({ locale: 'de-CH', viewport: { width: 1440, height: 900 }, storageState, ...contextOptions });
     const page = await context.newPage();
+    if (!staff) {
+        const denied = await context.request.get(`${base}/mitarbeiter/faelle`, {
+            headers: { 'X-PropertyFlow-Request': 'partial' }, maxRedirects: 0,
+        });
+        assert.equal(denied.status(), 401, 'Guest fixture must have no staff authentication');
+    }
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     t.after(() => assert.deepEqual(errors, [], 'Browser runtime errors'));
@@ -66,3 +72,12 @@ export async function submit(page, button) {
     return result.status();
 }
 export function editor(page, field) { return page.locator('#case-sidebar details').filter({ has: page.locator(field) }); }
+
+export async function staffCase(t, browser, c) {
+    const context = await browser.newContext({ storageState: await staffStorageState(browser) });
+    t.after(() => context.close());
+    const page = await context.newPage();
+    await page.goto(c.staffUrl);
+    const csrf = await page.locator('#message-form input[name=csrf]').inputValue();
+    return { context, page, c: { ...c, csrf } };
+}

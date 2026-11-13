@@ -8,12 +8,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import org.springframework.context.annotation.Profile;
@@ -37,9 +35,24 @@ public class DemoCases {
     public static final List<String> UNITS = List.of("Seestrasse 24 · 3. OG links", "Seestrasse 24 · 2. OG rechts",
             "Gartenstrasse 8 · Wohnung 1", "Bahnhofstrasse 12 · Wohnung 4");
     private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("dd.MM.yyyy, HH:mm").withZone(ZoneId.of("Europe/Zurich"));
+    private static final String REPLAY_CONFLICT = "Diese Anfrage wurde bereits mit anderem Inhalt gespeichert. "
+            + "Die geänderten Angaben wurden nicht gespeichert. Bitte den bisherigen Stand prüfen.";
+
     private final Map<String, CaseData> cases = new LinkedHashMap<>();
     private final Map<String, String> tokens = new HashMap<>();
-    private final Map<String, String> submissions = new HashMap<>();
+    private final Map<SubmissionKey, Submission> submissions = new HashMap<>();
+
+    private record SubmissionKey(String scope, String operation) {
+    }
+
+    private record CreationRequest(String title, String unit, String email, String description) {
+    }
+
+    private record Submission(CreationRequest request, String token) {
+    }
+
+    private record ChangeRequest(String value, String reason) {
+    }
 
     public record Entry(String id, String role, String text, Instant at, boolean internal, boolean event, boolean answerRequired, String reason, String consideredReview, boolean originallyAnswerRequired, String answerEndedBy, Instant answerEndedAt) {
         public Entry(String id, String role, String text, Instant at, boolean internal, boolean event, boolean answerRequired, String reason) {
@@ -82,7 +95,7 @@ public class DemoCases {
         LocalDate followUp;
         long version = 1;
         List<Entry> entries = new ArrayList<>();
-        Set<String> operations = new HashSet<>();
+        Map<String, ChangeRequest> changeRequests = new HashMap<>();
         Map<String, MessageRequest> messageRequests = new HashMap<>();
         View view(boolean tenant) {
             return new View(id, title, description, originalUnit, unit, email, received, contact, urgency, source, status,
@@ -190,19 +203,41 @@ public class DemoCases {
             throw new ResponseStatusException(BAD_REQUEST, "Bitte Pflichtfelder ausfüllen und die maximale Länge beachten.");
         return value.strip();
     }
-    public synchronized String create(String title, String unit, String email, String description, String operation) {
+    public synchronized String create(String submissionScope, String title, String unit, String email, String description, String operation) {
+        required(submissionScope, 200);
         required(operation, 80);
-        if (submissions.containsKey(operation)) return submissions.get(operation);
-        title = required(title, 150); unit = required(unit, 200); email = required(email, 254); description = required(description, 5000);
-        if (!email.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+")) throw new ResponseStatusException(BAD_REQUEST, "Bitte eine gültige E-Mail-Adresse eingeben.");
+        SubmissionKey key = new SubmissionKey(submissionScope, operation);
+        CreationRequest request = new CreationRequest(title, unit, email, description);
+        Submission previous = submissions.get(key);
+        if (previous != null) {
+            if (!previous.request().equals(request)) {
+                throw new ResponseStatusException(CONFLICT, REPLAY_CONFLICT);
+            }
+            return previous.token();
+        }
+        title = required(title, 150);
+        unit = required(unit, 200);
+        email = required(email, 254);
+        description = required(description, 5000);
+        if (!email.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+")) {
+            throw new ResponseStatusException(BAD_REQUEST, "Bitte eine gültige E-Mail-Adresse eingeben.");
+        }
         CaseData c = new CaseData();
-        c.id = "REQ-2026-%03d".formatted(cases.size() + 1); c.title = title; c.originalUnit = unit; c.unit = "";
-        c.email = email; c.description = description; c.received = Instant.now(); c.contact = c.received;
-        c.status = "Eingegangen"; c.urgency = URGENCIES.getFirst();
+        c.id = "REQ-2026-%03d".formatted(cases.size() + 1);
+        c.title = title;
+        c.originalUnit = unit;
+        c.unit = "";
+        c.email = email;
+        c.description = description;
+        c.received = Instant.now();
+        c.contact = c.received;
+        c.status = "Eingegangen";
+        c.urgency = URGENCIES.getFirst();
         c.entries.add(entry("Mieter", description, c.received, false, false, false, ""));
         cases.put(c.id, c);
         String token = UUID.randomUUID().toString();
-        tokens.put(token, c.id); submissions.put(operation, token);
+        tokens.put(token, c.id);
+        submissions.put(key, new Submission(request, token));
         return token;
     }
     public synchronized void message(String id, String token, String text, boolean internal, boolean answer, String operation) {
@@ -244,7 +279,15 @@ public class DemoCases {
         CaseData c = data(id);
         required(operation, 80);
         operation = action + ":" + operation;
-        if (c.operations.contains(operation)) return;
+        // The version guards new writes; a retry compares the original business input.
+        ChangeRequest request = new ChangeRequest(value, reason);
+        ChangeRequest previous = c.changeRequests.get(operation);
+        if (previous != null) {
+            if (!previous.equals(request)) {
+                throw new ResponseStatusException(CONFLICT, REPLAY_CONFLICT);
+            }
+            return;
+        }
         if (c.version != version) throw new ResponseStatusException(CONFLICT, "Konnte nicht erfolgreich gespeichert werden. Der Fall wurde inzwischen geändert.");
         if (reason.length() > 1000) throw new ResponseStatusException(BAD_REQUEST, "Die Begründung ist zu lang.");
         if (!action.equals("reopen")) active(c);
@@ -257,7 +300,7 @@ public class DemoCases {
                 if (!URGENCIES.subList(1, 5).contains(value)) throw new ResponseStatusException(BAD_REQUEST);
                 if (c.urgency.equals(value)) {
                     if (c.source.equals("Immobilienverwaltung")) {
-                        c.operations.add(operation);
+                        c.changeRequests.put(operation, request);
                         return;
                     }
                     event = "Dringlichkeit manuell bestätigt: " + value + " · Quelle: System → Immobilienverwaltung";
@@ -316,6 +359,7 @@ public class DemoCases {
             c.review = "";
         }
         c.entries.add(new Entry(UUID.randomUUID().toString(), "Immobilienverwaltung", event, changedAt, internal, true, false, reason, consideredReview));
-        c.version++; c.operations.add(operation);
+        c.version++;
+        c.changeRequests.put(operation, request);
     }
 }

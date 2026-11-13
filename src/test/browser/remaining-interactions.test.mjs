@@ -1,11 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { fixture, createCase, change, publish, submit, freeze, until, base } from './ui-test-helpers.mjs';
+import { fixture, createCase, change, publish, submit, freeze, until, base, staffCase } from './ui-test-helpers.mjs';
 
 test('UI1: langsame Leseanfrage läuft nur einmal, versteckter Tab pausiert', async t => {
-    const { page, context } = await fixture(t);
+    const { page, context, browser } = await fixture(t, { staff: false });
     await freeze(page);
     const c = await createCase(page, context, false);
+    const staff = await staffCase(t, browser, c);
     let count = 0, release;
     const gate = new Promise(resolve => { release = resolve; });
     t.after(() => release());
@@ -14,13 +15,13 @@ test('UI1: langsame Leseanfrage läuft nur einmal, versteckter Tab pausiert', as
     await until(() => count === 1);
     await page.clock.runFor(40000);
     assert.equal(count, 1);
-    await publish(context, c, 'Antwort für den langsamen Abruf');
+    await publish(staff.context, staff.c, 'Antwort für den langsamen Abruf');
     release();
     await until(async () => await page.locator('#history article').filter({ hasText: 'Antwort für den langsamen Abruf' }).count() === 1);
     await page.unroute(c.tenantUrl);
     await page.clock.runFor(1);
     await page.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => true }); });
-    await publish(context, c, 'Neue Nachricht während verborgenem Tab');
+    await publish(staff.context, staff.c, 'Neue Nachricht während verborgenem Tab');
     await page.clock.runFor(40000);
     assert.equal(await page.locator('#history article').filter({ hasText: 'Neue Nachricht während verborgenem Tab' }).count(), 0);
     await page.evaluate(() => { delete document.hidden; document.dispatchEvent(new Event('visibilitychange')); });
@@ -61,7 +62,7 @@ test('UI3: verspätetes Senden nach Abschluss wird abgewiesen und Mitarbeiterent
 });
 
 test('UI1: verlorene Speicherantwort und identischer Retry erzeugen keine zweite Nachricht', async t => {
-    const { page, context } = await fixture(t);
+    const { page, context } = await fixture(t, { staff: false });
     await createCase(page, context, false);
     await page.locator('#message').fill('Einmal gespeicherte Nachricht');
     let first = true;
