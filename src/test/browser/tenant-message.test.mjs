@@ -88,3 +88,68 @@ for (const failFirst of [false, true]) {
         }
     });
 }
+
+test('UI1: Zu lange Nachricht bleibt korrigierbar, genau 2000 Codeeinheiten werden gespeichert', async () => {
+    const context = await browser.newContext({ locale: 'de-CH' });
+    try {
+        const page = await context.newPage();
+        await openNewCase(page);
+        const field = page.locator('#message');
+        const hint = page.locator('#message-length-hint');
+        const originalCount = await page.locator('#history article').count();
+        const text = 'Weitere Beobachtung:\n' + 'x'.repeat(1978) + '🚿';
+        assert.equal(text.length, 2001);
+        const requests = [];
+        await context.route('**/mieter/fall/zugang/*/nachrichten', async route => {
+            requests.push(new URLSearchParams(route.request().postData()).get('text'));
+            await route.continue();
+        });
+
+        assert.equal(await field.getAttribute('aria-describedby'), 'message-length-hint');
+        await field.focus();
+        await page.keyboard.insertText(text);
+        assert.equal(await field.inputValue(), text);
+        assert.equal(await hint.isVisible(), true);
+        assert.equal(await hint.textContent(), 'Die Nachricht darf höchstens 2’000 Zeichen enthalten.');
+        assert.equal(await field.getAttribute('aria-invalid'), 'true');
+        await page.locator('#send').click();
+        assert.equal(await field.evaluate(element => element.validity.customError), true);
+        assert.equal(await field.inputValue(), text);
+        assert.equal(await page.locator('#history article').count(), originalCount);
+        assert.deepEqual(requests, []);
+
+        const corrected = text.replace('xx', 'x');
+        assert.equal(corrected.length, 2000);
+        await field.fill(corrected);
+        assert.equal(await field.getAttribute('aria-invalid'), null);
+        await page.locator('#send').click();
+        await page.waitForFunction(() => document.querySelector('#message').value === '');
+        assert.deepEqual(requests.map(value => value.replace(/\r\n/g, '\n')), [corrected]);
+        assert.equal(await page.locator('#history article').count(), originalCount + 1);
+        assert.equal(await page.locator('#history article').last().locator('p').first().textContent(), corrected);
+    } finally {
+        await context.close();
+    }
+});
+
+test('UI1 ohne JavaScript: Server weist zu lange Nachricht ab und rendert den vollständigen Entwurf', async () => {
+    const context = await browser.newContext({ locale: 'de-CH', javaScriptEnabled: false });
+    try {
+        const page = await context.newPage();
+        await openNewCase(page);
+        const originalCount = await page.locator('#history article').count();
+        const text = '\n' + 'x'.repeat(1998) + '🚿';
+        const field = page.locator('#message');
+        await field.fill(text);
+
+        const pendingResponse = page.waitForResponse(response => response.request().method() === 'POST'
+            && response.url().endsWith('/nachrichten'));
+        await page.locator('#send').click();
+        assert.equal((await pendingResponse).status(), 400);
+        assert.equal(await page.locator('#save-state').textContent(), 'Die Nachricht darf höchstens 2’000 Zeichen enthalten.');
+        assert.equal(await field.inputValue(), text);
+        assert.equal(await page.locator('#history article').count(), originalCount);
+    } finally {
+        await context.close();
+    }
+});

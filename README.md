@@ -92,8 +92,9 @@ propertyflow/
 │   ├── specifications/
 │   ├── use_cases/
 │   └── architecture/
-│       ├── c4-context.md
-│       ├── c4-container.md
+│       ├── c4-1-context.md
+│       ├── c4-2-container.md
+│       ├── c4-3-components.md
 │       ├── module-structure.md
 │       └── adr/
 │           ├── ADR-001-grundarchitektur.md
@@ -148,7 +149,7 @@ architektonische Source of Truth.
 
 - [Screen 02 – Mitarbeiter-Fallübersicht](docs/frontend/ansicht-02-mitarbeiter-falluebersicht.md): Sieben Spalten einschliesslich sortierbarem Wiedervorlagedatum, Suche in veröffentlichten Nachrichten und internen Memos, Filter, Seitennavigation und Aktualisierung alle 20 Sekunden. Visuelle Entwürfe und lokale Demo sind vorhanden; produktive Integrationen folgen separat.
 
-- [Screen 03 – Mitarbeiter-Falldetailansicht](docs/frontend/ansicht-03-mitarbeiter-falldetail.md): Verlauf links sowie Falldaten und Aktionen rechts; externe Nachrichten, interne Memos, KI-Formulierung mit Streaming, manuelle Status-/Dringlichkeitsänderung, Abschluss und Wiedereröffnung. Wiedervorlagen können in Tagen oder als Datum gesetzt, geändert und gelöscht werden; Camunda wartet parallel zur Verarbeitung neuer Mieternachrichten. Fachliche Bedienung und visuelle Entwürfe sind dokumentiert; die lokale Demo ist implementiert. Produktive Integrationen folgen separat.
+- [Screen 03 – Mitarbeiter-Falldetailansicht](docs/frontend/ansicht-03-mitarbeiter-falldetail.md): Falldaten, Verlauf und fachliche Aktionen wie «Bearbeitung fortsetzen», Wiedervorlage oder Abschluss. Im Zielablauf führt Camunda die Fallbearbeitung. Eine neue Mieternachricht beendet eine laufende Wiedervorlage und legt den Fall sofort zur Mitarbeiterprüfung vor. Die lokale Demo zeigt noch die bisherige direkte Statusauswahl.
 
 - [Screen 04 – Anmeldung](docs/frontend/ansicht-04-login.md): E-Mail-Einmalcode, Rückmeldungen und Rückkehr zur angeforderten Seite sind in der lokalen Demo umgesetzt. Die MCP-Freigabe ist als Zielablauf beschrieben.
 
@@ -160,11 +161,17 @@ architektonische Source of Truth.
 - [docs/ai-usage/block1-grundgeruest-pruefung.md](docs/ai-usage/block1-grundgeruest-pruefung.md)
   Nachweis der KI-Nutzung beim Skelett: Generierung, Review, Korrekturen und Veto-Entscheidungen
 
-- [docs/architecture/c4-context.md](docs/architecture/c4-context.md)
+- [docs/architecture/c4-1-context.md](docs/architecture/c4-1-context.md)
   C4 Level 1 – System Context
 
-- [docs/architecture/c4-container.md](docs/architecture/c4-container.md)
+- [docs/architecture/c4-2-container.md](docs/architecture/c4-2-container.md)
   C4 Level 2 – Container View
+
+- [C4-Komponentenansicht](docs/architecture/c4-3-components.md)
+  Module, Adapter und Kommunikationswege in der PropertyFlow-Anwendung
+
+- [Schnittstellenentwurf](docs/architecture/schnittstellenentwurf-block-3.md)
+  Schnittstellen und Stand ihrer Verträge
 
 - [docs/architecture/module-structure.md](docs/architecture/module-structure.md)
   Interne Modulstruktur und Abhängigkeitsregeln des Backends

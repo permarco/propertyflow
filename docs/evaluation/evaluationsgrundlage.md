@@ -269,7 +269,8 @@ Für den KI-Anteil gelten mindestens folgende Guardrails:
 - **Nachvollziehbarkeit:** Relevante KI-Ergebnisse müssen mit Modellversion,
   Prompt-Version, Zeitpunkt und verwendeten Quellen nachvollziehbar sein.
 - **Fail-safe-Verhalten:** Ausfälle von KI oder RAG dürfen die Persistenz und
-  manuelle Bearbeitung eines Mieteranliegens nicht verhindern.
+  vom laufenden Camunda-Prozess freigegebene Mitarbeiterprüfung eines
+  Mieteranliegens nicht verhindern.
 - **Minimale Workflow-Daten:** Camunda-Prozessvariablen enthalten nur die für
   die Orchestrierung notwendigen Informationen.
 - **Idempotenz:** Wiederholte Worker-Ausführungen dürfen keine unerwünschten
@@ -323,9 +324,8 @@ Anforderungen an spätere Tests, keine bereits erbrachten Nachweise.
 Die [Fallverwaltung](../specifications/fallverwaltung.md#prüfkriterien)
 führt mit FALL-AK-01 bis FALL-AK-19 die fachlichen Kriterien für Annahme,
 Wiederholung, manuelle Objekt-/Wohnungszuordnung in UI3, Statuskonsistenz, Prüfbedarf, letzten Mieterkontakt,
-Mitarbeiter- und Systemabschluss, Wiedereröffnung sowie Wiedervorlage mit
-paralleler Nachrichtenverarbeitung sowie die direkte manuelle Übernahme der
-Bearbeitung ohne Wiedervorlage. Die Prüfung erfolgt
+Mitarbeiter- und Systemabschluss, Wiedereröffnung, Aufhebung einer
+Wiedervorlage bei Mieternachrichten und Fortsetzung nach der Mitarbeiterprüfung. Die Prüfung erfolgt
 an den zuständigen Services mit ersetzbaren externen Abhängigkeiten.
 Die Kriterien sind noch keine ausgeführten Nachweise; Details werden an der
 zentralen Quelle gepflegt.
@@ -338,7 +338,7 @@ KI-Baseline EVAL-01 bis EVAL-04 um erwartete Prozess- und Fallzustände.
 
 Die [Spezifikation für Fallzugriff und Sicherheit](../specifications/fallzugriff-und-sicherheit.md#prüfkriterien)
 führt ZUG-AK-01 bis ZUG-AK-14 für direkten Tokenzugriff, Erstzugriff, Fallbindung,
-Falltrennung, zeitlich unbegrenzte Linkgültigkeit, bewussten Widerruf, Rechte, Secret-Schutz, CSRF, administrativen Linkersatz,
+Falltrennung, zeitlich unbegrenzte Linkgültigkeit, Rechte, Secret-Schutz, CSRF, direkten administrativen Linkersatz,
 geschützte Token-Aufbewahrung, Linkweitergabe und einheitliche Mitarbeiter-Adminrechte.
 Diese Kriterien ergänzen die Evaluationsbasis und werden an der zentralen
 Quelle gepflegt. Sie sind Anforderungen an spätere Tests und Reviews,
@@ -429,7 +429,7 @@ Berichte unter `target` sind erzeugte, überschreibbare Artefakte. Dauerhafte Ei
 
 - **EVAL-01 bis EVAL-04 bleiben offen:** Der lokale Antwort-Mock bewertet weder Anliegen noch Winter-/Sommerkontext und belegt keine Faktentreue, Retrieval-Qualität oder Prompt-Injection-Abwehr. Dafür sind reale, versionierte Modell-/Prompt-Konfigurationen und die fachliche Prüfung aller MUSS-Kriterien erforderlich.
 - **Integrationen bleiben offen:** Datenbankpersistenz, Mailzustellung, RAG, Camunda-Timer und Worker-Wiederholungen sowie reale Modellaufrufe müssen separat geprüft werden. Mock-Idempotenz ist kein Nachweis für verteilte Worker-Idempotenz.
-- **Produktive Sicherheitsgrenzen bleiben offen:** Mitarbeiteranmeldung und Autorisierung, sichere Tokenaufbewahrung, Widerruf/Ersatz, Datenschutz beim Providertransfer und Durchsetzung menschlicher Freigaben benötigen eigene Nachweise gemäss [ZUG](../specifications/fallzugriff-und-sicherheit.md) und FALL-10. Simulierte Zugriffsverweigerungen belegen nur die UI-Reaktion.
+- **Produktive Sicherheitsgrenzen bleiben offen:** Mitarbeiteranmeldung und Autorisierung, sichere Tokenaufbewahrung, direkter Linkersatz, Datenschutz beim Providertransfer und Durchsetzung menschlicher Freigaben benötigen eigene Nachweise gemäss [ZUG](../specifications/fallzugriff-und-sicherheit.md) und FALL-10. Simulierte Zugriffsverweigerungen belegen nur die UI-Reaktion.
 - **Browserumfang ist begrenzt:** Responsive Tests verwenden 390 und 1440 Pixel in Edge/Chromium. Teilweise beschleunigte Browseruhren und simulierte Tab-Sichtbarkeit ergänzen echte 20-Sekunden-Pollingtests. Weitere Browser, Zwischenbreiten, reale Mobilgeräte und manuelle Prüfungen mit assistiven Technologien bleiben gesondert zu bewerten.
 
 Diese Ergänzung ändert keine fachlichen Akzeptanzkriterien und dokumentiert keinen neuen Testlauf. Sie verbindet die qualitative Baseline mit vorhandenen Testartefakten und den bereits protokollierten Nachweisen.

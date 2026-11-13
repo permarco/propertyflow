@@ -22,9 +22,9 @@ subgraph PF["PropertyFlow"]
 end
 
 MITARBEITER --- UC
-classDef participant fill:#f2f8fc,stroke:#334155,color:#172033
-classDef goal fill:#dbeaf7,stroke:#6d8eae,color:#172033
-style PF stroke:#006fbb,stroke-width:2px,color:#172033
+classDef participant fill:#1e293b,stroke:#94a3b8,color:#ffffff
+classDef goal fill:#334155,stroke:#6d8eae,color:#ffffff
+style PF fill:#1e293b,stroke:#006fbb,stroke-width:2px,color:#ffffff
 ```
 
 ## Preconditions
@@ -113,7 +113,7 @@ Der Dringlichkeitsfilter bietet «Alle», «Kritisch», «Hoch», «Normal», «
 
 Standardsortierung und Sortierfunktion aller sieben Spalten folgen Screen 02. Der erste Klick auf einen Spaltentitel sortiert aufsteigend und zeigt ↑, der zweite Klick absteigend und zeigt ↓. Weitere Klicks wechseln die Richtung; bei einer anderen Spalte beginnt die Sortierung aufsteigend. Nur der aktiv gewählte Spaltentitel zeigt den Richtungspfeil. «Fall» sortiert nach ursprünglichem Betreff A–Z bzw. Z–A. Die Sortierauswahl erhält Suche und Filter und beginnt auf Seite 1. «Letzte Aktion des Mieters» verwendet den Zeitvertrag nach FALL-08, nicht den letzten beliebigen Fall- oder Systemzugriff. Suche und Sortierung gelten vor der Aufteilung in Seiten mit maximal 50 Fällen. Weitere Sortierwerte folgen Screen 02; der genaue technische Textvergleich wird bei der Umsetzung konkretisiert; Teilwortsuche und UND-Verknüpfung sind vereinbart.
 
-Die zusätzliche Spalte «Wiedervorlage» folgt FALL-11. Sie zeigt das gespeicherte Datum oder «–», wenn kein Termin gesetzt ist. Sie ist auf- und absteigend sortierbar; Fälle ohne Termin stehen gemäss Screen 02 in beiden Richtungen zuletzt. Neue oder geänderte Termine, automatische Vorverlegungen und Löschungen werden mit der Liste aktualisiert. Bearbeitung und Löschen des Termins erfolgen in UI3.
+Die zusätzliche Spalte «Wiedervorlage» folgt FALL-11. Sie zeigt das gespeicherte Datum oder «–», wenn kein Termin gesetzt ist. Sie ist auf- und absteigend sortierbar; Fälle ohne Termin stehen gemäss Screen 02 in beiden Richtungen zuletzt. Neue oder geänderte Termine sowie entfernte Termine werden mit der Liste aktualisiert. Bearbeitung und Löschen des Termins erfolgen in UI3.
 
 ### UC-002-BR-004: Aktualisierung und Rechte
 

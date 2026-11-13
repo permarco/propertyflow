@@ -5,7 +5,7 @@
 **Use Case ID:** UC-014  
 **Use Case Name:** Fall abschliessen  
 **Primary Actor:** Mitarbeitende der Immobilienbewirtschaftung  
-**Supporting Actor:** PropertyFlow im Camunda-Fallprozess bei ausdrücklich vereinbarten Systemabschlüssen  
+**Supporting Actor:** Camunda-Fallprozess\
 **Goal:** Einen aktiven Fall nachvollziehbar abschliessen, wenn für die Immobilienverwaltung kein weiterer Bearbeitungsbedarf besteht.  
 **Status:** Der manuelle Abschluss ist in der lokalen Frontend-Demo vorhanden. Automatische Abschlüsse, dauerhafte Speicherung, Camunda-Abstimmung und Fallbenachrichtigungen gehören zum Zielbild.
 
@@ -22,20 +22,20 @@ end
 
 AKTEUR --- UC
 UC --- CAMUNDA
-classDef participant fill:#f2f8fc,stroke:#334155,color:#172033
-classDef goal fill:#dbeaf7,stroke:#6d8eae,color:#172033
-style PF stroke:#006fbb,stroke-width:2px,color:#172033
+classDef participant fill:#1e293b,stroke:#94a3b8,color:#ffffff
+classDef goal fill:#334155,stroke:#6d8eae,color:#ffffff
+style PF fill:#1e293b,stroke:#006fbb,stroke-width:2px,color:#ffffff
 ```
 
 ## Preconditions
 
-- Der Fall ist aktiv. Für den manuellen Abschluss ist die handelnde Person angemeldet und hat die Mitarbeiterrolle. [ZUG-04 · Rollen und Zusatzrechte](../specifications/fallzugriff-und-sicherheit.md#rollen-und-zusatzrechte)
+- Der Fall ist aktiv. Für den Mitarbeiterabschluss ist die handelnde Person angemeldet und hat die Mitarbeiterrolle. Der erreichbare Camunda-Fallprozess gibt die Aktion frei. [ZUG-04 · Rollen und Zusatzrechte](../specifications/fallzugriff-und-sicherheit.md#rollen-und-zusatzrechte) · [FALL-06](../specifications/fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow)
 
 ## Main Success Scenario
 
 1. Der Mitarbeiter beurteilt den aktuellen Fall und wählt «Fall abschliessen» in UI3.
-2. Er bestätigt den Abschluss im Dialog. PropertyFlow prüft Rolle, Fallstand und die geltenden fachlichen Voraussetzungen.
-3. Nach fachlich vorgesehenem Abschluss und konsistenter Übernahme in PropertyFlow erhält der Fall «Abgeschlossen». PropertyFlow speichert Zeitpunkt, Quelle, handelnde Person und den festen internen Mitarbeitervermerk.
+2. Er bestätigt den Abschluss im Dialog. PropertyFlow prüft Rolle, Fallstand und die geltenden fachlichen Voraussetzungen und übermittelt die Entscheidung an Camunda.
+3. Camunda veranlasst den fachlichen Abschluss. Der PropertyFlow-Dienst speichert «Abgeschlossen» mit Zeitpunkt, Quelle, handelnder Person und dem festen internen Mitarbeitervermerk.
 4. PropertyFlow beendet offene Wiedervorlagen und den offenen Mieterantwortbedarf, sperrt neue interne und externe Nachrichten und veranlasst die Abschluss-E-Mail.
 
 ## Alternative Flows
@@ -44,21 +44,23 @@ style PF stroke:#006fbb,stroke-width:2px,color:#172033
 - **Kein Bearbeitungsbedarf der Verwaltung.** Eine hinterlegte Fachregel ordnet das konkrete Anliegen eindeutig der Eigenverantwortung des Mieters zu. Der zuständige Dienst prüft die Regel und den Fallkontext. Bei beiden Systemabschlüssen dokumentiert PropertyFlow den geprüften Grund und seine Grundlage.
 - **Menschliche Entscheidung erforderlich.** Bei unklarer oder widersprüchlicher Einordnung oder ausstehender menschlicher Entscheidung bleibt der Fall aktiv. PropertyFlow führt den erforderlichen Prüfbedarf nach FALL-05 und FALL-10.
 - **Abbruch oder Fehler.** Der bisherige Fallstand und offene Antwortbedarf bleiben erhalten. Eine zuvor bereits veröffentlichte Abschlussmitteilung bleibt im Verlauf.
+- **Camunda nicht erreichbar.** Der bisherige Fallstand bleibt lesbar. Ein Abschluss wird erst nach Übernahme des durch Camunda veranlassten Übergangs als erfolgreich angezeigt.
 
 ## Flussdiagramm · Abschlusswege
 
 ```mermaid
 flowchart TD
     MANUELL["Mitarbeiter bestätigt den Abschluss"] --> PRUEFEN{"Rolle und Abschlussvoraussetzungen gültig?"}
-    PRUEFEN -->|"Ja"| SPEICHERN["Fachlichen Abschluss in PropertyFlow übernehmen"]
+    PRUEFEN -->|"Ja"| ABSCHLUSS["Camunda veranlasst den Abschluss"]
     PRUEFEN -->|"Nein"| ABLEHNEN["Fall bleibt aktiv"]
 
     SYSTEM["Fallprozess prüft einen Systemabschluss"] --> GRUND{"Vereinbarter Systemgrund eindeutig?"}
     GRUND -->|"Ja"| FREIGABE{"Menschliche Entscheidung ausstehend?"}
     GRUND -->|"Unklar oder widersprüchlich"| ABKLAEREN["Fall aktiv halten und nötigen Prüfbedarf führen"]
     FREIGABE -->|"Ja"| MITARBEITER["Mitarbeiterprüfung erforderlich"]
-    FREIGABE -->|"Nein"| SPEICHERN
+    FREIGABE -->|"Nein"| ABSCHLUSS
 
+    ABSCHLUSS --> SPEICHERN["Fachlichen Abschluss in PropertyFlow übernehmen"]
     SPEICHERN --> ABGESCHLOSSEN["Nachrichtensperre · offenen Antwortbedarf und Timer beenden · Abschlussmail veranlassen"]
 ```
 

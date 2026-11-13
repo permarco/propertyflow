@@ -1,12 +1,13 @@
 package com.pertegato.propertyflow.triage;
 
+import com.pertegato.propertyflow.triage.service.AnalyzeTool;
 import com.pertegato.propertyflow.triage.service.AnalyzeTool.ErrorCode;
 import com.pertegato.propertyflow.triage.service.AnalyzeTool.Failure;
 import com.pertegato.propertyflow.triage.service.AnalyzeTool.Request;
 import com.pertegato.propertyflow.triage.service.AnalyzeTool.Success;
 import com.pertegato.propertyflow.triage.service.AnalyzeTool.Urgency;
-import com.pertegato.propertyflow.triage.service.AnalyzeTool;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,15 +34,28 @@ class AnalyzeToolTest {
                 new Request(null),
                 new Request(""),
                 new Request(" \n\t"),
-                new Request("x".repeat(4001))
+                new Request("x".repeat(2001)),
+                new Request("x".repeat(1999) + "\uD83D\uDE80")
         };
         for (Request request : invalidRequests) {
             assertEquals(ErrorCode.INVALID_INPUT, ((Failure) tool.analyze(request)).code());
         }
 
         assertEquals(0, calls.get());
-        assertInstanceOf(Success.class, tool.analyze(new Request("x".repeat(4000))));
-        assertEquals(1, calls.get());
+    }
+
+    @Test
+    void forwardsFullDescriptionAtLimitWithNormalizedLineEndings() {
+        AtomicReference<String> received = new AtomicReference<>();
+        AnalyzeTool tool = new AnalyzeTool(text -> {
+            received.set(text);
+            return "HOCH";
+        });
+        String finalLine = "Wasser läuft aus der Decke.";
+        String description = "x".repeat(2000 - finalLine.length() - 1) + "\n" + finalLine;
+
+        assertInstanceOf(Success.class, tool.analyze(new Request(description.replace("\n", "\r\n"))));
+        assertEquals(description, received.get());
     }
 
     @Test

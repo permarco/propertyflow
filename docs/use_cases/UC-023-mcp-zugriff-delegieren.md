@@ -6,7 +6,7 @@
 **Primary Actor:** Angemeldeter Mieter oder Mitarbeiter  
 **Supporting Actor:** MCP-Client im LLM-Chat  
 **Goal:** Einem Client ausgewählte PropertyFlow-Aktionen erlauben und diese Berechtigung wieder entziehen können.  
-**Status:** Zielablauf gemäss ADR-005 und ZUG-04. OAuth-Delegation, Tool-Auswahl und Bedienung der Widerrufsfunktion sind zu konkretisieren.
+**Status:** Zielablauf gemäss ADR-005 und ZUG-04. «Fallstand abrufen» ist als erstes Werkzeug für Mieter festgelegt. Die Umsetzung der OAuth-Delegation und die Bedienung der Widerrufsfunktion sind zu konkretisieren.
 
 ## Use-Case-Diagramm
 
@@ -23,9 +23,9 @@ end
 MIETER --- UC
 MITARBEITER --- UC
 UC --- MCP
-classDef participant fill:#f2f8fc,stroke:#334155,color:#172033
-classDef goal fill:#dbeaf7,stroke:#6d8eae,color:#172033
-style PF stroke:#006fbb,stroke-width:2px,color:#172033
+classDef participant fill:#1e293b,stroke:#94a3b8,color:#ffffff
+classDef goal fill:#334155,stroke:#6d8eae,color:#ffffff
+style PF fill:#1e293b,stroke:#006fbb,stroke-width:2px,color:#ffffff
 ```
 
 ## Preconditions
@@ -40,10 +40,15 @@ style PF stroke:#006fbb,stroke-width:2px,color:#172033
 3. Bei jedem Aufruf prüft der Anwendungsdienst Token, aktuelles Konto, Rolle, Client-Delegation, Fallzugriff und die gewünschte Aktion. Bei einer kritischen Aktion prüft er auch die menschliche Freigabe für genau diese Handlung.
 4. Widerruft die Person später die Delegation, weist PropertyFlow weitere Aufrufe mit dieser Delegation ab.
 
+### Erstes MCP-Werkzeug für Mieter · «Fallstand abrufen»
+
+Der Client übergibt die Case-ID. Der Anwendungsdienst prüft bei jedem Aufruf das delegierte Leserecht und gleicht die aktuell verifizierte E-Mail-Adresse des Mieterkontos mit der aktuellen Kontaktadresse des Falls ab. Bei erfolgreichem Abruf liefert das Werkzeug ausschliesslich die Case-ID, den fachlichen Bearbeitungsstatus und die aktuell wirksame Dringlichkeit. Ohne wirksame Einstufung lautet die Angabe «Noch nicht bewertet». [SS-004](../architecture/schnittstellenentwurf-block-3.md#ss-004--mcp-werkzeug-fallstand-abrufen) · [DRING-02](../specifications/dringlichkeitsbewertung.md#dring-02-noch-nicht-bewertet)
+
 ## Alternative Flows
 
 - Lehnt die Person die Delegation ab, erhält der Client kein Zugriffstoken.
 - Bei ungültigem Token, fehlender Berechtigung oder fehlender Freigabe erhält der Client keine geschützten Daten und die Aktion bleibt ohne fachliche Wirkung.
+- Für eine fremde Case-ID antwortet «Fallstand abrufen» genauso wie für eine nicht vorhandene Case-ID. Der Client erhält weder Falldaten noch eine Bestätigung, dass der Fall existiert.
 
 ## Postconditions
 
@@ -56,3 +61,4 @@ style PF stroke:#006fbb,stroke-width:2px,color:#172033
 - **UC-023-AK-01:** Ein Client mit delegiertem Leserecht kann einen berechtigten Fall lesen. Schreibversuche und Abrufe fremder Fälle werden abgewiesen.
 - **UC-023-AK-02:** Nach Widerruf wird der nächste MCP-Aufruf mit dem bisherigen Token abgewiesen.
 - **UC-023-AK-03:** Eine kritische Aktion ohne passende menschliche Freigabe bleibt ohne fachliche Wirkung. Der abgewiesene Schreibversuch ist im Audit nachvollziehbar.
+- **UC-023-AK-04 – Fremde Case-ID:** Ein Client mit gültigem Token und delegiertem Leserecht für «Fallstand abrufen» erhält für einen eigenen Fall genau die drei vereinbarten Angaben. Mit demselben Token fragt er anschliessend einen existierenden Fall mit einer anderen Kontaktadresse ab. Der Dienst verweigert den Abruf. Die Antwort enthält keine Falldaten und ist von der Antwort für eine gültig formatierte, nicht vorhandene Case-ID nicht unterscheidbar.

@@ -5,7 +5,7 @@
 **Use Case ID:** UC-025  
 **Primary Actor:** Für die Adressänderung zuständige Person der Verwaltung  
 **Goal:** Die aktuelle Kontaktadresse eines Falls nach einem geprüften Wechsel korrigieren und die Fallzuordnung entsprechend aktualisieren.  
-**Status:** Wirkung auf den Kontozugriff vereinbart. Identitätsprüfung, Berechtigung, Bedienung und Umgang mit dem persönlichen Link sind zu konkretisieren.
+**Status:** Wirkung auf den Kontozugriff vereinbart. Identitätsprüfung, Berechtigung, Bedienung, Umgang mit dem persönlichen Link und Verfügbarkeit bei einem Camunda-Ausfall sind zu konkretisieren.
 
 ## Use-Case-Diagramm
 
@@ -18,9 +18,9 @@ subgraph PF["PropertyFlow"]
 end
 
 AKTEUR --- UC
-classDef participant fill:#f2f8fc,stroke:#334155,color:#172033
-classDef goal fill:#dbeaf7,stroke:#6d8eae,color:#172033
-style PF stroke:#006fbb,stroke-width:2px,color:#172033
+classDef participant fill:#1e293b,stroke:#94a3b8,color:#ffffff
+classDef goal fill:#334155,stroke:#6d8eae,color:#ffffff
+style PF fill:#1e293b,stroke:#006fbb,stroke-width:2px,color:#ffffff
 ```
 
 ## Preconditions

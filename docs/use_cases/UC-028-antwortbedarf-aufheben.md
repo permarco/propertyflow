@@ -21,28 +21,30 @@ subgraph PF["PropertyFlow"]
 end
 
 AKTEUR --- UC
-classDef participant fill:#f2f8fc,stroke:#334155,color:#172033
-classDef goal fill:#dbeaf7,stroke:#6d8eae,color:#172033
-style PF stroke:#006fbb,stroke-width:2px,color:#172033
+classDef participant fill:#1e293b,stroke:#94a3b8,color:#ffffff
+classDef goal fill:#334155,stroke:#6d8eae,color:#ffffff
+style PF fill:#1e293b,stroke:#006fbb,stroke-width:2px,color:#ffffff
 ```
 
 ## Preconditions
 
 - Eine [berechtigte Person](../specifications/fallzugriff-und-sicherheit.md#rollen-und-zusatzrechte) hat das Mitarbeiter-Falldetail eines aktiven Falls geöffnet. [UC-003](UC-003-mieteranliegen-details-anzeigen.md)
 - Die gewählte veröffentlichte Rückfrage hat noch offenen Antwortbedarf. [UC-010](UC-010-externe-fallnachricht-veroeffentlichen.md)
+- Der führende Camunda-Fallprozess ist erreichbar und gibt die Aktion frei. [FALL-06](../specifications/fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow)
 
 ## Main Success Scenario
 
 1. Der Mitarbeiter wählt bei der betroffenen Nachricht «Antwortbedarf aufheben».
-2. PropertyFlow prüft die Berechtigung und den aktuellen Zustand von Fall und Rückfrage.
-3. PropertyFlow beendet den Antwortbedarf der gewählten Nachricht und speichert Ursache, Zeitpunkt und handelnde Person. Die ursprüngliche Nachricht und ihre ursprüngliche Kennzeichnung bleiben nachvollziehbar.
-4. Entfällt der letzte offene Antwortbedarf und bestehen weder laufende Wiedervorlage noch vorrangiger aktueller Prüfbedarf, wechselt der Fall auf «In Bearbeitung». Sonst bleiben die weiter geltenden fachlichen Regeln massgeblich.
-5. UI1 und UI3 zeigen den aktualisierten Antwortbedarf. Der laufende Fallprozess berücksichtigt den gespeicherten Stand.
+2. PropertyFlow prüft die Berechtigung und den aktuellen Zustand von Fall und Rückfrage und übermittelt die Aktion an Camunda.
+3. Camunda veranlasst die Aufhebung. PropertyFlow beendet den Antwortbedarf der gewählten Nachricht und speichert Ursache, Zeitpunkt und handelnde Person. Die ursprüngliche Nachricht und ihre ursprüngliche Kennzeichnung bleiben nachvollziehbar.
+4. Entfällt der letzte offene Antwortbedarf und bestehen weder laufende Wiedervorlage noch vorrangiger aktueller Prüfbedarf, veranlasst Camunda den Wechsel auf «In Bearbeitung». Sonst bleiben die weiter geltenden fachlichen Regeln massgeblich.
+5. UI1 und UI3 zeigen den bestätigten Antwortbedarf und den gespeicherten Fallstatus.
 
 ## Alternative Flows
 
 - **Antwortbedarf bereits beendet, Fall geschlossen oder Berechtigung fehlt.** PropertyFlow weist eine neue Aufhebung ohne Änderung zurück.
 - **Ausgang unklar oder Konflikt mit einer anderen Bearbeitung.** Die Oberfläche bestätigt keinen unbelegten Erfolg. Eine technische Wiederholung erzeugt keinen weiteren Beendigungsvermerk.
+- **Camunda nicht erreichbar.** Der letzte bestätigte Fallstand bleibt lesbar. Die Aufhebung wird erst nach der vom Prozess veranlassten Speicherung angezeigt.
 - **Verspätete Auswertung einer Mieterantwort.** Ein bereits aufgehobener Antwortbedarf wird durch die Auswertung nicht wiederhergestellt.
 
 ## Postconditions

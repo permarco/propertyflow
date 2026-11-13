@@ -25,7 +25,7 @@ Die fachliche Rangfolge lautet **Kritisch > Hoch > Normal > Niedrig**. Die Stufe
 
 ## DRING-02: Noch nicht bewertet
 
-**«Noch nicht bewertet» ist ein eigener Bewertungszustand, keine fünfte Dringlichkeitsstufe.** Ohne fachlich verwendbare Bewertung wird keine niedrige Dringlichkeit angenommen. Ein technischer Analysefehler ist ebenfalls keine Dringlichkeitsstufe; vorhandene fachliche Daten bleiben erhalten und manuelle Bearbeitung bleibt möglich gemäss [ADR-001](../architecture/adr/ADR-001-grundarchitektur.md).
+**«Noch nicht bewertet» ist ein eigener Bewertungszustand, keine fünfte Dringlichkeitsstufe.** Ohne fachlich verwendbare Bewertung wird keine niedrige Dringlichkeit angenommen. Bei einem technischen Analysefehler bleiben vorhandene fachliche Daten erhalten. Der laufende Camunda-Prozess kann eine Mitarbeiterprüfung veranlassen. Für die Fallbearbeitung gilt [FALL-06](fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow).
 
 Die Platzierung unbewerteter Fälle und der zweite Sortierwert der Mitarbeiterliste sind in [Screen 02](../frontend/ansicht-02-mitarbeiter-falluebersicht.md) vereinbart. Diese Darstellungsentscheidung ändert nicht die fachliche Rangfolge der vier Stufen.
 
@@ -59,11 +59,11 @@ Die Kennzeichnung ergänzt immer den sichtbaren Stufentext. Status, Prüfbedarf 
 
 **Vereinbart:** Nach dauerhafter Annahme der ursprünglichen Mieter-Mitteilung wird die Dringlichkeit erstmals im Camunda-gesteuerten Ablauf berechnet. Jede weitere dauerhaft gespeicherte Mieter-Nachricht veranlasst erneut eine Bewertung im bestehenden Camunda-Fallprozess. PropertyFlow-Worker und fachliche Services führen die Bewertung aus, validieren das Ergebnis und speichern die fachlich verwendete Stufe in PropertyFlow. Eine Nachricht eröffnet keinen zweiten führenden Fallprozess (FALL-06, KOM-03).
 
-Solange weder eine erfolgreiche Systembewertung noch eine manuelle Einstufung vorliegt, gilt «Noch nicht bewertet». Eine bereits vor dem ersten Systemergebnis manuell gesetzte Stufe ist wirksam und geschützt gemäss DRING-06. Während einer Neubewertung bleibt die bisher gespeicherte Stufe sichtbar. Ein fehlgeschlagener Versuch ersetzt sie nicht durch eine erfundene Stufe und erzeugt keine erfolgreiche Stufenänderung. Bei aktivem Fall gilt für den Bearbeitungsstatus und den Analysehinweis FALL-05; die manuelle Bearbeitung bleibt möglich.
+Solange weder eine erfolgreiche Systembewertung noch eine manuelle Einstufung vorliegt, gilt «Noch nicht bewertet». Eine im Fallprozess zugelassene manuelle Einstufung kann bereits vor dem ersten Systemergebnis wirksam sein und ist gemäss DRING-06 geschützt. Während einer Neubewertung bleibt die bisher gespeicherte Stufe sichtbar. Ein fehlgeschlagener Versuch ersetzt sie nicht durch eine erfundene Stufe und erzeugt keine erfolgreiche Stufenänderung. Bei aktivem Fall gilt für den Bearbeitungsstatus und den Analysehinweis FALL-05.
 
 ## DRING-06: Manuelle Anpassung
 
-**Vereinbart:** Ein berechtigter, Mitarbeiter kann die Dringlichkeitsstufe in der Mitarbeiter-Falldetailansicht ändern. «User» bezeichnet in diesem Ablauf den Mitarbeiter, nicht den Mieter. Die Mieteransicht bleibt bezüglich Dringlichkeit ausschliesslich lesend gemäss ZUG-04.
+**Vereinbart:** Ein berechtigter Mitarbeiter kann im Falldetail eine Dringlichkeitsstufe festlegen, wenn der laufende Camunda-Fallprozess diese Aktion erlaubt. PropertyFlow leitet die fachliche Einstufung an Camunda weiter und übernimmt die bestätigte Änderung gemäss [FALL-06](fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow). Die Mieteransicht bleibt bezüglich Dringlichkeit ausschliesslich lesend gemäss ZUG-04.
 
 Die manuelle Anpassung wird in PropertyFlow gespeichert und mit der Änderungsquelle «Immobilienverwaltung» nachvollziehbar.
 
@@ -104,7 +104,7 @@ Diese offenen Umsetzungs- und Konfliktregeln ändern die vereinbarten Auslöser,
 - **DRING-AK-03:** Die Anzeige bleibt ohne Farbwahrnehmung verständlich; eine KI-Empfehlung wird nicht als abschliessende menschliche Entscheidung ausgegeben.
 - **DRING-AK-04:** Die Farbkennzeichnung folgt der bestätigten Zuordnung aus DRING-04 und enthält immer die textliche Bezeichnung. Die bei der Gestaltung gewählten Kombinationen werden auf ausreichende Kontraste geprüft.
 - **DRING-AK-05:** Die ursprüngliche Einreichung und jede weitere gespeicherte Mieter-Nachricht veranlassen eine Bewertung im bestehenden Camunda-Prozess. Wiederholungen eröffnen keinen zweiten führenden Prozess und duplizieren keine Stufenänderung.
-- **DRING-AK-06:** Berechtigte Mitarbeitende können die Stufe im Detail ändern; Mieter können dies auch über direkte Backend-Aufrufe nicht. Die Änderung bleibt intern einem konkreten Mitarbeiter zugeordnet.
+- **DRING-AK-06:** Ein berechtigter Mitarbeiter kann die Stufe im Detail ändern, wenn der laufende Fallprozess die Aktion erlaubt. Ein direkter Backend-Aufruf bei ausstehendem Prozessstart, unerreichbarem Camunda oder mit Mieterberechtigung wird abgewiesen. Die erfolgreiche Änderung bleibt intern einem konkreten Mitarbeiter zugeordnet.
 - **DRING-AK-07:** Erstbewertung und spätere Stufenänderungen erhalten eine konsistente Historie mit altem/neuem Wert, Zeitpunkt und Quelle. Der Mieter sieht diese strukturierten Änderungen, jedoch keine internen Memos, Begründungen oder Prozessreferenzen.
 - **DRING-AK-08:** Bei fehlgeschlagener Neubewertung bleibt die bisherige Stufe erhalten. Unveränderte Neubewertung erzeugt keinen Stufenwechsel oder zusätzliche Änderungsmail. Konkurrenz- und Wiederholungsfälle werden nach dem noch festzulegenden Vertrag geprüft.
 - **DRING-AK-09:** Eine manuelle Einstufung bleibt nach neuen Mieter-Nachrichten und automatischen Neubewertungen wirksam. Ein gezielter Konkurrenztest mit verspätetem Systemergebnis weist nach, dass das System die manuelle Stufe nicht überschreibt. Das getrennte Systemergebnis erzeugt keinen mieteröffentlichen Stufenwechsel oder Änderungs-Mailauftrag. Eine weitere berechtigte manuelle Änderung wird historisiert.

@@ -7,8 +7,8 @@ Read at minimum:
 
 - [../docs/project-context.md](../docs/project-context.md)
 - [docs/vision.md](../docs/vision.md)
-- [../docs/architecture/c4-context.md](../docs/architecture/c4-context.md)
-- [docs/architecture/c4-container.md](../docs/architecture/c4-container.md)
+- [../docs/architecture/c4-1-context.md](../docs/architecture/c4-1-context.md)
+- [docs/architecture/c4-2-container.md](../docs/architecture/c4-2-container.md)
 - [../docs/architecture/module-structure.md](../docs/architecture/module-structure.md)
 - all accepted ADRs under `docs/architecture/adr/`
 
@@ -29,7 +29,7 @@ For work on the MCP server, its tools, or agent access, also read the
 
 - The backend is a modular monolith based on Spring Boot.
 - Use the current project-defined Spring AI version for AI integrations.
-- Camunda 8 is used for long-running workflow orchestration.
+- Camunda 8 owns case orchestration and initiates every case status transition after intake. Follow [ADR-002](../docs/architecture/adr/ADR-002-camunda8-workflow-orchestrierung.md#entscheidung) and [FALL-06](../docs/specifications/fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow) for staff action gating and outage behaviour.
 - Camunda is not embedded in the PropertyFlow backend.
 - PropertyFlow integrates with Camunda through its supported client APIs and job workers.
 - Business data remains owned by PropertyFlow.
@@ -42,8 +42,7 @@ For work on the MCP server, its tools, or agent access, also read the
 - Do not send unnecessary tenant or rental data to external LLM providers.
 - Human decisions are mandatory for costs or binding external orders (including technician callouts), very urgent or severe cases, and strong or escalated tenant complaints, as specified in FALL-10 in [docs/specifications/fallverwaltung.md](../docs/specifications/fallverwaltung.md). Outside these boundaries, only explicitly agreed and server-validated automated actions and closures under FALL-07/FALL-10 are allowed.
 - Relevant AI decisions must remain auditable.
-- AI or RAG failures must not prevent a tenant request from being persisted
-  and manually processed.
+- AI or RAG failures must not prevent intake. The running Camunda process can route the case to a staff review.
 
 ## Development
 

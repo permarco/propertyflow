@@ -9,7 +9,7 @@
 
 Mieterinnen und Mieter können Anliegen ohne Konto einreichen und über einen persönlichen Link auf den jeweiligen Fall zugreifen. **Der persönliche E-Mail-Link enthält als einzigen variablen Zugangswert einen geheimen Token.** PropertyFlow ermittelt den zugehörigen Fall serverseitig und rendert die Ansicht direkt unter `/mieter/fall/zugang/<geheimer-token>`. Der Benutzer bleibt auf dieser URL. Die lesbare Case-ID bleibt die unveränderliche Referenz des Falls und wird im Inhalt der Fallansicht angezeigt. Der zusätzliche Zugang über ein freiwilliges Mieterkonto und die Regeln für Mitarbeiterkonten und MCP stehen in [ZUG-04](#zug-04-rechte-und-vertrauensgrenzen).
 
-Die Architekturentscheidungen sind in [ADR-004: Persönlicher Fall-Link](../architecture/adr/ADR-004-tokenbasierter-mieterzugriff.md) und [ADR-005: Persönliche Konten und fallbezogener Zugriff über Web und MCP](../architecture/adr/ADR-005-zugriffsmodell.md) dokumentiert. Diese Spezifikation enthält die detaillierten Zugriffsregeln und Prüfkriterien. [Screen 01](../frontend/ansicht-01-mieter-fallansicht.md) beschreibt die Bedienung des Linkzugriffs. [Fallverwaltung](fallverwaltung.md) definiert Fallidentität und Lebenszyklus. [Fallkommunikation](fallkommunikation.md) definiert sichtbare Inhalte, LLM-Datengrundlage und Nachrichtensperren. PropertyFlow autorisiert den Zugriff, Thymeleaf rendert die Ansicht und Camunda 8 orchestriert die Hintergrundverarbeitung.
+Die Architekturentscheidungen sind in [ADR-004: Persönlicher Fall-Link](../architecture/adr/ADR-004-tokenbasierter-mieterzugriff.md) und [ADR-005: Persönliche Konten und fallbezogener Zugriff über Web und MCP](../architecture/adr/ADR-005-zugriffsmodell.md) dokumentiert. Diese Spezifikation enthält die detaillierten Zugriffsregeln und Prüfkriterien. [Screen 01](../frontend/ansicht-01-mieter-fallansicht.md) beschreibt die Bedienung des Linkzugriffs. [Fallverwaltung](fallverwaltung.md) definiert Fallidentität und Lebenszyklus. [Fallkommunikation](fallkommunikation.md) definiert sichtbare Inhalte, LLM-Datengrundlage und Nachrichtensperren. PropertyFlow autorisiert den Zugriff. Camunda 8 führt die Fallbearbeitung gemäss [FALL-06](fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow).
 
 Die fachliche Trennung von Case-ID und geheimem Zugang, die direkt angezeigte Token-URL sowie die Speicherung desselben Tokens als Hash und verschlüsselte Versandkopie sind vereinbart. **Bestätigt am 10.10.2026:** Der persönliche Fall-Link hat keine zeitliche Ablauffrist. Der frühere Laufzeitvorschlag entfällt. Weitere technische Schutzparameter bleiben ausdrücklich als Review-Vorschläge ausgewiesen. Die Spezifikation bestätigt keine implementierten Sicherheitsmechanismen oder ausgeführten Tests.
 
@@ -18,7 +18,7 @@ Die fachliche Trennung von Case-ID und geheimem Zugang, die direkt angezeigte To
 | Begriff | Aufgabe | Umgang |
 |---|---|---|
 | Case-ID | Identifiziert dauerhaft einen Fall, beispielsweise `REQ-2026-001` | Wird in der Ansicht angezeigt und kann als Referenz gegenüber der Verwaltung verwendet werden. Gewährt allein keinen Zugriff. |
-| Zugriffstoken | Berechtigt seinen Besitzer zu den zulässigen Mieteraktionen für genau einen Fall | Kryptografisch zufällig, geheim, nicht aus der Case-ID oder Kontaktangaben ableitbar. Ohne zeitliche Ablauffrist; bewusster Widerruf oder Ersatz bleiben getrennte Vorgänge. |
+| Zugriffstoken | Berechtigt seinen Besitzer zu den zulässigen Mieteraktionen für genau einen Fall | Kryptografisch zufällig, geheim, nicht aus der Case-ID oder Kontaktangaben ableitbar. Ohne zeitliche Ablauffrist. Ein administrativer Ersatz sperrt den bisherigen Token. |
 | Zugriffsdatensatz | Ordnet den Token-Prüfnachweis dem Fall und seinen erlaubten Aktionen zu | Wird bei jedem Zugriff auf Gültigkeit und Widerruf geprüft. Eine separate Sitzung ist für die Fallberechtigung nicht erforderlich. |
 
 Die «geheime Zahl» im Link übernimmt damit die Rolle des Tokens. Sie muss ausreichend lang und zufällig sein; eine fortlaufende Nummer oder kurze PIN erfüllt diese Anforderung nicht. Ob die Darstellung Ziffern oder URL-taugliche Buchstaben und Ziffern verwendet, ist eine technische Formatentscheidung.
@@ -49,7 +49,7 @@ Scheitert nach dauerhafter Annahme die Übergabe des persönlichen Links an den 
 3. Bei gültigem Zugang rendert PropertyFlow den aktiven oder abgeschlossenen Fall direkt per Thymeleaf. **Die sichtbare URL bleibt unverändert.** Der Token wird weder aus der URL entfernt noch gegen eine sitzungsbasierte Fallberechtigung ausgetauscht.
 4. Auch bei Neuladen, weiteren Datenabrufen und Schreibaktionen über die Fall-Link-Route wird der mitgesendete Token erneut geprüft. Eine Sitzung oder ein Cookie ersetzt diese Prüfung auf der Link-Route nicht. Schreiben erfordert zusätzlich einen aktiven Fall, die erlaubte Aktion und die geltenden Schreibschutzprüfungen.
 
-Der persönliche E-Mail-Link ist zugleich die Browseradresse der Fallansicht und ohne zeitliche Ablauffrist **wiederverwendbar**, solange er nicht bewusst widerrufen oder ersetzt wird. Er kann erneut geöffnet oder als Lesezeichen gespeichert werden. Ein Linkaufruf verbraucht den Token nicht und verändert keine fachlichen Falldaten. Eine Verlängerung ist nicht erforderlich. E-Mail-Linkscanner dürfen dadurch weder Fälle noch Nachrichten, Freigaben oder Prozessaktionen auslösen.
+Der persönliche E-Mail-Link ist zugleich die Browseradresse der Fallansicht und ohne zeitliche Ablauffrist **wiederverwendbar**, bis die Verwaltung ihn gegebenenfalls ersetzt. Er kann erneut geöffnet oder als Lesezeichen gespeichert werden. Ein Linkaufruf verbraucht den Token nicht und verändert keine fachlichen Falldaten. Eine Verlängerung ist nicht erforderlich. E-Mail-Linkscanner dürfen dadurch weder Fälle noch Nachrichten, Freigaben oder Prozessaktionen auslösen.
 
 Ein Token für Fall A berechtigt nicht zu Fall B. Jede Anfrage wird dem Fall des geprüften Tokens zugeordnet. Bei mehreren geöffneten Tabs darf das Öffnen eines zweiten Links Nachrichten aus einem alten Tab niemals in einen anderen Fall umleiten. Eine Übersicht über mehrere Fälle setzt ein verifiziertes Mieterkonto nach ZUG-04 voraus.
 
@@ -64,17 +64,17 @@ Die Matrix gilt für das Zielmodell aus [ADR-005](../architecture/adr/ADR-005-zu
 | Ohne Konto und ohne Fall-Link | Öffentliches Erfassungsformular. | Neues Anliegen einreichen. |
 | Browser mit gültigem persönlichem Fall-Link | Genau den dem Token zugeordneten Fall mit veröffentlichtem Verlauf, wirksamer Dringlichkeit und freigegebener Stufenhistorie nach DRING-07. | Eine externe Nachricht im zugeordneten aktiven Fall senden. |
 | Angemeldeter Mieter mit verifizierter E-Mail-Adresse | Alle Fälle mit derselben aktuellen Kontaktadresse und deren mieteröffentliche Daten. | Neues Anliegen einreichen und in einem zugehörigen aktiven Fall eine externe Nachricht senden. |
-| Angemeldeter Mitarbeiter mit aktiver Mitarbeiterrolle | Alle Fälle im Mitarbeiterbereich mit veröffentlichtem Verlauf und internen Memos. Die Volltextsuche umfasst diese freigegebenen Inhalte. | Fachlich zulässige Backoffice-Aktionen, etwa Status oder Dringlichkeit ändern, Memos speichern, Nachrichten veröffentlichen, einen Fall abschliessen oder bewusst wiedereröffnen. |
+| Angemeldeter Mitarbeiter mit aktiver Mitarbeiterrolle | Alle Fälle im Mitarbeiterbereich mit veröffentlichtem Verlauf und internen Memos. Die Volltextsuche umfasst diese freigegebenen Inhalte. | Im Fallprozess vorgesehene Fachaktionen anstossen, etwa die Dringlichkeit einstufen, ein Memo erfassen, eine Nachricht veröffentlichen oder den Abschluss bestätigen. Camunda veranlasst die Statuswechsel gemäss FALL-06. |
 | Angemeldete Person mit zusätzlichem Kontoverwaltungsrecht | Geschützte Kontoverwaltung. Fallzugriff richtet sich nach der Mitarbeiterrolle. | Mitarbeiterkonten anlegen und die Mitarbeiterrolle gemäss UC-007 vergeben. |
 | MCP-Client mit gültigem OAuth-Zugriffstoken eines angemeldeten Benutzers | Freigegebene Tools und Daten für Fälle, auf die das Konto aktuell Zugriff hat. | Ausdrücklich delegierte fachliche Aktionen innerhalb der Kontorechte und der Regeln für den konkreten Fall. |
-| Camunda-Integration und Hintergrunddienste mit technischer Identität | Nur die für die jeweilige Aufgabe erforderlichen Daten. | Definierte Systemaktionen über autorisierte PropertyFlow-Dienste, etwa ein Abschluss nach Prüfung eines vereinbarten Grundes gemäss FALL-07. Die Wiedereröffnung ist eine Mitarbeiteraktion. |
+| Camunda-Integration und Hintergrunddienste mit technischer Identität | Nur die für die jeweilige Aufgabe erforderlichen Daten. | Definierte Systemaktionen über autorisierte PropertyFlow-Dienste. Die Worker speichern die von Camunda veranlassten Statuswechsel. Die Entscheidung zur Wiedereröffnung bleibt bei Mitarbeitenden gemäss FALL-07. |
 
 ### Rollen und Zusatzrechte
 
 | Rolle oder Zusatzrecht | Wie das Konto sie erhält | Fachlicher Umfang |
 | --- | --- | --- |
 | **Mieter** | Durch freiwillige Registrierung und Verifikation der E-Mail-Adresse gemäss [UC-005](../use_cases/UC-005-userkonto-eroeffnen.md). | Die Person kann neue Anliegen einreichen, Fälle mit passender aktueller Kontaktadresse und deren mieteröffentliche Daten einsehen und diese Fälle in der aktiven Phase mit externen Nachrichten ergänzen. |
-| **Mitarbeiter** | Eine berechtigte Person der Verwaltung legt das Konto mit der geschäftlichen E-Mail-Adresse an und weist ihm die Mitarbeiterrolle gemäss [UC-007](../use_cases/UC-007-mitarbeiterkonto-anlegen.md) zu. | Die Person kann im Mitarbeiterbereich Fälle und interne Memos einsehen, suchen und fachlich zulässige Bearbeitungsaktionen ausführen. Für kritische Handlungen gilt [FALL-10](fallverwaltung.md#fall-10-automatisierung-und-menschliche-freigabe). |
+| **Mitarbeiter** | Eine berechtigte Person der Verwaltung legt das Konto mit der geschäftlichen E-Mail-Adresse an und weist ihm die Mitarbeiterrolle gemäss [UC-007](../use_cases/UC-007-mitarbeiterkonto-anlegen.md) zu. | Die Person kann im Mitarbeiterbereich Fälle und interne Memos einsehen und suchen sowie die im Fallprozess zulässigen Bearbeitungsaktionen anstossen. Für kritische Handlungen gilt [FALL-10](fallverwaltung.md#fall-10-automatisierung-und-menschliche-freigabe). |
 | **Mitarbeiterkonten verwalten** | Das erste Verwaltungskonto erhält das Zusatzrecht zur Mitarbeiterrolle bei der Servereinrichtung gemäss [UC-007](../use_cases/UC-007-mitarbeiterkonto-anlegen.md). | Die Person kann in der geschützten Kontoverwaltung Mitarbeiterkonten anlegen und die Mitarbeiterrolle vergeben. Der Fallzugriff richtet sich nach der Mitarbeiterrolle. |
 
 Wer Mitarbeiterkonten sperren oder die Mitarbeiterrolle entziehen darf, bleibt
@@ -91,7 +91,7 @@ diese Zugriffe gelten die jeweiligen Zeilen der Zugriffsmatrix.
 
 Die Einreichung und der persönliche Fall-Link bleiben ohne Konto nutzbar. Ein freiwilliges Mieterkonto wird nach der E-Mail-Verifikation gemäss [UC-005](../use_cases/UC-005-userkonto-eroeffnen.md) aktiviert. PropertyFlow ermittelt die Fallmenge anhand der verifizierten Konto-Adresse und der aktuellen Fall-Kontaktadresse. Das gilt auch für frühere Einreichungen ohne Anmeldung. Der Dienst prüft diese Zuordnung beim Listenabruf und bei jedem Detail- oder Schreibzugriff im Web und über MCP. Nach einer geprüften Änderung der Fall-Kontaktadresse gilt die neue Zuordnung ab dem nächsten Zugriff.
 
-Die Mieterrechte umfassen veröffentlichte Falldaten und externe Nachrichten. Der Zugriff auf interne Memos und deren Metadaten ist dem Mitarbeiterbereich vorbehalten. Direkte Änderungen von Status oder Dringlichkeit, Freigabe, Abschluss, Wiedereröffnung und Prozessabbruch richten sich nach den jeweiligen Mitarbeiter- und Systemrechten. Ein abgeschlossener Fall bleibt bei gültiger Berechtigung lesbar. Für Nachrichten gilt die Schreibsperre nach [KOM-04](fallkommunikation.md#kom-04-nachrichtensperre-nach-fallabschluss).
+Die Mieterrechte umfassen veröffentlichte Falldaten und externe Nachrichten. Der Zugriff auf interne Memos und deren Metadaten ist dem Mitarbeiterbereich vorbehalten. Fachaktionen wie eine Dringlichkeitseinstufung, Freigabe, Abschluss oder Wiedereröffnung richten sich nach den jeweiligen Mitarbeiter- und Systemrechten im Fallprozess. Ein abgeschlossener Fall bleibt bei gültiger Berechtigung lesbar. Für Nachrichten gilt die Schreibsperre nach [KOM-04](fallkommunikation.md#kom-04-nachrichtensperre-nach-fallabschluss).
 
 **Lokaler Implementierungsstand (13.11.2026):** Selbstregistrierung, E-Mail-Codeprüfung,
 «Meine Fälle» sowie die Prüfung bei Detail- und Nachrichtenzugriffen sind im Profil
@@ -106,7 +106,7 @@ Die [Testanleitung](../../src/test/README.md) beschreibt die Prüfungen mit Mail
 
 UI2 und UI3 setzen für Lesen und Schreiben ein aktives, persönlich angemeldetes Konto mit Mitarbeiterrolle voraus. Die Anmeldung per E-Mail-Einmalcode beschreibt [UC-006](../use_cases/UC-006-mitarbeiter-anmelden.md). Für Kontoanlage und Rollenvergabe gelten die [Rollen und Zusatzrechte](#rollen-und-zusatzrechte).
 
-Die fachlichen Fallrechte sind für die Mitarbeiterrolle einheitlich. Die bestehende fachliche Prüfung nach [FALL-06](fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow), [FALL-07](fallverwaltung.md#fall-07-abschluss-und-zeit-danach) und [FALL-10](fallverwaltung.md#fall-10-automatisierung-und-menschliche-freigabe) gilt bei allen Zugriffen. PropertyFlow ordnet Änderungen und Freigaben der persönlichen Benutzer-ID zu. Fehlende oder abgelaufene Anmeldungen sperren den Mitarbeiterzugriff bis zur erneuten Anmeldung. Bei einem gesperrten Konto oder entzogener Mitarbeiterrolle weist der Dienst den nächsten Zugriff zurück.
+Die fachlichen Fallrechte sind für die Mitarbeiterrolle einheitlich. Vor Prozessstart und bei unerreichbarem Camunda können Mitarbeitende Fälle einsehen. Für Änderungen im Fallprozess muss Camunda die konkrete Fachaktion erlauben. PropertyFlow setzt diese Grenze auch bei direkten Web- und MCP-Aufrufen durch. Für die Prüfung und Freigaben gelten [FALL-06](fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow), [FALL-07](fallverwaltung.md#fall-07-abschluss-und-zeit-danach) und [FALL-10](fallverwaltung.md#fall-10-automatisierung-und-menschliche-freigabe). PropertyFlow ordnet Änderungen und Freigaben der persönlichen Benutzer-ID zu. Fehlende oder abgelaufene Anmeldungen sperren den Mitarbeiterzugriff bis zur erneuten Anmeldung. Bei einem gesperrten Konto oder entzogener Mitarbeiterrolle weist der Dienst den nächsten Zugriff zurück.
 
 ### E-Mail-Einmalcode für Registrierung und Anmeldung
 
@@ -151,22 +151,24 @@ Kontaktadresse, Fallzuordnung, Absenderrolle, Status, Sichtbarkeit, Veröffentli
   Weitere kontobasierte Zugriffe mit dieser Sitzung erfordern eine erneute
   Anmeldung. Das gilt auch für Aufrufe aus bereits geöffneten Tabs.
   Ungesendete Eingaben werden bei der Abmeldung nicht gespeichert.
-- Persönliche Fall-Links behalten ihre Gültigkeit gemäss [ZUG-05](#zug-05-dauerhafte-gültigkeit-widerruf-und-ersatz).
+- Persönliche Fall-Links behalten ihre Gültigkeit gemäss [ZUG-05](#zug-05-dauerhafte-gültigkeit-und-direkter-ersatz).
   Bereits erteilte MCP-Delegationen unterliegen weiterhin dem eigenen
   [Widerruf](#gemeinsame-anmeldung-und-mcp-delegation).
 
 Die genaue Logout-Route und ein übergreifender Logout am gemeinsamen
 Anmeldedienst bleiben im technischen Zugriffsvertrag zu konkretisieren.
 
-## ZUG-05: Dauerhafte Gültigkeit, Widerruf und Ersatz
+<a id="zug-05-dauerhafte-gültigkeit-widerruf-und-ersatz"></a>
+
+## ZUG-05: Dauerhafte Gültigkeit und direkter Ersatz
 
 - **Bestätigt am 10.10.2026:** Der persönliche Fall-Link läuft zeitlich nicht ab. Weder Inaktivität noch eine feste Dauer seit Ausstellung machen ihn ungültig. Auch der Fallabschluss setzt keine Ablauffrist. Eine Verlängerungs- oder Erneuerungsaktion aufgrund des Alters des Links ist nicht vorgesehen; die vorgeschlagene UI3-Aktion «Fall-Link ersetzen» wird nicht eingeführt.
-- Ein bewusster Widerruf entzieht den Zugriff bei jeder weiteren Anfrage mit diesem Token, auch wenn die Seite bereits geöffnet ist. Browsercookies oder technische Sitzungen dürfen das nicht umgehen. Diese bestehende Regel ist von einem zeitlichen Ablauf unabhängig.
-- Ein Ersatzlink verwendet einen neuen unabhängigen Token. Der ersetzte Token verliert seine Berechtigung für alle weiteren Lese- und Schreibaufrufe. Case-ID, Historie und Bearbeitungsstand bleiben erhalten.
+- **Vereinbart am 13.11.2026:** PropertyFlow aktiviert beim administrativen Ersatz einen neuen unabhängigen Token und sperrt den bisherigen in derselben Datenbanktransaktion. Nach dem Commit gilt der neue Link für denselben Fall. Weitere Lese- und Schreibaufrufe mit dem alten Token werden auch aus bereits geöffneten Tabs abgewiesen. Scheitert der Ersatz, gilt der bisherige Link weiter. Case-ID, Historie und Bearbeitungsstand bleiben erhalten.
 - Ein erforderlicher bewusster Ersatz eines verlorenen oder kompromittierten Links erfolgt über die Verwaltung nach geeigneter Identitätsprüfung an die bestätigte Kontaktadresse. Der sichere administrative Ablauf bleibt zu konkretisieren; daraus entsteht keine zusätzliche UI3-Aktion. Ein Adresswechsel benötigt einen separaten geprüften Ablauf.
+- Ob diese administrativen Zugriffsoperationen bei einem Camunda-Ausfall verfügbar sein müssen, bleibt in [UC-024](../use_cases/UC-024-fall-link-widerrufen-oder-ersetzen.md) und [UC-025](../use_cases/UC-025-fall-kontaktadresse-aendern.md) zu klären.
 - Automatischer öffentlicher Linkersatz ist eine optionale Erweiterung. Er muss neutral antworten, darf weder Fallbestand noch Kontaktzuordnung offenlegen und benötigt Missbrauchsschutz.
-- Normales Öffnen und normale Benachrichtigungen rotieren den Token nicht. Der Abschluss eines Falls ist ebenfalls kein Tokenwiderruf: Lesen bleibt bei gültigem Zugang möglich, Schreiben wird durch die fachliche Abschlusssperre verhindert.
-- Linkgültigkeit und Aufbewahrung von Falldaten sind unterschiedliche Regeln. Die fehlende Ablauffrist legt keine Aufbewahrungs- oder Löschfrist für Falldaten fest. Widerruf und Ersatz schliessen oder löschen keinen Fall. Eine berechtigende Fallsitzung ist im direkten Tokenmodell nicht vorgesehen.
+- Normales Öffnen und normale Benachrichtigungen rotieren den Token nicht. Auch nach dem Fallabschluss bleibt der Fall über den gültigen Link lesbar. Die fachliche Abschlusssperre verhindert weitere Schreibzugriffe.
+- Die Aufbewahrung der Falldaten folgt eigenen Regeln. Der Ersatz betrifft ausschliesslich den persönlichen Zugang. Eine berechtigende Fallsitzung ist im direkten Tokenmodell nicht vorgesehen.
 
 ## ZUG-06: Schutz von Token und Falldaten
 
@@ -185,16 +187,16 @@ Der persönliche Link bleibt bei normalen Benachrichtigungen gleich. Damit Prope
 **Ablauf:**
 
 1. Bei der Fallanlage erzeugt PropertyFlow den Token einmal und speichert Hash sowie verschlüsselte Versandkopie mit derselben Fallzuordnung. Der Hash dient auch weiterhin zur Prüfung jedes Browserzugriffs.
-2. Ein Benachrichtigungsauftrag referenziert den Fall und den zugehörigen Zugriffsdatensatz. Er benötigt keinen dauerhaft gespeicherten Klartexttoken.
-3. Vor dem Versand prüft die Versandfunktion Gültigkeit und Widerruf des Zugangs. Nur für einen gültigen Zugang entschlüsselt sie die Versandkopie und setzt den Link `/mieter/fall/zugang/<geheimer-token>` zusammen.
+2. Ein Benachrichtigungsauftrag referenziert den Fall. Die Versandfunktion ermittelt den zugehörigen gültigen Zugriffsdatensatz beim Versand.
+3. Die Versandfunktion prüft den aktuellen Zugang, entschlüsselt dessen Versandkopie und setzt den Link `/mieter/fall/zugang/<geheimer-token>` zusammen.
 4. Der lesbare Token wird nur vorübergehend für die Linkbildung und Mailübergabe verwendet. Er darf nicht in reguläre Protokolle, Fehlerberichte oder ungeschützte Warteschlangen geschrieben werden. Erledigte Versandaufträge werden gemäss der noch festzulegenden Aufbewahrungsfrist bereinigt; die geschützte Tokenkopie bleibt für weitere Benachrichtigungen während der Zugangsgültigkeit verfügbar.
 5. Jede normale Benachrichtigung und jede Wiederholung verwendet denselben gültigen Token ohne zeitliche Ablauffrist. Weder Versand noch Öffnen einer E-Mail erzeugt einen zusätzlichen Zugang; eine Verlängerung entfällt.
 
 Nur die Versandfunktion erhält die Möglichkeit zur Entschlüsselung. Fallbearbeitung, Browser, Camunda und KI benötigen weder die Versandkopie noch den Schlüssel. Der Schlüssel wird über eine geschützte Betriebskonfiguration beziehungsweise Geheimnisverwaltung bereitgestellt; konkrete Verfahren und technische Berechtigungen werden bei der Umsetzung festgelegt. Eine Datenbankkopie allein soll nicht ausreichen, um gültige Falllinks zu rekonstruieren. Ein kompromittierter Anwendungsserver mit Zugriff auf Schlüssel und Versandkopien ist durch diese Trennung allein nicht abgesichert.
 
-**Widerruf, Ersatz und Fehler:** Ein widerrufener oder ersetzter Token wird nicht mehr als gültiger Falllink versendet. Eine zeitliche Ablaufprüfung entfällt. Ein bewusster Ersatz erfolgt nach ZUG-05: neuer unabhängiger Token, neuer Hash und neue verschlüsselte Kopie; der alte Zugang wird gesperrt. Verzögerte Aufträge prüfen den aktuellen Zugang vor dem Versand und dürfen keinen alten Zugang reaktivieren. Bereits verschickte E-Mails lassen sich nicht zurückholen; ihr gesperrter Link gewährt jedoch keinen weiteren Zugriff.
+**Ersatz und Fehler:** Beim direkten Ersatz nach ZUG-05 speichert PropertyFlow den neuen Hash und die neue verschlüsselte Versandkopie mit der Aktivierung des neuen Zugangs. Verzögerte Aufträge verwenden den beim Versand aktuell gültigen Link. Die Sperre des alten Links gilt auch für bereits verschickte E-Mails.
 
-Fehlen Schlüssel oder Versandkopie oder schlägt die Entschlüsselung fehl, wird kein gültiger Link erfunden und kein neuer Token automatisch erzeugt. Der Versandauftrag bleibt als fehlgeschlagen beziehungsweise erneut ausführbar erkennbar; die Fallannahme, gespeicherte Nachrichten und vorhandenen Zugriffsrechte bleiben bestehen. Fehler enthalten keinen Token oder Schlüssel. Wiederholungen und die sichtbare Klärung bei ungültigem Zugang folgen [BEN-04](benachrichtigungen-und-zustellung.md#ben-04-wiederholungen-und-zustellnachweis); der dort als offen gekennzeichnete Versand einer neutralen Mail ohne Link ist noch nicht beschlossen.
+Fehlen Schlüssel oder Versandkopie oder schlägt die Entschlüsselung fehl, bleibt der Versandauftrag als fehlgeschlagen beziehungsweise erneut ausführbar erkennbar. Die Fallannahme, gespeicherte Nachrichten und vorhandenen Zugriffsrechte bleiben bestehen. Fehler enthalten keinen Token oder Schlüssel. Wiederholungen und die sichtbare Klärung folgen [BEN-04](benachrichtigungen-und-zustellung.md#ben-04-wiederholungen-und-zustellnachweis).
 
 Verschlüsselte Kopien nicht mehr gültiger Tokens werden nicht für weitere Benachrichtigungen genutzt und gemäss einer noch festzulegenden Löschregel entfernt. Verschlüsselungsverfahren, Schlüsselrotation, geschützte Sicherungen und Löschfristen bleiben Umsetzungsentscheidungen. Ein Wechsel des Verschlüsselungsschlüssels ist kein Wechsel des persönlichen Zugriffstokens.
 
@@ -231,7 +233,7 @@ Die lesbare Case-ID bleibt im Inhalt von Screen 01 sichtbar und kopierbar. Das K
 |---|---|
 | Token fehlt, ist falsch, widerrufen oder ersetzt | Neutrale Ablehnung ohne Falldaten und ohne Bestätigung einer Fall- oder Kontaktzuordnung. Kein stiller Wechsel in eine Neuanlage. |
 | Token, zusätzliche Case-ID oder Nachrichten-ID wurde verändert | Fall ausschliesslich aus dem gültigen Token bestimmen; Objektberechtigung prüfen und unberechtigten Zugriff ohne Datenoffenlegung ablehnen. |
-| Widerruf oder Ersatz bei geöffneter Seite | Weitere Lese- und Schreibaufrufe mit dem alten Token sperren. Ungesendeten Text nicht automatisch speichern; bereits ausgelieferte oder kopierte Inhalte lassen sich dadurch nicht zurückholen. |
+| Linkersatz bei geöffneter Seite | Weitere Lese- und Schreibaufrufe mit dem alten Token sperren. Ungesendeten Text nicht automatisch speichern; bereits ausgelieferte oder kopierte Inhalte lassen sich dadurch nicht zurückholen. |
 | CSRF-Prüfung schlägt fehl | Schreibaktion ohne fachlichen Seiteneffekt ablehnen. |
 | Fall wurde während der Eingabe geschlossen | Nachricht gemäss KOM-04 zurückweisen; berechtigtes Lesen bleibt möglich. |
 | Web-Anmeldung fehlt oder ist abgelaufen | Geschützte Inhalte und Aktionen sperren und zur Anmeldung führen. Die abgewiesene Schreibaktion wird nach der Anmeldung nicht automatisch erneut ausgelöst. |
@@ -255,7 +257,7 @@ Die bisher in Screen 01 diskutierten Werte werden hier weitergeführt und sind *
 | Umsetzung der Token-Aufbewahrung | Hash für die Prüfung und separat verschlüsselte Kopie desselben Tokens für den Versand sind vereinbart. Verschlüsselungsverfahren, Schlüsselbereitstellung und -rotation, technische Entschlüsselungsrechte, Sicherungen und Löschfristen konkretisieren. |
 | Schutzparameter und Betrieb | Rate-Limit-Werte, Hash-Verfahren, Aufbewahrungsfristen, Formularschutz und technische Durchsetzung der Log-Redaktion konkretisieren. |
 
-Der persönliche Fall-Link ist nach ZUG-05 zeitlich unbegrenzt gültig. Tokenprüfung, Fallbindung, geltende Rechte und ein allfälliger bewusster Widerruf oder Ersatz bestimmen die Linkberechtigung bei jeder Anfrage. Die Laufzeiten für Kontositzungen, Einmalcodes und MCP-Zugriffstokens werden separat festgelegt.
+Der persönliche Fall-Link ist nach ZUG-05 zeitlich unbegrenzt gültig. PropertyFlow prüft bei jeder Anfrage, ob der Token dem Fall zugeordnet und weiterhin aktiv ist und ob er die angefragte Aktion erlaubt. Die Laufzeiten für Kontositzungen, Einmalcodes und MCP-Zugriffstokens werden separat festgelegt.
 
 Für Block 2 sind echte Tokenausgabe und echter E-Mail-Versand noch nicht erforderlich. Die Mock-Ansicht muss ihre Grenzen erkennen lassen und darf keinen produktiven Zugriffsschutz vortäuschen. Die tatsächliche Autorisierung und Integration folgen im Service-Block, Persistenz und Aufbewahrung im Persistenz-Block. Eine Überarbeitung akzeptierter Architekturentscheidungen benötigt weiterhin einen eigenen ADR-Entscheid.
 
@@ -277,7 +279,7 @@ Nach erfolgreicher Annahme öffnet der berechtigte einreichende Browser den Fall
 
 ### ZUG-AK-04
 
-Ein gültiger Link liefert die Fallansicht direkt unter derselben Token-URL aus, ohne Redirect und ohne erforderliche berechtigende Sitzung. Wiederholtes Öffnen, Neuladen und ein Aufruf ohne bestehende Cookies prüfen den Token erneut. Auch nach beliebigem zeitlichem Abstand oder längerer Inaktivität bleibt ein nicht widerrufener oder ersetzter Link gültig; eine zeitliche Ablauffrist wird nicht ausgewertet. Das Öffnen verbraucht den Token nicht und erzeugt keine fachlichen Änderungen, auch beim Abruf durch einen Linkscanner.
+Ein gültiger Link liefert die Fallansicht direkt unter derselben Token-URL aus, ohne Redirect und ohne erforderliche berechtigende Sitzung. Wiederholtes Öffnen, Neuladen und ein Aufruf ohne bestehende Cookies prüfen den Token erneut. Auch nach längerer Inaktivität öffnet der aktuelle Link die Fallansicht. Das Öffnen verbraucht den Token nicht und erzeugt keine fachlichen Änderungen, auch beim Abruf durch einen Linkscanner.
 
 ### ZUG-AK-05
 
@@ -285,7 +287,7 @@ Mit einer Berechtigung für Fall A können weder Fall B noch dessen Nachrichten 
 
 ### ZUG-AK-06
 
-Bewusster Widerruf und Ersatz sperren alle weiteren Zugriffe mit dem alten Token, auch aus bereits geöffneten Tabs oder mit vorhandenen Cookies. Ein gültiger Ersatzlink öffnet denselben Fall. Verzögerte Versandaufträge aktivieren den alten Zugang nicht wieder. Zeitablauf allein sperrt keinen Link. Der Zugriff auf einen gültigen Tokenlink hängt nicht von einer Fallsitzung ab.
+Ein erfolgreicher Ersatz aktiviert den neuen Link und sperrt gleichzeitig alle weiteren Zugriffe mit dem alten Token, auch aus bereits geöffneten Tabs oder mit vorhandenen Cookies. Der neue Link öffnet denselben Fall. Bei einem fehlgeschlagenen Commit bleibt der bisherige Link gültig. Verzögerte Versandaufträge verwenden den jeweils aktuellen Link. Der Zugriff auf einen gültigen Tokenlink hängt nicht von einer Fallsitzung ab.
 
 ### ZUG-AK-07
 
@@ -313,11 +315,13 @@ Nur die berechtigte Versandfunktion kann die Versandkopie entschlüsseln. Der Sc
 
 ### ZUG-AK-13
 
-Ein weitergeleiteter gültiger Link vermittelt dieselben Mieterrechte, ohne die Identität des Empfängers nachzuweisen. Interne Inhalte bleiben verborgen. Ein Widerruf beziehungsweise Ersatz sperrt den alten Zugang für alle Besitzer und für nachfolgende Versandversuche. Bereits ausgegebene Inhalte können nicht zurückgeholt werden.
+Ein weitergeleiteter gültiger Link vermittelt dieselben Mieterrechte, ohne die Identität des Empfängers nachzuweisen. Interne Inhalte bleiben verborgen. Der direkte Ersatz sperrt den alten Zugang für alle Besitzer. Bereits ausgegebene Inhalte können nicht zurückgeholt werden.
 
 ### ZUG-AK-14
 
 UI2 und UI3 geben Fall- und Memodaten nur an angemeldete Konten mit aktiver Mitarbeiterrolle aus. Zwei entsprechend berechtigte Mitarbeitende erhalten bei gleicher Such- und Filterauswahl dieselben Fälle und Trefferzahlen. Fehlende oder abgelaufene Anmeldung sowie ein Mieterkonto oder eine entzogene Rolle verhindern auch bei direkten Lese- und Schreibaufrufen den Mitarbeiterzugriff. Eine erfolgreiche Änderung ist der persönlichen Mitarbeiter-ID zugeordnet. Fachliche Schreibsperren und der Vorrang manueller Dringlichkeit gelten auch für Mitarbeitende.
+
+Ein Fall mit ausstehendem Prozessstart und ein bereits gestarteter Fall bei unerreichbarem Camunda bleiben für berechtigte Mitarbeitende lesbar. In beiden Situationen weist PropertyFlow auch direkte Schreibaufrufe für die Fallbearbeitung ab. Aufrufe mit frei gewähltem Zielstatus weist der Dienst unabhängig vom Prozessstand ab.
 
 ### ZUG-AK-15
 

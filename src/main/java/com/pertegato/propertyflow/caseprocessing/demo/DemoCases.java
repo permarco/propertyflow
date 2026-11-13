@@ -1,5 +1,6 @@
 package com.pertegato.propertyflow.caseprocessing.demo;
 
+import com.pertegato.propertyflow.intake.contract.CaseDescription;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -29,6 +30,10 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 @Service
 @Profile("frontend-demo")
 public class DemoCases {
+    static final int TENANT_MESSAGE_MAX_LENGTH = 2000;
+    private static final int STAFF_MESSAGE_MAX_LENGTH = 5000;
+    private static final String TENANT_MESSAGE_TOO_LONG = "Die Nachricht darf höchstens 2’000 Zeichen enthalten.";
+
     public static final List<String> URGENCIES = List.of("Noch nicht bewertet", "Kritisch", "Hoch", "Normal", "Niedrig");
     public static final List<String> STATUSES = List.of("Eingegangen", "In Abklärung", "Wartet auf Mieterantwort",
             "Mitarbeiterprüfung erforderlich", "In Bearbeitung", "Wartet auf externe Rückmeldung", "Wartet auf Wiedervorlage");
@@ -206,6 +211,7 @@ public class DemoCases {
     public synchronized String create(String submissionScope, String title, String unit, String email, String description, String operation) {
         required(submissionScope, 200);
         required(operation, 80);
+        description = CaseDescription.normalizeLineEndings(description);
         SubmissionKey key = new SubmissionKey(submissionScope, operation);
         CreationRequest request = new CreationRequest(title, unit, email, description);
         Submission previous = submissions.get(key);
@@ -218,7 +224,7 @@ public class DemoCases {
         title = required(title, 150);
         unit = required(unit, 200);
         email = required(email, 254);
-        description = required(description, 5000);
+        description = required(description, CaseDescription.MAX_LENGTH);
         if (!email.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+")) {
             throw new ResponseStatusException(BAD_REQUEST, "Bitte eine gültige E-Mail-Adresse eingeben.");
         }
@@ -251,6 +257,9 @@ public class DemoCases {
         if (tenant && (internal || answer)) {
             throw new ResponseStatusException(BAD_REQUEST);
         }
+        if (tenant) {
+            text = CaseDescription.normalizeLineEndings(text);
+        }
         MessageRequest request = new MessageRequest(text, internal, answer, tenant);
         MessageRequest previous = c.messageRequests.get(operation);
         if (previous != null) {
@@ -261,7 +270,10 @@ public class DemoCases {
             return;
         }
         active(c);
-        text = required(text, 5000);
+        if (tenant && text != null && text.length() > TENANT_MESSAGE_MAX_LENGTH) {
+            throw new ResponseStatusException(BAD_REQUEST, TENANT_MESSAGE_TOO_LONG);
+        }
+        text = required(text, tenant ? TENANT_MESSAGE_MAX_LENGTH : STAFF_MESSAGE_MAX_LENGTH);
         c.entries.add(entry(tenant ? "Mieter" : "Immobilienverwaltung", text, Instant.now(), internal, false, !internal && answer, ""));
         if (tenant) {
             c.contact = Instant.now();

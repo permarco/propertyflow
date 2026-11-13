@@ -60,13 +60,14 @@ Testimplementierungen oder Mocks ersetzbar.
 
 ### NFR-03 – Zuverlässigkeit / Robustheit
 
-Ein Mieteranliegen darf nicht verloren gehen oder unbearbeitbar werden,
-nur weil eine KI-, RAG- oder andere externe Komponente nicht verfügbar ist.
+Ein Mieteranliegen muss bei einem vorübergehenden Ausfall von Camunda,
+KI, Retrieval oder E-Mail dauerhaft angenommen werden können. Die
+Verfügbarkeit der Fallbearbeitung hängt von Camunda ab.
 
 **Prüfkriterium:** Ein Anliegen wird persistent gespeichert, bevor eine
-KI-Analyse durchgeführt wird. Ist KI oder RAG nicht verfügbar, bleibt der
-Fall für die manuelle Bearbeitung verfügbar und der Analysezustand wird
-entsprechend gekennzeichnet.
+KI-Analyse durchgeführt wird. Ist KI oder RAG nicht verfügbar, kann der
+laufende Camunda-Prozess eine Mitarbeiterprüfung veranlassen und der
+Analysezustand wird entsprechend gekennzeichnet.
 
 
 ### NFR-04 – Nachvollziehbarkeit / Auditierbarkeit
@@ -113,7 +114,8 @@ Fallbearbeitung.
 - Der Ausfall von KI oder RAG darf die Erfassung eines Anliegens nicht
   verhindern.
 - Die Kernfunktionen zur manuellen Fallbearbeitung sind während der
-  definierten Betriebszeit zu mindestens 99,5 % verfügbar.
+  definierten Betriebszeit zu mindestens 99,5 % verfügbar. Die Messung
+  umfasst die für die Fallbearbeitung erforderliche Camunda-Anbindung.
 
 
 ### NFR-08 – Benutzerfreundlichkeit
@@ -280,8 +282,10 @@ Mieterstammdatensystem und Retrieval-Infrastruktur werden gekapselt und
 dürfen nicht direkt mit der fachlichen Kernlogik vermischt werden.
 
 Der Ausfall einer unterstützenden KI- oder Retrieval-Komponente darf den
-Kernprozess zur Erfassung und manuellen Bearbeitung eines Mieteranliegens
-nicht verhindern.
+Kernprozess zur Erfassung eines Mieteranliegens nicht verhindern.
+Bei verfügbarem Camunda kann der Prozess an Mitarbeitende übergeben.
+Die [Prozessführung und das Verhalten bei Ausfall](ADR-002-camunda8-workflow-orchestrierung.md#entscheidung)
+regelt ADR-002.
 
 ### Interne Modulstruktur
 
@@ -310,18 +314,18 @@ flowchart LR
     TRIAGE_ADAPTER -->|"SS-005"| LLM
     TEXT_ADAPTER -.->|"SS-005"| LLM
 
-    classDef module fill:#006fbb,stroke:#005a99,color:#fff
-    classDef integration fill:#dbeaf7,stroke:#6d8eae,color:#172033
+    classDef module fill:#164e73,stroke:#60a5fa,color:#ffffff
+    classDef integration fill:#334155,stroke:#6d8eae,color:#ffffff
     class TRIAGE,FORMULIERUNG module
     class TRIAGE_ADAPTER,TEXT_ADAPTER,LLM integration
-    style PF stroke:#006fbb,stroke-width:2px,color:#172033
+    style PF fill:#1e293b,stroke:#006fbb,stroke-width:2px,color:#ffffff
 ```
 
 `AnalysisModel` ist der interne Java-Port für die Triage. Der Modelladapter
 übersetzt den Aufruf in eine Anfrage über `SS-005`. Die durchgezogene Verbindung
 zur Triage wurde als Prototyp mit lokalem Ollama erprobt. Die Einbindung in den
 Fallprozess steht aus.
-[Triage-Vertrag](../../ai-usage/ki-service-vertrag.md) · [Schnittstelle SS-005](../c4-context.md#schnittstellen-an-der-systemgrenze)
+[Triage-Vertrag](../../ai-usage/ki-service-vertrag.md) · [Schnittstelle SS-005](../c4-2-container.md#schnittstellen-in-der-anwendung)
 
 Die geplante KI-Formulierung kann denselben Modellserver nutzen. Sie erhält
 einen eigenen Vertrag für den Textvorschlag sowie einen eigenen Prompt und

@@ -25,9 +25,9 @@ end
 
 MIETER --- UC
 UC --- MAIL
-classDef participant fill:#f2f8fc,stroke:#334155,color:#172033
-classDef goal fill:#dbeaf7,stroke:#6d8eae,color:#172033
-style PF stroke:#006fbb,stroke-width:2px,color:#172033
+classDef participant fill:#1e293b,stroke:#94a3b8,color:#ffffff
+classDef goal fill:#334155,stroke:#6d8eae,color:#ffffff
+style PF fill:#1e293b,stroke:#006fbb,stroke-width:2px,color:#ffffff
 ```
 
 ## Preconditions
@@ -42,8 +42,8 @@ style PF stroke:#006fbb,stroke-width:2px,color:#172033
 3. Die Mieterin oder der Mieter erfasst Betreff, Beschreibung und Objekt-/Wohnungsreferenz; ohne Anmeldung zusätzlich die E-Mail-Adresse. Für die Einreichung aus einem verifizierten Mieterkonto gilt A6.
 4. Die Mieterin oder der Mieter sendet das Formular ab.
 5. Das System prüft die Angaben serverseitig und behandelt Wiederholungen gemäss FALL-03.
-6. Das System nimmt das Anliegen dauerhaft gemäss FALL-02 an und vergibt eine Case-ID. Die zuverlässige Übergabe an Camunda und die Bestätigungsbenachrichtigung werden veranlasst.
-7. Das System bestätigt die Speicherung und öffnet unmittelbar die aktive Fallansicht mit Case-ID; das Öffnen der E-Mail ist dafür nicht erforderlich.
+6. PropertyFlow speichert das Anliegen gemäss FALL-02 mit einer Case-ID und dem Status «Eingegangen». Mit der Speicherung werden der Prozessstart und die Bestätigungsbenachrichtigung zuverlässig veranlasst.
+7. Nach bestätigter Speicherung öffnet sich die persönliche Fallansicht mit der Case-ID und den gespeicherten Angaben. PropertyFlow übergibt den Startauftrag asynchron zur Einreichung an Camunda. Camunda steuert danach die Statuswechsel im Fallprozess gemäss [FALL-06](../specifications/fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow).
 8. Der persönliche Fall-Link mit ausschliesslich einem geheimen Token als Zugangswert wird zusätzlich per E-Mail versendet. PropertyFlow ordnet den Token serverseitig dem Fall zu; die lesbare Case-ID bleibt in der Ansicht. Der Versandzustand ist vom fachlichen Annahmeerfolg getrennt. Auslöser, Inhalt und Fehlerbehandlung folgen [Benachrichtigungen und Zustellung](../specifications/benachrichtigungen-und-zustellung.md).
 
 ### Sequenzdiagramm
@@ -66,17 +66,27 @@ sequenceDiagram
     participant PF as PropertyFlow
     participant DB as Datenbank
     participant C as Camunda
+    participant W as Job Worker in PropertyFlow
 
     M->>B: Anliegen absenden
     B->>PF: POST mit Absende-ID
     PF->>PF: Eingaben prüfen
-    PF->>DB: Fall und Startauftrag<br/>gemeinsam speichern
+    PF->>DB: Fall als «Eingegangen»<br/>mit Startauftrag speichern
     DB-->>PF: Speicherung bestätigt
     par Rückmeldung an den Mieter
         PF-->>B: Fallannahme bestätigen
-        B-->>M: Persönliche Fallansicht<br/>mit Case-ID öffnen
-    and Prozessstart im Hintergrund
+        B-->>M: Persönliche Fallansicht mit Case-ID<br/>und gespeicherten Angaben öffnen
+    and Asynchroner Prozessstart
         PF->>C: Fallprozess mit Case-ID starten
+        opt Statuswechsel im Fallprozess
+            W->>C: Job übernehmen
+            C-->>W: Auftrag zum Statuswechsel
+            W->>PF: Zuständigen Fachdienst aufrufen
+            PF->>DB: Geprüften Fallstatus speichern
+            DB-->>PF: Speicherung bestätigt
+            PF-->>W: Ergebnis melden
+            W->>C: Jobabschluss melden
+        end
     end
 ```
 
@@ -110,15 +120,15 @@ sequenceDiagram
 **Trigger:** Der Fall ist gespeichert, aber Camunda-Prozessstart, Mailversand oder KI-Verarbeitung können vorübergehend nicht abgeschlossen werden.
 
 1. Die Annahmebestätigung und Case-ID bleiben gültig.
-2. Technische Folgeaufträge werden gemäss dem Integrationsvertrag wiederholt oder zur Bearbeitung sichtbar gemacht.
-3. Der Fall bleibt nach FALL-06 aktiv und für manuelle Bearbeitung zugänglich. Die Oberfläche zeigt nur den jeweils passenden fachlichen oder Versandhinweis.
+2. Ist Camunda beim Prozessstart nicht erreichbar, holt PropertyFlow den Start im Hintergrund nach. Der neue Fall bleibt bis zum ersten durch Camunda veranlassten Übergang auf «Eingegangen». Andere ausstehende Folgeaufträge werden gemäss dem Integrationsvertrag wiederholt oder zur Bearbeitung sichtbar gemacht.
+3. Der Fall bleibt nach FALL-06 aktiv und für Berechtigte lesbar. Vor dem Prozessstart und bei nicht verfügbarem Camunda sind Bearbeitungsaktionen für Mitarbeitende gesperrt. Bei verfügbarem Camunda kann der Prozess bei einem fachlichen Prüfgrund eine Mitarbeiteraufgabe bereitstellen.
 
 ### A5: Objektzuordnung noch unklar
 
 **Trigger:** Die eingegebene Objekt-/Wohnungsreferenz kann noch nicht eindeutig den Stammdaten zugeordnet werden.
 
 1. Das gültige Anliegen wird gemäss FALL-04 angenommen.
-2. Der aktive Fall erhält «Mitarbeiterprüfung erforderlich» und den Hinweis «Zuordnung offen» gemäss FALL-05. Die Ursprungseingabe bleibt erhalten.
+2. Camunda veranlasst nach Prozessstart «Mitarbeiterprüfung erforderlich» mit dem Hinweis «Zuordnung offen» gemäss FALL-05. Die Ursprungseingabe bleibt erhalten.
 
 ### A6: Einreichung aus einem verifizierten Mieterkonto
 

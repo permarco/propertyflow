@@ -1,26 +1,25 @@
 # C4 Level 2 – Containeransicht
 
-Die Containeransicht zeigt die Zielarchitektur innerhalb der
-[PropertyFlow-Systemgrenze](c4-context.md). Die Spring-Boot-Anwendung rendert
-die Web-Oberfläche mit Thymeleaf. Der Camunda-Client, die Job Worker und der
-geplante MCP-Endpunkt gehören zu dieser Anwendung. PostgreSQL speichert die
-fachlichen Daten von PropertyFlow.
+Die Containeransicht zeigt, wie sich das System aus der
+[Kontextansicht](c4-1-context.md) zur Laufzeit aufteilt. Die
+**Spring-Boot-Anwendung** verarbeitet Anfragen und rendert die Web-Oberfläche
+mit Thymeleaf. **PostgreSQL** speichert im Zielbetrieb die Fachdaten und
+Folgeaufträge. Browser und MCP-Client verbinden sich mit der Anwendung.
+Die [Komponentenansicht](c4-3-components.md) zeigt die Module und Adapter
+innerhalb der Spring-Boot-Anwendung.
 
-Durchgezogene Pfeile zeigen Verbindungen der lokalen Demo. Gestrichelte
-Pfeile zeigen geplante Anbindungen. Der Doppelpfeil bei `SS-003` zeigt den
-Austausch von Prozessaufträgen und Jobmeldungen.
+Durchgezogene Linien zeigen in der lokalen Demo genutzte Verbindungen.
+Gestrichelte Linien zeigen geplante Anbindungen. Der Doppelpfeil bei
+`SS-003` zeigt den Austausch von Prozessaufträgen und Jobmeldungen.
 
 ```mermaid
-flowchart LR
-    MIETER(["Mieterinnen<br/>und Mieter"])
-    VERWALTUNG(["Mitarbeitende<br/>der Verwaltung"])
-    WEB["Browser<br/>HTML und JavaScript"]
+flowchart TB
+    WEB["Browser<br/>Webzugang"]
     CHAT["LLM-Chat<br/>mit MCP-Client"]
 
     subgraph PF["Systemgrenze · PropertyFlow"]
-        direction TB
-        APP["PropertyFlow-Anwendung<br/>Spring Boot · Thymeleaf<br/>Fachmodule · Job Worker<br/>MCP-Endpunkt geplant"]
-        DB[("Fachdatenbank<br/>PostgreSQL")]
+        APP["Anwendung<br/>Spring Boot und Thymeleaf<br/>Anfragen und Fallbearbeitung"]
+        DB[("Fachdatenbank<br/>PostgreSQL<br/>Fälle, Konten und Folgeaufträge")]
 
         APP -.->|"JDBC"| DB
     end
@@ -30,32 +29,26 @@ flowchart LR
     MODELL["LLM-Anbieter<br/>für PropertyFlow"]
     STAMMDATEN["Immobilienverwaltung<br/>Mieterstammdaten"]
 
-    MIETER --> WEB
-    VERWALTUNG --> WEB
-    MIETER -.-> CHAT
-    VERWALTUNG -.-> CHAT
-
     WEB -->|"SS-001"| APP
-    APP -->|"SS-002"| MAIL
-    APP <-.->|"SS-003"| CAMUNDA
     CHAT -.->|"SS-004"| APP
-    APP -.->|"SS-005"| MODELL
-    APP -.->|"SS-006"| STAMMDATEN
+    APP -->|"SS-002 · E-Mails"| MAIL
+    APP <-.->|"SS-003"| CAMUNDA
+    APP -.->|"SS-005 · Modellaufruf"| MODELL
+    APP -.->|"SS-006 · Stammdaten"| STAMMDATEN
 
-    classDef person fill:#f2f8fc,stroke:#8292a8,color:#172033
-    classDef system fill:#dbeaf7,stroke:#6d8eae,color:#172033
-    classDef propertyflow fill:#006fbb,stroke:#005a99,color:#fff
-    class MIETER,VERWALTUNG person
-    class WEB,CHAT,MAIL,CAMUNDA,MODELL,STAMMDATEN system
-    class APP propertyflow
-    class DB system
-    style PF stroke:#006fbb,stroke-width:2px,color:#172033
+    classDef external fill:#1e293b,stroke:#8292a8,color:#ffffff
+    classDef container fill:#164e73,stroke:#60a5fa,color:#ffffff
+    class WEB,CHAT,MAIL,CAMUNDA,MODELL,STAMMDATEN external
+    class APP,DB container
+    style PF fill:#1e293b,stroke:#006fbb,stroke-width:2px,color:#ffffff
 ```
 
 ## Schnittstellen in der Anwendung
 
-Die Kennungen und der Umsetzungsstand stehen in der
-[Schnittstellenliste des Systemkontexts](c4-context.md#schnittstellen-an-der-systemgrenze).
+Die Tabelle ordnet die Schnittstellen den Teilen der Anwendung zu. Die
+[Schnittstellenübersicht](schnittstellenentwurf-block-3.md#schnittstellenübersicht)
+führt den Stand der Verträge. Die [C4-Komponentenansicht](c4-3-components.md)
+zeigt die Kommunikationswege innerhalb der Anwendung.
 
 | ID | Zuständiger Teil der PropertyFlow-Anwendung | Aufgabe |
 | --- | --- | --- |
@@ -68,12 +61,15 @@ Die Kennungen und der Umsetzungsstand stehen in der
 
 ## Fallannahme und Erstbewertung
 
-1. Der Browser reicht das Anliegen über `SS-001` ein. Intake speichert Fall und
-   Prozessstartauftrag gemeinsam in PostgreSQL. Der Browser erhält die
-   Bestätigung mit der Case-ID nach dem Commit.
+1. Der Browser reicht das Anliegen über `SS-001` ein. PropertyFlow speichert
+   Fall und Prozessstartauftrag gemeinsam in PostgreSQL. Der Browser erhält die
+   Bestätigung mit der Case-ID nach dem Commit. Die interne Aufteilung zeigt
+   die [Komponentenansicht](c4-3-components.md#kommunikation-in-propertyflow).
 2. PropertyFlow übergibt den gespeicherten Startauftrag im Hintergrund über
    `SS-003` an Camunda. Bei einem Camunda-Ausfall bleibt der Auftrag in
    PropertyFlow ausstehend und kann nach dem Wiederanlauf übergeben werden.
+   Neue Fälle bleiben auf «Eingegangen». Mitarbeitende können Fälle lesen.
+   Bearbeitungsaktionen setzen verfügbare Prozesssteuerung voraus.
 3. Camunda stellt den Job zur Erstbewertung bereit. Der Worker in der
    PropertyFlow-Anwendung lädt die erforderlichen Daten über die Case-ID und
    ruft Triage intern auf. PropertyFlow speichert das Ergebnis. Der Worker
@@ -83,8 +79,9 @@ Die Kennungen und der Umsetzungsstand stehen in der
 
 PostgreSQL ist als führender Speicher für Fälle, Konten, Verlauf, Audit und
 Folgeaufträge vorgesehen. Camunda verwaltet den technischen Prozesszustand
-mit Jobs und Timern. Für Empfehlungen ist eine Wissensbasis vorgesehen. Die
-Speichertechnik und ihr Deployment sind offen.
+mit Jobs und Timern und veranlasst fachliche Statuswechsel. PropertyFlow
+speichert die bestätigten Übergänge. Für die vorgesehene Wissensbasis bleiben
+Speichertechnik und Deployment offen.
 [Modulstruktur](module-structure.md#externe-integrationen) · [ADR-002](adr/ADR-002-camunda8-workflow-orchestrierung.md#verantwortungsgrenzen)
 
 Die lokale Demo hält Fälle und Konten im Arbeitsspeicher und versendet

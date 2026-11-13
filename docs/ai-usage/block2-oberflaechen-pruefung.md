@@ -506,7 +506,7 @@ ist damit nicht verbunden. Anwendungscode wurde für diesen Audit nicht geänder
 | [Architektur](../architecture/adr/ADR-003-praesentationsschicht.md), C4, Modulstruktur | Spring Boot, Thymeleaf-SSR und gezieltes JavaScript entsprechen der Präsentationsentscheidung. Der Adapter unter caseprocessing/demo ist keine fertige produktive Modul-/Workflow-Implementierung. |
 | [Annahme, FALL-01–04](../specifications/fallverwaltung.md#fall-01-fallidentität-und-erfassungskanal), UC-001, UI1 | Pflichtfelder, serverseitige Prüfung, Ursprungsdaten und Wiederholungsschutz vorhanden; dauerhafte Speicherung und Prozessstart bewusst nicht enthalten. Zuordnungsvertrag widersprüchlich: D01. |
 | [Status, FALL-05–07](../specifications/fallverwaltung.md#fall-05-fachlicher-lebenszyklus), UC-003, UI3 | Aktive Status, separate Abschluss-/Wiedereröffnungsaktion, Versionsprüfung und optionale interne Begründung vorhanden. Prüfgrund-/Statusmodell nicht vollständig konsistent: F01, F03. |
-| [Wiedervorlage, FALL-11](../specifications/fallverwaltung.md#fall-11-wiedervorlage-und-parallele-nachrichtenverarbeitung) | Setzen, Ändern und Löschen im Speicher vorhanden; Timer und automatische Neubewertung bewusst offen. Änderungsnachweis beim Löschen unvollständig: F04. |
+| [Wiedervorlage, FALL-11](../specifications/fallverwaltung.md#fall-11-wiedervorlage) | Setzen, Ändern und Löschen im Speicher vorhanden; Timer und automatische Neubewertung bewusst offen. Änderungsnachweis beim Löschen unvollständig: F04. |
 | [Kommunikation, KOM-01–04](../specifications/fallkommunikation.md), UI1/UI3 | Interne Einträge und Begründungen werden aus Mietersicht entfernt; sichere Textausgabe und serverseitige Abschlusssperre vorhanden. Historischer Antwortbedarf wird überschrieben: F02. |
 | [Dringlichkeit, DRING-01–08](../specifications/dringlichkeitsbewertung.md) | Stufen/Farben, manuelle Änderung, Quelle, Kreise und Abschlusssperre vorhanden; echte Analyse fehlt vereinbarungsgemäss. Ereignisse bei unveränderter Stufe: F05. |
 | [Liste, UC-002](../use_cases/UC-002-mieteranliegen-anzeigen.md), UI2 | UND-Teilwortsuche, Sonderzeichennormalisierung, interne Memos, Filter, 50er-Seiten und Sortierung vorhanden. Navigation, Leseposition, Leer- und Fehlerzustände: F06–F09. |
@@ -540,7 +540,7 @@ Korrektur: ursprüngliche Anforderung unveränderlich halten, Erledigung/Aufhebu
 mit Bezug zur Rückfrage gesondert speichern.
 
 **F03 · P2 · Bereits berücksichtigte Prüfgründe blockieren spätere Fortsetzung.**
-[FALL-11](../specifications/fallverwaltung.md#fall-11-wiedervorlage-und-parallele-nachrichtenverarbeitung)
+[FALL-11](../specifications/fallverwaltung.md#fall-11-wiedervorlage)
 behandelt Wiedervorlage und deren Löschung als bewusste Entscheidungen.
 Im Gegensatz zum Statuszweig verändert followUp/clearFollowUp in DemoCases den
 review-Wert nicht. Danach benutzen message und clearAnswer dessen blosse

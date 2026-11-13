@@ -86,8 +86,8 @@ Wesentliche externe Systeme sind:
 Die detaillierte System- und Containerabgrenzung ist in den C4-Diagrammen
 dokumentiert:
 
-- [architecture/c4-context.md](architecture/c4-context.md)
-- [docs/architecture/c4-container.md](architecture/c4-container.md)
+- [architecture/c4-1-context.md](architecture/c4-1-context.md)
+- [docs/architecture/c4-2-container.md](architecture/c4-2-container.md)
 
 Daten- und Vertrauensgrenzen werden zusätzlich in der Evaluations- und
 Sicherheitsbasis konkretisiert:
@@ -189,7 +189,14 @@ Details:
 
 ### 6.4 Workflow-Orchestrierung
 
-- Camunda 8 wird für langlebige Bearbeitungsprozesse eingesetzt.
+- PropertyFlow speichert neue Anliegen als «Eingegangen» und startet den
+  Camunda-Fallprozess asynchron. Für anschliessende Statuswechsel ist
+  ausschliesslich Camunda zuständig. Mitarbeitende lösen nur Aktionen aus,
+  die der aktuelle Fallprozess freigibt. PropertyFlow prüft und speichert
+  den durch Camunda veranlassten fachlichen Übergang.
+- Vor Prozessstart und bei Camunda-Ausfall sind Fälle für berechtigte
+  Mitarbeitende lesbar. Fallbearbeitungsaktionen sind über Web und MCP
+  gesperrt. Details stehen in [FALL-06](specifications/fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow).
 - Camunda-Prozessvariablen enthalten nur die für die Orchestrierung
   notwendigen Daten.
 - Vollständige fachliche Objekte und unnötige personenbezogene Daten werden
@@ -257,8 +264,8 @@ Details:
   testbar sein.
 - Externe Abhängigkeiten sollen durch Testimplementierungen oder Mocks
   ersetzbar sein.
-- Ein Ausfall von KI oder RAG darf weder die Persistenz eines Anliegens noch
-  die manuelle Bearbeitung verhindern.
+- Bei einem Ausfall von KI oder RAG bleibt die Fallannahme verfügbar.
+  Der laufende Camunda-Prozess kann zur Mitarbeiterprüfung weiterleiten.
 
 ### 6.7 Fallkommunikation
 
@@ -292,12 +299,14 @@ bleiben zu konkretisieren. Use-Cases und Screens verweisen auf diese Quelle.
 Die optionale Wiedervorlage nach FALL-11 wird in UI3 in Tagen oder als Datum
 gesetzt und am Fall gespeichert. UI2 zeigt das Datum als zusätzliche, in
 beiden Richtungen sortierbare Spalte. In UI3 kann der Mitarbeiter den Termin
-im aktiven Fall jederzeit ändern oder löschen. Setzen und Ändern führen zu
-«Wartet auf Wiedervorlage», Löschen zu «In Bearbeitung». Camunda führt die
-Wartezeit als Timer im bestehenden Fallprozess. Neue Mieternachrichten werden
-parallel verarbeitet; neue Erkenntnisse können die Wiedervorlage vorziehen.
-Ohne früheren Handlungsbedarf bleibt der Termin bestehen. Bei Fälligkeit gilt
-«Mitarbeiterprüfung erforderlich»; ein Abschluss beendet die offene Wiedervorlage.
+ändern oder löschen, wenn der Fallprozess die Aktion freigibt. Setzen und
+Ändern führen zu «Wartet auf Wiedervorlage», manuelles Löschen zu «In Bearbeitung».
+Camunda führt die Wartezeit als Timer im bestehenden Fallprozess. Eine während
+der Wartezeit gespeicherte Mieternachricht hebt den Termin auf und führt sofort
+zu «Mitarbeiterprüfung erforderlich». Camunda wartet dabei weder auf den
+Termin noch auf die automatische Auswertung. Auch ein wirksamer Timerablauf
+führt zur Mitarbeiterprüfung. Ein Abschluss beendet die offene Wiedervorlage.
+[FALL-11](specifications/fallverwaltung.md#fall-11-wiedervorlage)
 
 ### 6.9 Fallzugriff und Sicherheit
 
@@ -311,7 +320,7 @@ nur den geheimen Token; PropertyFlow ermittelt den Fall serverseitig und
 zeigt ihn direkt unter derselben Token-URL an. Der Token wird bei jeder
 Lese- und Schreibanfrage geprüft; eine berechtigende Fallsitzung entfällt.
 Die lesbare Case-ID bleibt im Inhalt eine unveränderliche Referenz und
-gewährt allein keinen Zugriff. Rechte, Widerruf, Ersatz und Token-Schutz
+gewährt allein keinen Zugriff. Rechte, direkter Linkersatz und Token-Schutz
 werden dort gepflegt. Der persönliche Fall-Link hat keine zeitliche Ablauffrist;
 dies ist am 10.10.2026 bestätigt. Weitere technische Schutzparameter bleiben als
 Review-Vorschläge gekennzeichnet. Screens, Use-Cases und Services verweisen auf diese Quelle.
@@ -369,8 +378,9 @@ sein.
 ### Zuverlässigkeit und Robustheit
 
 Ein Mieteranliegen wird persistent gespeichert, bevor eine KI-Analyse
-durchgeführt wird. Der Ausfall von KI, RAG oder einer anderen externen
-Komponente darf die Erfassung und manuelle Weiterbearbeitung nicht verhindern.
+durchgeführt wird. Die Annahme bleibt bei Ausfall von Camunda, KI, Retrieval
+oder E-Mail verfügbar. Die Fallbearbeitung durch Mitarbeitende setzt
+verfügbare Prozesssteuerung voraus.
 
 ### Nachvollziehbarkeit und Auditierbarkeit
 

@@ -1,4 +1,4 @@
-// UI1 AK-02: run against frontend-demo (default port 8082).
+// UI1 AK-02: run against a disposable frontend-demo (default port 8082).
 // node --test src/test/browser/intake-validation.test.mjs
 import { before, after, test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -73,3 +73,30 @@ for (const scenario of scenarios) {
         }
     });
 }
+
+test('UI1: Mehrzeilige Beschreibung mit 2000 UTF-16-Codeeinheiten vollständig einreichen', async () => {
+    const context = await browser.newContext({ locale: 'de-CH' });
+    try {
+        const page = await context.newPage();
+        assert.equal((await page.goto(`${base}/mieter/fall`)).status(), 200);
+        const field = page.locator('#description');
+        assert.equal(await field.getAttribute('maxlength'), '2000');
+
+        const prefix = 'Die Heizung bleibt kalt.\n';
+        const suffix = 'Wasser tritt aus. 🚿';
+        const description = prefix + 'x'.repeat(2000 - prefix.length - suffix.length) + suffix;
+        for (const [id, value] of Object.entries({ ...valid, description })) {
+            await page.locator(`#${id}`).fill(value);
+        }
+        await page.keyboard.insertText('!');
+        assert.equal(await field.inputValue(), description);
+        assert.equal(await page.locator('#intake-form').evaluate(form => form.checkValidity()), true);
+
+        await page.getByRole('button', { name: 'Anliegen absenden' }).click();
+        await page.waitForURL('**/mieter/fall/zugang/*');
+        const storedDescription = await page.locator('#history article').first().locator('p').first().textContent();
+        assert.equal(storedDescription, description);
+    } finally {
+        await context.close();
+    }
+});

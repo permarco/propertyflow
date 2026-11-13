@@ -39,15 +39,15 @@ MIETER --- KONTO
 MIETER --- LOGIN
 MIETER --- MCP
 MCP --- CLIENT
-classDef participant fill:#f2f8fc,stroke:#334155,color:#172033
-classDef goal fill:#dbeaf7,stroke:#6d8eae,color:#172033
-style PF stroke:#006fbb,stroke-width:2px,color:#172033
+classDef participant fill:#1e293b,stroke:#94a3b8,color:#ffffff
+classDef goal fill:#334155,stroke:#6d8eae,color:#ffffff
+style PF fill:#1e293b,stroke:#006fbb,stroke-width:2px,color:#ffffff
 ```
 
 Mieter können ein Anliegen als Gast melden und ihren Fall über den persönlichen
 Link einsehen oder ergänzen. Der geplante MCP-Zugang setzt ein persönliches
-Konto und eine Delegation voraus. Welche Aktionen das erste MCP-Werkzeug
-anbietet, ist noch offen.
+Konto und eine Delegation voraus. Das erste Werkzeug für Mieter ist
+[«Fallstand abrufen»](UC-023-mcp-zugriff-delegieren.md#erstes-mcp-werkzeug-für-mieter--fallstand-abrufen).
 
 ### Immobilienbewirtschaftung
 
@@ -79,9 +79,9 @@ MITARBEITER --- MCP
 VERWALTUNG --- KONTEN
 ENTWURF --- MODELL
 MCP --- CLIENT
-classDef participant fill:#f2f8fc,stroke:#334155,color:#172033
-classDef goal fill:#dbeaf7,stroke:#6d8eae,color:#172033
-style PF stroke:#006fbb,stroke-width:2px,color:#172033
+classDef participant fill:#1e293b,stroke:#94a3b8,color:#ffffff
+classDef goal fill:#334155,stroke:#6d8eae,color:#ffffff
+style PF fill:#1e293b,stroke:#006fbb,stroke-width:2px,color:#ffffff
 ```
 
 Mitarbeitende können im geplanten MCP-Zugang den LLM-Chat mit PropertyFlow
@@ -114,9 +114,9 @@ ENTWURF --- MODELL
 DRINGLICHKEIT --- MODELL
 EMPFEHLUNG --- MODELL
 RUECKFRAGE --- MODELL
-classDef participant fill:#f2f8fc,stroke:#334155,color:#172033
-classDef goal fill:#dbeaf7,stroke:#6d8eae,color:#172033
-style PF stroke:#006fbb,stroke-width:2px,color:#172033
+classDef participant fill:#1e293b,stroke:#94a3b8,color:#ffffff
+classDef goal fill:#334155,stroke:#6d8eae,color:#ffffff
+style PF fill:#1e293b,stroke:#006fbb,stroke-width:2px,color:#ffffff
 ```
 
 Camunda veranlasst die Dringlichkeitsbewertung und die Empfehlung über Job
@@ -139,6 +139,8 @@ PropertyFlow-Funktionen auf. [UC-017](UC-017-mieterantwort-auswerten.md) ·
 
 ## Fallbearbeitung durch die Verwaltung
 
+Im Zielablauf gibt der führende Camunda-Fallprozess die zulässigen Mitarbeiteraktionen frei. Bei ausstehendem Prozessstart oder unerreichbarem Camunda bleiben die Fälle für Mitarbeitende lesbar. [FALL-06](../specifications/fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow)
+
 | Use Case | Zugang und Stand |
 | --- | --- |
 | [UC-002 · Mieteranliegen anzeigen](UC-002-mieteranliegen-anzeigen.md) | Mitarbeiterübersicht mit Suche, Filter und Sortierung in der Demo. |
@@ -146,8 +148,8 @@ PropertyFlow-Funktionen auf. [UC-017](UC-017-mieterantwort-auswerten.md) ·
 | [UC-004 · Externe Nachricht mit KI formulieren](UC-004-ki-analyse-durchfuehren.md) | Formulierung im Mitarbeiterdetail in der Demo simuliert. Modellanbindung geplant. |
 | [UC-010 · Externe Fallnachricht veröffentlichen](UC-010-externe-fallnachricht-veroeffentlichen.md) | Web in der Demo. Dauerhafte Speicherung und Folgeaufträge geplant. |
 | [UC-011 · Internes Memo erfassen](UC-011-internes-memo-erfassen.md) | Web in der Demo. Dauerhafte Speicherung und persönliche Zuordnung geplant. |
-| [UC-012 · Fall fachlich steuern](UC-012-fall-fachlich-steuern.md) | Status, manuelle Dringlichkeit und Objekt-/Wohnungszuordnung in der Demo. |
-| [UC-013 · Wiedervorlage verwalten](UC-013-wiedervorlage-verwalten.md) | Termin setzen, ändern und löschen in der Demo. Camunda-Timer geplant. |
+| [UC-012 · Fall fachlich steuern](UC-012-fall-fachlich-steuern.md) | Zielablauf über Camunda für «Bearbeitung fortsetzen», Dringlichkeit und Zuordnung. Die Demo enthält noch die direkte Statusauswahl. |
+| [UC-013 · Wiedervorlage verwalten](UC-013-wiedervorlage-verwalten.md) | Termin setzen, ändern und löschen in der Demo. Im Zielablauf beendet eine neue Mieternachricht die laufende Wiedervorlage und löst die sofortige Mitarbeiterprüfung aus. |
 | [UC-014 · Fall abschliessen](UC-014-fall-abschliessen.md) | Manueller Abschluss in der Demo. Die vereinbarten Systemabschlüsse sind geplant. |
 | [UC-015 · Fall wiedereröffnen](UC-015-fall-wiedereroeffnen.md) | Mitarbeiteraktion in der Demo. Technische Fortsetzung des Fallprozesses offen. |
 | [UC-027 · Kritische Fallentscheidung treffen](UC-027-kritische-fallentscheidung-treffen.md) | Menschliche Entscheidungsgrenzen vereinbart. Technischer Freigabevertrag offen. |
@@ -171,16 +173,16 @@ PropertyFlow-Funktionen auf. [UC-017](UC-017-mieterantwort-auswerten.md) ·
 | [UC-006 · Mitarbeiter anmelden](UC-006-mitarbeiter-anmelden.md) | E-Mail-Einmalcode in der Demo. |
 | [UC-007 · Mitarbeiterkonto anlegen](UC-007-mitarbeiterkonto-anlegen.md) | Kontoverwaltung und Ersteinrichtung im Zielablauf spezifiziert. |
 | [UC-022 · Mieter anmelden](UC-022-mieter-anmelden.md) | Anmeldung mit bestehendem Mieterkonto in der Demo. |
-| [UC-023 · MCP-Zugriff freigeben und widerrufen](UC-023-mcp-zugriff-delegieren.md) | Delegierter Zugriff im Zielablauf. Konkrete Tool-Verträge offen. |
-| [UC-024 · Persönlichen Fall-Link widerrufen oder ersetzen](UC-024-fall-link-widerrufen-oder-ersetzen.md) | Wirkung vereinbart. Sicherer Verwaltungsablauf offen. |
+| [UC-023 · MCP-Zugriff freigeben und widerrufen](UC-023-mcp-zugriff-delegieren.md) | Delegierter Zugriff und «Fallstand abrufen» im Zielablauf spezifiziert. |
+| [UC-024 · Persönlichen Fall-Link ersetzen](UC-024-fall-link-widerrufen-oder-ersetzen.md) | Direkter Ersatz vereinbart. Sicherer Verwaltungsablauf offen. |
 | [UC-025 · Fall-Kontaktadresse ändern](UC-025-fall-kontaktadresse-aendern.md) | Wirkung auf die Fallzuordnung vereinbart. Geprüfter Änderungsablauf offen. |
 | [UC-026 · Aus PropertyFlow abmelden](UC-026-abmelden.md) | Lokale Web-Abmeldung in der Demo. |
 | [UC-029 · Mitarbeiterzugriff entziehen](UC-029-mitarbeiterzugriff-entziehen.md) | Wirkung vereinbart. Verwaltungsablauf für Sperrung und Rollenentzug offen. |
 
 ## Bezug zur Architektur
 
-Der [Systemkontext](../architecture/c4-context.md) zeigt die Zugänge und
-Nachbarsysteme. Die [Containeransicht](../architecture/c4-container.md) zeigt
+Der [Systemkontext](../architecture/c4-1-context.md) zeigt die Zugänge und
+Nachbarsysteme. Die [Containeransicht](../architecture/c4-2-container.md) zeigt
 die Laufzeitgrenzen. Für die Komponentenansicht lässt sich je Ablauf ableiten,
 welcher Dienst aufgerufen wird, welche Daten er erhält, wer auf das Ergebnis
 wartet und wie Fehler behandelt werden.

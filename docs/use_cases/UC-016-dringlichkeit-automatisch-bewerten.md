@@ -22,9 +22,9 @@ end
 
 AKTEUR --- UC
 UC --- MODELL
-classDef participant fill:#f2f8fc,stroke:#334155,color:#172033
-classDef goal fill:#dbeaf7,stroke:#6d8eae,color:#172033
-style PF stroke:#006fbb,stroke-width:2px,color:#172033
+classDef participant fill:#1e293b,stroke:#94a3b8,color:#ffffff
+classDef goal fill:#334155,stroke:#6d8eae,color:#ffffff
+style PF fill:#1e293b,stroke:#006fbb,stroke-width:2px,color:#ffffff
 ```
 
 ## Preconditions
@@ -40,7 +40,7 @@ style PF stroke:#006fbb,stroke-width:2px,color:#172033
 
 ## Alternative Flows
 
-- **Analyse fehlgeschlagen.** Die bisherige wirksame Stufe bleibt bestehen. PropertyFlow hält den Prüfgrund fest und führt den aktiven Fall gemäss FALL-05 zur Mitarbeiterprüfung. Die manuelle Bearbeitung bleibt möglich.
+- **Analyse fehlgeschlagen.** Die bisherige wirksame Stufe bleibt bestehen. Camunda veranlasst für den aktiven Fall die Mitarbeiterprüfung gemäss FALL-05. PropertyFlow speichert den Prüfgrund und den veranlassten Status. Die Mitarbeiterbearbeitung setzt die passende Prozessaufgabe voraus.
 - **Manuelle Einstufung oder unveränderte Stufe.** Die wirksame Stufe bleibt erhalten. Der Bewertungsversuch bleibt intern nachvollziehbar.
 - **Wiederholung, Abschluss oder überholte Bewertung.** PropertyFlow prüft die Gültigkeit am aktuellen Fallstand. Wiederholte oder verspätete Ergebnisse aus der Bearbeitung vor dem letzten Abschluss erzeugen keine zusätzliche wirksame Änderung.
 
