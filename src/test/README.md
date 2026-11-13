@@ -156,11 +156,27 @@ Seitennavigation installiert, damit die echten Polling-Intervalle kontrolliert l
 
 - Browser-Testreihe: `target/frontend-quality/ui-tests.tap`
 - Konto-Screenshots: `target/account-review/`
-- Barrierefreiheit: `node src/test/browser/frontend-quality.mjs`
+- Barrierefreiheit (auch im regulären Testlauf): `node src/test/browser/run-ui-tests.mjs frontend-quality.test.mjs`
+- Separater Aufruf derselben Prüfung: `node src/test/browser/frontend-quality.mjs`
 - Performance: `node src/test/browser/frontend-performance.mjs`
 - Zugehörige Berichte: `target/frontend-quality/browser.json` und `performance.json`
 
 Die ergänzenden Skripte verwenden dieselben Einstellungen für Demo und Mailpit.
+`frontend-quality.test.mjs` wird vom normalen Browser-Teststarter automatisch
+gefunden. Die Prüfung umfasst 19 Ansichten und Zustände: Basisansichten,
+Anlage- und Loginfehler, Codeeingabe, leere und gefüllte Mieterkontoübersicht,
+Kontodetails, geöffneten Editor, Aktualisierungsdialog und Streaming-Zustände.
+Anlagefehler, Kontodetails und abgeschlossene KI-Ausgaben werden zusätzlich bei
+390 Pixel Breite geprüft. Die vorhandenen Prüfungen für Streaming-Abbruch,
+Tastaturbedienung und sichere Textausgabe bleiben enthalten.
+
+axe prüft die automatisierbaren Regeln mit den Tags `wcag2a`, `wcag2aa`,
+`wcag21a` und `wcag21aa`. Wie bisher lassen Verstösse mit Schweregrad `serious`
+oder `critical` den Test fehlschlagen. Alle gefundenen Verstösse sowie Hinweise
+auf nötige manuelle Prüfungen stehen in `browser.json`; dieser Bericht wird
+auch bei einem Testfehler geschrieben. Die Formularfehlerprüfung schützt unter
+anderem den Kontrast der Korrekturlinks auf dem roten Fehlerhintergrund.
+
 Methodik und frühere Ergebnisse stehen im
 [Block-2-Prüfprotokoll](../../docs/ai-usage/block2-oberflaechen-pruefung.md).
 
