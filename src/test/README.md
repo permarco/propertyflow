@@ -16,6 +16,43 @@ Wenn Mockito sich unter deinem JDK nicht selbst anhängen kann, kann die lokal
 aufgelöste `mockito-core`-JAR als `-javaagent` über Maven `-DargLine` übergeben
 werden. Version und Pfad müssen zur tatsächlich aufgelösten Dependency passen.
 
+## CSRF-Matrix und SMTP-Adapter
+
+Die zusätzlichen Sicherheits- und Mailprüfungen sind Teil von `mvnw.cmd test`.
+Gezielter Lauf:
+
+```powershell
+.\mvnw.cmd test '-Dtest=CsrfWebTest,SmtpDeliveryTest,StaffAccessWebTest,LoginRecoveryWebTest,StaffLoginTest,StaffLoginQueueTest,TenantRegistrationTest'
+```
+
+`CsrfWebTest` umfasst 62 Prüfungen: fehlende, falsche und aus einer anderen
+Sitzung übernommene CSRF-Tokens bei Fallanlage (Gast, Mieter, Mitarbeiter),
+Nachrichten (Token, Mieterkonto, Mitarbeiter), allen acht Mitarbeiteraktionen,
+Codeanforderung und Codeprüfung bei Anmeldung/Registrierung sowie Abmeldung
+beider Kontorollen. Abgewiesene Falloperationen lassen den gesamten bisherigen
+Fallstand unverändert; ein korrigierter Versuch mit derselben Operationskennung
+und geändertem Inhalt gelingt. Die Anmeldung/Registrierung wird zusätzlich mit
+einem anschliessenden Schreibversuch mit dem alten CSRF-Token geprüft.
+Controller, Templates und Dienste sind echt; der Codeversand ist hier durch
+eine synchrone Test-Mailbox ersetzt.
+
+`SmtpDeliveryTest` umfasst zehn Prüfungen mit dem produktiven SMTP-Adapter,
+Thymeleaf-Mailtemplate und JavaMailSender. Ein lokaler SMTP-Testpartner auf einem
+dynamischen Loopback-Port prüft Envelope, Empfänger/Absender, Betreff sowie
+UTF-8-Text und HTML in `multipart/alternative`. Er erzeugt echte TCP-Verbindungsablehnung,
+einen Lese-Timeout und eine SMTP-550-Ablehnung nach der Datenübertragung.
+Für Anmeldung und Registrierung werden danach ungültiger fehlgeschlagener Code,
+fehlende Anmeldung bzw. Kontoaktivierung, weiterhin wirksames Versandlimit und
+erfolgreicher Neuversand mit Codeprüfung über MVC geprüft.
+
+Die SMTP-Tests brauchen weder Docker noch Mailpit und verändern keinen vorhandenen
+Maildienst. Sie benötigen lokale Socket-Verbindungen. Für die Fehlerprüfung gelten
+500 ms Transport-Timeouts; die fachliche Minutenfrist wird mit einer Testuhr
+weitergeschaltet und der Versand synchron ausgeführt. Produktions-Executor und
+Queue bleiben durch `StaffLoginQueueTest` separat abgedeckt. TLS, SMTP-Authentifizierung,
+produktive Zustellbarkeit und fachliche Fallbenachrichtigungen sind nicht Gegenstand
+dieser Tests. Alle Test-Sockets werden am Ende geschlossen.
+
 ## Browser-Werkzeuge installieren
 
 Voraussetzungen: Java 23+, Node.js mit npm, Microsoft Edge und Docker Compose
