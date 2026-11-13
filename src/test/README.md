@@ -116,3 +116,40 @@ docker compose -f dev/compose.yaml -f dev/compose.test.yaml down
 
 Das entfernt ausschliesslich die Test-Compose-Umgebung und deren aufgefangene Mails.
 Das separate Entwicklungs-Mailpit und Camunda bleiben bestehen.
+
+## Ergänzte Backend- und Zugriffsprüfungen
+
+Die Regressionstests für die Backend-Testlückenanalyse vom 13.11.2026 liegen bei den
+jeweiligen Fähigkeiten:
+
+| Testklasse / Browserdatei | Abgedeckte Grenze |
+| --- | --- |
+| `DemoCasesConflictTest`, `operation-conflicts.test.mjs` | Identische Wiederholung und HTTP 409 bei geändertem Anlageinhalt bzw. geändertem Wert oder Grund für sämtliche Feldaktionen; ursprünglicher Zustand und Verlauf bleiben erhalten. |
+| `DemoCasesBoundaryTest` | Serverseitige Pflichtfelder und Längengrenzen; unveränderter Zustand nach Ablehnung und korrigierter Retry; Nachrichtenkonflikte für Text, Sichtbarkeit, Antwortbedarf und Absenderzugang; gleichzeitige Fallanlage und konkurrierende Änderungen mit gemeinsamer Startbarriere. |
+| `StaffLoginQueueTest` | Veralteter wartender Versandauftrag, Fehler einer älteren laufenden Zustellung, abgewiesene Queue, abgelaufener Auftrag und Adressobergrenze. Executor und Uhr sind kontrolliert; keine Wartezeiten für den fachlichen Zeitablauf. |
+| `TenantRegistrationTest` | Gleichzeitige Codeprüfung mit Startbarriere: genau ein erfolgreiches Ergebnis und ein aktiviertes Konto. |
+| `StaffAccessWebTest` | Isolation der Anlagekennung zwischen Konten und Gastsitzungen; Mitarbeiter-Nachrichtenendpoint für Mieter gesperrt; Tokenzugriff darf weder interne Nachrichten noch Antwortbedarf setzen; Kontozugriff benötigt Anmeldung; direkte HTTP-Eingabevalidierung. |
+| `remaining-interactions.test.mjs` | Token-Polling und verlorene Speicherantwort mit identischem Retry in einem Gastkontext ohne Mitarbeiterrechte; Mitarbeiterantworten aus einem getrennten Kontext. |
+| `ui-boundaries.test.mjs` | Gastkontext für Tokenzugriffsfehler und Versand ohne JavaScript; Mitarbeiter-Listennavigation in einem getrennten Kontext. |
+| `tenant-account.test.mjs` | Nachricht über die Kontoroute mit echtem, per OTP angemeldetem Mieterkonto; Mitarbeiterzugriff bleibt gesperrt. |
+
+Die Gast-Fixture prüft vor dem Test, dass ein Mitarbeiter-Lesezugriff HTTP 401 liefert.
+Konto- und Tokenzugriff werden dadurch nicht mit Mitarbeiterrechten verwechselt.
+Die vorhandenen Gast- und Token-Schreibrechte bleiben ausdrücklich erhalten.
+
+Diese Tests belegen weiterhin keine dauerhafte Speicherung, Camunda-Prozessübergabe,
+MCP-Autorisierung oder fachliche E-Mail-Zustellung. Der OTP-Queue-Test simuliert
+Versandfehler am Delivery-Port; er ist kein SMTP-Netzwerkausfalltest. Der Live-Ollama-Test
+bleibt ausdrücklich opt-in.
+
+### Wiederholungsvertrag der Demo
+
+Für Fallanlage, Nachrichten und Feldaktionen gilt: Gleiche Operationskennung im
+jeweiligen Kontext und unveränderte fachliche Eingaben wiederholen das erfolgreiche
+Ergebnis ohne zusätzlichen Schreibeffekt. Geänderter Inhalt führt zu HTTP 409.
+Verglichen werden die ursprünglichen Eingaben vor dem Kürzen äusserer Leerzeichen.
+Fallanlagen sind nach Konto bzw. Gastsitzung getrennt; Feldaktionen weiterhin nach Fall
+und Aktion. Die Version ist die Vorbedingung für eine neue Feldänderung und kein
+Inhaltsfeld eines bereits erfolgreichen Retries. Deshalb bleiben identische Retries
+auch nach weiteren Änderungen möglich. Ein abgewiesener erster Versuch verbraucht
+keine Kennung. Die Speicherung bleibt prozesslokal und geht beim Neustart verloren.

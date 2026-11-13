@@ -47,7 +47,7 @@ class DemoCasesTest {
         DemoCases cases = new DemoCases();
         assertThrows(ResponseStatusException.class, () -> cases.create("test-scope", " ", "Wohnung", "a@b.ch", "Test", "bad"));
         String token = cases.create("test-scope", "<script>alert(1)</script>", "Wohnung", "a@b.ch", "Test", "create");
-        assertEquals(token, cases.create("test-scope", "Anders", "Anders", "a@b.ch", "Anders", "create"));
+        assertEquals(token, cases.create("test-scope", "<script>alert(1)</script>", "Wohnung", "a@b.ch", "Test", "create"));
         assertEquals("<script>alert(1)</script>", cases.tenant(token).title());
         cases.message(null, token, "Zusatz", false, false, "extra");
         assertEquals("Test", cases.tenant(token).description());

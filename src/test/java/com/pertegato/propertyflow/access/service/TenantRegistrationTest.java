@@ -7,9 +7,11 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
@@ -83,10 +85,26 @@ class TenantRegistrationTest {
     void concurrentVerificationCreatesExactlyOneAccountAndSessionResult() throws Exception {
         login.requestRegistrationCode(EMAIL);
         String code = delivered.get();
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
         try (ExecutorService executor = Executors.newFixedThreadPool(2)) {
-            Future<Optional<UUID>> first = executor.submit(() -> login.verifyCode(EMAIL, code));
-            Future<Optional<UUID>> second = executor.submit(() -> login.verifyCode(EMAIL, code));
-            assertEquals(1, (first.get().isPresent() ? 1 : 0) + (second.get().isPresent() ? 1 : 0));
+            Future<Optional<UUID>> first = executor.submit(() -> {
+                ready.countDown();
+                assertTrue(start.await(5, TimeUnit.SECONDS));
+                return login.verifyCode(EMAIL, code);
+            });
+            Future<Optional<UUID>> second = executor.submit(() -> {
+                ready.countDown();
+                assertTrue(start.await(5, TimeUnit.SECONDS));
+                return login.verifyCode(EMAIL, code);
+            });
+            try {
+                assertTrue(ready.await(5, TimeUnit.SECONDS));
+            } finally {
+                start.countDown();
+            }
+            assertEquals(1, (first.get(5, TimeUnit.SECONDS).isPresent() ? 1 : 0)
+                    + (second.get(5, TimeUnit.SECONDS).isPresent() ? 1 : 0));
         }
         assertTrue(accounts.findActiveByEmail(EMAIL).orElseThrow().tenant());
     }
