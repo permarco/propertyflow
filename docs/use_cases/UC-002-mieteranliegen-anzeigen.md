@@ -11,10 +11,26 @@
 
 **Darstellung und Bedienung:** [Screen 02 – Mitarbeiter-Fallübersicht](../frontend/ansicht-02-mitarbeiter-falluebersicht.md) führt die vereinbarten Listenfunktionen und den technischen Wireframe. Die Umsetzung steht noch aus.
 
+## Use-Case-Diagramm
+
+```mermaid
+flowchart LR
+MITARBEITER["Mitarbeitende der Verwaltung"]:::participant
+
+subgraph PF["PropertyFlow"]
+    UC(["UC-002 · Mieteranliegen anzeigen"]):::goal
+end
+
+MITARBEITER --- UC
+classDef participant fill:#f2f8fc,stroke:#334155,color:#172033
+classDef goal fill:#dbeaf7,stroke:#6d8eae,color:#172033
+style PF stroke:#006fbb,stroke-width:2px,color:#172033
+```
+
 ## Preconditions
 
-- Die Mitarbeiterin oder der Mitarbeiter ist gemäss [UC-006](UC-006-mitarbeiter-anmelden.md) persönlich angemeldet und hat die Mitarbeiterrolle nach [[ZUG-04](../specifications/fallzugriff-und-sicherheit.md#zug-04-rechte-und-vertrauensgrenzen).
--]() Die Mitarbeiterrolle berechtigt in UI2 zur Sicht auf sämtliche Fälle und ihre internen Memos gemäss ZUG-04.
+- Die Mitarbeiterin oder der Mitarbeiter ist gemäss [UC-006](UC-006-mitarbeiter-anmelden.md) persönlich angemeldet und hat die Mitarbeiterrolle gemäss [ZUG-04 · Rollen und Zusatzrechte](../specifications/fallzugriff-und-sicherheit.md#rollen-und-zusatzrechte).
+- Die Mitarbeiterrolle berechtigt in UI2 gemäss [Zugriffsmatrix in ZUG-04](../specifications/fallzugriff-und-sicherheit.md#zug-04-rechte-und-vertrauensgrenzen) zur Sicht auf sämtliche Fälle und ihre internen Memos.
 - Im System können null, ein oder mehrere Fälle vorhanden sein.
 
 ## Main Success Scenario

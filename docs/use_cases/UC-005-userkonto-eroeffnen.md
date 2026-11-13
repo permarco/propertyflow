@@ -10,33 +10,26 @@
 
 **Fachliche Grundlage:** [ADR-005](../architecture/adr/ADR-005-zugriffsmodell.md) beschreibt Konto, Fallzuordnung und MCP-Zugriff. [ADR-004](../architecture/adr/ADR-004-tokenbasierter-mieterzugriff.md) regelt den persönlichen Fall-Link. Ein Anliegen kann gemäss [UC-001](UC-001-mieteranliegen-einreichen.md) ohne Konto eingereicht werden.
 
+Für bestehende Konten beschreiben [UC-022](UC-022-mieter-anmelden.md) die Anmeldung und [UC-023](UC-023-mcp-zugriff-delegieren.md) die MCP-Delegation.
+
 ## Use-Case-Diagramm
 
 ```mermaid
-flowchart TB
-    Mieter["Mieterin / Mieter"]
-    Client["MCP-Client"]
-    Mail["E-Mail-Dienst"]
+flowchart LR
+MIETER["Mieterin / Mieter"]:::participant
+MAIL["E-Mail-Dienst (System)"]:::participant
 
-    Mieter -->|"delegiert Zugriff"| Client
+subgraph PF["PropertyFlow"]
+    KONTO(["UC-005 · Userkonto eröffnen"]):::goal
+    VERIFIKATION(["E-Mail-Adresse verifizieren"]):::goal
+end
 
-    subgraph PropertyFlow["PropertyFlow"]
-        Erfassung(["UC-001 · Mieteranliegen erfassen"])
-        Ergaenzung(["Aktives Mieteranliegen ergänzen"])
-        Konto(["UC-005 · Userkonto eröffnen"])
-        Verifikation(["E-Mail-Adresse verifizieren"])
-        Falluebersicht(["Fälle zur verifizierten E-Mail-Adresse anzeigen"])
-    end
-
-    Mieter ---|"ohne Konto möglich"| Erfassung
-    Mieter ---|"per Fall-Link oder berechtigtem Konto"| Ergaenzung
-    Mieter --- Konto
-    Konto -.->|"beinhaltet"| Verifikation
-    Verifikation ---|"Verifikationsmail"| Mail
-    Konto -.->|"nach erfolgreicher Verifikation"| Falluebersicht
-    Mieter ---|"im angemeldeten Konto"| Falluebersicht
-    Client ---|"mit delegiertem Leserecht"| Falluebersicht
-    Client ---|"mit delegiertem Schreibrecht"| Ergaenzung
+MIETER --- KONTO
+KONTO -.->|"include"| VERIFIKATION
+VERIFIKATION --- MAIL
+classDef participant fill:#f2f8fc,stroke:#334155,color:#172033
+classDef goal fill:#dbeaf7,stroke:#6d8eae,color:#172033
+style PF stroke:#006fbb,stroke-width:2px,color:#172033
 ```
 
 ## Flussdiagramm · Anmeldung für Web und MCP
@@ -78,7 +71,7 @@ flowchart TD
 ## Main Success Scenario
 
 1. Die Mieterin oder der Mieter wählt «Userkonto eröffnen» und gibt die E-Mail-Adresse ein.
-2. PropertyFlow prüft die Eingabe serverseitig und sendet einen einmal verwendbaren, zeitlich begrenzten Verifikationsnachweis an diese Adresse. Die lokale Umsetzung verwendet einen E-Mail-Einmalcode.
+2. PropertyFlow prüft die Eingabe serverseitig und sendet den Verifikationsnachweis an diese Adresse gemäss [ZUG-04 · E-Mail-Einmalcode](../specifications/fallzugriff-und-sicherheit.md#e-mail-einmalcode-für-registrierung-und-anmeldung).
 3. Die Mieterin oder der Mieter bestätigt den Nachweis. PropertyFlow verifiziert die Adresse und aktiviert das Mieterkonto mit einer eindeutigen internen Benutzer-ID.
 4. PropertyFlow eröffnet den angemeldeten Zugang. Die Fallübersicht zeigt alle Fälle, deren aktuelle Kontaktadresse mit der verifizierten Konto-Adresse übereinstimmt. Das schliesst Fälle ein, die vor der Kontoeröffnung ohne Anmeldung erfasst wurden.
 
@@ -94,7 +87,7 @@ Die Oberfläche zeigt den passenden Hinweis und ermöglicht eine Korrektur oder 
 
 ### A3: Für die Adresse besteht bereits ein Konto
 
-PropertyFlow erstellt kein zweites Konto. Die Person kann das bestehende Konto über den vorgesehenen Anmeldeweg nutzen. Vor dem Nachweis der Postfachberechtigung legt die öffentliche Antwort weder den Kontostatus noch vorhandene Fälle offen.
+Es bleibt bei einem Mieterkonto für die Adresse. Die Person kann sich gemäss [UC-022](UC-022-mieter-anmelden.md) anmelden. Für die öffentliche Rückmeldung gelten die [gemeinsamen Einmalcode-Regeln](../specifications/fallzugriff-und-sicherheit.md#e-mail-einmalcode-für-registrierung-und-anmeldung).
 
 ## Postconditions
 
@@ -105,7 +98,7 @@ PropertyFlow erstellt kein zweites Konto. Die Person kann das bestehende Konto �
 ## Business Rules und Prüfkriterien
 
 - **UC-005-BR-001:** Die Fallzuordnung ergibt sich aus der verifizierten Konto-Adresse und der aktuellen Fall-Kontaktadresse. PropertyFlow prüft sie bei jedem Listen-, Detail- und Schreibzugriff im Web und über MCP. Eine vom Client angegebene Adresse kann die Zuordnung nicht ändern.
-- **UC-005-BR-002:** Das Konto erlaubt nur Mieteraktionen. Der veröffentlichte Fallverlauf bleibt lesbar. Eine externe Nachricht ist nur in einem aktiven Fall zulässig. Der MCP-Client erhält ausschliesslich die freigegebenen Aktionen.
+- **UC-005-BR-002:** Das Konto ist auf Mieteraktionen gemäss [ZUG-04 · Rollen und Zusatzrechte](../specifications/fallzugriff-und-sicherheit.md#rollen-und-zusatzrechte) beschränkt. Der veröffentlichte Fallverlauf bleibt lesbar. Eine externe Nachricht ist nur in einem aktiven Fall zulässig. Der MCP-Client erhält ausschliesslich die freigegebenen Aktionen.
 - **UC-005-AK-01:** Zwei Fälle mit Adresse A und einen Fall mit Adresse B ohne Anmeldung einreichen. Nach Verifikation eines neuen Kontos mit Adresse A erscheinen genau die beiden Fälle mit Adresse A. Ein direkter Abruf des dritten Falls wird abgelehnt.
 - **UC-005-AK-02:** Einen ungültigen, abgelaufenen oder bereits verwendeten Nachweis übermitteln. Der Versuch eröffnet keine angemeldete Sitzung und liefert keine Fallinformationen.
 - **UC-005-AK-03:** Mit dem verifizierten Konto und freigegebenem MCP-Client die Fallübersicht abrufen. Web und MCP verwenden dieselbe Fallmenge und geben nur für Mieter sichtbare Inhalte aus.
@@ -116,11 +109,10 @@ PropertyFlow erstellt kein zweites Konto. Die Person kann das bestehende Konto �
 `/registrieren` führt durch Kontoeröffnung und Verifikation, `/anmelden` dient der
 späteren Anmeldung. Nach erfolgreicher Verifikation öffnet `/mieter/faelle` die Übersicht.
 Ein Konto ohne passende Fälle erhält eine leere Übersicht mit «Neues Anliegen melden».
-Der Code ist zehn Minuten gültig und einmal verwendbar; fünf Fehlversuche sperren ihn.
-Anforderungslimits gelten gemeinsam für Registrierung und Anmeldung (einmal pro Minute,
-höchstens fünfmal pro Stunde je Adresse). Ungültige Eingaben, fehlgeschlagene Zustellung
-und fehlgeschlagene Verifikation aktivieren kein Konto. Die Sitzung und der CSRF-Wert
-werden nach erfolgreicher Verifikation erneuert.
+Die Code- und Anforderungslimits der Demo stehen in [ZUG-04 · E-Mail-Einmalcode](../specifications/fallzugriff-und-sicherheit.md#e-mail-einmalcode-für-registrierung-und-anmeldung).
+Ungültige Eingaben, fehlgeschlagene Zustellung und fehlgeschlagene Verifikation
+aktivieren kein Konto. Die Sitzung und der CSRF-Wert werden nach erfolgreicher
+Verifikation erneuert.
 
 `TenantRegistrationTest` prüft Aktivierung, Ablauf, Einmaligkeit, Parallelzugriffe,
 Anforderungslimits und bestehende Rollen. `StaffAccessWebTest` prüft UC-005-AK-01,

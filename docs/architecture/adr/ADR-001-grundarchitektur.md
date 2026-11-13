@@ -292,6 +292,42 @@ Anwendungslogik, Fachmodell und Infrastruktur getrennt.
 Die detaillierten Struktur- und Abhängigkeitsregeln sind in
 [../module-structure.md](../module-structure.md) beschrieben.
 
+### Beispiel · Anbindung des Sprachmodells
+
+```mermaid
+flowchart LR
+    subgraph PF["PropertyFlow · eine Spring-Boot-Anwendung"]
+        TRIAGE["Triage<br/>Dringlichkeit bewerten"]
+        FORMULIERUNG["Fallbearbeitung<br/>Nachricht formulieren"]
+        TRIAGE_ADAPTER["Triage-Modelladapter<br/>SpringAiAnalysisModel"]
+        TEXT_ADAPTER["Modelladapter für<br/>Formulierung · geplant"]
+
+        TRIAGE -->|"AnalysisModel"| TRIAGE_ADAPTER
+        FORMULIERUNG -.->|"Formulierungsport"| TEXT_ADAPTER
+    end
+
+    LLM["Externer Modellserver<br/>z. B. lokales Ollama"]
+    TRIAGE_ADAPTER -->|"SS-005"| LLM
+    TEXT_ADAPTER -.->|"SS-005"| LLM
+
+    classDef module fill:#006fbb,stroke:#005a99,color:#fff
+    classDef integration fill:#dbeaf7,stroke:#6d8eae,color:#172033
+    class TRIAGE,FORMULIERUNG module
+    class TRIAGE_ADAPTER,TEXT_ADAPTER,LLM integration
+    style PF stroke:#006fbb,stroke-width:2px,color:#172033
+```
+
+`AnalysisModel` ist der interne Java-Port für die Triage. Der Modelladapter
+übersetzt den Aufruf in eine Anfrage über `SS-005`. Die durchgezogene Verbindung
+zur Triage wurde als Prototyp mit lokalem Ollama erprobt. Die Einbindung in den
+Fallprozess steht aus.
+[Triage-Vertrag](../../ai-usage/ki-service-vertrag.md) · [Schnittstelle SS-005](../c4-context.md#schnittstellen-an-der-systemgrenze)
+
+Die geplante KI-Formulierung kann denselben Modellserver nutzen. Sie erhält
+einen eigenen Vertrag für den Textvorschlag sowie einen eigenen Prompt und
+einen zulässigen Kommunikationskontext.
+[UC-004](../../use_cases/UC-004-ki-analyse-durchfuehren.md) · [KOM-02](../../specifications/fallkommunikation.md#kom-02-llm-kommunikation-ohne-interne-memos)
+
 ## Konsequenzen
 
 ### Positive Konsequenzen

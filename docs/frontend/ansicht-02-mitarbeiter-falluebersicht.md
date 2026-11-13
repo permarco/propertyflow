@@ -192,7 +192,7 @@ Die vereinbarte Standardsortierung verwendet die zentrale Rangfolge aus [DRING-0
 - **Fall öffnen:** Normaler Link an der Case-ID; keine ausschliesslich per Maus anklickbare Tabellenzeile. Das Ziel wird bei jedem Aufruf erneut autorisiert.
 - **Manuell aktualisieren:** Über die Browserfunktion Neuladen, beispielsweise F5. Ein eigener Button «Ansicht aktualisieren» entfällt. Der erneute GET erhält die angewandten Filter, Sortierung und Seite und liest nur den gespeicherten Stand; er startet keine Analyse, keinen Prozess und keine E-Mail.
 
-Der Mitarbeiterbereich setzt eine gültige persönliche Anmeldung voraus. Der Anmeldeablauf mit E-Mail-Einmalcode steht in [UC-006](../use_cases/UC-006-mitarbeiter-anmelden.md).
+Der Mitarbeiterbereich setzt eine gültige persönliche Anmeldung voraus. Den Anmeldeablauf mit [E-Mail-Einmalcode](../specifications/fallzugriff-und-sicherheit.md#e-mail-einmalcode-für-registrierung-und-anmeldung) beschreibt [UC-006](../use_cases/UC-006-mitarbeiter-anmelden.md).
 
 **Vereinbart am 09.10.2026:** Auch die Mitarbeiter-Fallübersicht aktualisiert den gespeicherten Stand automatisch alle **20 Sekunden**. Damit werden zwischenzeitliche Ergebnisse der Camunda-gesteuerten Verarbeitung sichtbar, sobald PropertyFlow sie fachlich gespeichert hat. Vanilla JavaScript aktualisiert den Ergebnisbereich ohne vollständiges Seitenneuladen. Der Browser liest ausschliesslich über PropertyFlow; er fragt Camunda nicht direkt ab und startet oder beendet durch diese Abrufe keine Verarbeitung.
 

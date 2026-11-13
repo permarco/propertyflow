@@ -11,9 +11,28 @@
 
 **Fachliche Grundlage:** [ADR-005](../architecture/adr/ADR-005-zugriffsmodell.md#mitarbeiteridentität) beschreibt das Zugriffsmodell. Die erste Anmeldung der Person folgt [UC-006](UC-006-mitarbeiter-anmelden.md).
 
+## Use-Case-Diagramm
+
+```mermaid
+flowchart LR
+VERWALTUNG["Verwaltung mit Kontoverwaltungsrecht"]:::participant
+EINRICHTUNG["Person für die Servereinrichtung"]:::participant
+
+subgraph PF["PropertyFlow"]
+    UC(["UC-007 · Mitarbeiterkonto anlegen"]):::goal
+    ERSTKONTO(["Erstes Verwaltungskonto anlegen"]):::goal
+end
+
+VERWALTUNG --- UC
+EINRICHTUNG --- ERSTKONTO
+classDef participant fill:#f2f8fc,stroke:#334155,color:#172033
+classDef goal fill:#dbeaf7,stroke:#6d8eae,color:#172033
+style PF stroke:#006fbb,stroke-width:2px,color:#172033
+```
+
 ## Preconditions
 
-- Im regulären Betrieb ist die Person angemeldet und berechtigt, Mitarbeiterkonten zu verwalten.
+- Im regulären Betrieb ist die Person angemeldet und hat das Zusatzrecht [«Mitarbeiterkonten verwalten»](../specifications/fallzugriff-und-sicherheit.md#rollen-und-zusatzrechte).
 - Bei der Ersteinrichtung führt eine Person mit Zugriff auf die Servereinrichtung den administrativen Befehl aus. Die initiale Einrichtung des Verwaltungskontos steht noch aus.
 - Die geschäftliche E-Mail-Adresse der Person, für die das Konto bestimmt ist, liegt vor.
 

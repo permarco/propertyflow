@@ -8,9 +8,25 @@
 **Goal:** Ein ausgewähltes Mieteranliegen mit den für die fachliche Prüfung relevanten Informationen anzeigen.  
 **Status:** Produktiver Gesamtprozess geplant; lokale Frontend-Demo mit Mock-Daten vorhanden. Die Demo ersetzt keine produktive Datenbank-, KI-, Mail- oder Camunda-Integration. Siehe [Demo-Nachweise](../evaluation/evaluationsgrundlage.md#testabdeckung-der-frontend-demo--ergänzung-vom-13102026).
 
+## Use-Case-Diagramm
+
+```mermaid
+flowchart LR
+MITARBEITER["Mitarbeitende der Verwaltung"]:::participant
+
+subgraph PF["PropertyFlow"]
+    UC(["UC-003 · Mieteranliegen im Detail anzeigen"]):::goal
+end
+
+MITARBEITER --- UC
+classDef participant fill:#f2f8fc,stroke:#334155,color:#172033
+classDef goal fill:#dbeaf7,stroke:#6d8eae,color:#172033
+style PF stroke:#006fbb,stroke-width:2px,color:#172033
+```
+
 ## Preconditions
 
-- Die Mitarbeiterin oder der Mitarbeiter ist gemäss [UC-006](UC-006-mitarbeiter-anmelden.md) persönlich angemeldet und hat die Mitarbeiterrolle nach [ZUG-04](../specifications/fallzugriff-und-sicherheit.md#zug-04-rechte-und-vertrauensgrenzen).
+- Die Mitarbeiterin oder der Mitarbeiter ist gemäss [UC-006](UC-006-mitarbeiter-anmelden.md) persönlich angemeldet und hat die Mitarbeiterrolle gemäss [ZUG-04 · Rollen und Zusatzrechte](../specifications/fallzugriff-und-sicherheit.md#rollen-und-zusatzrechte).
 - Ein Mieteranliegen wurde in UC-002 ausgewählt oder direkt über seine Referenz aufgerufen.
 
 ## Main Success Scenario
@@ -86,5 +102,15 @@ Der Mitarbeiter kann in UI3 eine optionale Wiedervorlage in Tagen oder als feste
 Bei der Bearbeitung eines aktiven Falls kann der Mitarbeiter rechts in UI3 «Ändern» bei «Bestätigte Zuordnung» wählen, einen vorhandenen Vorschlag auswählen oder Freitext eingeben und mit «Zuordnung bestätigen» speichern. Solange keine bestätigte Zuordnung vorliegt, ist das Feld mit der ursprünglichen Mieterangabe vorbelegt; bei späteren Änderungen mit der aktuellen bestätigten Zuordnung. Die Vorbelegung allein bestätigt nichts. Die ursprüngliche Angabe kann unverändert bestätigt werden; ein separater Speicher- oder Bestätigungsschritt entfällt. Eine offene Zuordnung wird damit geklärt oder eine bisherige Zuordnung korrigiert. Die ursprüngliche Mieterangabe bleibt getrennt von der bestätigten Zuordnung nachvollziehbar. Berechtigung, Eingabeprüfung (1–200 Zeichen nach Entfernen äusserer Leerzeichen), Prüfung strukturierter Referenzen bei deren Verwendung, Konfliktprüfung und Speicherung folgen [FALL-04](../specifications/fallverwaltung.md#fall-04-ursprungsdaten-und-zuordnung); UI2 übernimmt den gespeicherten Stand in seine bestehende Spalte. Mitarbeitereingabe und laufender KI-Stream bleiben erhalten. Die Zuordnung ändert weder Kontaktadresse noch persönlichen Fall-Link und ersetzt keine separate manuelle Statusänderung.
 
 ## Gemeinsame fachliche Grundlage
+
+Die Bearbeitungsaktionen aus dem Falldetail sind in eigenen Use Cases beschrieben.
+
+- [Externe Fallnachricht veröffentlichen](UC-010-externe-fallnachricht-veroeffentlichen.md)
+- [Internes Memo erfassen](UC-011-internes-memo-erfassen.md)
+- [Fall fachlich steuern](UC-012-fall-fachlich-steuern.md)
+- [Wiedervorlage verwalten](UC-013-wiedervorlage-verwalten.md)
+- [Fall abschliessen](UC-014-fall-abschliessen.md) und [wiedereröffnen](UC-015-fall-wiedereroeffnen.md)
+- [Kritische Fallentscheidung treffen](UC-027-kritische-fallentscheidung-treffen.md)
+- [Antwortbedarf aufheben](UC-028-antwortbedarf-aufheben.md)
 
 Fallidentität, fachliche Statusbedeutung und Abgrenzung zum technischen Camunda-Zustand sind in der [Fallverwaltung](../specifications/fallverwaltung.md) definiert, insbesondere FALL-01, FALL-05 und FALL-06. Die Ansicht verwendet diese fachliche Grundlage; ein technischer Incident ist kein eigener fachlicher Abschlussstatus. Die acht fachlichen Bearbeitungsstatus sind unter FALL-05 vereinbart; konkrete Prozessübergänge und das BPMN-Mapping bleiben zu konkretisieren.

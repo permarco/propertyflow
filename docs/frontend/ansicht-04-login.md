@@ -9,13 +9,13 @@
 
 UI4 ermöglicht die persönliche Anmeldung am Mitarbeiterbereich. Die Verwaltung richtet das Konto und die Rolle gemäss [UC-007](../use_cases/UC-007-mitarbeiterkonto-anlegen.md) ein. Die Anmeldung folgt [UC-006](../use_cases/UC-006-mitarbeiter-anmelden.md). Die Ansicht kann auch beim Verbinden von PropertyFlow aus einem LLM-Chat erscheinen. Die Regeln für Rollen, Fallzugriff und MCP-Freigaben stehen in [ZUG-04](../specifications/fallzugriff-und-sicherheit.md#zug-04-rechte-und-vertrauensgrenzen).
 
-Die gemeinsame Ansicht dient auch der Anmeldung am freiwilligen Mieterkonto. Dessen Kontoeröffnung und E-Mail-Verifikation sind in [UC-005](../use_cases/UC-005-userkonto-eroeffnen.md) beschrieben. Die öffentliche Einreichung und der persönliche Fall-Link führen weiterhin direkt zu [UI1](ansicht-01-mieter-fallansicht.md).
+Die gemeinsame Ansicht dient auch der Anmeldung am freiwilligen Mieterkonto. [UC-005](../use_cases/UC-005-userkonto-eroeffnen.md) beschreibt die Kontoeröffnung mit E-Mail-Verifikation, [UC-022](../use_cases/UC-022-mieter-anmelden.md) die Anmeldung mit einem bestehenden Konto. Die öffentliche Einreichung und der persönliche Fall-Link führen weiterhin direkt zu [UI1](ansicht-01-mieter-fallansicht.md).
 
 ### Mieterkonto eröffnen und nutzen
 
 «Userkonto eröffnen» führt von der Anmeldung und dem Mieterformular nach `/registrieren`.
 Nach «Code anfordern» bestätigt die Person ihre Adresse mit «E-Mail bestätigen».
-Die neutrale Antwort verrät vor der Verifikation nicht, ob bereits ein Konto besteht.
+Die Rückmeldung zur Code-Anforderung folgt den [Regeln für E-Mail-Einmalcodes](../specifications/fallzugriff-und-sicherheit.md#e-mail-einmalcode-für-registrierung-und-anmeldung).
 Erst ein gültiger Code aktiviert ein neues Mieterkonto oder öffnet das bestehende Konto.
 Mitarbeiterrollen werden über die Registrierung weder vergeben noch geändert.
 
@@ -24,7 +24,7 @@ Die Übersicht umfasst auch frühere Gast-Anliegen derselben aktuellen Kontaktad
 und bietet «Neues Anliegen melden». Eigene Fallansichten unter `/mieter/faelle/{id}`
 zeigen nur mieteröffentliche Inhalte und erlauben Nachrichten ausschliesslich in aktiven Fällen.
 Jeder Zugriff prüft die serverseitige Konto-Adresse. Die Kopfzeile zeigt «Meine Fälle»,
-die angemeldete Adresse und «Abmelden». Die Daten bleiben bis zum Neustart im Arbeitsspeicher.
+die angemeldete Adresse und [«Abmelden»](../specifications/fallzugriff-und-sicherheit.md#web-abmeldung). Die Daten bleiben bis zum Neustart im Arbeitsspeicher.
 
 ## 2. Felder, Aktionen und Rückmeldungen
 
@@ -88,9 +88,8 @@ flowchart TD
 
 ## 4. Übergänge und serverseitige Prüfungen
 
-- PropertyFlow sendet den Code an die im berechtigten Konto hinterlegte Adresse. Die öffentliche Rückmeldung zur Code-Anforderung verrät keinen Kontostatus.
-- Der Anmeldedienst prüft die Gültigkeit, Einmalverwendung und Zuordnung des Codes zum Konto. Die Mitarbeiterrolle wird serverseitig geprüft, bevor PropertyFlow den Mitarbeiterbereich öffnet. Für eine Rückkehr nach der Anmeldung verwendet PropertyFlow ein zulässiges internes Ziel oder setzt die geprüfte OAuth-Anfrage fort.
-- Eine gültige Anmeldung beim gemeinsamen Anmeldedienst kann im selben Browserprofil für Web und MCP wiederverwendet werden. Die Web-Anwendung verwendet eine Browsersitzung. Die Freigabe für den LLM-Chat führt zu einem eigenen Zugriffstoken für den MCP-Client. PropertyFlow prüft bei jedem MCP-Aufruf Konto, Rolle, delegierte Aktion und Fallberechtigung gemäss ZUG-04.
+- Code-Anforderung, Gültigkeit, Einmalverwendung und Kontozuordnung folgen den [Regeln für E-Mail-Einmalcodes](../specifications/fallzugriff-und-sicherheit.md#e-mail-einmalcode-für-registrierung-und-anmeldung). Für die Mitarbeiterrolle gilt die serverseitige Prüfung nach [ZUG-04](../specifications/fallzugriff-und-sicherheit.md#zug-04-rechte-und-vertrauensgrenzen).
+- Nach erfolgreicher Anmeldung öffnet PropertyFlow das zulässige interne Ziel oder setzt die geprüfte OAuth-Anfrage gemäss den Regeln für [gemeinsame Anmeldung und MCP-Delegation](../specifications/fallzugriff-und-sicherheit.md#gemeinsame-anmeldung-und-mcp-delegation) fort.
 
 ## 5. Prüfkriterien
 

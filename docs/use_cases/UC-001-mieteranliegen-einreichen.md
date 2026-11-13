@@ -10,7 +10,25 @@
 
 **Fachliche Grundlage:** [Fallverwaltung](../specifications/fallverwaltung.md), insbesondere FALL-01 bis FALL-04. Darstellung und Web-Routen beschreibt [Screen 01](../frontend/ansicht-01-mieter-fallansicht.md); Nachrichtenregeln beschreibt die [Fallkommunikation](../specifications/fallkommunikation.md). Persönlicher Tokenlink und sicherer Erstzugriff folgen [Fallzugriff und Sicherheit](../specifications/fallzugriff-und-sicherheit.md), insbesondere ZUG-01 bis ZUG-03.
 
-Dieser Use Case beschreibt die Web-Erfassung. Die sichere Annahme und Zuordnung eingehender E-Mails benötigt einen eigenen Kanalvertrag unter denselben fachlichen Fallregeln.
+Dieser Use Case beschreibt die Web-Erfassung. Für den Eingang per E-Mail gelten dieselben fachlichen Fallregeln. Die sichere Annahme und Zuordnung beschreibt [UC-020](UC-020-mieteranliegen-per-e-mail-entgegennehmen.md) als Zielablauf mit offenem Kanalvertrag.
+
+## Use-Case-Diagramm
+
+```mermaid
+flowchart LR
+MIETER["Mieterin / Mieter"]:::participant
+MAIL["E-Mail-Dienst (Bestätigung geplant) (System)"]:::participant
+
+subgraph PF["PropertyFlow"]
+    UC(["UC-001 · Mieteranliegen erfassen"]):::goal
+end
+
+MIETER --- UC
+UC --- MAIL
+classDef participant fill:#f2f8fc,stroke:#334155,color:#172033
+classDef goal fill:#dbeaf7,stroke:#6d8eae,color:#172033
+style PF stroke:#006fbb,stroke-width:2px,color:#172033
+```
 
 ## Preconditions
 
@@ -27,6 +45,40 @@ Dieser Use Case beschreibt die Web-Erfassung. Die sichere Annahme und Zuordnung 
 6. Das System nimmt das Anliegen dauerhaft gemäss FALL-02 an und vergibt eine Case-ID. Die zuverlässige Übergabe an Camunda und die Bestätigungsbenachrichtigung werden veranlasst.
 7. Das System bestätigt die Speicherung und öffnet unmittelbar die aktive Fallansicht mit Case-ID; das Öffnen der E-Mail ist dafür nicht erforderlich.
 8. Der persönliche Fall-Link mit ausschliesslich einem geheimen Token als Zugangswert wird zusätzlich per E-Mail versendet. PropertyFlow ordnet den Token serverseitig dem Fall zu; die lesbare Case-ID bleibt in der Ansicht. Der Versandzustand ist vom fachlichen Annahmeerfolg getrennt. Auslöser, Inhalt und Fehlerbehandlung folgen [Benachrichtigungen und Zustellung](../specifications/benachrichtigungen-und-zustellung.md).
+
+### Sequenzdiagramm
+
+Der Zielablauf zeigt die dauerhafte Annahme im Web und die zeitlich
+entkoppelte Übergabe an Camunda. Den Versand des persönlichen Fall-Links
+beschreibt [UC-019](UC-019-fallbenachrichtigung-zustellen.md).
+
+```mermaid
+---
+config:
+  sequence:
+    actorMargin: 35
+    mirrorActors: false
+    width: 110
+---
+sequenceDiagram
+    actor M as Mieter
+    participant B as Browser
+    participant PF as PropertyFlow
+    participant DB as Datenbank
+    participant C as Camunda
+
+    M->>B: Anliegen absenden
+    B->>PF: POST mit Absende-ID
+    PF->>PF: Eingaben prüfen
+    PF->>DB: Fall und Startauftrag<br/>gemeinsam speichern
+    DB-->>PF: Speicherung bestätigt
+    par Rückmeldung an den Mieter
+        PF-->>B: Fallannahme bestätigen
+        B-->>M: Persönliche Fallansicht<br/>mit Case-ID öffnen
+    and Prozessstart im Hintergrund
+        PF->>C: Fallprozess mit Case-ID starten
+    end
+```
 
 ## Alternative Flows
 

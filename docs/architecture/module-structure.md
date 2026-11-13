@@ -323,6 +323,44 @@ Für die Module gelten folgende Regeln:
    Träger der eigentlichen Geschäftslogik.
 
 
+## Interne Schnittstellenverträge
+
+### Erstbewertung · Job Worker und Triage
+
+**Entwurf für die Integration.** Der Java-Vertrag der Triage ist als Prototyp
+vorhanden. Der Job Worker und die Übernahme der Bewertung in den Fall sind
+geplant. [Triage-Vertrag](../ai-usage/ki-service-vertrag.md#aufruf-und-vertrag) ·
+[Asynchrone Erstbewertung](schnittstellenentwurf-block-3.md#4-architekturentscheid-für-artefakt-5)
+
+| Aufruf | Kommunikation | Eingabe und Ergebnis |
+| --- | --- | --- |
+| Fallannahme → Camunda über `SS-003` | Asynchron zur Einreichung | Intake speichert Fall und Prozessstartauftrag gemeinsam. Die HTTP-Bestätigung hängt vom Commit ab. PropertyFlow übergibt den Startauftrag mit der Case-ID im Hintergrund. |
+| Job Worker → Triage | Synchroner Java-Aufruf in PropertyFlow | Der Worker erhält die Case-ID aus dem Job, bezieht den für die Bewertung nötigen Anliegenstext über den zuständigen Anwendungsdienst und ruft `AnalyzeTool.analyze(Request)` auf. Triage liefert eine validierte Dringlichkeitsstufe oder einen typisierten Fehler. |
+| Triage → `AnalysisModel` | Synchroner Java-Aufruf im Modul `triage` | Der Port erhält den minimierten Anliegenstext. Sein Adapter ruft den Modellanbieter über `SS-005` auf und liefert die Modellausgabe zur Validierung an Triage zurück. |
+
+Der synchrone Modellaufruf belegt während der Wartezeit einen Worker-Platz.
+Für den Modellaufruf ist ein Timeout festzulegen. Das Zeitbudget des
+Camunda-Jobs muss das Laden der Daten, den Modellaufruf, das Speichern und die
+Rückmeldung abdecken. Während des Modellaufrufs bleibt keine
+Datenbanktransaktion offen. Die konkreten Zeitwerte und die Regeln für
+Wiederholungen sind offen.
+[Camunda Job Worker](https://docs.camunda.io/docs/8.9/components/concepts/job-workers/#timeouts)
+
+Der zuständige Dienst der Fallbearbeitung übernimmt das Ergebnis in den
+aktuellen Fallstand. Eine manuelle Einstufung hat Vorrang. Derselbe Auftrag
+darf bei erneuter Zustellung keine zweite fachlich wirksame Bewertung auslösen.
+Der Worker meldet den Jobabschluss nach der Speicherung. Bei Modellfehlern
+greift die fachliche Regel «Mitarbeiterprüfung erforderlich» für aktive Fälle.
+Wie der BPMN-Prozess nach diesem Ergebnis fortsetzt, wird im Prozessvertrag
+festgelegt.
+[DRING-05 und DRING-06](../specifications/dringlichkeitsbewertung.md#dring-05-erst--und-neubewertung-im-prozess) ·
+[FALL-05](../specifications/fallverwaltung.md#fall-05-fachlicher-lebenszyklus)
+
+**Geplante Prüfung.** Das Testmodell hält seine Antwort zurück. Der Browser
+erhält trotzdem die Annahmebestätigung nach dem Commit. Danach prüft der Test
+die Übernahme eines gültigen Ergebnisses sowie separat das Verhalten bei
+Timeout und wiederholter Jobzustellung.
+
 ## Beispielhafte Paketstruktur
 
 Eine mögliche Struktur des Backends ist:

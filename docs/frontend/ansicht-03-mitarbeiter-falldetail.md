@@ -135,7 +135,7 @@ Nachrichtenblasen: Mieter und Immobilienverwaltung `#EEF2F7`, Systemnachrichten 
 
 PropertyFlow prüft bei jeder Lese- und Schreibaktion die gültige Anmeldung und Mitarbeiterrolle gemäss [ZUG-04](../specifications/fallzugriff-und-sicherheit.md#zug-04-rechte-und-vertrauensgrenzen). Angemeldete Mitarbeitende mit Mitarbeiterrolle haben dieselben fachlichen Fallrechte und können die internen Memos einsehen. Der Server verwendet für Änderungsnachweise die Benutzer-ID des handelnden Mitarbeiterkontos. Der geheime Mieterzugangstoken wird nicht als Falldatum angezeigt.
 
-Fehlt die Anmeldung oder ist sie abgelaufen, bietet die Ansicht den Anmeldeweg mit E-Mail-Einmalcode nach [UC-006](../use_cases/UC-006-mitarbeiter-anmelden.md) an. Sichtbare Falldaten werden entfernt und weitere automatische Abrufe gestoppt. Bei gültiger Anmeldung ohne Mitarbeiterberechtigung erscheint ein Zugriffshinweis ohne Falldaten. Abgewiesene Schreibaktionen werden nicht automatisch wiederholt.
+Fehlt die Anmeldung oder ist sie abgelaufen, bietet die Ansicht die Anmeldung per [E-Mail-Einmalcode](../specifications/fallzugriff-und-sicherheit.md#e-mail-einmalcode-für-registrierung-und-anmeldung) nach [UC-006](../use_cases/UC-006-mitarbeiter-anmelden.md) an. Sichtbare Falldaten werden entfernt und weitere automatische Abrufe gestoppt. Bei gültiger Anmeldung ohne Mitarbeiterberechtigung erscheint ein Zugriffshinweis ohne Falldaten. Abgewiesene Schreibaktionen werden nicht automatisch wiederholt.
 
 **Bestätigt am 10.10.2026:** Der persönliche Fall-Link des Mieters hat keine zeitliche Ablauffrist. UI3 enthält keine Aktion zur Verlängerung oder zum Ersetzen dieses Links. Die Zugangsregeln werden zentral in ZUG-05 geführt.
 

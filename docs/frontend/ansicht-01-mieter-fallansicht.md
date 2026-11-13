@@ -10,7 +10,7 @@
 
 ## 1. Zweck und Abgrenzung
 
-Screen 01 ermöglicht die **Einreichung und Fallkommunikation ohne Konto**. Ein neuer Fall wird über das Formular erfasst. Nach der Annahme sieht der Mieter unmittelbar den Fall und seine fortlaufende Kommunikation. Für den späteren Zugriff erhält er per E-Mail einen persönlichen Fall-Link. Ein freiwilliges, per E-Mail verifiziertes Mieterkonto bietet zusätzlich eine Übersicht aller Fälle mit derselben aktuellen Kontaktadresse. Kontoeröffnung und Anmeldung beschreibt [UC-005](../use_cases/UC-005-userkonto-eroeffnen.md). Die Gestaltung der Kontoübersicht ist separat zu konkretisieren.
+Screen 01 ermöglicht die **Einreichung und Fallkommunikation ohne Konto**. Ein neuer Fall wird über das Formular erfasst. Nach der Annahme sieht der Mieter unmittelbar den Fall und seine fortlaufende Kommunikation. Für den späteren Zugriff erhält er per E-Mail einen persönlichen Fall-Link. Ein freiwilliges, per E-Mail verifiziertes Mieterkonto bietet zusätzlich eine Übersicht aller Fälle mit derselben aktuellen Kontaktadresse. [UC-005](../use_cases/UC-005-userkonto-eroeffnen.md) beschreibt die Kontoeröffnung, [UC-022](../use_cases/UC-022-mieter-anmelden.md) die Anmeldung mit einem bestehenden Konto. Die Gestaltung der Kontoübersicht ist separat zu konkretisieren.
 
 Die Annahme und Fortführung des Falls richten sich nach [FALL-02](../specifications/fallverwaltung.md#fall-02-erfolgreiche-annahme) und [FALL-05](../specifications/fallverwaltung.md#fall-05-fachlicher-lebenszyklus). Die Seite zeigt den fachlichen Bearbeitungsstand und die freigegebene Kommunikation.
 
@@ -30,7 +30,7 @@ Diese Entscheidung folgt [docs/architecture/adr/ADR-003-praesentationsschicht.md
 
 Die eigene Konto-Adresse im Seitenkopf ist von der weiterhin maskierten Kontaktadresse des angezeigten Falls zu unterscheiden. Ein persönlicher Fall-Link kann einen anderen Fall öffnen und bestätigt keine Benutzeridentität.
 
-«Abmelden» beendet die lokale Browsersitzung serverseitig über eine CSRF-geschützte Schreibaktion und führt anschliessend zum öffentlichen Neuerfassungsformular ohne Kontodaten. Ungesendete Eingaben werden dabei nicht gespeichert. Weitere kontobasierte Zugriffe, auch aus bereits geöffneten Tabs, benötigen erneut eine gültige Anmeldung. Persönliche Fall-Links und separat erteilte MCP-Delegationen werden dadurch nicht widerrufen. Die genaue Logout-Route und ein möglicher übergreifender Logout am gemeinsamen Anmeldedienst bleiben im technischen Zugriffsvertrag zu konkretisieren.
+«Abmelden» führt nach erfolgreicher [Web-Abmeldung](../specifications/fallzugriff-und-sicherheit.md#web-abmeldung) zum öffentlichen Neuerfassungsformular ohne Kontodaten. Ungesendete Eingaben werden dabei nicht gespeichert.
 
 ## 2. Eine Seite mit drei Zuständen
 
