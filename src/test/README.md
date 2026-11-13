@@ -227,3 +227,23 @@ und Aktion. Die Version ist die Vorbedingung für eine neue Feldänderung und ke
 Inhaltsfeld eines bereits erfolgreichen Retries. Deshalb bleiben identische Retries
 auch nach weiteren Änderungen möglich. Ein abgewiesener erster Versuch verbraucht
 keine Kennung. Die Speicherung bleibt prozesslokal und geht beim Neustart verloren.
+
+### Überlappende Browseraktionen
+
+```powershell
+node src/test/browser/run-ui-tests.mjs overlapping-actions.test.mjs lost-response.test.mjs operation-conflicts.test.mjs
+```
+
+`overlapping-actions.test.mjs` ergänzt vier Prüfungen mit echten Browseranfragen:
+Doppelklick plus Enter während einer laufenden Fallanlage erzeugen nur einen POST
+und einen Fall. In Gast-Token- und Mitarbeiteransichten wird eine ältere Leseantwort
+zurückgehalten, während eine Nachricht gespeichert wird. Der Test beobachtet den
+Abbruch des Browserabrufs, gibt danach die alte Antwort frei und prüft, dass Verlauf
+und Version aktuell bleiben und das Polling wieder läuft.
+
+Zwei Tabs derselben Mitarbeitersitzung starten unterschiedliche Feldänderungen
+mit derselben Ausgangsversion und unterschiedlichen Operationskennungen. Beide
+POSTs werden an einer gemeinsamen Barriere freigegeben. Genau eine Änderung gelingt,
+die andere meldet HTTP 409. Beide Ansichten zeigen anschliessend den gespeicherten
+Wert; ihre Nachrichtenentwürfe bleiben erhalten. Eine frisch geöffnete Ansicht
+bestätigt genau eine zusätzliche Version und einen zusätzlichen Verlaufseintrag.
