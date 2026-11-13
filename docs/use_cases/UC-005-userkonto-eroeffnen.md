@@ -6,7 +6,7 @@
 **Use Case Name:** Userkonto eröffnen  
 **Primary Actor:** Mieterin / Mieter  
 **Goal:** Ein freiwilliges Mieterkonto mit verifizierter E-Mail-Adresse eröffnen und alle Fälle mit derselben aktuellen Kontaktadresse im Konto sehen.  
-**Status:** Fachlicher Entwurf. Das konkrete Verfahren für Verifikation und Login ist offen.
+**Status:** Web-Ablauf mit E-Mail-Einmalcode in der lokalen Frontend-Demo umgesetzt (13.11.2026). Konten und Fälle liegen im Arbeitsspeicher; dauerhafte Speicherung und OAuth-/MCP-Delegation folgen separat.
 
 **Fachliche Grundlage:** [ADR-005](../architecture/adr/ADR-005-zugriffsmodell.md) beschreibt Konto, Fallzuordnung und MCP-Zugriff. [ADR-004](../architecture/adr/ADR-004-tokenbasierter-mieterzugriff.md) regelt den persönlichen Fall-Link. Ein Anliegen kann gemäss [UC-001](UC-001-mieteranliegen-einreichen.md) ohne Konto eingereicht werden.
 
@@ -48,7 +48,7 @@ flowchart TD
     Web(["PropertyFlow-Web öffnen"])
     Chat(["PropertyFlow im LLM-Chat verbinden"])
     Sitzung{"Gültige Anmeldung im Browser vorhanden?"}
-    Anmelden["Persönlich anmelden · E-Mail-Einmalcode für Mitarbeitende · für Mieter vorgeschlagen"]
+    Anmelden["Persönlich anmelden · E-Mail-Einmalcode für Mitarbeitende und Mieter"]
     Pruefung{"Anmeldung erfolgreich?"}
     Anmeldung["Sitzung beim gemeinsamen Anmeldedienst eröffnen"]
     Ziel{"Welcher Zugang wurde angefragt?"}
@@ -78,7 +78,7 @@ flowchart TD
 ## Main Success Scenario
 
 1. Die Mieterin oder der Mieter wählt «Userkonto eröffnen» und gibt die E-Mail-Adresse ein.
-2. PropertyFlow prüft die Eingabe serverseitig und sendet einen einmal verwendbaren, zeitlich begrenzten Verifikationsnachweis an diese Adresse. Die Bestätigung per E-Mail-Code ist ein Vorschlag.
+2. PropertyFlow prüft die Eingabe serverseitig und sendet einen einmal verwendbaren, zeitlich begrenzten Verifikationsnachweis an diese Adresse. Die lokale Umsetzung verwendet einen E-Mail-Einmalcode.
 3. Die Mieterin oder der Mieter bestätigt den Nachweis. PropertyFlow verifiziert die Adresse und aktiviert das Mieterkonto mit einer eindeutigen internen Benutzer-ID.
 4. PropertyFlow eröffnet den angemeldeten Zugang. Die Fallübersicht zeigt alle Fälle, deren aktuelle Kontaktadresse mit der verifizierten Konto-Adresse übereinstimmt. Das schliesst Fälle ein, die vor der Kontoeröffnung ohne Anmeldung erfasst wurden.
 
@@ -109,3 +109,29 @@ PropertyFlow erstellt kein zweites Konto. Die Person kann das bestehende Konto �
 - **UC-005-AK-01:** Zwei Fälle mit Adresse A und einen Fall mit Adresse B ohne Anmeldung einreichen. Nach Verifikation eines neuen Kontos mit Adresse A erscheinen genau die beiden Fälle mit Adresse A. Ein direkter Abruf des dritten Falls wird abgelehnt.
 - **UC-005-AK-02:** Einen ungültigen, abgelaufenen oder bereits verwendeten Nachweis übermitteln. Der Versuch eröffnet keine angemeldete Sitzung und liefert keine Fallinformationen.
 - **UC-005-AK-03:** Mit dem verifizierten Konto und freigegebenem MCP-Client die Fallübersicht abrufen. Web und MCP verwenden dieselbe Fallmenge und geben nur für Mieter sichtbare Inhalte aus.
+
+
+## Lokale Umsetzung und Nachweise
+
+`/registrieren` führt durch Kontoeröffnung und Verifikation, `/anmelden` dient der
+späteren Anmeldung. Nach erfolgreicher Verifikation öffnet `/mieter/faelle` die Übersicht.
+Ein Konto ohne passende Fälle erhält eine leere Übersicht mit «Neues Anliegen melden».
+Der Code ist zehn Minuten gültig und einmal verwendbar; fünf Fehlversuche sperren ihn.
+Anforderungslimits gelten gemeinsam für Registrierung und Anmeldung (einmal pro Minute,
+höchstens fünfmal pro Stunde je Adresse). Ungültige Eingaben, fehlgeschlagene Zustellung
+und fehlgeschlagene Verifikation aktivieren kein Konto. Die Sitzung und der CSRF-Wert
+werden nach erfolgreicher Verifikation erneuert.
+
+`TenantRegistrationTest` prüft Aktivierung, Ablauf, Einmaligkeit, Parallelzugriffe,
+Anforderungslimits und bestehende Rollen. `StaffAccessWebTest` prüft UC-005-AK-01,
+Zugriffssperren, mieteröffentliche Inhalte, Nachrichten und leere Konten.
+`tenant-registration.test.mjs` prüft mit Mailpit den vollständigen Browserablauf
+von Gast-Anliegen über Registrierung bis zur neuen Fallanlage und Abmeldung.
+Start und Ausführung: [Testanleitung](../../src/test/README.md).
+UC-005-AK-03 bleibt bis zur MCP-Integration offen.
+
+**Ausgeführt am 13.11.2026:** Java: 58 bestanden, 1 optionaler Live-Ollama-Test
+übersprungen; JavaScript: 6 bestanden; Browser mit Test-Mailpit: 50 bestanden,
+0 Fehler. Die neue Übersicht wurde bei 390, 768 und 1440 Pixel Breite geprüft.
+Browserbericht: `target/frontend-quality/ui-tests.tap`; Screenshots:
+`target/account-review/registered-cases-*.png`.

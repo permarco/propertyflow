@@ -3,9 +3,10 @@ import { createRequire } from 'node:module';
 import { randomUUID } from 'node:crypto';
 import { setTimeout as pause } from 'node:timers/promises';
 import path from 'node:path';
+import { base, staffStorageState } from './staff-test-login.mjs';
 const require = createRequire(path.resolve('target/frontend-tools/package.json'));
 export const { chromium } = require('playwright');
-export const base = process.env.DEMO_URL || 'http://127.0.0.1:8082';
+export { base, staffStorageState };
 export async function until(predicate, message = 'UI did not reach expected state') {
     const end = Date.now() + 5000;
     while (Date.now() < end) { if (await predicate()) return; await pause(20); }
@@ -14,7 +15,9 @@ export async function until(predicate, message = 'UI did not reach expected stat
 export async function fixture(t, options = {}) {
     const browser = await chromium.launch({ channel: 'msedge', headless: true });
     t.after(() => browser.close());
-    const context = await browser.newContext({ locale: 'de-CH', viewport: { width: 1440, height: 900 }, ...options });
+    const { staff = true, ...contextOptions } = options;
+    const storageState = staff ? await staffStorageState(browser) : undefined;
+    const context = await browser.newContext({ locale: 'de-CH', viewport: { width: 1440, height: 900 }, storageState, ...contextOptions });
     const page = await context.newPage();
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));

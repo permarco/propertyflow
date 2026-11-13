@@ -1,0 +1,8 @@
+# Use together with compose.yaml; !override requires Compose >= 2.24.4.
+name: propertyflow-test
+
+services:
+  mailpit:
+    ports: !override
+      - "127.0.0.1:1026:1025"
+      - "127.0.0.1:8026:8025"

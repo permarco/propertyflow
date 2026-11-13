@@ -75,6 +75,15 @@ Die Einreichung und der persönliche Fall-Link bleiben ohne Konto nutzbar. Ein f
 
 Die Mieterrechte umfassen veröffentlichte Falldaten und externe Nachrichten. Der Zugriff auf interne Memos und deren Metadaten ist dem Mitarbeiterbereich vorbehalten. Direkte Änderungen von Status oder Dringlichkeit, Freigabe, Abschluss, Wiedereröffnung und Prozessabbruch richten sich nach den jeweiligen Mitarbeiter- und Systemrechten. Ein abgeschlossener Fall bleibt bei gültiger Berechtigung lesbar. Für Nachrichten gilt die Schreibsperre nach [KOM-04](fallkommunikation.md#kom-04-nachrichtensperre-nach-fallabschluss).
 
+**Lokaler Implementierungsstand (13.11.2026):** Selbstregistrierung, E-Mail-Codeprüfung,
+«Meine Fälle» sowie die Prüfung bei Detail- und Nachrichtenzugriffen sind im Profil
+`frontend-demo` umgesetzt. Die Konto-Adresse stammt aus der Sitzung; Formularwerte
+ändern keine Zuordnung oder Rolle. Registrierung und Anmeldung teilen Code-Laufzeit,
+Versuchslimit und Anforderungslimits. Konten werden erst nach Verifikation aktiviert.
+Konten und Fälle liegen im Arbeitsspeicher. Dauerhafte Speicherung, persönliche
+Audit-Zuordnung und OAuth-/MCP-Delegation sind damit noch nicht umgesetzt.
+Die [Testanleitung](../../src/test/README.md) beschreibt die Prüfungen mit Mailpit.
+
 ### Mitarbeiteranmeldung und Kontoverwaltung
 
 UI2 und UI3 setzen für Lesen und Schreiben ein aktives, persönlich angemeldetes Konto mit Mitarbeiterrolle voraus. Die Verwaltung legt das Konto mit geschäftlicher E-Mail-Adresse an und vergibt die Mitarbeiterrolle. Das erste Verwaltungskonto mit Kontoverwaltungsrecht entsteht bei der Servereinrichtung. Mitarbeitende melden sich per E-Mail-Einmalcode an. Die Abläufe stehen in [UC-006](../use_cases/UC-006-mitarbeiter-anmelden.md) und [UC-007](../use_cases/UC-007-mitarbeiterkonto-anlegen.md).

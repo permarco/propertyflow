@@ -464,3 +464,17 @@ Quelle.
 ## Nachweise der lokalen Frontend-Demo
 
 Der aktuelle Nachweisstand ist im [Block-2-Prüfprotokoll](ai-usage/block2-oberflaechen-pruefung.md) dokumentiert: [Unit-Tests, Veto und Mutation](ai-usage/block2-oberflaechen-pruefung.md#ergänzung-vom-12102026-generierte-unit-tests-und-mutation) sowie [Browser, Streaming-Sicherheit, A11y und Performance](ai-usage/block2-oberflaechen-pruefung.md#ergänzung-browser-qualitätsnachweis-und-präsentationsentscheidung). Die dort genannten Messungen gelten für die lokale Demo; produktive Integrationen und vollständige Sicherheits-/Barrierefreiheitsprüfungen bleiben davon abgegrenzt.
+
+
+### Mieterkonto in der lokalen Umsetzung (13.11.2026)
+
+Die Frontend-Demo implementiert [UC-005](use_cases/UC-005-userkonto-eroeffnen.md)
+mit Selbstregistrierung und E-Mail-Einmalcode. Erst nach erfolgreicher Verifikation
+entsteht ein Mieterkonto. «Meine Fälle» ermittelt die Fallmenge aus der serverseitigen
+Konto-Adresse und der aktuellen Fall-Kontaktadresse; Detail- und Nachrichtenzugriffe
+prüfen dieselbe Zuordnung. Mieter sehen keine internen Memos und können keine
+Mitarbeiteraktionen ausführen. Neue Anliegen übernehmen die Kontaktadresse aus der
+Sitzung. Gast-Einreichung und persönlicher Fall-Link bleiben nutzbar.
+Konten und Fälle bleiben im Arbeitsspeicher; dauerhafte Speicherung und MCP-Delegation
+sind nicht Bestandteil dieses Implementierungsstands. Anleitung und Prüfungen:
+[Entwicklung](../dev/README.md), [Tests](../src/test/README.md).

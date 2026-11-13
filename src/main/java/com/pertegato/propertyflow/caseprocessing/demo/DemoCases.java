@@ -1,13 +1,28 @@
 package com.pertegato.propertyflow.caseprocessing.demo;
 
-import java.time.*;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.IntStream;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
-import static org.springframework.http.HttpStatus.*;
+
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.CONFLICT;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 /**
  * Disposable, process-local fixtures for the frontend demo only.
@@ -116,6 +131,30 @@ public class DemoCases {
         if (id == null) throw new ResponseStatusException(NOT_FOUND, "Dieser Fall-Link ist nicht verfügbar.");
         return data(id).view(true);
     }
+
+    public synchronized List<View> tenantCases(String verifiedEmail) {
+        return cases.values().stream()
+                .filter(item -> item.email.equalsIgnoreCase(verifiedEmail))
+                .map(item -> item.view(true))
+                .sorted(Comparator.comparing(View::received).reversed().thenComparing(View::id))
+                .toList();
+    }
+
+    public synchronized View tenantCase(String id, String verifiedEmail) {
+        return ownedCase(id, verifiedEmail).view(true);
+    }
+
+    public synchronized void tenantMessage(String id, String verifiedEmail, String text, String operation) {
+        appendMessage(ownedCase(id, verifiedEmail), text, false, false, operation, true);
+    }
+
+    private CaseData ownedCase(String id, String verifiedEmail) {
+        CaseData item = data(id);
+        if (!item.email.equalsIgnoreCase(verifiedEmail)) {
+            throw new ResponseStatusException(NOT_FOUND, "Der Fall ist nicht verfügbar.");
+        }
+        return item;
+    }
     private static String normalize(String value) {
         return value.toLowerCase(Locale.GERMAN).replaceAll("[^\\p{L}\\p{N}\\s]", "");
     }
@@ -168,10 +207,15 @@ public class DemoCases {
     }
     public synchronized void message(String id, String token, String text, boolean internal, boolean answer, String operation) {
         CaseData c = data(token == null ? id : tenant(token).id());
+        appendMessage(c, text, internal, answer, operation, token != null);
+    }
+
+    private void appendMessage(CaseData c, String text, boolean internal, boolean answer, String operation, boolean tenant) {
         required(operation, 80);
         operation = "message:" + operation;
-        boolean tenant = token != null;
-        if (tenant && (internal || answer)) throw new ResponseStatusException(BAD_REQUEST);
+        if (tenant && (internal || answer)) {
+            throw new ResponseStatusException(BAD_REQUEST);
+        }
         MessageRequest request = new MessageRequest(text, internal, answer, tenant);
         MessageRequest previous = c.messageRequests.get(operation);
         if (previous != null) {
@@ -184,9 +228,14 @@ public class DemoCases {
         active(c);
         text = required(text, 5000);
         c.entries.add(entry(tenant ? "Mieter" : "Immobilienverwaltung", text, Instant.now(), internal, false, !internal && answer, ""));
-        if (tenant) c.contact = Instant.now();
-        if (answer && !internal && c.review.isBlank() && c.followUp == null) c.status = "Wartet auf Mieterantwort";
-        c.messageRequests.put(operation, request); c.version++;
+        if (tenant) {
+            c.contact = Instant.now();
+        }
+        if (answer && !internal && c.review.isBlank() && c.followUp == null) {
+            c.status = "Wartet auf Mieterantwort";
+        }
+        c.messageRequests.put(operation, request);
+        c.version++;
     }
     private void active(CaseData c) {
         if (c.status.equals("Abgeschlossen")) throw new ResponseStatusException(CONFLICT, "Der Fall ist abgeschlossen. Neue Nachrichten und Änderungen sind gesperrt.");

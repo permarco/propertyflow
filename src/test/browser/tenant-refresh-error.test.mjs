@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
 import path from 'node:path';
+import { staffStorageState } from './staff-test-login.mjs';
 
 const require = createRequire(path.resolve('target/frontend-tools/package.json'));
 const { chromium } = require('playwright');
@@ -13,6 +14,7 @@ const base = process.env.DEMO_URL || 'http://127.0.0.1:8082';
 test('UI1: Abruffehler erhält Verlauf und Entwurf; nächster Abruf behebt den Fehler', { timeout: 65000 }, async () => {
     const browser = await chromium.launch({ channel: 'msedge', headless: true });
     try {
+        const staff = await browser.newContext({ storageState: await staffStorageState(browser) });
         const context = await browser.newContext({ locale: 'de-CH' });
         const page = await context.newPage();
         await page.goto(`${base}/mieter/fall`);
@@ -24,7 +26,10 @@ test('UI1: Abruffehler erhält Verlauf und Entwurf; nächster Abruf behebt den F
         await page.waitForURL('**/mieter/fall/zugang/*');
         const tenantUrl = page.url();
         const caseId = await page.locator('#case-head .eyebrow').textContent();
-        const csrf = await page.locator('#message-form input[name=csrf]').inputValue();
+        const staffUrl = `${base}/mitarbeiter/faelle/${caseId}`;
+        const staffPage = await staff.newPage();
+        await staffPage.goto(staffUrl);
+        const csrf = await staffPage.locator('#message-form input[name=csrf]').inputValue();
         const draft = 'Diese Ergänzung ist noch nicht gesendet.';
         await page.locator('#message').fill(draft);
         const originalHistory = await page.locator('#history').innerText();
@@ -55,7 +60,7 @@ test('UI1: Abruffehler erhält Verlauf und Entwurf; nächster Abruf behebt den F
         assert.equal(await page.locator('#message').isEnabled(), true);
 
         const answer = 'Neue Verwaltungsnachricht nach dem Verbindungsfehler.';
-        const saved = await context.request.post(`${base}/mitarbeiter/faelle/${caseId}/nachrichten`, {
+        const saved = await staff.request.post(`${staffUrl}/nachrichten`, {
             form: { csrf, operation: randomUUID(), text: answer }, maxRedirects: 0,
         });
         assert.equal(saved.status(), 303);

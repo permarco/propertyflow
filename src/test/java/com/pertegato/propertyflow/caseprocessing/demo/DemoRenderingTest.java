@@ -1,5 +1,6 @@
 package com.pertegato.propertyflow.caseprocessing.demo;
 
+import com.pertegato.propertyflow.access.demo.DemoAccounts;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,13 +14,25 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.hamcrest.Matchers.*;
 
-@SpringBootTest
+@SpringBootTest(properties = "propertyflow.staff.bootstrap.email=" + DemoRenderingTest.STAFF_EMAIL)
 @ActiveProfiles("frontend-demo")
 class DemoRenderingTest {
+    static final String STAFF_EMAIL = "rendering@example.test";
+
     @Autowired WebApplicationContext context;
     @Autowired DemoCases cases;
+    @Autowired
+    DemoAccounts staffAccounts;
     MockMvc mvc;
-    @BeforeEach void setup() { mvc = MockMvcBuilders.webAppContextSetup(context).build(); }
+
+    @BeforeEach
+    void setup() {
+        MockHttpSession staffSession = new MockHttpSession();
+        staffSession.setAttribute("propertyflow.staff.accountId", staffAccounts.findActiveByEmail(STAFF_EMAIL).orElseThrow().id());
+        mvc = MockMvcBuilders.webAppContextSetup(context)
+                .defaultRequest(get("/").session(staffSession))
+                .build();
+    }
     @Test void allScreensRenderWithoutDatabaseAndTenantHasNoMemoOrStream() throws Exception {
         mvc.perform(get("/")).andExpect(status().isOk()).andExpect(content().string(containsString("Frontend")));
         mvc.perform(get("/mieter/fall")).andExpect(status().isOk()).andExpect(content().string(containsString("Neues Anliegen melden")));

@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import path from 'node:path';
+import { staffStorageState } from './staff-test-login.mjs';
 
 const require = createRequire(path.resolve('target/frontend-tools/package.json'));
 const { chromium } = require('playwright');
@@ -12,7 +13,8 @@ const base = process.env.DEMO_URL || 'http://127.0.0.1:8082';
 test('UI2: Live-Suche, Filterkombination, leere Treffer und vollständiges Zurücksetzen', { timeout: 30000 }, async () => {
     const browser = await chromium.launch({ channel: 'msedge', headless: true });
     try {
-        const page = await browser.newPage({ locale: 'de-CH', viewport: { width: 1440, height: 900 } });
+        const page = await browser.newPage({ locale: 'de-CH', viewport: { width: 1440, height: 900 },
+            storageState: await staffStorageState(browser) });
         assert.equal((await page.goto(`${base}/mitarbeiter/faelle`)).status(), 200);
         const rows = () => page.locator('#results tr[data-case]').evaluateAll(entries => entries.map(row => ({
             id: row.dataset.case,

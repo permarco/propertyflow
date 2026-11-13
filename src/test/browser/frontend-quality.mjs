@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { staffStorageState } from './staff-test-login.mjs';
 
 const require = createRequire(path.resolve('target/frontend-tools/package.json'));
 const { chromium } = require('playwright');
@@ -12,14 +13,22 @@ const reportDir = path.resolve('target/frontend-quality');
 await mkdir(reportDir, { recursive: true });
 const browser = await chromium.launch({ channel: 'msedge', headless: true });
 const report = { at: new Date().toISOString(), base, browser: browser.version(), a11y: [], checks: [] };
-const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
-const page = await context.newPage();
 const errors = [];
-page.on('pageerror', error => errors.push(error.message));
 try {
-    for (const route of ['/mieter/fall', '/mieter/fall/zugang/demo-aktiver-fall', '/mitarbeiter/faelle', '/mitarbeiter/faelle/REQ-2026-001']) {
-        assert.equal((await page.goto(base + route)).status(), 200);
-        const result = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+    const viewport = { width: 1440, height: 1000 };
+    const anonymous = await browser.newContext({ viewport });
+    const staff = await browser.newContext({ viewport, storageState: await staffStorageState(browser) });
+    const publicPage = await anonymous.newPage();
+    const page = await staff.newPage();
+    for (const current of [publicPage, page]) {
+        current.on('pageerror', error => errors.push(error.message));
+    }
+    const routes = ['/anmelden', '/mieter/fall', '/mieter/fall/zugang/demo-aktiver-fall', '/mitarbeiter/faelle', '/mitarbeiter/faelle/REQ-2026-001'];
+    for (const route of routes) {
+        const current = route.startsWith('/mitarbeiter/') ? page : publicPage;
+        assert.equal((await current.goto(base + route)).status(), 200);
+        assert.equal(new URL(current.url()).pathname, route);
+        const result = await new AxeBuilder({ page: current }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
         report.a11y.push({ route, violations: result.violations, incomplete: result.incomplete.map(x => ({ id: x.id, impact: x.impact })) });
     }
     // Reach controls by actual Tab navigation, not by programmatic focus.

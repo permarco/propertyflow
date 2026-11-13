@@ -1,16 +1,25 @@
 package com.pertegato.propertyflow.caseprocessing.demo;
 
+import com.pertegato.propertyflow.access.web.CurrentAccount;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.util.*;
+import jakarta.servlet.http.HttpSession;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.view.RedirectView;
 
@@ -18,7 +27,12 @@ import org.springframework.web.servlet.view.RedirectView;
 @Profile("frontend-demo")
 public class DemoController {
     private final DemoCases cases;
-    public DemoController(DemoCases cases) { this.cases = cases; }
+    private final CurrentAccount accounts;
+
+    public DemoController(DemoCases cases, CurrentAccount accounts) {
+        this.cases = cases;
+        this.accounts = accounts;
+    }
 
     @ModelAttribute
     void common(Model model, HttpServletRequest request, HttpServletResponse response) {
@@ -26,10 +40,16 @@ public class DemoController {
         response.setHeader("Referrer-Policy", "no-referrer");
         response.setHeader("X-Content-Type-Options", "nosniff");
         response.setHeader("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'");
-        var session = request.getSession();
-        if (session.getAttribute("csrf") == null) session.setAttribute("csrf", UUID.randomUUID().toString());
-        if (request.getMethod().equals("POST") && !session.getAttribute("csrf").equals(request.getParameter("csrf")))
+        HttpSession session = request.getSession();
+        if (session.getAttribute("csrf") == null) {
+            session.setAttribute("csrf", UUID.randomUUID().toString());
+        }
+        // Intake renders rejected input again, including an expired account session.
+        boolean intakePost = request.getRequestURI().equals(request.getContextPath() + "/mieter/fall");
+        if (request.getMethod().equals("POST") && !intakePost
+                && !session.getAttribute("csrf").equals(request.getParameter("csrf"))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Die Anfrage konnte nicht bestätigt werden. Bitte die Seite neu laden.");
+        }
         model.addAttribute("csrf", session.getAttribute("csrf"));
         model.addAttribute("operation", UUID.randomUUID().toString());
         model.addAttribute("urgencies", DemoCases.URGENCIES);
@@ -83,14 +103,52 @@ public class DemoController {
         model.addAttribute("postUrl", "/mieter/fall/zugang/" + token + "/nachrichten");
         return "demo/detail";
     }
-    @PostMapping("/mieter/fall")
-    Object create(@RequestParam Map<String, String> fields, Model model, HttpServletResponse response) {
+
+    @GetMapping("/mieter/faelle")
+    String tenantCases(HttpServletRequest request, Model model) {
+        model.addAttribute("cases", cases.tenantCases(accounts.requireTenant(request).email()));
+        return "demo/tenant-list";
+    }
+
+    @GetMapping("/mieter/faelle/{id}")
+    String tenantCase(@PathVariable String id, HttpServletRequest request, Model model) {
+        model.addAttribute("c", cases.tenantCase(id, accounts.requireTenant(request).email()));
+        model.addAttribute("postUrl", "/mieter/faelle/" + id + "/nachrichten");
+        return "demo/detail";
+    }
+
+    @PostMapping("/mieter/faelle/{id}/nachrichten")
+    Object tenantMessage(@PathVariable String id, @RequestParam String text, @RequestParam String operation,
+            @RequestParam(defaultValue = "false") boolean internal, @RequestParam(defaultValue = "false") boolean answer,
+            HttpServletRequest request, HttpServletResponse response, Model model) {
+        String email = accounts.requireTenant(request).email();
+        cases.tenantCase(id, email);
         try {
-            String token = cases.create(fields.get("title"), fields.get("unit"), fields.get("email"), fields.get("description"), fields.get("operation"));
+            if (internal || answer) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Diese Aktion ist für Mieter nicht verfügbar.");
+            }
+            cases.tenantMessage(id, email, text, operation);
+            return redirect("/mieter/faelle/" + id);
+        } catch (ResponseStatusException exception) {
+            response.setStatus(exception.getStatusCode().value());
+            model.addAttribute("error", exception.getReason());
+            model.addAttribute("draft", text);
+            model.addAttribute("operation", operation);
+            return tenantCase(id, request, model);
+        }
+    }
+    @PostMapping("/mieter/fall")
+    Object create(@RequestParam Map<String, String> fields, Model model, HttpServletRequest request, HttpServletResponse response) {
+        try {
+            String email = accounts.submissionEmail(request, fields.get("email"), Boolean.parseBoolean(fields.get("accountSubmission")));
+            String token = cases.create(fields.get("title"), fields.get("unit"), email, fields.get("description"), fields.get("operation"));
             return redirect("/mieter/fall/zugang/" + token);
         } catch (ResponseStatusException ex) {
-            response.setStatus(ex.getStatusCode().value()); model.addAttribute("error", ex.getReason()); model.addAttribute("fields", fields);
-            model.addAttribute("operation", fields.get("operation")); return "demo/intake";
+            response.setStatus(ex.getStatusCode().value());
+            model.addAttribute("error", ex.getReason());
+            model.addAttribute("fields", fields);
+            model.addAttribute("operation", fields.get("operation"));
+            return "demo/intake";
         }
     }
     @PostMapping({"/mitarbeiter/faelle/{id}/nachrichten", "/mieter/fall/zugang/{token}/nachrichten"})

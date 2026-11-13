@@ -2,6 +2,19 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { fixture, createCase, publish, change, editor, submit, freeze, until, base } from './ui-test-helpers.mjs';
 
+test('UI4: Mitarbeiterdaten und Schreibaktionen erfordern eine Anmeldung', async t => {
+    const { page, context } = await fixture(t, { staff: false });
+    await page.goto(`${base}/mitarbeiter/faelle`);
+    assert.equal(new URL(page.url()).pathname, '/anmelden');
+    assert.equal(await page.locator('#login-email').isVisible(), true);
+    assert.equal(await page.locator('#results').count(), 0);
+
+    const denied = await context.request.post(`${base}/mitarbeiter/faelle/REQ-2026-001/aktion`, {
+        form: { action: 'close' }, maxRedirects: 0,
+    });
+    assert.equal(denied.status(), 401);
+});
+
 for (const screen of ['tenant', 'list', 'staff']) {
     test(`${screen}: Zugriffsverweigerung entfernt Falldaten und stoppt Abrufe`, async t => {
         const { page, context } = await fixture(t);

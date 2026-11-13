@@ -1,15 +1,30 @@
 # Screen 04 – Anmeldung per E-Mail-Einmalcode
 
 **Projekt:** PropertyFlow – FFHS CAS AISE  
-**Status:** Entwurf der UI-Spezifikation. Für Mitarbeitende ist die Anmeldung per E-Mail-Einmalcode bestätigt.  
-**Stand:** 12.11.2026  
+**Status:** Die Anmeldung für Mitarbeitende und Mieter sowie die Mieter-Selbstregistrierung per E-Mail-Einmalcode sind in der lokalen Frontend-Demo umgesetzt. Die Weiterführung zu MCP beschreibt das Zielbild.\
+**Stand:** 13.11.2026\
 **Darstellung:** Serverseitig gerendertes Formular mit Thymeleaf.
 
 ## 1. Zweck und Umfang
 
 UI4 ermöglicht die persönliche Anmeldung am Mitarbeiterbereich. Die Verwaltung richtet das Konto und die Rolle gemäss [UC-007](../use_cases/UC-007-mitarbeiterkonto-anlegen.md) ein. Die Anmeldung folgt [UC-006](../use_cases/UC-006-mitarbeiter-anmelden.md). Die Ansicht kann auch beim Verbinden von PropertyFlow aus einem LLM-Chat erscheinen. Die Regeln für Rollen, Fallzugriff und MCP-Freigaben stehen in [ZUG-04](../specifications/fallzugriff-und-sicherheit.md#zug-04-rechte-und-vertrauensgrenzen).
 
-Die gemeinsame Ansicht ist auch für eine spätere Anmeldung am freiwilligen Mieterkonto vorgesehen. Dessen Kontoeröffnung und E-Mail-Verifikation sind in [UC-005](../use_cases/UC-005-userkonto-eroeffnen.md) beschrieben. Die öffentliche Einreichung und der persönliche Fall-Link führen weiterhin direkt zu [UI1](ansicht-01-mieter-fallansicht.md).
+Die gemeinsame Ansicht dient auch der Anmeldung am freiwilligen Mieterkonto. Dessen Kontoeröffnung und E-Mail-Verifikation sind in [UC-005](../use_cases/UC-005-userkonto-eroeffnen.md) beschrieben. Die öffentliche Einreichung und der persönliche Fall-Link führen weiterhin direkt zu [UI1](ansicht-01-mieter-fallansicht.md).
+
+### Mieterkonto eröffnen und nutzen
+
+«Userkonto eröffnen» führt von der Anmeldung und dem Mieterformular nach `/registrieren`.
+Nach «Code anfordern» bestätigt die Person ihre Adresse mit «E-Mail bestätigen».
+Die neutrale Antwort verrät vor der Verifikation nicht, ob bereits ein Konto besteht.
+Erst ein gültiger Code aktiviert ein neues Mieterkonto oder öffnet das bestehende Konto.
+Mitarbeiterrollen werden über die Registrierung weder vergeben noch geändert.
+
+Nach erfolgreicher Anmeldung gelangen Mieter zu «Meine Fälle» (`/mieter/faelle`).
+Die Übersicht umfasst auch frühere Gast-Anliegen derselben aktuellen Kontaktadresse
+und bietet «Neues Anliegen melden». Eigene Fallansichten unter `/mieter/faelle/{id}`
+zeigen nur mieteröffentliche Inhalte und erlauben Nachrichten ausschliesslich in aktiven Fällen.
+Jeder Zugriff prüft die serverseitige Konto-Adresse. Die Kopfzeile zeigt «Meine Fälle»,
+die angemeldete Adresse und «Abmelden». Die Daten bleiben bis zum Neustart im Arbeitsspeicher.
 
 ## 2. Felder, Aktionen und Rückmeldungen
 

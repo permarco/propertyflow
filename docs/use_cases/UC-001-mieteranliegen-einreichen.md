@@ -21,7 +21,7 @@ Dieser Use Case beschreibt die Web-Erfassung. Die sichere Annahme und Zuordnung 
 
 1. Die Mieterin oder der Mieter öffnet die Erfassungsmaske.
 2. Das System zeigt das Formular für ein neues Anliegen; das Öffnen legt keinen Fall an.
-3. Die Mieterin oder der Mieter erfasst Betreff, Beschreibung, Objekt-/Wohnungsreferenz und E-Mail-Adresse.
+3. Die Mieterin oder der Mieter erfasst Betreff, Beschreibung und Objekt-/Wohnungsreferenz; ohne Anmeldung zusätzlich die E-Mail-Adresse. Für die Einreichung aus einem verifizierten Mieterkonto gilt A6.
 4. Die Mieterin oder der Mieter sendet das Formular ab.
 5. Das System prüft die Angaben serverseitig und behandelt Wiederholungen gemäss FALL-03.
 6. Das System nimmt das Anliegen dauerhaft gemäss FALL-02 an und vergibt eine Case-ID. Die zuverlässige Übergabe an Camunda und die Bestätigungsbenachrichtigung werden veranlasst.
@@ -70,7 +70,9 @@ Dieser Use Case beschreibt die Web-Erfassung. Die sichere Annahme und Zuordnung 
 
 ### A6: Einreichung aus einem verifizierten Mieterkonto
 
-Bei einer Einreichung aus einem angemeldeten, verifizierten Mieterkonto übernimmt PropertyFlow die verifizierte E-Mail-Adresse des Kontos als Fall-Kontaktadresse. Der angenommene Fall erscheint gemäss [ZUG-04](../specifications/fallzugriff-und-sicherheit.md#zug-04-rechte-und-vertrauensgrenzen) auch in der Fallübersicht des Kontos. Die dauerhafte Annahme und der persönliche Fall-Link folgen dem Hauptablauf.
+Bei einer Einreichung aus einem angemeldeten, verifizierten Mieterkonto entfällt das E-Mail-Eingabefeld. PropertyFlow übernimmt die verifizierte E-Mail-Adresse serverseitig aus dem Konto als Fall-Kontaktadresse; mitgesendete Kontaktangaben dürfen sie nicht überschreiben. Der angenommene Fall erscheint gemäss [ZUG-04](../specifications/fallzugriff-und-sicherheit.md#zug-04-rechte-und-vertrauensgrenzen) auch in der Fallübersicht des Kontos. Die dauerhafte Annahme und der persönliche Fall-Link folgen dem Hauptablauf. Kontoanzeige und Abmeldung beschreibt Screen 01.
+
+Bei abgelaufener Anmeldung wird keine Konto-Adresse aus Browserdaten übernommen. Die Eingaben bleiben für eine erneute Anmeldung oder die bewusste Einreichung ohne Konto mit Kontaktadresse erhalten; die fehlgeschlagene kontobasierte Einreichung legt keinen Fall an.
 
 ## Postconditions
 

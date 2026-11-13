@@ -26,12 +26,18 @@ Die Module haben unterschiedliche Änderungsgründe und koppeln sich über expli
 
 | Aspekt | Entwurf |
 | --- | --- |
-| Anfrage | Betreff, Beschreibung, Objekt-/Wohnungsreferenz und E-Mail gemäss [FALL-02](../specifications/fallverwaltung.md#fall-02-erfolgreiche-annahme), dazu eine serverseitig geprüfte Absende-ID als Idempotenzschlüssel. |
+| Anfrage | Betreff, Beschreibung und Objekt-/Wohnungsreferenz gemäss [FALL-02](../specifications/fallverwaltung.md#fall-02-erfolgreiche-annahme), dazu eine serverseitig geprüfte Absende-ID als Idempotenzschlüssel. Ohne Anmeldung zusätzlich die Kontaktadresse; mit verifiziertem Mieterkonto wird sie serverseitig aus dem geprüften Konto übernommen und nicht als Nutzereingabe benötigt. |
 | Erfolg | `201` nach dauerhafter Speicherung mit der Case-ID. Bei identischer Wiederholung dieselbe Case-ID und dieselbe Annahmeantwort. |
 | Fehler | `422` bei ungültigen Feldern, `409` bei geändertem Inhalt mit derselben Absende-ID, `503` bei vorübergehend nicht verfügbarer Speicherung. Die Antworten verwenden eine gemeinsame Fehlerform. |
 | Wiederholung | Dieselbe Absende-ID mit demselben Inhalt erzeugt genau einen Fall und einen fachlichen Folgeauftrag gemäss [FALL-03](../specifications/fallverwaltung.md#fall-03-wiederholung-und-doppelte-einreichung). Gültigkeitsbereich und Aufbewahrungsdauer im OpenAPI-Entwurf präzisieren. |
 | Datenklasse | Personenbezogene Daten in den Eingaben. Die HTTP-Antwort enthält die Case-ID. Zugriff auf gespeicherte Falldaten erfordert eine eigene Berechtigung gemäss [ZUG-04](../specifications/fallzugriff-und-sicherheit.md#zug-04-rechte-und-vertrauensgrenzen). |
 | Messbares Ziel | Bei erreichbarer Datenbank werden im definierten Ausfalltest 100 % der gültigen Neueinreichungen dauerhaft angenommen, auch bei abgeschaltetem Modell und unerreichbarem Camunda. Messung über bestätigte Annahmen und gespeicherte Fälle. Herleitung aus NFR-03 und FALL-02. |
+
+### Kontaktadresse und Benutzerkontext im Dienstvertrag
+
+Web und ein späteres MCP-Werkzeug zur Einreichung im eigenen Namen verwenden dieselbe fachliche Regel: Der Dienst bestimmt bei angemeldeten Mietern die verifizierte Kontaktadresse anhand des geprüften Benutzerkontexts. Weder eine Benutzer-ID noch eine E-Mail aus Formular- oder Toolargumenten ersetzt die Authentifizierung. Der MCP-Vertrag für diese Einreichung benötigt kein E-Mail-Argument. Die Einreichung ohne Konto bleibt ein eigener zulässiger Web-Zugangsweg mit erforderlicher Kontaktadresse.
+
+Zu prüfen sind die Übernahme der Konto-Adresse ohne E-Mail-Eingabe, ein manipulierter abweichender Wert, eine abgelaufene Anmeldung und eine Einreichung ohne Konto mit fehlender oder ungültiger Adresse. Der Triage-Vertrag erhält keine separate Kontaktadresse; für den Anliegenstext gelten weiterhin die Regeln zur Datenminimierung.
 
 ## 3. Werkzeug für einen Agenten
 

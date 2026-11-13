@@ -7,7 +7,7 @@
 **Primary Actor:** Angemeldete Person der Verwaltung mit der Berechtigung «Mitarbeiterkonten verwalten»  
 **Supporting Actor:** Verantwortliche Person für die Servereinrichtung beim Anlegen des ersten Verwaltungskontos  
 **Goal:** Ein persönliches Mitarbeiterkonto mit geschäftlicher E-Mail-Adresse und zugewiesener Rolle bereitstellen.  
-**Status:** Fachlicher Entwurf. Für das erste Verwaltungskonto ist ein administrativer Einrichtungsbefehl vorgesehen. Die technische Umsetzung steht aus.
+**Status:** Die Kontoanlage ist als Zielablauf spezifiziert. Die Frontend-Demo lädt ein Mitarbeiter-Testkonto aus der lokalen Konfiguration. [Demo-Anleitung](../../dev/README.md#mitarbeiterkonto-konfigurieren-und-mieterkonto-eröffnen)
 
 **Fachliche Grundlage:** [ADR-005](../architecture/adr/ADR-005-zugriffsmodell.md#mitarbeiteridentität) beschreibt das Zugriffsmodell. Die erste Anmeldung der Person folgt [UC-006](UC-006-mitarbeiter-anmelden.md).
 
@@ -27,7 +27,7 @@
 
 ## Ersteinrichtung · Erstes Verwaltungskonto anlegen
 
-1. Die für die Servereinrichtung verantwortliche Person startet den administrativen Einrichtungsbefehl und gibt Namen und geschäftliche E-Mail-Adresse der vorgesehenen Person an.
+1. Die für die Servereinrichtung verantwortliche Person startet die administrative Einrichtung und gibt Namen und geschäftliche E-Mail-Adresse der vorgesehenen Person an.
 2. PropertyFlow prüft, ob die initiale Einrichtung bereits abgeschlossen ist. Konto, Rolle, Berechtigung zur Kontoverwaltung und Abschluss der Ersteinrichtung werden gemeinsam dauerhaft gespeichert. Dadurch führt auch eine wiederholte oder parallele Ausführung zu höchstens einem initialen Verwaltungskonto.
 3. PropertyFlow protokolliert die Anlage als administrative Einrichtung. Die Person meldet sich über denselben Anmeldeweg gemäss UC-006 an. Ab dann kann sie reguläre Mitarbeiterkonten über die geschützte Kontoverwaltung anlegen.
 
@@ -36,7 +36,7 @@
 ```mermaid
 flowchart TD
     Einrichtung(["Servereinrichtung"])
-    Befehl["Administrativen Einrichtungsbefehl mit Name und E-Mail ausführen"]
+    Befehl["Administrative Einrichtung mit Name und E-Mail ausführen"]
     Erstmalig{"Initiales Verwaltungskonto bereits eingerichtet?"}
     Verwaltung["Verwaltungskonto mit Mitarbeiterrolle und Kontoverwaltungsrecht anlegen"]
     Ueberspringen(["Einrichtung ohne weitere Kontoanlage beenden"])

@@ -7,7 +7,7 @@
 **Primary Actor:** Mitarbeiterin / Mitarbeiter der Immobilienverwaltung  
 **Supporting Actors:** Verwaltung für die Kontobereitstellung, E-Mail-Dienst für die Zustellung und optional der MCP-Client im LLM-Chat  
 **Goal:** Sich mit einem E-Mail-Einmalcode persönlich anmelden und die zugewiesenen Mitarbeiterfunktionen in PropertyFlow nutzen.  
-**Status:** Fachlicher Entwurf mit abgestimmtem Anmeldeverfahren. Die technische Umsetzung steht aus.
+**Status:** Mitarbeiteranmeldung und geschützter Mitarbeiterbereich sind in der lokalen Frontend-Demo umgesetzt. Der MCP-Zugang beschreibt das Zielbild.
 
 **Fachliche Grundlage:** [ADR-005](../architecture/adr/ADR-005-zugriffsmodell.md#mitarbeiteridentität) beschreibt Mitarbeiteridentität, gemeinsamen Anmeldedienst und MCP-Autorisierung. Die Mitarbeiterübersicht folgt [UC-002](UC-002-mieteranliegen-anzeigen.md).
 
