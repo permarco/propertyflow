@@ -13,16 +13,36 @@
 
 Die Felder, Rückmeldungen und Übergänge der Anmeldeansicht beschreibt [Screen 04](../frontend/ansicht-04-login.md).
 
+## Use-Case-Diagramm
+
+```mermaid
+flowchart LR
+MITARBEITER["Mitarbeiterin / Mitarbeiter"]:::participant
+MAIL["E-Mail-Dienst (System)"]:::participant
+MCP["MCP-Client im LLM-Chat (geplant) (System)"]:::participant
+
+subgraph PF["PropertyFlow"]
+    UC(["UC-006 · Mitarbeiter anmelden"]):::goal
+end
+
+MITARBEITER --- UC
+UC --- MAIL
+UC --- MCP
+classDef participant fill:#f2f8fc,stroke:#334155,color:#172033
+classDef goal fill:#dbeaf7,stroke:#6d8eae,color:#172033
+style PF stroke:#006fbb,stroke-width:2px,color:#172033
+```
+
 ## Preconditions
 
-- Ein aktives Mitarbeiterkonto mit der vorgesehenen E-Mail-Adresse und Mitarbeiterrolle wurde gemäss [UC-007](UC-007-mitarbeiterkonto-anlegen.md) eingerichtet.
+- Ein aktives Mitarbeiterkonto mit der vorgesehenen E-Mail-Adresse wurde gemäss [UC-007](UC-007-mitarbeiterkonto-anlegen.md) eingerichtet. Es hat die Mitarbeiterrolle gemäss [ZUG-04 · Rollen und Zusatzrechte](../specifications/fallzugriff-und-sicherheit.md#rollen-und-zusatzrechte).
 - Die Person hat Zugriff auf das Postfach dieser Adresse.
 
 ## Main Success Scenario
 
 1. Die Mitarbeiterin oder der Mitarbeiter öffnet den geschützten Mitarbeiterbereich und gibt die hinterlegte E-Mail-Adresse ein.
-2. PropertyFlow prüft serverseitig, ob für diese Adresse ein aktives Mitarbeiterkonto mit Mitarbeiterrolle besteht, und veranlasst die Zustellung eines kurz gültigen Einmalcodes. Die öffentliche Antwort verrät den Kontostatus nicht.
-3. Die Person gibt den Code auf der Anmeldeseite ein. Der Anmeldedienst prüft, ob der Code gültig, unverbraucht und dem weiterhin berechtigten Konto zugeordnet ist. Bei Erfolg verbraucht er den Code und eröffnet eine persönliche Sitzung.
+2. PropertyFlow prüft serverseitig, ob für diese Adresse ein aktives Mitarbeiterkonto mit Mitarbeiterrolle besteht. Anforderung und Versand folgen [ZUG-04 · E-Mail-Einmalcode](../specifications/fallzugriff-und-sicherheit.md#e-mail-einmalcode-für-registrierung-und-anmeldung).
+3. Die Person gibt den Code auf der Anmeldeseite ein. Nach erfolgreicher Codeprüfung eröffnet PropertyFlow eine persönliche Sitzung, sofern das Konto weiterhin über die Mitarbeiterrolle verfügt und aktiv ist.
 4. PropertyFlow öffnet den Mitarbeiterbereich. Bei weiteren Aufrufen prüft der Dienst die Mitarbeiterberechtigung und die für die jeweilige Aktion geltenden Fachregeln.
 
 ## Flussdiagramm · Mitarbeiteranmeldung
@@ -70,7 +90,7 @@ PropertyFlow eröffnet keine Mitarbeitersitzung. Eine Anmeldung als Mieter verle
 
 ### A3: Code ist ungültig, abgelaufen, bereits verwendet oder wird nicht zugestellt
 
-Die Anmeldung bleibt aus. Die Person kann einen erneuten Versuch starten. Konkrete Gültigkeitsdauer, Wiederholungsgrenzen und Versandfehlerbehandlung gehören zum technischen Anmeldevertrag.
+Der Mitarbeiterbereich bleibt gesperrt. Die Person kann gemäss den [gemeinsamen Einmalcode-Regeln](../specifications/fallzugriff-und-sicherheit.md#e-mail-einmalcode-für-registrierung-und-anmeldung) einen erneuten Versuch starten.
 
 ## Postconditions
 

@@ -15,9 +15,27 @@ Die automatische Fallanalyse und Dringlichkeitsbewertung erfolgen im Camunda-Fal
 
 Streaming und wirksamer Abbruch betreffen in UI3 die KI-Formulierung einer externen Nachricht. Der Abbruch beendet diesen Formulierungsversuch, nicht den führenden Camunda-Fallprozess. SSR und gezieltes JavaScript folgen ADR-003; die dort bisher als Analyse bezeichnete interaktive Funktion wird fachlich als Formulierungshilfe konkretisiert.
 
+## Use-Case-Diagramm
+
+```mermaid
+flowchart LR
+MITARBEITER["Mitarbeitende der Verwaltung"]:::participant
+MODELL["LLM-Anbieter (geplant) (System)"]:::participant
+
+subgraph PF["PropertyFlow"]
+    UC(["UC-004 · Externe Nachricht mit KI formulieren"]):::goal
+end
+
+MITARBEITER --- UC
+UC --- MODELL
+classDef participant fill:#f2f8fc,stroke:#334155,color:#172033
+classDef goal fill:#dbeaf7,stroke:#6d8eae,color:#172033
+style PF stroke:#006fbb,stroke-width:2px,color:#172033
+```
+
 ## Preconditions
 
-- Der Mitarbeiter ist gemäss [UC-006](UC-006-mitarbeiter-anmelden.md) persönlich angemeldet und befindet sich mit Mitarbeiterberechtigung nach [ZUG-04](../specifications/fallzugriff-und-sicherheit.md#zug-04-rechte-und-vertrauensgrenzen) in UI3 eines aktiven Falls.
+- Der Mitarbeiter ist gemäss [UC-006](UC-006-mitarbeiter-anmelden.md) persönlich angemeldet und hat einen aktiven Fall in UI3 geöffnet. Er verfügt über die Mitarbeiterrolle gemäss [ZUG-04 · Rollen und Zusatzrechte](../specifications/fallzugriff-und-sicherheit.md#rollen-und-zusatzrechte).
 - Die Eingabe ist als extern ausgewählt («Intern» ausgeschaltet).
 - In der Fallansicht läuft keine Nachrichten- oder Memo-Speicherung; währenddessen sind Eingabe, KI-Start und Vorschlagsübernahme gesperrt.
 - Eine kurze, fachlich geprüfte Aussage ist eingegeben, beispielsweise «Wir haben den Techniker aufgeboten». Bei leerem oder ausschliesslich aus Leerzeichen bestehendem Text ist «Mit KI formulieren» deaktiviert; der Server lehnt einen solchen Generierungsversuch ebenfalls ab.

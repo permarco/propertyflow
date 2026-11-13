@@ -330,6 +330,10 @@ an den zuständigen Services mit ersetzbaren externen Abhängigkeiten.
 Die Kriterien sind noch keine ausgeführten Nachweise; Details werden an der
 zentralen Quelle gepflegt.
 
+Die [Prüffälle zum Fallprozess](fallprozess-prueffaelle.md) beschreiben geplante
+Integrationsprüfungen für Camunda und PropertyFlow. Sie ergänzen die
+KI-Baseline EVAL-01 bis EVAL-04 um erwartete Prozess- und Fallzustände.
+
 ## Ergänzende Prüfkriterien zum Fallzugriff
 
 Die [Spezifikation für Fallzugriff und Sicherheit](../specifications/fallzugriff-und-sicherheit.md#prüfkriterien)

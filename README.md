@@ -185,13 +185,7 @@ architektonische Source of Truth.
 
 Geschäftsregeln (`BR`) und Akzeptanzkriterien (`AK`) beginnen mit der Nummer ihres Use Cases, zum Beispiel `UC-001-BR-001` und `UC-005-AK-01`.
 
-- [UC-001: Mieteranliegen einreichen](docs/use_cases/UC-001-mieteranliegen-einreichen.md)
-- [UC-002: Mitarbeiterübersicht](docs/use_cases/UC-002-mieteranliegen-anzeigen.md)
-- [UC-003: Falldetail](docs/use_cases/UC-003-mieteranliegen-details-anzeigen.md)
-- [UC-004: KI-Formulierung](docs/use_cases/UC-004-ki-analyse-durchfuehren.md)
-- [UC-005: Userkonto eröffnen](docs/use_cases/UC-005-userkonto-eroeffnen.md)
-- [UC-006: Mitarbeiter anmelden](docs/use_cases/UC-006-mitarbeiter-anmelden.md)
-- [UC-007: Mitarbeiterkonto anlegen](docs/use_cases/UC-007-mitarbeiterkonto-anlegen.md)
+- [Use-Case-Übersicht](docs/use_cases/README.md) mit Links auf die einzelnen Abläufe und ihrem Umsetzungsstand
 - [Generierte Unit-Tests und Veto](docs/ai-usage/block2-oberflaechen-pruefung.md#ergänzung-vom-12102026-generierte-unit-tests-und-mutation)
 - [Browser- und Performance-Nachweise](docs/ai-usage/block2-oberflaechen-pruefung.md#ergänzung-browser-qualitätsnachweis-und-präsentationsentscheidung)
 - [Camunda-Umgebung](infra/camunda/README.md)

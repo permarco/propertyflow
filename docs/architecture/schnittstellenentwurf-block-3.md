@@ -1,6 +1,13 @@
-# TRANSFER · Block 3 «Services»
+# Schnittstellenentwurf für PropertyFlow · Block 3
 
-**Status:** Entwurf für PropertyFlow nach der FFHS-Vorlage «TRANSFER · Ein Entscheid für Ihr Projekt, der sich prüfen lässt». Nach dem fachlichen Review geht Abschnitt 4 unverändert in Artefakt 5 ein.
+**Status:** Entwurf für PropertyFlow. Nach dem fachlichen Review geht Abschnitt 4 unverändert in Artefakt 5 des FFHS-Blocks 3 «Services» ein. Die Grundlage ist die Kursübung «TRANSFER».
+
+Dieses Dokument verbindet die fachliche Modulzerlegung mit dem Entwurf des
+HTTP-Vertrags, einem MCP-Werkzeug und dem Architekturentscheid zur asynchronen
+Erstbewertung. Die Systemanbindungen im Überblick stehen in der
+[C4-Containeransicht](c4-container.md#schnittstellen-in-der-anwendung). Die
+bisher beschriebenen internen Verträge stehen in der
+[Modulstruktur](module-structure.md#interne-schnittstellenverträge).
 
 ## 1. Fachlicher Schnitt
 

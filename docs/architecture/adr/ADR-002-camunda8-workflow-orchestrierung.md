@@ -383,6 +383,114 @@ PropertyFlow Worker
 fachliches Modul
 ```
 
+#### Beispiel · Zuständigkeit und Vorgehen empfehlen
+
+Camunda stellt den Auftrag für die Empfehlung bereit. Der Job Worker läuft in
+PropertyFlow und ruft dort das Modul `recommendation` auf. Dieses kann eine
+Empfehlung für die Immobilienbewirtschaftung oder einen Vorschlag für eine
+Antwort oder Rückfrage an den Mieter liefern.
+
+PropertyFlow übernimmt die vorgeschlagene Aktion automatisch, wenn sie sich
+aus den vorliegenden Fallangaben und einer freigegebenen Fachregel eindeutig
+ergibt, für die automatische Ausführung zugelassen ist und keine menschliche
+Entscheidung aussteht. PropertyFlow prüft diese Voraussetzungen serverseitig
+am aktuellen Fallstand. Bei fehlenden, unklaren oder widersprüchlichen
+Angaben oder bei vorgeschriebener menschlicher Entscheidung prüft die
+Immobilienbewirtschaftung den Fall und entscheidet über das weitere Vorgehen.
+Der Fall bleibt bis dahin aktiv. Der Auslösepunkt und der Zuschnitt der Jobs
+bleiben im BPMN- und Integrationsentwurf offen.
+[UC-018](../../use_cases/UC-018-zustaendigkeit-und-vorgehen-empfehlen.md)
+
+**Beispiel für eine direkte Antwort mit Systemabschluss.** Ein Mieter meldet
+«Meine Lampe zu Hause funktioniert nicht mehr.» Bestätigen die Fallangaben und
+eine hinterlegte Fachregel eindeutig, dass es seine private Lampe ist und der
+Austausch in seiner Verantwortung liegt, ist «Für den Austausch Ihrer privaten
+Lampe sind Sie selbst zuständig» eine mögliche Antwort.
+PropertyFlow prüft die Regel und den aktuellen Fall serverseitig. Wenn keine
+menschliche Entscheidung aussteht, zeigt der Beispielablauf die Veröffentlichung
+im Fallverlauf vor dem Systemabschluss wegen fehlenden Bearbeitungsbedarfs
+der Verwaltung. Die konkreten Regeln für die automatische Veröffentlichung
+sind im Kommunikationsvertrag zu präzisieren.
+
+**Beispiel für eine Rückfrage bei offenem Fall.** Ein Mieter meldet
+«Der Lüftungsfilter im Badezimmer muss ausgetauscht werden.» Liegt der
+Filterwechsel im konkreten Fall gemäss hinterlegter Fachregel in seiner
+Verantwortung, kann der Ablauf folgende Rückfrage vorsehen.
+
+> Sollen wir für Sie einen Ersatzfilter organisieren? Die Kosten für den Filter
+> würden Sie tragen.
+
+Wenn die Voraussetzungen für die automatische Veröffentlichung erfüllt sind,
+veröffentlicht PropertyFlow die Rückfrage mit Antwortbedarf. Der Fall bleibt
+aktiv und erhält im Beispiel den Status «Wartet auf Mieterantwort». Bei einer
+Zusage klärt die Immobilienbewirtschaftung die Kosten und entscheidet über eine
+allfällige Bestellung, die sie ausserhalb von PropertyFlow organisiert.
+[FALL-05](../../specifications/fallverwaltung.md#fall-05-fachlicher-lebenszyklus) ·
+[UC-021](../../use_cases/UC-021-ki-rueckfrage-vorschlagen.md)
+
+Für beide Beispielabläufe gelten die Kontext-, Veröffentlichungs- und
+Freigaberegeln.
+[FALL-07](../../specifications/fallverwaltung.md#fall-07-abschluss-und-zeit-danach) ·
+[FALL-10](../../specifications/fallverwaltung.md#fall-10-automatisierung-und-menschliche-freigabe) ·
+[KOM-02](../../specifications/fallkommunikation.md#kom-02-llm-kommunikation-ohne-interne-memos) ·
+[KOM-04](../../specifications/fallkommunikation.md#kom-04-nachrichtensperre-nach-fallabschluss)
+
+```mermaid
+---
+config:
+  sequence:
+    actorMargin: 24
+    mirrorActors: false
+    width: 105
+---
+sequenceDiagram
+    participant C as Camunda
+    box rgb(51, 65, 85) PropertyFlow
+        participant W as Job Worker
+        participant R as Recommendation
+        participant F as Fallbearbeitung
+    end
+    participant L as LLM-Anbieter
+    actor M as Immobilienbewirtschaftung
+
+    C->>C: Empfehlungsauftrag bereitstellen
+    W->>C: Jobs abrufen
+    C-->>W: Auftrag für Empfehlung<br/>mit Fallreferenz
+    W->>R: Empfehlung für den Fall erstellen
+    R->>R: Freigegebene Wissensquellen<br/>durchsuchen (RAG)
+    R->>L: Vorschlag mit relevanten<br/>Fall- und Wissensdaten anfragen
+    L-->>R: Empfehlung, Antwort oder Rückfrage
+    R->>R: Ausgabe prüfen und Quellen festhalten
+    R-->>W: Vorschlag und Quellenbezug
+    W->>F: Vorschlag anhand von Fachregel<br/>und Fallstand einordnen
+    F->>F: Einordnung mit Quellen festhalten
+    F-->>W: Fachliches Ergebnis
+    W->>C: Job mit fachlichem Ergebnis abschliessen
+    alt Eindeutig und zulässig · Antwort mit Systemabschluss
+        C->>C: Folgeauftrag bereitstellen
+        W->>C: Jobs abrufen
+        C-->>W: Auftrag für Antwort und Abschluss
+        W->>F: Fachregel und aktuellen Fallstand prüfen
+        F->>F: Antwort speichern und<br/>im Fallverlauf veröffentlichen
+        F->>F: Fall fachlich abschliessen<br/>und Abschlussgrund festhalten
+        F-->>W: Systemabschluss gespeichert
+        W->>C: Folgeauftrag abschliessen
+    else Eindeutig und zulässig · Rückfrage mit offenem Fall
+        C->>C: Folgeauftrag bereitstellen
+        W->>C: Jobs abrufen
+        C-->>W: Auftrag für Rückfrage
+        W->>F: Aktuellen Fallstand und Zulässigkeit prüfen
+        F->>F: Rückfrage mit Antwortbedarf<br/>im Fallverlauf veröffentlichen
+        F-->>W: Aktiv · Wartet auf Mieterantwort
+        W->>C: Folgeauftrag abschliessen
+    else Unklarer Fall oder menschliche Entscheidung erforderlich
+        Note over C,F: Fall bleibt aktiv · Mitarbeiterprüfung erforderlich
+        M->>F: Falldetail öffnen
+        F-->>M: Empfehlung zur Prüfung anzeigen
+        Note over M: Weiteres Vorgehen entscheiden
+    end
+```
+
 
 ### Idempotenz
 

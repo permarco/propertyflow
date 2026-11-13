@@ -57,7 +57,7 @@ Die sichtbare Adresse enthält den Zugangsschlüssel. Kopieren oder Weitergeben 
 
 ## ZUG-04: Rechte und Vertrauensgrenzen
 
-Die Matrix gilt für das Zielmodell aus [ADR-005](../architecture/adr/ADR-005-zugriffsmodell.md) und für direkte Aufrufe der PropertyFlow-Schnittstellen.
+Die Matrix gilt für das Zielmodell aus [ADR-005](../architecture/adr/ADR-005-zugriffsmodell.md) und für direkte Aufrufe der PropertyFlow-Schnittstellen. Für persönliche Konten gelten die [Rollen und Zusatzrechte](#rollen-und-zusatzrechte).
 
 | Aufrufer und Zugangsnachweis | Lesen | Schreiben und weitere Aktionen |
 | --- | --- | --- |
@@ -69,6 +69,24 @@ Die Matrix gilt für das Zielmodell aus [ADR-005](../architecture/adr/ADR-005-zu
 | MCP-Client mit gültigem OAuth-Zugriffstoken eines angemeldeten Benutzers | Freigegebene Tools und Daten für Fälle, auf die das Konto aktuell Zugriff hat. | Ausdrücklich delegierte fachliche Aktionen innerhalb der Kontorechte und der Regeln für den konkreten Fall. |
 | Camunda-Integration und Hintergrunddienste mit technischer Identität | Nur die für die jeweilige Aufgabe erforderlichen Daten. | Definierte Systemaktionen über autorisierte PropertyFlow-Dienste, etwa ein Abschluss nach Prüfung eines vereinbarten Grundes gemäss FALL-07. Die Wiedereröffnung ist eine Mitarbeiteraktion. |
 
+### Rollen und Zusatzrechte
+
+| Rolle oder Zusatzrecht | Wie das Konto sie erhält | Fachlicher Umfang |
+| --- | --- | --- |
+| **Mieter** | Durch freiwillige Registrierung und Verifikation der E-Mail-Adresse gemäss [UC-005](../use_cases/UC-005-userkonto-eroeffnen.md). | Die Person kann neue Anliegen einreichen, Fälle mit passender aktueller Kontaktadresse und deren mieteröffentliche Daten einsehen und diese Fälle in der aktiven Phase mit externen Nachrichten ergänzen. |
+| **Mitarbeiter** | Eine berechtigte Person der Verwaltung legt das Konto mit der geschäftlichen E-Mail-Adresse an und weist ihm die Mitarbeiterrolle gemäss [UC-007](../use_cases/UC-007-mitarbeiterkonto-anlegen.md) zu. | Die Person kann im Mitarbeiterbereich Fälle und interne Memos einsehen, suchen und fachlich zulässige Bearbeitungsaktionen ausführen. Für kritische Handlungen gilt [FALL-10](fallverwaltung.md#fall-10-automatisierung-und-menschliche-freigabe). |
+| **Mitarbeiterkonten verwalten** | Das erste Verwaltungskonto erhält das Zusatzrecht zur Mitarbeiterrolle bei der Servereinrichtung gemäss [UC-007](../use_cases/UC-007-mitarbeiterkonto-anlegen.md). | Die Person kann in der geschützten Kontoverwaltung Mitarbeiterkonten anlegen und die Mitarbeiterrolle vergeben. Der Fallzugriff richtet sich nach der Mitarbeiterrolle. |
+
+Wer Mitarbeiterkonten sperren oder die Mitarbeiterrolle entziehen darf, bleibt
+im Verwaltungsablauf nach [UC-029](../use_cases/UC-029-mitarbeiterzugriff-entziehen.md)
+zu konkretisieren.
+
+Der persönliche Fall-Link gewährt Zugriff auf den zugeordneten Fall gemäss
+[ZUG-03](#zug-03-direkter-linkaufruf-und-tokenprüfung). Der MCP-Client handelt
+im Rahmen der [delegierten Kontorechte](#gemeinsame-anmeldung-und-mcp-delegation).
+Camunda und Hintergrunddienste handeln mit einer technischen Identität. Für
+diese Zugriffe gelten die jeweiligen Zeilen der Zugriffsmatrix.
+
 ### Mieterzugriff
 
 Die Einreichung und der persönliche Fall-Link bleiben ohne Konto nutzbar. Ein freiwilliges Mieterkonto wird nach der E-Mail-Verifikation gemäss [UC-005](../use_cases/UC-005-userkonto-eroeffnen.md) aktiviert. PropertyFlow ermittelt die Fallmenge anhand der verifizierten Konto-Adresse und der aktuellen Fall-Kontaktadresse. Das gilt auch für frühere Einreichungen ohne Anmeldung. Der Dienst prüft diese Zuordnung beim Listenabruf und bei jedem Detail- oder Schreibzugriff im Web und über MCP. Nach einer geprüften Änderung der Fall-Kontaktadresse gilt die neue Zuordnung ab dem nächsten Zugriff.
@@ -78,17 +96,43 @@ Die Mieterrechte umfassen veröffentlichte Falldaten und externe Nachrichten. De
 **Lokaler Implementierungsstand (13.11.2026):** Selbstregistrierung, E-Mail-Codeprüfung,
 «Meine Fälle» sowie die Prüfung bei Detail- und Nachrichtenzugriffen sind im Profil
 `frontend-demo` umgesetzt. Die Konto-Adresse stammt aus der Sitzung; Formularwerte
-ändern keine Zuordnung oder Rolle. Registrierung und Anmeldung teilen Code-Laufzeit,
-Versuchslimit und Anforderungslimits. Konten werden erst nach Verifikation aktiviert.
+ändern keine Zuordnung oder Rolle. Für die Codeprüfung gelten die [gemeinsamen
+Einmalcode-Regeln](#e-mail-einmalcode-für-registrierung-und-anmeldung).
 Konten und Fälle liegen im Arbeitsspeicher. Dauerhafte Speicherung, persönliche
 Audit-Zuordnung und OAuth-/MCP-Delegation sind damit noch nicht umgesetzt.
 Die [Testanleitung](../../src/test/README.md) beschreibt die Prüfungen mit Mailpit.
 
 ### Mitarbeiteranmeldung und Kontoverwaltung
 
-UI2 und UI3 setzen für Lesen und Schreiben ein aktives, persönlich angemeldetes Konto mit Mitarbeiterrolle voraus. Die Verwaltung legt das Konto mit geschäftlicher E-Mail-Adresse an und vergibt die Mitarbeiterrolle. Das erste Verwaltungskonto mit Kontoverwaltungsrecht entsteht bei der Servereinrichtung. Mitarbeitende melden sich per E-Mail-Einmalcode an. Die Abläufe stehen in [UC-006](../use_cases/UC-006-mitarbeiter-anmelden.md) und [UC-007](../use_cases/UC-007-mitarbeiterkonto-anlegen.md).
+UI2 und UI3 setzen für Lesen und Schreiben ein aktives, persönlich angemeldetes Konto mit Mitarbeiterrolle voraus. Die Anmeldung per E-Mail-Einmalcode beschreibt [UC-006](../use_cases/UC-006-mitarbeiter-anmelden.md). Für Kontoanlage und Rollenvergabe gelten die [Rollen und Zusatzrechte](#rollen-und-zusatzrechte).
 
-Die fachlichen Fallrechte sind für die Mitarbeiterrolle einheitlich. Die Kontoverwaltung benötigt eine zusätzliche Berechtigung. Die bestehende fachliche Prüfung nach [FALL-06](fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow), [FALL-07](fallverwaltung.md#fall-07-abschluss-und-zeit-danach) und [FALL-10](fallverwaltung.md#fall-10-automatisierung-und-menschliche-freigabe) gilt bei allen Zugriffen. PropertyFlow ordnet Änderungen und Freigaben der persönlichen Benutzer-ID zu. Fehlende oder abgelaufene Anmeldungen sperren den Mitarbeiterzugriff bis zur erneuten Anmeldung. Bei einem gesperrten Konto oder entzogener Mitarbeiterrolle weist der Dienst den nächsten Zugriff zurück.
+Die fachlichen Fallrechte sind für die Mitarbeiterrolle einheitlich. Die bestehende fachliche Prüfung nach [FALL-06](fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow), [FALL-07](fallverwaltung.md#fall-07-abschluss-und-zeit-danach) und [FALL-10](fallverwaltung.md#fall-10-automatisierung-und-menschliche-freigabe) gilt bei allen Zugriffen. PropertyFlow ordnet Änderungen und Freigaben der persönlichen Benutzer-ID zu. Fehlende oder abgelaufene Anmeldungen sperren den Mitarbeiterzugriff bis zur erneuten Anmeldung. Bei einem gesperrten Konto oder entzogener Mitarbeiterrolle weist der Dienst den nächsten Zugriff zurück.
+
+### E-Mail-Einmalcode für Registrierung und Anmeldung
+
+Bei der freiwilligen Mieterregistrierung dient der Code als Nachweis für die
+angegebene E-Mail-Adresse. Für die Anmeldung von Mietern und Mitarbeitenden
+verwendet PropertyFlow die im berechtigten Konto hinterlegte Adresse.
+
+- Die öffentliche Rückmeldung auf eine Code-Anforderung bleibt neutral. Sie
+  legt weder den Kontostatus noch zugehörige Fälle offen.
+- PropertyFlow prüft die Zuordnung des Codes zur E-Mail-Adresse und zum
+  vorgesehenen Konto oder Registrierungsvorgang serverseitig. Ein Code ist
+  zeitlich begrenzt und einmal verwendbar. Ein ungültiger, abgelaufener oder
+  bereits verbrauchter Code eröffnet keine Sitzung und aktiviert kein Konto.
+- Eine Neuregistrierung aktiviert das Mieterkonto erst nach erfolgreicher
+  Verifikation. Bei der Anmeldung muss das bestehende Konto bei der Prüfung
+  weiterhin für den angeforderten Zugang berechtigt sein.
+- Anforderungs- und Versuchslimits begrenzen Wiederholungen. Ein neuer Code kann
+  im Rahmen der Anforderungslimits angefordert werden.
+
+**Lokale Frontend-Demo (13.11.2026):** Der Code gilt zehn Minuten ab Anforderung.
+Nach fünf Fehlversuchen ist er gesperrt. Zwischen zwei Anforderungen für
+dieselbe E-Mail-Adresse liegt mindestens eine Minute. Innerhalb einer gleitenden
+Stunde sind höchstens fünf Anforderungen je Adresse möglich.
+Registrierung und Anmeldung teilen die Anforderungslimits. Produktive
+Laufzeiten, Limits und die technische Behandlung von Versandfehlern sind im
+Anmeldevertrag zu konkretisieren.
 
 ### Gemeinsame Anmeldung und MCP-Delegation
 
@@ -97,6 +141,22 @@ Web und MCP nutzen für Mieter und Mitarbeitende denselben Anmeldedienst. Eine g
 Web und MCP verwenden dieselben fachlichen Anwendungsdienste. Bei MCP prüft PropertyFlow das Zugriffstoken, das aktuelle Konto und seine Rolle, die Delegation an den Client, die Berechtigung am konkreten Fall und den fachlichen Zustand. Für kritische Aktionen prüft der Dienst die vorgesehene menschliche Freigabe für genau diese Handlung. Ein Widerruf der Delegation sperrt den betroffenen MCP-Zugriff bei der nächsten Anfrage. Bei Schreibversuchen protokolliert PropertyFlow Benutzer-ID, Kanal, gegebenenfalls MCP-Client, Aktion, Fallreferenz, Zeitpunkt und Ergebnis.
 
 Kontaktadresse, Fallzuordnung, Absenderrolle, Status, Sichtbarkeit, Veröffentlichungskennzeichen und Zeitstempel werden serverseitig bestimmt beziehungsweise geprüft. Tool-Argumente, manipulierte Pfade, Formularfelder und Modelltexte erweitern keine Berechtigungen. PropertyFlow verantwortet die Autorisierung. Der Browser greift ausschliesslich über PropertyFlow auf Fallfunktionen zu. Zugriffstokens, Einmalcodes und Sitzungsschlüssel gehören weder in Audit-Protokolle noch in Camunda-Prozessvariablen, LLM-Prompts, RAG-Indizes oder Tool-Kontexte.
+
+### Web-Abmeldung
+
+- Die Web-Abmeldung erfolgt über eine CSRF-geschützte Schreibaktion. Ein GET
+  oder ein fehlender beziehungsweise ungültiger CSRF-Nachweis löst keine
+  Abmeldung aus.
+- PropertyFlow beendet die aktuelle lokale Browsersitzung serverseitig.
+  Weitere kontobasierte Zugriffe mit dieser Sitzung erfordern eine erneute
+  Anmeldung. Das gilt auch für Aufrufe aus bereits geöffneten Tabs.
+  Ungesendete Eingaben werden bei der Abmeldung nicht gespeichert.
+- Persönliche Fall-Links behalten ihre Gültigkeit gemäss [ZUG-05](#zug-05-dauerhafte-gültigkeit-widerruf-und-ersatz).
+  Bereits erteilte MCP-Delegationen unterliegen weiterhin dem eigenen
+  [Widerruf](#gemeinsame-anmeldung-und-mcp-delegation).
+
+Die genaue Logout-Route und ein übergreifender Logout am gemeinsamen
+Anmeldedienst bleiben im technischen Zugriffsvertrag zu konkretisieren.
 
 ## ZUG-05: Dauerhafte Gültigkeit, Widerruf und Ersatz
 
