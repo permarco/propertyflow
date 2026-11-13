@@ -39,7 +39,10 @@ public class DemoCases {
     private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("dd.MM.yyyy, HH:mm").withZone(ZoneId.of("Europe/Zurich"));
     private final Map<String, CaseData> cases = new LinkedHashMap<>();
     private final Map<String, String> tokens = new HashMap<>();
-    private final Map<String, String> submissions = new HashMap<>();
+    private final Map<SubmissionKey, String> submissions = new HashMap<>();
+
+    private record SubmissionKey(String scope, String operation) {
+    }
 
     public record Entry(String id, String role, String text, Instant at, boolean internal, boolean event, boolean answerRequired, String reason, String consideredReview, boolean originallyAnswerRequired, String answerEndedBy, Instant answerEndedAt) {
         public Entry(String id, String role, String text, Instant at, boolean internal, boolean event, boolean answerRequired, String reason) {
@@ -190,19 +193,36 @@ public class DemoCases {
             throw new ResponseStatusException(BAD_REQUEST, "Bitte Pflichtfelder ausfüllen und die maximale Länge beachten.");
         return value.strip();
     }
-    public synchronized String create(String title, String unit, String email, String description, String operation) {
+    public synchronized String create(String submissionScope, String title, String unit, String email, String description, String operation) {
+        required(submissionScope, 200);
         required(operation, 80);
-        if (submissions.containsKey(operation)) return submissions.get(operation);
-        title = required(title, 150); unit = required(unit, 200); email = required(email, 254); description = required(description, 5000);
-        if (!email.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+")) throw new ResponseStatusException(BAD_REQUEST, "Bitte eine gültige E-Mail-Adresse eingeben.");
+        SubmissionKey key = new SubmissionKey(submissionScope, operation);
+        if (submissions.containsKey(key)) {
+            return submissions.get(key);
+        }
+        title = required(title, 150);
+        unit = required(unit, 200);
+        email = required(email, 254);
+        description = required(description, 5000);
+        if (!email.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+")) {
+            throw new ResponseStatusException(BAD_REQUEST, "Bitte eine gültige E-Mail-Adresse eingeben.");
+        }
         CaseData c = new CaseData();
-        c.id = "REQ-2026-%03d".formatted(cases.size() + 1); c.title = title; c.originalUnit = unit; c.unit = "";
-        c.email = email; c.description = description; c.received = Instant.now(); c.contact = c.received;
-        c.status = "Eingegangen"; c.urgency = URGENCIES.getFirst();
+        c.id = "REQ-2026-%03d".formatted(cases.size() + 1);
+        c.title = title;
+        c.originalUnit = unit;
+        c.unit = "";
+        c.email = email;
+        c.description = description;
+        c.received = Instant.now();
+        c.contact = c.received;
+        c.status = "Eingegangen";
+        c.urgency = URGENCIES.getFirst();
         c.entries.add(entry("Mieter", description, c.received, false, false, false, ""));
         cases.put(c.id, c);
         String token = UUID.randomUUID().toString();
-        tokens.put(token, c.id); submissions.put(operation, token);
+        tokens.put(token, c.id);
+        submissions.put(key, token);
         return token;
     }
     public synchronized void message(String id, String token, String text, boolean internal, boolean answer, String operation) {
