@@ -93,6 +93,28 @@ mit derselben Operationskennung. Fallanzahl, Verlauf und Feldversion belegen, da
 kein zusätzlicher Schreibeffekt entsteht. Ohne JavaScript bleibt die native
 Formularübermittlung verfügbar; die Wiederholung bei verlorener Antwort nutzt JavaScript.
 
+### Login-Fehler und Wiederanmeldung
+
+```powershell
+node src/test/browser/run-ui-tests.mjs login-errors.test.mjs tenant-account.test.mjs tenant-registration.test.mjs
+.\mvnw.cmd test '-Dtest=LoginRecoveryWebTest,StaffAccessWebTest,StaffLoginTest,StaffLoginQueueTest,TenantRegistrationTest'
+```
+
+`login-errors.test.mjs` prüft Anmeldung und Registrierung mit echten Mailpit-Codes:
+falsche Eingaben, Ungültigkeit nach fünf Fehlversuchen, HTTP 429 bei zu früher
+Codeanforderung, erhaltenes Codeformular und erfolgreichen Versand samt Anmeldung
+nach der Wartefrist. Die Anmeldung prüft ausserdem die Korrektur einer unbekannten
+Adresse und dieselbe neutrale Versandmeldung für bekannte und unbekannte Konten.
+Jeder Test verwendet eine eigene Adresse; die echte Minutenfrist bleibt aktiv.
+Der gezielte Browserlauf dauert deshalb etwa drei Minuten.
+
+`LoginRecoveryWebTest` verwendet den echten Login-Service, Controller und die
+gerenderte Thymeleaf-Seite mit kontrollierter Serveruhr und Test-Mailbox. Er prüft
+für beide Zugangswege die Ablehnung exakt nach zehn Minuten, fehlenden Kontozugriff
+und erfolgreiche Wiederanmeldung mit neuem Code. Ein zu früher erneuter Versand
+darf den noch gültigen Code nicht entwerten. Der Zeitablauf ist damit ein MVC-Test;
+im Browser wird keine zehnminütige Serverablaufzeit simuliert.
+
 `DEMO_TENANT_EMAIL` aktiviert auch den Mieter-Kontotest. Ohne diese Variable wird
 nur dieser zusätzliche Test ausgelassen. Die Selbstregistrierung wird unabhängig
 davon mit einer neuen Testadresse und echtem SMTP-Versand an Mailpit geprüft.
