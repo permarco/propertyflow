@@ -154,6 +154,24 @@ oder Wegfall eines Falls geprüft. Eine verzögerte Speicherantwort darf einen
 inzwischen weiterbewegten Fokus nicht zurückholen. Die Testuhr wird vor der
 Seitennavigation installiert, damit die echten Polling-Intervalle kontrolliert laufen.
 
+Die Lebenszyklusprüfungen der lokalen KI-Formulierung laufen gezielt mit:
+
+```powershell
+node src/test/browser/run-ui-tests.mjs ai-lifecycle.test.mjs ai-layout.test.mjs staff-workflows.test.mjs session-loss.test.mjs
+```
+
+`ai-lifecycle.test.mjs` prüft Abbruch während der Wartephase und während der Ausgabe,
+Neustart ohne Textreste des alten Versuchs sowie Übernahme ohne automatische
+Speicherung. Ein KI-Fehler während einer noch laufenden Speicherung darf die
+Bedienelemente nicht entsperren. Geprüft werden ein erfolgreicher Schreibzugriff
+und eine simulierte HTTP-503-Antwort mit anschliessendem erfolgreichem Retry.
+Eine abgebrochene Navigation muss den Entwurf und den laufenden KI-Versuch erhalten.
+Die Prüfungen betreffen den lokalen Mock-Stream, keine externe Modellanbindung.
+
+Auch `session-loss.test.mjs` installiert seine Testuhr vor dem Laden der geschützten
+Fallansichten. Damit werden nach Abmeldung tatsächlich deren Polling-Intervalle
+weitergeschaltet und die ausbleibenden Abrufe geprüft.
+
 - Browser-Testreihe: `target/frontend-quality/ui-tests.tap`
 - Konto-Screenshots: `target/account-review/`
 - Barrierefreiheit (auch im regulären Testlauf): `node src/test/browser/run-ui-tests.mjs frontend-quality.test.mjs`

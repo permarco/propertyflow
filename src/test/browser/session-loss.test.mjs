@@ -41,13 +41,13 @@ for (const role of ['staff', 'tenant']) {
         const { page, context } = await fixture(t, { staff: false });
         const email = role === 'staff' ? process.env.DEMO_STAFF_EMAIL || 'staff@example.test' : `loss-${randomUUID()}@example.test`;
         await authenticate(page, email, role === 'tenant');
+        await freeze(page);
         const c = await createCase(page, context, role === 'staff');
         const url = role === 'staff' ? c.staffUrl : `${base}/mieter/faelle/${c.id}`;
         await page.goto(url);
         const reader = await context.newPage();
-        await reader.goto(url);
-        await freeze(page);
         await freeze(reader);
+        await reader.goto(url);
         const draft = `Nicht gesendet ${randomUUID()}`;
         await page.locator('#message').fill(draft);
         await reader.locator('#message').fill('Lesender Entwurf');
