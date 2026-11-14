@@ -1,5 +1,6 @@
 package com.pertegato.propertyflow.caseprocessing.demo;
 
+import com.pertegato.propertyflow.access.contract.EmailAddress;
 import com.pertegato.propertyflow.intake.contract.CaseDescription;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -152,7 +153,7 @@ public class DemoCases {
 
     public synchronized List<View> tenantCases(String verifiedEmail) {
         return cases.values().stream()
-                .filter(item -> item.email.equalsIgnoreCase(verifiedEmail))
+                .filter(item -> matchesVerifiedEmail(item.email, verifiedEmail))
                 .map(item -> item.view(true))
                 .sorted(Comparator.comparing(View::received).reversed().thenComparing(View::id))
                 .toList();
@@ -168,11 +169,20 @@ public class DemoCases {
 
     private CaseData ownedCase(String id, String verifiedEmail) {
         CaseData item = data(id);
-        if (!item.email.equalsIgnoreCase(verifiedEmail)) {
+        if (!matchesVerifiedEmail(item.email, verifiedEmail)) {
             throw new ResponseStatusException(NOT_FOUND, "Der Fall ist nicht verfügbar.");
         }
         return item;
     }
+
+    private static boolean matchesVerifiedEmail(String contactEmail, String verifiedEmail) {
+        try {
+            return EmailAddress.normalize(contactEmail).equals(verifiedEmail);
+        } catch (IllegalArgumentException exception) {
+            return false;
+        }
+    }
+
     private static String normalize(String value) {
         return value.toLowerCase(Locale.GERMAN).replaceAll("[^\\p{L}\\p{N}\\s]", "");
     }
@@ -223,10 +233,11 @@ public class DemoCases {
         }
         title = required(title, 150);
         unit = required(unit, 200);
-        email = required(email, 254);
         description = required(description, CaseDescription.MAX_LENGTH);
-        if (!email.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+")) {
-            throw new ResponseStatusException(BAD_REQUEST, "Bitte eine gültige E-Mail-Adresse eingeben.");
+        try {
+            email = EmailAddress.normalize(email);
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(BAD_REQUEST, exception.getMessage());
         }
         CaseData c = new CaseData();
         c.id = "REQ-2026-%03d".formatted(cases.size() + 1);

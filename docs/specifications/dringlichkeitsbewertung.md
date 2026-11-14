@@ -59,6 +59,10 @@ Die Kennzeichnung ergänzt immer den sichtbaren Stufentext. Status, Prüfbedarf 
 
 **Vereinbart:** Nach dauerhafter Annahme der ursprünglichen Mieter-Mitteilung wird die Dringlichkeit erstmals im Camunda-gesteuerten Ablauf berechnet. Jede weitere dauerhaft gespeicherte Mieter-Nachricht veranlasst erneut eine Bewertung im bestehenden Camunda-Fallprozess. PropertyFlow-Worker und fachliche Services führen die Bewertung aus, validieren das Ergebnis und speichern die fachlich verwendete Stufe in PropertyFlow. Eine Nachricht eröffnet keinen zweiten führenden Fallprozess (FALL-06, KOM-03).
 
+Die Erstbewertung verwendet die ursprüngliche Fallbeschreibung. Für jede Neubewertung übergibt Camunda die Case-ID und die ID der auslösenden gespeicherten Mieternachricht. Der Worker lädt aus der Falldatenbank die ursprüngliche Beschreibung und den für die Dringlichkeit relevanten Nachrichtenverlauf bis einschliesslich dieser Nachricht. Er kennzeichnet sie in der Eingabe an Triage als Auslöser. Später gespeicherte Nachrichten gehören zu ihren jeweiligen Neubewertungen. [UC-016](../use_cases/UC-016-dringlichkeit-automatisch-bewerten.md) · [SS-003](../architecture/schnittstellenentwurf-block-3.md#ss-003--camunda-integrationsvertrag)
+
+Die Grenze von 2’000 UTF-16-Codeeinheiten gilt je Fallbeschreibung und je Mieternachricht. Für den zusammengesetzten Modellkontext sind eine eigene Grenze und die Auswahl des relevanten Verlaufs bei längeren Fällen festzulegen. [FALL-02](fallverwaltung.md#fall-02-erfolgreiche-annahme) · [KOM-03](fallkommunikation.md#kom-03-asynchrone-fallkommunikation)
+
 Solange weder eine erfolgreiche Systembewertung noch eine manuelle Einstufung vorliegt, gilt «Noch nicht bewertet». Eine im Fallprozess zugelassene manuelle Einstufung kann bereits vor dem ersten Systemergebnis wirksam sein und ist gemäss DRING-06 geschützt. Während einer Neubewertung bleibt die bisher gespeicherte Stufe sichtbar. Ein fehlgeschlagener Versuch ersetzt sie nicht durch eine erfundene Stufe und erzeugt keine erfolgreiche Stufenänderung. Bei aktivem Fall gilt für den Bearbeitungsstatus und den Analysehinweis FALL-05.
 
 ## DRING-06: Manuelle Anpassung

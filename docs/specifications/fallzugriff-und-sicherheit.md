@@ -91,6 +91,10 @@ diese Zugriffe gelten die jeweiligen Zeilen der Zugriffsmatrix.
 
 Die Einreichung und der persönliche Fall-Link bleiben ohne Konto nutzbar. Ein freiwilliges Mieterkonto wird nach der E-Mail-Verifikation gemäss [UC-005](../use_cases/UC-005-userkonto-eroeffnen.md) aktiviert. PropertyFlow ermittelt die Fallmenge anhand der verifizierten Konto-Adresse und der aktuellen Fall-Kontaktadresse. Das gilt auch für frühere Einreichungen ohne Anmeldung. Der Dienst prüft diese Zuordnung beim Listenabruf und bei jedem Detail- oder Schreibzugriff im Web und über MCP. Nach einer geprüften Änderung der Fall-Kontaktadresse gilt die neue Zuordnung ab dem nächsten Zugriff.
 
+**Gemeinsame E-Mail-Regel.** Bei Fallanlage und Konto verwendet PropertyFlow dieselbe serverseitige Adressprüfung. Die Prüfung entfernt äussere Leerzeichen und weist Adressen mit Zeichen ausserhalb von ASCII vor der Umwandlung in Kleinbuchstaben ab. Für die geprüfte Adresse gelten die bisherige Kontosyntax mit einer Domain aus mehreren Bezeichnern und höchstens 254 Zeichen insgesamt. Der Teil vor dem `@` hat höchstens 64 Zeichen und enthält keine führenden, abschliessenden oder aufeinanderfolgenden Punkte.
+
+Für den Kontozugriff müssen die nach dieser Regel vereinheitlichte Fall-Kontaktadresse und die verifizierte Konto-Adresse exakt übereinstimmen. Eine bereits gespeicherte Fall-Kontaktadresse, die diese Prüfung nicht besteht, gewährt keinen kontobasierten Zugriff. Für den persönlichen Fall-Link gilt die Tokenprüfung nach [ZUG-03](#zug-03-direkter-linkaufruf-und-tokenprüfung).
+
 Die Mieterrechte umfassen veröffentlichte Falldaten und externe Nachrichten. Der Zugriff auf interne Memos und deren Metadaten ist dem Mitarbeiterbereich vorbehalten. Fachaktionen wie eine Dringlichkeitseinstufung, Freigabe, Abschluss oder Wiedereröffnung richten sich nach den jeweiligen Mitarbeiter- und Systemrechten im Fallprozess. Ein abgeschlossener Fall bleibt bei gültiger Berechtigung lesbar. Für Nachrichten gilt die Schreibsperre nach [KOM-04](fallkommunikation.md#kom-04-nachrichtensperre-nach-fallabschluss).
 
 **Lokaler Implementierungsstand (13.11.2026):** Selbstregistrierung, E-Mail-Codeprüfung,
@@ -326,6 +330,8 @@ Ein Fall mit ausstehendem Prozessstart und ein bereits gestarteter Fall bei uner
 ### ZUG-AK-15
 
 Ein verifiziertes Mieterkonto erhält im Web und über einen entsprechend berechtigten MCP-Client die Fälle mit passender aktueller Kontaktadresse. Die Fallübersicht berücksichtigt frühere Einreichungen ohne Konto. Eine fremde Case-ID oder eine im Aufruf übermittelte andere Adresse gewährt keinen Zugriff. Nach einem geprüften Adresswechsel wirkt die neue Zuordnung bei der nächsten Anfrage.
+
+Für einen bestehenden Testfall mit `mıeter@example.test` (punktloses `ı`) prüft ein Konto mit verifiziertem `mieter@example.test` die Fallliste, den Direktabruf und das Ergänzen. Die Liste enthält den Fall nicht. Der Direktabruf liefert keine Falldaten und der Schreibaufruf erzeugt keinen Verlaufseintrag.
 
 ### ZUG-AK-16
 

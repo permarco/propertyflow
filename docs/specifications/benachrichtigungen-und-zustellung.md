@@ -71,16 +71,21 @@ Der Versand erfolgt nachgelagert. Ein Mailausfall nimmt weder die Fallannahme no
 | Vorübergehender Fehler bei Maildienst oder Netzwerk | Auftrag mit demselben Ereignis und gültigen Zugang erneut versuchen; keine neuen Falldaten oder Tokens erzeugen. |
 | Maildienst bestätigt die Annahme | Als an den Maildienst übergeben vermerken. Dies beweist weder Posteingangszustellung noch Lesen. |
 | Übermittlungsausgang unklar, etwa bei Timeout nach Übergabe | Unsicheren Ausgang festhalten; soweit unterstützt mit derselben Versandkennung abgleichen oder idempotent wiederholen. Eine doppelte E-Mail kann bei fehlender Dienstunterstützung nicht vollständig ausgeschlossen werden. |
-| Dauerhafter Fehler, Rückläufer oder Wiederholungsgrenze erreicht | Für berechtigte interne Bearbeitung sichtbar machen; Auftrag nicht stillschweigend als erfolgreich markieren oder verlieren. |
+| Dauerhafter Fehler oder Wiederholungsgrenze erreicht | Für berechtigte interne Bearbeitung sichtbar machen; Auftrag nicht stillschweigend als erfolgreich markieren oder verlieren. |
+| Verspäteter Rückläufer nach bestätigter Annahme | Verarbeitung offen. |
 | Aktueller Link kann technisch nicht bereitgestellt werden | Versand mit persönlichem Link blockieren und zur Klärung sichtbar machen. Die Versandfunktion verwendet ausschliesslich den aktuell gültigen Link. |
 
-Die fachliche Vorgabe «immer eine E-Mail» bedeutet: Jeder vereinbarte Auslöser erzeugt eine nachvollziehbare Versandpflicht. Eine tatsächliche Zustellung in den Posteingang kann PropertyFlow nicht allein garantieren. Versandannahme, gegebenenfalls vom Maildienst bestätigte Zustellung und Rückläufer werden getrennt von Fallstatus und Nachrichtenveröffentlichung geführt. Tracking zur Lesebestätigung ist nicht vorgesehen.
+Die fachliche Vorgabe «immer eine E-Mail» bedeutet: Jeder vereinbarte Auslöser erzeugt eine nachvollziehbare Versandpflicht. Eine tatsächliche Zustellung in den Posteingang kann PropertyFlow nicht allein garantieren. Der Versandnachweis erfasst die Annahme durch den E-Mail-Dienst und gegebenenfalls dessen Zustellbestätigung getrennt von Fallstatus und Nachrichtenveröffentlichung. Tracking zur Lesebestätigung ist nicht vorgesehen.
 
 Wiederholungen eines alten Auftrags dürfen keinen neueren Fallstand überschreiben. Die E-Mail beschreibt ihr auslösendes Ereignis; die Fallansicht zeigt beim Öffnen den aktuellen Stand. Technische Versand- und Empfangsverzögerungen können die Reihenfolge der E-Mails beeinflussen. Keine Zusammenfassung oder Drosselung darf vereinbarte Ereignisse ohne Benachrichtigung verwerfen.
 
 Konkrete Wiederholungsabstände, Grenzen und interne Zuständigkeiten bleiben offen. Nach einem bestätigten Linkersatz lädt die Versandfunktion für ausstehende Aufträge den neuen gültigen Link. Technische Fehler beim Laden oder Entschlüsseln bleiben als Versandproblem nachvollziehbar. [ZUG-05](fallzugriff-und-sicherheit.md#zug-05-dauerhafte-gültigkeit-und-direkter-ersatz)
 
 **Abgleich mit FALL-05:** Bei einem klärungsbedürftigen E-Mail-Versand veranlasst der führende Camunda-Prozess für aktive Fälle den Status «Mitarbeiterprüfung erforderlich» gemäss [FALL-06](fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow). Der Prüfgrund «E-Mail-Versand klären» bleibt intern nachvollziehbar. Die Mitarbeiterliste zeigt den Bearbeitungsstatus, aber keine Versand- oder sonstigen Problemhinweise; ihre interne Darstellung wird bei Screen 03 konkretisiert. Automatische Wiederholungen sind davon nicht ausgenommen; ein noch ausstehender Versuch ohne festgestellten Fehler erzeugt dagegen keinen Problemhinweis. Ein erst nach Abschluss festgestelltes Versandproblem bleibt ein interner Hinweis am abgeschlossenen Fall. Der Versandzustand bleibt technisch getrennt; er wird nicht selbst als Bearbeitungsstatus angezeigt. Wiederholungen bei unverändertem fachlichem Status erzeugen weder einen erneuten Statuswechsel noch weitere Statusmailaufträge.
+
+Lehnt der E-Mail-Dienst eine Statusmail dauerhaft ab, speichert der Mail-Worker die Ablehnung zum Versandauftrag. Nach dem Commit schliesst er den Job des Send Tasks mit «Klärung nötig» ab. Camunda eröffnet bei einem aktiven Fall die Mitarbeiterprüfung und veranlasst die Speicherung des Status und des internen Prüfgrunds. Den Ablauf und den Prüffall beschreiben [SS-002](../architecture/schnittstellenentwurf-block-3.md#ss-002--statusmail-aus-dem-fallprozess) und [UC-019](../use_cases/UC-019-fallbenachrichtigung-zustellen.md#business-rules-und-prüfkriterien).
+
+In Version 1 gilt dieser Ablauf für die direkte dauerhafte Ablehnung beim Versand. Die Verarbeitung von Rückläufern nach bestätigter Annahme durch den E-Mail-Dienst bleibt offen.
 
 ## BEN-05: Fallabschluss und Sicherheit
 

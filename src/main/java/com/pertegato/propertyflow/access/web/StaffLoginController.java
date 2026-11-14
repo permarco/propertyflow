@@ -1,5 +1,6 @@
 package com.pertegato.propertyflow.access.web;
 
+import com.pertegato.propertyflow.access.contract.EmailAddress;
 import com.pertegato.propertyflow.access.demo.DemoAccounts;
 import com.pertegato.propertyflow.access.service.StaffLogin;
 import jakarta.servlet.http.HttpServletRequest;
@@ -63,7 +64,7 @@ class StaffLoginController {
 
             String previous = (String) session.getAttribute(StaffWebSession.CODE_EMAIL);
             try {
-                String targetEmail = DemoAccounts.normalizeEmail(email == null ? previous : email);
+                String targetEmail = EmailAddress.normalize(email == null ? previous : email);
                 if (isRegistration(request)) {
                     login.requestRegistrationCode(targetEmail);
                 } else {
