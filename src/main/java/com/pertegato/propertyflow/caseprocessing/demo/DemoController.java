@@ -218,6 +218,7 @@ public class DemoController {
     }
     private RedirectView redirect(String url) {
         RedirectView view = new RedirectView(url);
+        view.setContextRelative(true);
         view.setStatusCode(HttpStatus.SEE_OTHER);
         return view;
     }

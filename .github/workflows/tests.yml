@@ -113,6 +113,9 @@ jobs:
         run: node target/frontend-tools/node_modules/playwright/cli.js install --with-deps ${{ matrix.browser }}
       - name: Run against fresh application
         run: node src/test/browser/run-browser-regression.mjs ${{ matrix.suite }}
+      - name: Real session expiry for staff and tenant
+        if: ${{ !cancelled() && matrix.browser == 'chromium' }}
+        run: node src/test/browser/run-browser-regression.mjs --session-expiry
       - name: Browser reports and application log
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7

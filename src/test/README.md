@@ -24,7 +24,7 @@ Pull Request und manuellem Start folgende Jobs auf Ubuntu 24.04 aus:
 | Job | Umfang |
 | --- | --- |
 | Java und JavaScript | JDK 23, Node 22, Maven Wrapper `verify`, alle Java- und JavaScript-Tests; anschliessend JAR für die Browserjobs. |
-| Chromium | Vollständige Browser-Testreihe einschliesslich der automatisierten Barrierefreiheitsprüfungen. |
+| Chromium | Vollständige reguläre Browser-Testreihe einschliesslich Barrierefreiheit; danach zwei Tests für echten Sitzungsablauf in einer eigenen Instanz. |
 | Firefox und WebKit | Je 14 Kernablauf-, Konto- und Tastaturtests mit `--core`. |
 
 Jeder Browserjob startet sein eigenes Mailpit und eine neue Demoanwendung.
@@ -106,6 +106,63 @@ Test verändert. Für den vollständigen WebKit-Nachweis die Linux-CI verwenden.
 Die Linux-Gegenprüfung lief im offiziellen Playwright-1.64.0-Noble-Container mit
 einer ergänzten Temurin-23-JRE und jeweils einer frischen Demoanwendung. Sie prüft
 die Browserläufe lokal und ersetzt nicht den ersten vollständigen GitHub-Actions-Lauf.
+
+## Echter Sitzungsablauf und HTTP-Schutz
+
+```powershell
+.\mvnw.cmd test '-Dtest=HttpProtectionTest,StaffWebSessionTest'
+# Separates Mailpit und frisch gebautes JAR werden benötigt; siehe Einrichtung oben/unten.
+$env:DEMO_BROWSER = 'chromium'
+node src/test/browser/run-browser-regression.mjs --session-expiry
+```
+
+`HttpProtectionTest` umfasst 14 Prüfungen gegen einen echten eingebetteten
+Webserver auf einem zufälligen Loopback-Port unter `/http-test`. Für Mitarbeiter
+und Mieter prüft er die tatsächlichen Sitzungscookies (`HttpOnly`, `SameSite=Lax`,
+Anwendungspfad, keine Domain-Freigabe), Session-ID-/CSRF-Wechsel bei Anmeldung,
+unbrauchbare alte Session-IDs und unterbundenes URL-Session-Tracking. Er prüft
+ausserdem Logout, rollenabhängige lokale Login-Weiterleitungen und Schutzheader
+bei erfolgreichen Seiten, GET/HEAD, Weiterleitungen sowie HTTP 400, 401, 403,
+404, 409 und 429. Abgewiesene Falländerungen lassen den Fallstand unverändert.
+Nur Codezustellung und OTP-Uhr sind kontrolliert; Servlet-Container, Cookies,
+Controller und Templates sind echt. Dafür sind weder Docker noch SMTP nötig.
+
+`StaffWebSessionTest` ergänzt 14 Prüfungen ungültiger Login-Rücksprungziele und
+der Längengrenze, unter anderem externe URLs, Protokoll-relative Ziele,
+Traversal, Fragmente, ungültige Kodierung und Zeilenumbrüche. Die HTTP-Prüfung
+hat eine fehlende Berücksichtigung des Anwendungspfads bei Speicher-Redirects
+aufgedeckt; der gemeinsame Redirect berücksichtigt nun den Context Path.
+
+`session-expiry.test.mjs` prüft Mitarbeiter und Mieter über echte Browser,
+OTP-Anmeldung und Mailpit. Der verwaltete Starter setzt **nur für diese neue
+Instanz** die Servlet-Leerlauffrist auf eine Minute. Jeder Test stoppt die
+Browser-Timer und wartet 65 echte Sekunden. Eine Request-Aufzeichnung stellt
+sicher, dass in dieser Zeit keine Hintergrundanfrage die Sitzung verlängert;
+das Sitzungscookie bleibt im Browser. Es gibt weder Logout noch eine künstliche
+401-Antwort, Cookie-Löschung oder Manipulation der Serveruhr.
+
+Nach Ablauf müssen Lesen und Schreiben HTTP 401 liefern, Falldaten ausgeblendet,
+Entwürfe erhalten und weitere Abfragen gestoppt sein. Die erneute OTP-Anmeldung
+in einem anderen Tab darf alte Tabs nicht entsperren oder einen Entwurf
+automatisch senden. Erst explizites Senden speichert genau eine Nachricht.
+Anonymer Tokenzugriff bleibt lesend und schreibend möglich.
+
+Die Ablauftests laufen separat mit `--session-expiry`, nicht in `--core` oder
+dem regulären Browserlauf. Der CI-Job für Chromium führt beide Aufrufe aus.
+Der gesonderte Lauf dauert etwa zweieinhalb Minuten und schreibt
+`ui-tests-<browser>-session-expiry.tap` sowie `app-<browser>-session-expiry.log`
+unter `target/frontend-quality/`, ohne die regulären browserspezifischen
+Berichte zu überschreiben. Die normale Demo behält ihre 30-Minuten-Frist.
+HTTPS-/Secure-Cookie- und Reverse-Proxy-Konfigurationen sind damit nicht geprüft.
+
+Validiert am 14. November 2026: `mvnw.cmd package` mit 248 Java-Tests
+(247 bestanden, ein optionaler Live-Ollama-Test übersprungen), alle sechs
+JavaScript-Tests sowie 27 bestehende Chromium-Tests für Kernabläufe,
+Tastaturbedienung, Konto/Registrierung, Logout, verlorene Speicherantworten und
+Mitarbeiteraktionen. Die beiden neuen Ablauf-Tests bestanden unter Windows und
+im Ubuntu-24.04-Prüfcontainer mit Java 23. `actionlint` prüfte den erweiterten
+Workflow erfolgreich; die uncommittete Erweiterung wurde noch nicht auf GitHub
+ausgeführt.
 
 ## CSRF-Matrix und SMTP-Adapter
 
