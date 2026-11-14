@@ -12,9 +12,100 @@ node --test src/test/js/*.test.mjs
 
 Diese Tests benötigen weder Mailpit noch Camunda oder einen externen LLM.
 Der Live-Ollama-Test ist opt-in. Java-Testergebnisse: `target/surefire-reports/`.
-Wenn Mockito sich unter deinem JDK nicht selbst anhängen kann, kann die lokal
-aufgelöste `mockito-core`-JAR als `-javaagent` über Maven `-DargLine` übergeben
-werden. Version und Pfad müssen zur tatsächlich aufgelösten Dependency passen.
+Maven löst den Pfad der verwendeten `mockito-core`-JAR auf und übergibt sie als
+Java-Agent an Surefire. Ein lokaler absoluter Pfad und dynamisches Self-Attach
+sind dadurch nicht nötig.
+
+## CI und zusätzliche Browser
+
+[`.github/workflows/tests.yml`](../../.github/workflows/tests.yml) führt bei Push,
+Pull Request und manuellem Start folgende Jobs auf Ubuntu 24.04 aus:
+
+| Job | Umfang |
+| --- | --- |
+| Java und JavaScript | JDK 23, Node 22, Maven Wrapper `verify`, alle Java- und JavaScript-Tests; anschliessend JAR für die Browserjobs. |
+| Chromium | Vollständige Browser-Testreihe einschliesslich der automatisierten Barrierefreiheitsprüfungen. |
+| Firefox und WebKit | Je 14 Kernablauf-, Konto- und Tastaturtests mit `--core`. |
+
+Jeder Browserjob startet sein eigenes Mailpit und eine neue Demoanwendung.
+Mieter-Kontotests sind in CI verpflichtend; fehlende Konfiguration wird abgewiesen.
+Die Browserjobs laufen unabhängig weiter, wenn ein anderer Browser scheitert.
+Ein neuer Lauf derselben Git-Referenz löst den vorherigen ab. Die Pipeline benötigt
+keine produktiven Zugangsdaten und hat nur lesende Repository-Berechtigungen.
+
+Die Browserwerkzeuge werden mit `npm ci` aus der versionierten Lockdatei installiert.
+Playwright installiert die dazugehörigen Browserrevisionen samt Linux-Abhängigkeiten.
+Surefire-, TAP-, Barrierefreiheitsberichte, vorhandene Screenshots und Anwendungslogs
+werden auch nach Testfehlern als Artefakte für sieben Tage gespeichert. Der
+optionale Live-Ollama-Test und die separaten Lighthouse-Messungen bleiben ausserhalb
+dieser CI-Prüfung; die Pipeline ist kein Nachweis produktiver KI-/Camunda-Integration.
+
+Die Einrichtung folgt den [Playwright-CI-Hinweisen](https://playwright.dev/docs/ci).
+Ein tatsächlicher GitHub-Actions-Lauf ist erst nach Push der Workflow-Datei möglich.
+
+### Lokal denselben Browserlauf ausführen
+
+Nach Installation der Browserwerkzeuge (siehe unten), Start des separaten Mailpit
+und `mvnw.cmd package`:
+
+```powershell
+$env:PLAYWRIGHT_BROWSERS_PATH = Join-Path (Get-Location) 'target/playwright-browsers'
+node target/frontend-tools/node_modules/playwright/cli.js install chromium firefox webkit
+$env:DEMO_BROWSER = 'firefox'
+node src/test/browser/run-browser-regression.mjs --core
+$env:DEMO_BROWSER = 'webkit'
+node src/test/browser/run-browser-regression.mjs --core
+$env:DEMO_BROWSER = 'chromium'
+node src/test/browser/run-browser-regression.mjs
+Remove-Item Env:DEMO_BROWSER
+```
+
+`run-browser-regression.mjs` prüft den freien lokalen Port und Mailpit, startet
+eine frische Anwendung aus dem JAR, wartet auf Bereitschaft und stoppt sie nach
+dem Testlauf auch bei Fehlern. Standard ist `http://127.0.0.1:8083`, mit
+`staff-ci@example.test` und `tenant-ci@example.test` als Wegwerfkonten. Überschreibbar
+sind `DEMO_URL`, `DEMO_STAFF_EMAIL`, `DEMO_TENANT_EMAIL`, `MAILPIT_URL` und
+`TEST_SMTP_PORT` (Standard 1026). Mailpit selbst wird vom Skript nicht gestoppt.
+
+Für eine bereits gestartete isolierte Anwendung bleibt `run-ui-tests.mjs` verfügbar.
+Ohne `DEMO_BROWSER` verwendet es wie bisher Edge; weitere Werte sind `chromium`,
+`firefox` und `webkit`. Berichte stehen unter `target/frontend-quality/ui-tests-<browser>.tap`
+und zusätzlich unter dem bisherigen Namen `ui-tests.tap`. Der verwaltete Starter
+schreibt `app-<browser>.log` in dasselbe Verzeichnis. Browserwechsel benötigen für
+unabhängige OTP-Limits jeweils eine frische Anwendung.
+
+`--core` umfasst `core-workflows.test.mjs`, `tenant-account.test.mjs`,
+`tenant-registration.test.mjs` und `keyboard-focus.test.mjs`. Die drei neuen
+Kernabläufe prüfen mobile Gastanlage mit Pflichtfeldkorrektur und Nachricht,
+Mitarbeitersuche mit interner/externer Kommunikation und Abschluss/Wiedereröffnung
+sowie KI-Übernahme mit anschliessendem explizitem Speichern. Die bestehenden Tests
+ergänzen echte OTP-Anmeldung, Registrierung, Eigentümerprüfung, Logout und neun
+Tastatur-/Fokusabläufe. WebKit unter Playwright ersetzt keinen Test auf einem
+echten iPhone oder mit der ausgelieferten Safari-Version.
+
+Die CI verwendet Ubuntu 24.04 als WebKit-Testplattform. Bei der lokalen Prüfung
+mit Playwright 1.64.0 / WebKit 2370 unter Windows überspringt die Standard-
+Tabnavigation normale Links, bereits auf einer minimalen HTML-Seite. Deshalb
+scheitern dort zwei bestehende Tastaturtests (Falllink nach Polling und Fehlerlink
+im Formular), während dieselben 14 Tests unter Linux bestehen. Die Tests bleiben
+aktiv; es werden weder Links künstlich fokussiert noch die Anwendung für den
+Test verändert. Für den vollständigen WebKit-Nachweis die Linux-CI verwenden.
+
+### Lokale Validierung am 13. November 2026
+
+| Prüfung | Ergebnis |
+| --- | --- |
+| Maven `package` (Windows, Java 27) | 214 Tests: 213 bestanden, ein opt-in Live-Ollama-Test übersprungen. |
+| JavaScript (Node 22) | 6 bestanden. |
+| Vollständige Chromium-Suite (Windows) | 84 bestanden, keine übersprungen. |
+| Firefox `--core` (Windows und Ubuntu 24.04) | Je 14 bestanden, keine übersprungen. |
+| WebKit `--core` (Ubuntu 24.04) | 14 bestanden, keine übersprungen. |
+| WebKit `--core` (Windows) | 12 bestanden, zwei Link-Tastaturtests fehlgeschlagen; siehe Plattformhinweis oben. |
+| GitHub-Actions-Workflow | `actionlint` erfolgreich; noch kein Lauf auf GitHub. |
+
+Die Linux-Gegenprüfung lief im offiziellen Playwright-1.64.0-Noble-Container mit
+einer ergänzten Temurin-23-JRE und jeweils einer frischen Demoanwendung. Sie prüft
+die Browserläufe lokal und ersetzt nicht den ersten vollständigen GitHub-Actions-Lauf.
 
 ## CSRF-Matrix und SMTP-Adapter
 
@@ -55,7 +146,8 @@ dieser Tests. Alle Test-Sockets werden am Ende geschlossen.
 
 ## Browser-Werkzeuge installieren
 
-Voraussetzungen: Java 23+, Node.js mit npm, Microsoft Edge und Docker Compose
+Voraussetzungen: Java 23+, Node.js mit npm, Microsoft Edge (Standard) oder ein
+installierter Playwright-Browser und Docker Compose
 ab 2.24.4. Der Wrapper übernimmt Maven. Die Werkzeuge bleiben unter `target/`:
 
 ```powershell

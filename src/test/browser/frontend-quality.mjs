@@ -1,3 +1,4 @@
+import { launchBrowser } from './browser-launcher.mjs';
 // Run directly or through frontend-quality.test.mjs against a disposable demo.
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -5,7 +6,7 @@ import { createRequire } from 'node:module';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { base, chromium, createCase, change, editor, staffStorageState } from './ui-test-helpers.mjs';
+import { base, createCase, change, editor, staffStorageState } from './ui-test-helpers.mjs';
 import { existingCodeMessages, waitForCode } from './mailpit.mjs';
 
 const require = createRequire(path.resolve('target/frontend-tools/package.json'));
@@ -14,7 +15,7 @@ const { default: AxeBuilder } = require('@axe-core/playwright');
 export async function runFrontendQuality() {
     const reportDir = path.resolve('target/frontend-quality');
     await mkdir(reportDir, { recursive: true });
-    const browser = await chromium.launch({ channel: 'msedge', headless: true });
+    const browser = await launchBrowser();
     const report = { at: new Date().toISOString(), base, browser: browser.version(), a11y: [], checks: [] };
     const errors = [];
     async function scan(page, route) {

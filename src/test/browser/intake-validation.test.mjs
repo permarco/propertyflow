@@ -1,15 +1,12 @@
+import { launchBrowser } from './browser-launcher.mjs';
 // UI1 AK-02: run against a disposable frontend-demo (default port 8082).
 // node --test src/test/browser/intake-validation.test.mjs
 import { before, after, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
-import path from 'node:path';
 
-const require = createRequire(path.resolve('target/frontend-tools/package.json'));
-const { chromium } = require('playwright');
 const base = process.env.DEMO_URL || 'http://127.0.0.1:8082';
 let browser;
-before(async () => { browser = await chromium.launch({ channel: 'msedge', headless: true }); });
+before(async () => { browser = await launchBrowser(); });
 after(async () => { await browser?.close(); });
 
 const valid = {

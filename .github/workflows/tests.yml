@@ -1,0 +1,124 @@
+name: Regression tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: regression-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Java and JavaScript
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '23'
+          cache: maven
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Java regression and application JAR
+        run: sh ./mvnw -B -ntp verify
+      - name: JavaScript regression
+        if: ${{ !cancelled() }}
+        run: |
+          mkdir -p target/frontend-quality
+          node --test --test-reporter=tap src/test/js/*.test.mjs | tee target/frontend-quality/js-tests.tap
+      - name: Application for browser jobs
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-application
+          path: target/propertyflow-0.0.1-SNAPSHOT.jar
+          if-no-files-found: error
+          retention-days: 3
+      - name: Java and JavaScript reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: unit-test-reports
+          path: |
+            target/surefire-reports/
+            target/frontend-quality/js-tests.tap
+          retention-days: 7
+
+  browsers:
+    name: Browser / ${{ matrix.browser }}
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - browser: chromium
+            suite: ''
+          - browser: firefox
+            suite: --core
+          - browser: webkit
+            suite: --core
+    services:
+      mailpit:
+        image: axllent/mailpit:v1.21.8
+        ports:
+          - 1026:1025
+          - 8026:8025
+        options: >-
+          --health-cmd "nc -z localhost 1025"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 15
+    env:
+      DEMO_BROWSER: ${{ matrix.browser }}
+      DEMO_URL: http://127.0.0.1:8083
+      MAILPIT_URL: http://127.0.0.1:8026
+      TEST_SMTP_PORT: '1026'
+      DEMO_STAFF_EMAIL: staff-ci@example.test
+      DEMO_TENANT_EMAIL: tenant-ci@example.test
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '23'
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: src/test/browser/tools-package-lock.json
+      - uses: actions/download-artifact@v8
+        with:
+          name: test-application
+          path: target
+      - name: Install locked browser tools
+        run: |
+          mkdir -p target/frontend-tools
+          cp src/test/browser/tools-package.json target/frontend-tools/package.json
+          cp src/test/browser/tools-package-lock.json target/frontend-tools/package-lock.json
+          npm ci --prefix target/frontend-tools
+      - name: Install browser and OS dependencies
+        run: node target/frontend-tools/node_modules/playwright/cli.js install --with-deps ${{ matrix.browser }}
+      - name: Run against fresh application
+        run: node src/test/browser/run-browser-regression.mjs ${{ matrix.suite }}
+      - name: Browser reports and application log
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-reports-${{ matrix.browser }}
+          path: |
+            target/frontend-quality/
+            target/account-review/
+          retention-days: 7

@@ -1,16 +1,13 @@
+import { launchBrowser } from './browser-launcher.mjs';
 // Run against a disposable frontend-demo instance; creates a local mock case.
 // node --test src/test/browser/tenant-navigation.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
-import path from 'node:path';
 
-const require = createRequire(path.resolve('target/frontend-tools/package.json'));
-const { chromium } = require('playwright');
 const base = process.env.DEMO_URL || 'http://127.0.0.1:8082';
 
 test('UI1: Neuladen und Verlassen verwerfen ungesendeten Text ohne Warnung', { timeout: 30000 }, async () => {
-    const browser = await chromium.launch({ channel: 'msedge', headless: true });
+    const browser = await launchBrowser();
     try {
         const context = await browser.newContext({ locale: 'de-CH' });
         const page = await context.newPage();

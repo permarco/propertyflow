@@ -1,17 +1,14 @@
+import { launchBrowser } from './browser-launcher.mjs';
 // Run against a fresh frontend-demo instance with standard mock cases.
 // node --test src/test/browser/list-search.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
-import path from 'node:path';
 import { staffStorageState } from './staff-test-login.mjs';
 
-const require = createRequire(path.resolve('target/frontend-tools/package.json'));
-const { chromium } = require('playwright');
 const base = process.env.DEMO_URL || 'http://127.0.0.1:8082';
 
 test('UI2: Live-Suche, Filterkombination, leere Treffer und vollständiges Zurücksetzen', { timeout: 30000 }, async () => {
-    const browser = await chromium.launch({ channel: 'msedge', headless: true });
+    const browser = await launchBrowser();
     try {
         const page = await browser.newPage({ locale: 'de-CH', viewport: { width: 1440, height: 900 },
             storageState: await staffStorageState(browser) });
