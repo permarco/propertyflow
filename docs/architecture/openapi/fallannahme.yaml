@@ -1,0 +1,3209 @@
+openapi: 3.1.1
+info:
+  title: PropertyFlow · HTTP-Vertrag
+  version: '1.0.0'
+  description: >
+    HTTP-Vertrag für die Browserrouten von PropertyFlow. Die Operationen für
+    Fallannahme, Mieternachrichten und ausgewählte Mitarbeiteraktionen
+    beschreiben Zielabläufe mit dauerhafter Speicherung und Camunda. Mit
+    frontend-demo gekennzeichnete Operationen beschreiben das Verhalten der
+    lokalen Demo. Statische Ressourcen und technische Betriebsendpunkte sind
+    gesondert zu betrachten.
+tags:
+  - name: Mieter
+    description: Anliegen einreichen, eigene Fälle einsehen und Nachrichten senden.
+  - name: Mitarbeitende
+    description: Fälle bearbeiten, Nachrichten formulieren und Mitarbeiterkonten anlegen.
+  - name: Anmeldung/Abmeldung
+    description: Mieterkonto registrieren und sich per E-Mail-Einmalcode anmelden oder abmelden.
+paths:
+  /:
+    get:
+      operationId: demoStartseiteOeffnen
+      summary: Startseite der Demo öffnen
+      x-propertyflow-status: frontend-demo
+      responses:
+        '200':
+          $ref: '#/components/responses/HtmlAnsicht'
+  /demo/datenschutz:
+    get:
+      operationId: demoDatenschutzOeffnen
+      summary: Datenschutzinformationen zur lokalen Demo öffnen
+      x-propertyflow-status: frontend-demo
+      responses:
+        '200':
+          $ref: '#/components/responses/HtmlAnsicht'
+  /mieter/fall:
+    get:
+      operationId: mieterformularOeffnen
+      tags: [Mieter]
+      summary: Formular für ein neues Anliegen öffnen
+      description: >
+        Das Formular enthält eine Absende-ID und einen CSRF-Token für die
+        Browsersitzung. Gäste geben ihre Kontaktadresse ein. Bei einem
+        verifizierten Mieterkonto übernimmt der Dienst die Konto-Adresse
+        beim Absenden. Der Aufruf erzeugt keinen Fall und lädt keine
+        bestehenden Falldaten.
+      responses:
+        '200':
+          $ref: '#/components/responses/HtmlAnsicht'
+    post:
+      operationId: mieteranliegenEinreichen
+      tags: [Mieter]
+      summary: Neues Mieteranliegen einreichen (Login freiwillig)
+      description: >
+        Die Einreichung ist öffentlich. Der Browser lädt zuerst das Formular
+        über GET /mieter/fall und sendet dessen CSRF-Token und Absende-ID mit
+        dem Sitzungscookie zurück. Bei einem angemeldeten, verifizierten
+        Mieterkonto stammt die Kontaktadresse aus dem serverseitig geprüften
+        Konto. Eine mitgesendete Adresse kann sie nicht überschreiben.
+        PropertyFlow speichert den Fall mit Status «Eingegangen» und dem
+        Prozessstartauftrag in derselben Transaktion. Nach bestätigtem Commit
+        öffnet der Browser die persönliche Fallansicht per GET. Camunda, das
+        KI-Modell und der Mailversand laufen nachgelagert.
+      security: []
+      parameters:
+        - in: cookie
+          name: JSESSIONID
+          required: true
+          description: >
+            Sitzungscookie, das der Browser beim öffentlichen Formularaufruf
+            erhält und für die Prüfung des CSRF-Tokens mitsendet.
+          schema:
+            type: string
+            minLength: 1
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [title, unit, description, csrf, operation]
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  x-propertyflow-max-utf16-code-units: 150
+                  description: Betreff mit Inhalt und höchstens 150 UTF-16-Codeeinheiten.
+                unit:
+                  type: string
+                  minLength: 1
+                  x-propertyflow-max-utf16-code-units: 200
+                  description: Objekt- oder Wohnungsreferenz mit Inhalt und höchstens 200 UTF-16-Codeeinheiten.
+                description:
+                  type: string
+                  minLength: 1
+                  x-propertyflow-max-utf16-code-units: 2000
+                  description: >
+                    Beschreibung mit Inhalt. Der Server wandelt CRLF und CR in
+                    LF um und prüft höchstens 2’000 UTF-16-Codeeinheiten vor dem
+                    Entfernen äusserer Leerzeichen.
+                email:
+                  type: string
+                  description: >
+                    Ohne verifiziertes Mieterkonto erforderlich. Die
+                    Kontaktadresse wird serverseitig gemäss ZUG-04 geprüft und
+                    vereinheitlicht. Die geprüfte Adresse hat höchstens 254
+                    ASCII-Zeichen.
+                accountSubmission:
+                  type: boolean
+                  default: false
+                  description: >
+                    Kennzeichnet ein aus dem angemeldeten Mieterkonto
+                    abgesendetes Formular. Der Server prüft das Konto anhand
+                    der Sitzung.
+                csrf:
+                  type: string
+                  minLength: 1
+                  description: CSRF-Token aus dem Formular, an die Browsersitzung gebunden.
+                operation:
+                  type: string
+                  minLength: 1
+                  x-propertyflow-max-utf16-code-units: 80
+                  description: Absende-ID aus dem Formular mit höchstens 80 UTF-16-Codeeinheiten.
+      responses:
+        '303':
+          description: >
+            Der Fall und sein Startauftrag sind dauerhaft gespeichert. Der
+            Browser öffnet die persönliche Fallansicht aus Location mit GET.
+            Dort erscheint die Case-ID. Das gilt auch für eine zulässige
+            identische Wiederholung.
+          headers:
+            Location:
+              $ref: '#/components/headers/PersonalCaseLocation'
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '400':
+          description: >
+            Ein Formularfeld fehlt oder ist ungültig, etwa die Gastadresse,
+            die Absende-ID oder eine zu lange Beschreibung. Das Formular
+            zeigt die Eingaben mit einem Fehlerhinweis erneut.
+          content:
+            text/html:
+              schema:
+                type: string
+        '401':
+          description: >
+            Das Kontoformular wurde ohne gültige Anmeldung als verifizierter
+            Mieter gesendet. Das Formular zeigt einen Hinweis zur Anmeldung.
+          content:
+            text/html:
+              schema:
+                type: string
+        '403':
+          description: >
+            Die Browsersitzung oder der zugehörige CSRF-Nachweis fehlt oder
+            ist ungültig.
+          content:
+            text/html:
+              schema:
+                type: string
+        '409':
+          description: >
+            Dieselbe Absende-ID wurde im gleichen Einreichungskontext bereits
+            mit anderem Inhalt gespeichert. Das Formular zeigt den Konflikt.
+          content:
+            text/html:
+              schema:
+                type: string
+        '429':
+          description: Das Rate Limit für die Fallanlage ist erreicht.
+          content:
+            text/html:
+              schema:
+                type: string
+        '500':
+          description: Unerwarteter serverseitiger Fehler. Die Antwort enthält einen neutralen Fehlerhinweis.
+          content:
+            text/html:
+              schema:
+                type: string
+        '503':
+          description: >
+            Die dauerhafte Speicherung kann wegen einer vorübergehend nicht
+            verfügbaren Datenbank nicht bestätigt werden. Die Antwort
+            bestätigt keine Fallannahme.
+          content:
+            text/html:
+              schema:
+                type: string
+      x-propertyflow-idempotency:
+        key: operation
+        scope: >
+          Die serverseitig ermittelte Konto-ID bei einem angemeldeten
+          Mieterkonto oder die ursprüngliche Browsersitzung bei Gästen.
+        rule: >
+          Bei gleichem Schlüssel und identischem Inhalt erhält der
+          berechtigte Browser dieselbe Case-ID und bei weiterhin gültigem
+          Fall-Link dieselbe Weiterleitung. Ein zweiter Fall oder
+          Startauftrag entsteht nicht. Geänderter Inhalt im selben Kontext
+          ergibt 409. Für den Vergleich gelten Betreff, Objekt- oder
+          Wohnungsreferenz, die vom Server bestimmte Kontaktadresse und die
+          Beschreibung nach Zeilenumbruchnormalisierung.
+        persistence: >
+          PropertyFlow speichert die Wiederholungszuordnung gemeinsam mit der
+          Fallannahme. Bei einem Konto bleibt sie für die Aufbewahrungsdauer
+          des Falls verfügbar. Gästen steht die Wiederholung während der
+          Gültigkeit der ursprünglichen Browsersitzung offen. Eine Absende-ID
+          allein gewährt weder Zugriff auf den Fall noch auf dessen Link.
+          Ersetzte Fall-Links bleiben gesperrt.
+        retry: >
+          Nach Timeout, Verbindungsabbruch oder unklarer 5xx-Antwort sendet
+          der Browser im gültigen Einreichungskontext denselben Inhalt mit
+          derselben Absende-ID erneut.
+      x-propertyflow-data-classification:
+        input: Personenbezogene Falldaten, insbesondere Kontaktadresse, Wohnungsreferenz und Freitext.
+        location: Vertrauliches Zugangsgeheimnis im Location-Header.
+        limits: >
+          Zugriff gemäss ZUG-04. Klartexttokens, Freitext und Kontaktadressen
+          gehören nicht in technische Protokolle. Tokenpfade werden vor der
+          Protokollierung unkenntlich gemacht. Fehler geben keine internen
+          Details oder Zugangsdaten preis.
+      x-propertyflow-service-objective:
+        id: NFR-03
+        metric: Anteil gültiger Neueinreichungen mit 303 und dauerhaft gespeichertem Fall samt genau einem Startauftrag.
+        targetPercent: 100
+        verification:
+          durationMinutes: 10
+          submissions: 20
+          conditions: >
+            PostgreSQL ist erreichbar. Camunda und das KI-Modell sind
+            während des gesamten Tests unerreichbar. Über zehn Minuten
+            reichen Gäste und verifizierte Mieter je zehn gültige Fälle ein.
+          evidence: >
+            Für jede Einreichung 303 und die Case-ID aus der verlinkten
+            Fallansicht erfassen. PropertyFlow neu starten, während Camunda
+            unerreichbar bleibt. Für jede bestätigte Case-ID genau einen Fall
+            und einen offenen Startauftrag nachweisen. Sollwert 20 von 20.
+  /mieter/fall/zugang/{token}:
+    parameters:
+      - $ref: '#/components/parameters/FallToken'
+    get:
+      operationId: persoenlicheFallansichtOeffnen
+      tags: [Mieter]
+      summary: Persönliche Fallansicht öffnen
+      description: >
+        PropertyFlow prüft den Token und ermittelt darüber genau einen Fall.
+        Ein gültiger Link öffnet die Fallansicht direkt unter derselben URL.
+        Ein Konto oder eine bestehende Browsersitzung ist dafür nicht
+        erforderlich. Der Aufruf verbraucht den Token nicht und löst keine
+        Falländerung aus.
+      responses:
+        '200':
+          description: >
+            HTML-Ansicht mit Case-ID, Bearbeitungsstatus, wirksamer
+            Dringlichkeit und freigegebenem Verlauf. Bei «Eingegangen» oder
+            «Abgeschlossen» bleibt die Ansicht lesend. Für die Nachrichteneingabe
+            erhält der Browser bei zulässigem Schreiben einen CSRF-Token und
+            eine Absende-ID.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/html:
+              schema:
+                type: string
+        '404':
+          $ref: '#/components/responses/FallLinkNichtVerfuegbar'
+        '429':
+          $ref: '#/components/responses/FallzugriffRateLimit'
+        '500':
+          description: Die Fallansicht ist wegen eines technischen Fehlers nicht verfügbar.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/html:
+              schema:
+                type: string
+  /mieter/fall/zugang/{token}/nachrichten:
+    parameters:
+      - $ref: '#/components/parameters/FallToken'
+    post:
+      operationId: mieternachrichtSenden
+      tags: [Mieter]
+      summary: Ergänzung oder Antwort zum bestehenden Fall senden
+      description: >
+        PropertyFlow prüft den Fall-Link, den CSRF-Nachweis und die Eingabe.
+        Vor der Speicherung einer neuen Nachricht prüft es, ob der Fall
+        aktiv ist, der zugeordnete Fallprozess läuft und Camunda erreichbar
+        ist. Danach speichert es die Nachricht als externen Mietereintrag.
+        Nach dem Datenbank-Commit übergibt es die gespeicherte Nachrichten-ID
+        synchron an die zugeordnete Camunda-Prozessinstanz. Die
+        Erfolgsmeldung setzt eine bestätigte Korrelation mit dieser Instanz
+        voraus. Neubewertung, weitere Statusänderungen und E-Mail folgen
+        nachgelagert.
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MieternachrichtFormular'
+      responses:
+        '303':
+          description: >
+            Die Nachricht ist gespeichert und die Korrelation mit der
+            zugeordneten Camunda-Prozessinstanz ist bestätigt. Location
+            verweist auf dieselbe persönliche Fallansicht ohne den Pfadteil
+            /nachrichten. Eine bereits bestätigte identische Wiederholung
+            gibt dieselbe Weiterleitung zurück.
+          headers:
+            Location:
+              $ref: '#/components/headers/PersonalCaseLocation'
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '400':
+          $ref: '#/components/responses/MieternachrichtUngueltig'
+        '403':
+          $ref: '#/components/responses/InvalidCsrf'
+        '404':
+          $ref: '#/components/responses/FallLinkNichtVerfuegbar'
+        '409':
+          $ref: '#/components/responses/MieternachrichtKonflikt'
+        '429':
+          $ref: '#/components/responses/FallzugriffRateLimit'
+        '500':
+          $ref: '#/components/responses/MieternachrichtFehler'
+      x-propertyflow-idempotency:
+        key: operation
+        scope: Fall und externe Mieternachricht nach erneuter Zugriffsprüfung.
+        rule: >
+          Gleiche Absende-ID und gleicher Text nach Zeilenumbruchnormalisierung
+          ergeben höchstens einen Verlaufseintrag, auch bei einem Wechsel
+          zwischen Fall-Link und Kontozugang. Ist die Korrelation bereits
+          bestätigt, liefert eine zulässige identische Wiederholung auch nach
+          Fallabschluss 303. Ein abweichender Text bei einer bereits
+          gespeicherten Nachricht mit derselben Absende-ID ergibt 409.
+        retry: >
+          Nach einem unklaren Ausgang sendet der Mieter denselben Text mit
+          derselben Absende-ID. PropertyFlow verwendet die gegebenenfalls
+          bereits gespeicherte Nachricht und antwortet mit 303 erst nach
+          bestätigter Korrelation.
+  /anmelden:
+    get:
+      operationId: anmeldeformularOeffnen
+      tags: [Anmeldung/Abmeldung]
+      summary: Anmeldung für Mieter und Mitarbeitende öffnen
+      description: Öffnet das Formular für den E-Mail-Einmalcode und stellt einen CSRF-Token in der Browsersitzung bereit.
+      responses:
+        '200':
+          description: HTML-Anmeldeformular.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/html:
+              schema:
+                $ref: '#/components/schemas/Html'
+  /anmelden/code:
+    post:
+      operationId: anmeldecodeAnfordern
+      tags: [Anmeldung/Abmeldung]
+      summary: Einmalcode zur Anmeldung anfordern
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [csrf]
+              properties:
+                csrf:
+                  type: string
+                  minLength: 1
+                  description: CSRF-Token aus dem Formular in derselben Browsersitzung.
+                email:
+                  type: string
+                  description: >
+                    E-Mail-Adresse des Kontos. Bei der ersten Anforderung
+                    ist eine gültige Adresse erforderlich. Beim erneuten
+                    Anfordern kann der Browser die Adresse weglassen.
+                    PropertyFlow verwendet dann die zuvor in derselben
+                    Sitzung hinterlegte Adresse.
+      responses:
+        '200':
+          description: >
+            HTML-Formular für die Codeprüfung mit neutralem Hinweis. Die
+            Antwort legt weder den Kontostatus noch das Versandergebnis offen.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/html:
+              schema:
+                $ref: '#/components/schemas/Html'
+        '400':
+          description: Die E-Mail-Adresse fehlt oder ist ungültig. Das HTML-Formular zeigt den Eingabehinweis.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/html:
+              schema:
+                $ref: '#/components/schemas/Html'
+        '403':
+          $ref: '#/components/responses/InvalidCsrf'
+        '429':
+          description: Das Anforderungslimit wurde erreicht. Das HTML-Formular zeigt einen Wartehinweis.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/html:
+              schema:
+                $ref: '#/components/schemas/Html'
+  /anmelden/pruefen:
+    post:
+      operationId: anmeldecodePruefen
+      tags: [Anmeldung/Abmeldung]
+      summary: Einmalcode prüfen und anmelden
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [csrf, code]
+              properties:
+                csrf:
+                  type: string
+                  minLength: 1
+                  description: CSRF-Token aus dem Formular in derselben Browsersitzung.
+                code:
+                  type: string
+                  pattern: '^[0-9]{6}$'
+                  description: Sechsstelliger Einmalcode zur zuvor in derselben Sitzung angeforderten Anmeldung.
+      responses:
+        '303':
+          description: >
+            Anmeldung erfolgreich. PropertyFlow verbraucht den Code, wechselt
+            die Sitzungskennung und erneuert den CSRF-Token. Mieter gelangen
+            zu /mieter/faelle. Mitarbeitende gelangen zu einem zuvor
+            gespeicherten, zulässigen Ziel im Mitarbeiterbereich oder zur
+            Übersicht /mitarbeiter/faelle.
+          headers:
+            Location:
+              $ref: '#/components/headers/BrowserLocation'
+            Set-Cookie:
+              required: true
+              description: Sitzungscookie mit erneuerter Sitzungskennung.
+              schema:
+                type: string
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '400':
+          description: >
+            Keine gültige Codeanforderung in der Sitzung oder Code ungültig,
+            abgelaufen oder bereits verbraucht. Das HTML-Formular meldet den
+            Fehler ohne Kontoinformationen.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/html:
+              schema:
+                $ref: '#/components/schemas/Html'
+        '403':
+          $ref: '#/components/responses/InvalidCsrf'
+  /registrieren:
+    get:
+      operationId: registrierungsformularOeffnen
+      tags: [Anmeldung/Abmeldung]
+      summary: Formular für ein freiwilliges Mieterkonto öffnen
+      description: Öffnet die Registrierung per E-Mail-Einmalcode und stellt einen CSRF-Token in der Browsersitzung bereit.
+      responses:
+        '200':
+          description: HTML-Registrierungsformular.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/html:
+              schema:
+                $ref: '#/components/schemas/Html'
+  /registrieren/code:
+    post:
+      operationId: registrierungscodeAnfordern
+      tags: [Anmeldung/Abmeldung]
+      summary: Einmalcode zur Verifikation der E-Mail-Adresse anfordern
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [csrf]
+              properties:
+                csrf:
+                  type: string
+                  minLength: 1
+                  description: CSRF-Token aus dem Formular in derselben Browsersitzung.
+                email:
+                  type: string
+                  description: >
+                    E-Mail-Adresse für die Verifikation. Bei der ersten
+                    Anforderung ist eine gültige Adresse erforderlich. Beim
+                    erneuten Anfordern ohne Adresse verwendet PropertyFlow
+                    die zuvor in derselben Sitzung hinterlegte Adresse.
+      responses:
+        '200':
+          description: >
+            HTML-Formular für die Codeprüfung mit neutralem Hinweis. Die
+            Antwort legt weder den Kontostatus noch das Versandergebnis offen.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/html:
+              schema:
+                $ref: '#/components/schemas/Html'
+        '400':
+          description: Die E-Mail-Adresse fehlt oder ist ungültig. Das HTML-Formular zeigt den Eingabehinweis.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/html:
+              schema:
+                $ref: '#/components/schemas/Html'
+        '403':
+          $ref: '#/components/responses/InvalidCsrf'
+        '429':
+          description: Das gemeinsame Anforderungslimit für Registrierung und Anmeldung wurde erreicht.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/html:
+              schema:
+                $ref: '#/components/schemas/Html'
+  /registrieren/pruefen:
+    post:
+      operationId: registrierungscodePruefen
+      tags: [Anmeldung/Abmeldung]
+      summary: E-Mail-Adresse verifizieren und Mieterkonto öffnen
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [csrf, code]
+              properties:
+                csrf:
+                  type: string
+                  minLength: 1
+                  description: CSRF-Token aus dem Formular in derselben Browsersitzung.
+                code:
+                  type: string
+                  pattern: '^[0-9]{6}$'
+                  description: Sechsstelliger Einmalcode zur zuvor in derselben Sitzung angeforderten Registrierung.
+      responses:
+        '303':
+          description: >
+            E-Mail-Adresse erfolgreich verifiziert. PropertyFlow aktiviert
+            ein neues Mieterkonto oder öffnet ein bestehendes Mieterkonto.
+            PropertyFlow verbraucht den Code, wechselt die Sitzungskennung
+            und erneuert den CSRF-Token. Dieser Zielablauf führt zu
+            /mieter/faelle. Die lokale Demo leitet bei der E-Mail-Adresse
+            eines bestehenden Mitarbeiterkontos in den Mitarbeiterbereich.
+          headers:
+            Location:
+              $ref: '#/components/headers/BrowserLocation'
+            Set-Cookie:
+              required: true
+              description: Sitzungscookie mit erneuerter Sitzungskennung.
+              schema:
+                type: string
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '400':
+          description: >
+            Keine gültige Codeanforderung in der Sitzung oder Code ungültig,
+            abgelaufen oder bereits verbraucht. Das HTML-Formular meldet den
+            Fehler ohne Kontoinformationen.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/html:
+              schema:
+                $ref: '#/components/schemas/Html'
+        '403':
+          $ref: '#/components/responses/InvalidCsrf'
+  /abmelden:
+    post:
+      operationId: webSitzungBeenden
+      tags: [Anmeldung/Abmeldung]
+      summary: Web-Sitzung beenden
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [csrf]
+              properties:
+                csrf:
+                  type: string
+                  minLength: 1
+                  description: CSRF-Token aus der aktuellen Browsersitzung.
+      responses:
+        '303':
+          description: PropertyFlow hat die Browsersitzung beendet und leitet auf /mieter/fall weiter.
+          headers:
+            Location:
+              $ref: '#/components/headers/BrowserLocation'
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '403':
+          description: Die Browsersitzung oder der zugehörige CSRF-Token fehlt oder ist ungültig.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+  /mieter/faelle:
+    get:
+      operationId: eigeneFaelleAuflisten
+      tags: [Mieter]
+      summary: Eigene Fälle im Mieterkonto anzeigen
+      description: >
+        PropertyFlow zeigt die Fälle, deren geprüfte Kontaktadresse exakt
+        mit der verifizierten E-Mail-Adresse des angemeldeten Mieterkontos
+        übereinstimmt. Dazu zählen frühere Einreichungen ohne Konto.
+        Die E-Mail-Adresse wird aus dem geprüften Konto ermittelt.
+      security:
+        - BrowserSession: []
+      responses:
+        '200':
+          description: >
+            HTML-Übersicht der eigenen Fälle mit Case-ID, Betreff, Objekt-
+            oder Wohnungsreferenz, Status und Eingangsdatum. Eine leere
+            Liste wird ebenfalls mit 200 angezeigt.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/html:
+              schema:
+                $ref: '#/components/schemas/Html'
+        '401':
+          description: Die Anmeldung fehlt oder ist abgelaufen.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/html:
+              schema:
+                $ref: '#/components/schemas/Html'
+        '403':
+          description: Die aktive Anmeldung gehört zu keinem Mieterkonto.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/html:
+              schema:
+                $ref: '#/components/schemas/Html'
+        '500':
+          description: Die Fallübersicht ist wegen eines technischen Fehlers nicht verfügbar.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/html:
+              schema:
+                $ref: '#/components/schemas/Html'
+  /mieter/faelle/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Case-ID des Falls. Der Server prüft die Zuordnung zum Mieterkonto.
+        schema:
+          type: string
+          minLength: 1
+    get:
+      operationId: eigenenFallAnzeigen
+      tags: [Mieter]
+      summary: Eigenen Fall im Mieterkonto anzeigen
+      description: >
+        Die verifizierte Konto-Adresse muss mit der geprüften Kontaktadresse
+        des Falls übereinstimmen. PropertyFlow zeigt ausschliesslich
+        mieteröffentliche Daten. Der Abruf ändert weder den Fall noch den
+        Prozesszustand.
+      security:
+        - BrowserSession: []
+      responses:
+        '200':
+          description: >
+            HTML-Ansicht mit Case-ID, gespeichertem Bearbeitungsstatus,
+            wirksamer Dringlichkeit und freigegebenem Verlauf. Bei
+            «Eingegangen» oder «Abgeschlossen» bleibt die Ansicht lesend.
+            Ein zulässiges Nachrichtenformular enthält CSRF-Token und
+            Absende-ID.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/html:
+              schema:
+                $ref: '#/components/schemas/Html'
+        '401':
+          description: Die Anmeldung fehlt oder ist abgelaufen.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/html:
+              schema:
+                $ref: '#/components/schemas/Html'
+        '403':
+          description: Die aktive Anmeldung gehört zu keinem Mieterkonto.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/html:
+              schema:
+                $ref: '#/components/schemas/Html'
+        '404':
+          $ref: '#/components/responses/FallNichtVerfuegbar'
+        '500':
+          description: Die Fallansicht ist wegen eines technischen Fehlers nicht verfügbar.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/html:
+              schema:
+                $ref: '#/components/schemas/Html'
+  /mieter/faelle/{id}/nachrichten:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Case-ID des Falls. Der Server prüft die Zuordnung zum Mieterkonto.
+        schema:
+          type: string
+          minLength: 1
+    post:
+      operationId: mieternachrichtImKontoSenden
+      tags: [Mieter]
+      summary: Ergänzung oder Antwort aus dem Mieterkonto senden
+      description: >
+        PropertyFlow prüft die Anmeldung, die Fallzuordnung anhand der
+        verifizierten Konto-Adresse, den CSRF-Nachweis und die Eingaben. Vor
+        dem Speichern einer neuen Nachricht prüft es den aktiven Fall,
+        den laufenden Fallprozess und die Erreichbarkeit von Camunda.
+        Die Nachricht wird als externer Mietereintrag gespeichert. Nach dem
+        Commit übergibt PropertyFlow die Nachrichten-ID synchron an die
+        zugeordnete Camunda-Prozessinstanz. Die Erfolgsmeldung setzt die
+        bestätigte Korrelation voraus.
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MieternachrichtFormular'
+      responses:
+        '303':
+          description: >
+            Die Speicherung der Nachricht und ihre Korrelation mit der
+            zugeordneten Camunda-Prozessinstanz sind bestätigt. Location
+            verweist auf /mieter/faelle/{id} zum selben Fall. Dies gilt
+            auch für eine bereits bestätigte identische Wiederholung.
+          headers:
+            Location:
+              $ref: '#/components/headers/BrowserLocation'
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '400':
+          $ref: '#/components/responses/MieternachrichtUngueltig'
+        '401':
+          description: Die Anmeldung fehlt oder ist abgelaufen.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/html:
+              schema:
+                $ref: '#/components/schemas/Html'
+        '403':
+          description: Die Rolle des Kontos erlaubt die Aktion nicht oder der CSRF-Nachweis ist ungültig.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/html:
+              schema:
+                $ref: '#/components/schemas/Html'
+        '404':
+          $ref: '#/components/responses/FallNichtVerfuegbar'
+        '409':
+          $ref: '#/components/responses/MieternachrichtKonflikt'
+        '429':
+          $ref: '#/components/responses/FallzugriffRateLimit'
+        '500':
+          $ref: '#/components/responses/MieternachrichtFehler'
+      x-propertyflow-idempotency:
+        key: operation
+        scope: Fall und externe Mieternachricht nach erneuter Zugriffsprüfung.
+        rule: >
+          Gleiche Absende-ID und gleicher Text nach Zeilenumbruchnormalisierung
+          ergeben höchstens einen Verlaufseintrag, auch bei einem Wechsel
+          zwischen Kontozugang und Fall-Link. Ist die Korrelation bestätigt,
+          liefert eine zulässige identische Wiederholung 303, auch nach
+          Fallabschluss. Geänderter Text mit derselben bereits gespeicherten
+          Absende-ID ergibt 409.
+        retry: >
+          Bei unklarem Ausgang denselben Text und dieselbe Absende-ID
+          erneut senden. PropertyFlow verwendet die bereits gespeicherte
+          Nachricht, falls vorhanden. 303 setzt bestätigte Korrelation voraus.
+  /mitarbeiter/faelle:
+    get:
+      operationId: mitarbeiterFalluebersichtOeffnen
+      tags: [Mitarbeitende]
+      summary: Geschützte Fallübersicht öffnen oder aktualisieren
+      description: >
+        Ein persönlich angemeldeter Mitarbeiter mit aktiver Mitarbeiterrolle
+        erhält die Fälle und Trefferzahl gemäss seiner Fallberechtigung.
+        Die Route dient auch dem Nachladen derselben HTML-Ansicht. Ohne
+        gültige Sitzung führt eine Seitennavigation zur Anmeldung. Ein
+        Hintergrundabruf erhält 401.
+      security:
+        - BrowserSession: []
+      parameters:
+        - in: header
+          name: X-PropertyFlow-Request
+          description: Kennzeichnet einen Hintergrundabruf der Browseroberfläche.
+          schema:
+            type: string
+            const: partial
+        - in: query
+          name: q
+          description: Suchtext mit höchstens 200 UTF-16-Codeeinheiten.
+          schema:
+            type: string
+            x-propertyflow-max-utf16-code-units: 200
+            default: ''
+        - in: query
+          name: urgency
+          description: Filter nach wirksamer Dringlichkeit. Leer bedeutet alle Stufen.
+          schema:
+            type: string
+            enum: ['', Noch nicht bewertet, Kritisch, Hoch, Normal, Niedrig]
+            default: ''
+        - in: query
+          name: closed
+          description: Bei true zusätzlich abgeschlossene Fälle anzeigen.
+          schema:
+            type: boolean
+            default: false
+        - in: query
+          name: sort
+          description: Sortierspalte. Die Standardsortierung verwendet Dringlichkeit und letzte Mieteraktion.
+          schema:
+            type: string
+            enum: [default, title, unit, received, contact, followUp, urgency, status]
+            default: default
+        - in: query
+          name: desc
+          description: Sortierrichtung absteigend.
+          schema:
+            type: boolean
+            default: false
+        - in: query
+          name: page
+          description: >
+            Gewünschte Seite mit bis zu 50 Fällen. Der Server begrenzt die
+            Seitennummer auf den verfügbaren Bereich.
+          schema:
+            type: integer
+            format: int32
+            default: 1
+      responses:
+        '200':
+          description: HTML-Fallübersicht mit berechtigten Treffern oder passender Leermeldung.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/html:
+              schema:
+                $ref: '#/components/schemas/Html'
+        '303':
+          $ref: '#/components/responses/StaffLoginRedirect'
+        '400':
+          description: Such-, Filter-, Sortier- oder Seiteneingabe ist ungültig.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/html:
+              schema:
+                $ref: '#/components/schemas/Html'
+        '401':
+          $ref: '#/components/responses/StaffReadNeedsLogin'
+        '403':
+          $ref: '#/components/responses/StaffReadDenied'
+  /mitarbeiter/faelle/{id}:
+    parameters:
+      - $ref: '#/components/parameters/StaffCaseId'
+    get:
+      operationId: mitarbeiterFalldetailOeffnen
+      tags: [Mitarbeitende]
+      summary: Geschütztes Falldetail öffnen oder aktualisieren
+      description: >
+        PropertyFlow prüft die Mitarbeiter- und Fallberechtigung bei jedem
+        Abruf. Die HTML-Ansicht zeigt den freigegebenen Fallstand mit
+        externen Nachrichten und internen Memos. Die Browseroberfläche
+        verwendet dieselbe Route für periodische Leseabrufe.
+      security:
+        - BrowserSession: []
+      parameters:
+        - in: header
+          name: X-PropertyFlow-Request
+          description: Kennzeichnet einen Hintergrundabruf der Browseroberfläche.
+          schema:
+            type: string
+            const: partial
+        - in: query
+          name: returnTo
+          description: >
+            Rückkehrziel auf der lokalen Fallübersicht, gegebenenfalls mit
+            den Listenfiltern. Bei ungültigem Wert gilt die Standardübersicht.
+          schema:
+            type: string
+            format: uri-reference
+      responses:
+        '200':
+          description: HTML-Falldetail für berechtigte Mitarbeitende.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/html:
+              schema:
+                $ref: '#/components/schemas/Html'
+        '303':
+          $ref: '#/components/responses/StaffLoginRedirect'
+        '401':
+          $ref: '#/components/responses/StaffReadNeedsLogin'
+        '403':
+          $ref: '#/components/responses/StaffReadDenied'
+        '404':
+          $ref: '#/components/responses/FallNichtVerfuegbar'
+  /mitarbeiter/faelle/{id}/nachrichten:
+    parameters:
+      - $ref: '#/components/parameters/StaffCaseId'
+    post:
+      operationId: mitarbeiterNachrichtOderMemoSpeichern
+      tags: [Mitarbeitende]
+      summary: Externe Nachricht veröffentlichen oder internes Memo speichern
+      x-propertyflow-status: frontend-demo
+      description: >
+        Die Demo speichert im Arbeitsspeicher und leitet zum Falldetail
+        weiter. Im Zielablauf gelten die separaten Verträge
+        POST /mitarbeiter/faelle/{id}/externe-nachricht-veroeffentlichen
+        (UC-010) und POST /mitarbeiter/faelle/{id}/internes-memo-speichern
+        (UC-011).
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [text, operation, csrf]
+              properties:
+                text:
+                  type: string
+                  minLength: 1
+                  x-propertyflow-max-utf16-code-units: 5000
+                  description: Nachricht oder Memo mit höchstens 5’000 UTF-16-Codeeinheiten in der Demo.
+                internal:
+                  type: boolean
+                  default: false
+                  description: Bei true als internes Memo speichern.
+                answer:
+                  type: boolean
+                  default: false
+                  description: Bei einer externen Nachricht eine Mieterantwort verlangen.
+                operation:
+                  $ref: '#/components/schemas/StaffOperation'
+                csrf:
+                  $ref: '#/components/schemas/StaffCsrf'
+                returnTo:
+                  $ref: '#/components/schemas/StaffReturnTo'
+      responses:
+        '303':
+          $ref: '#/components/responses/StaffDetailRedirect'
+        '400':
+          description: Formularfeld fehlt oder ist ungültig, etwa leerer oder zu langer Text.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/html:
+              schema:
+                $ref: '#/components/schemas/Html'
+        '401':
+          $ref: '#/components/responses/StaffWriteNeedsLogin'
+        '403':
+          $ref: '#/components/responses/StaffWriteDenied'
+        '404':
+          $ref: '#/components/responses/FallNichtVerfuegbar'
+        '409':
+          description: >
+            Der Fall ist für eine neue Nachricht geschlossen oder dieselbe
+            Absende-ID wurde bereits mit anderen Daten verwendet.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/html:
+              schema:
+                $ref: '#/components/schemas/Html'
+  /mitarbeiter/faelle/{id}/aktion:
+    parameters:
+      - $ref: '#/components/parameters/StaffCaseId'
+    post:
+      operationId: mitarbeiterFallaktionInDemoAusfuehren
+      tags: [Mitarbeitende]
+      summary: Fallaktion über das Demoformular ausführen
+      x-propertyflow-status: frontend-demo
+      description: >
+        Dieser Formularvertrag beschreibt die lokale Demo. Die dortige
+        direkte Statusauswahl gehört zur Demo. Im Zielablauf steuert Camunda
+        die Statuswechsel. Für «Bearbeitung fortsetzen» gilt der eigene
+        Vertrag POST /mitarbeiter/faelle/{id}/bearbeitung-fortsetzen.
+        Für die Wiedervorlage gilt POST /mitarbeiter/faelle/{id}/wiedervorlage.
+        Für den Mitarbeiterabschluss gilt POST /mitarbeiter/faelle/{id}/abschliessen.
+        Für die Wiedereröffnung gilt POST /mitarbeiter/faelle/{id}/wiedereroeffnen.
+        Zum Aufheben des Antwortbedarfs dient im Zielablauf
+        POST /mitarbeiter/faelle/{id}/nachrichten/{messageId}/antwortbedarf-aufheben.
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [action, version, operation, csrf]
+              properties:
+                action:
+                  type: string
+                  enum: [urgency, status, followUp, clearFollowUp, unit, close, reopen, clearAnswer]
+                  description: Ausgewählte Demoaktion.
+                version:
+                  type: integer
+                  format: int64
+                  description: Version des bei der Erfassung angezeigten Fallstands.
+                value:
+                  type: string
+                  description: Aktionsabhängiger Wert, etwa Dringlichkeit, Zuordnung, Datum oder Nachrichten-ID.
+                days:
+                  oneOf:
+                    - type: integer
+                      minimum: 1
+                    - type: string
+                      const: ''
+                  description: >
+                    Für die Wiedervorlage. Eine Angabe in Tagen hat Vorrang
+                    vor dem Datum. Das Formular darf das Feld leer senden.
+                reason:
+                  type: string
+                  x-propertyflow-max-utf16-code-units: 1000
+                  description: Optionale interne Begründung mit höchstens 1’000 UTF-16-Codeeinheiten.
+                operation:
+                  $ref: '#/components/schemas/StaffOperation'
+                csrf:
+                  $ref: '#/components/schemas/StaffCsrf'
+                returnTo:
+                  $ref: '#/components/schemas/StaffReturnTo'
+      responses:
+        '303':
+          $ref: '#/components/responses/StaffDetailRedirect'
+        '400':
+          description: Die Aktion oder ein Formularfeld ist ungültig.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/html:
+              schema:
+                $ref: '#/components/schemas/Html'
+        '401':
+          $ref: '#/components/responses/StaffWriteNeedsLogin'
+        '403':
+          $ref: '#/components/responses/StaffWriteDenied'
+        '404':
+          $ref: '#/components/responses/FallNichtVerfuegbar'
+        '409':
+          description: >
+            Fallstand oder Aktion ist überholt, der Fallzustand erlaubt die
+            Änderung nicht mehr oder die Absende-ID wurde bereits mit
+            anderen Aktionsdaten verwendet.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/html:
+              schema:
+                $ref: '#/components/schemas/Html'
+  /mitarbeiter/faelle/{id}/bearbeitung-fortsetzen:
+    parameters:
+      - $ref: '#/components/parameters/StaffCaseId'
+    post:
+      operationId: mitarbeiterBearbeitungFortsetzen
+      tags: [Mitarbeitende]
+      summary: Bearbeitung nach Mitarbeiterprüfung fortsetzen
+      x-propertyflow-status: zielvertrag
+      description: >
+        Bei «Mitarbeiterprüfung erforderlich» prüft PropertyFlow die
+        Berechtigung für Fall und Aktion, die angezeigte Fallversion und die
+        Zugehörigkeit der offenen Aufgabe zur serverseitig ermittelten
+        Fallprozessinstanz (processInstanceKey). Es schliesst synchron genau
+        die adressierte User Task über Camunda POST
+        /v2/user-tasks/{userTaskKey}/completion ab. Eine neu geöffnete Aufgabe
+        bleibt von einem Aufruf für die alte Aufgabe unberührt. Camunda
+        steuert den Folgeschritt. Die optionale Begründung gehört zum
+        internen Änderungsnachweis der bestätigten Aktion (UC-012, SS-003).
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [userTaskKey, version, csrf]
+              properties:
+                userTaskKey:
+                  type: string
+                  pattern: '^[0-9]+$'
+                  description: Camunda-Schlüssel der im Formular angezeigten User Task als Dezimalzeichenfolge.
+                version:
+                  type: integer
+                  format: int64
+                  description: Version des bei der Bestätigung geprüften Fallstands.
+                csrf:
+                  $ref: '#/components/schemas/StaffCsrf'
+                reason:
+                  type: string
+                  description: Optionale Begründung für den internen Änderungsnachweis.
+      responses:
+        '200':
+          description: >
+            Camunda hat den Abschluss dieser User Task mit 204 bestätigt.
+            Die Antwort enthält keinen Körper. Das UI lädt das Falldetail
+            neu. «In Bearbeitung» ist sichtbar, sobald der Worker den neuen
+            Status gespeichert hat.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '400':
+          description: >
+            Die Eingabe ist ungültig, der Fallstand ist veraltet oder die
+            Aktion oder User Task ist für diesen Fall nicht zulässig. Dazu
+            zählen die Camunda-Antworten 404 und 409 beim Task-Abschluss.
+            Das UI lädt den aktuellen Fallstand. Eine neu geöffnete Aufgabe
+            bleibt offen.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '401':
+          $ref: '#/components/responses/StaffWriteNeedsLogin'
+        '403':
+          $ref: '#/components/responses/StaffWriteDenied'
+        '404':
+          $ref: '#/components/responses/FallNichtVerfuegbar'
+        '500':
+          description: >
+            Ein technischer Fehler oder Timeout verhindert die Bestätigung.
+            Bei einem Timeout kann Camunda die Aufgabe bereits abgeschlossen
+            haben. Das UI lädt den gespeicherten Fallstand neu. PropertyFlow
+            wiederholt den Abschluss nicht automatisch.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+  /mitarbeiter/faelle/{id}/dringlichkeit-aendern:
+    parameters:
+      - $ref: '#/components/parameters/StaffCaseId'
+    post:
+      operationId: mitarbeiterDringlichkeitAendern
+      tags: [Mitarbeitende]
+      summary: Dringlichkeit eines Falls manuell einstufen
+      x-propertyflow-status: zielvertrag
+      description: >
+        PropertyFlow prüft Berechtigung, Fallversion und ob der laufende
+        Fallprozess die Aktion erlaubt. Es ordnet die fachliche Nachricht
+        serverseitig der gespeicherten Prozessinstanz zu und wartet synchron
+        auf Camundas Bestätigung der Korrelation (UC-012, SS-003). Der Worker
+        speichert die manuelle Einstufung gemäss DRING-06. Die Speicherung
+        muss gegen konkurrierende Änderungen und einen zwischenzeitlichen
+        Fallabschluss abgesichert sein. Die manuelle Stufe hat Vorrang vor
+        automatischen Bewertungen. Eine Begründung bleibt intern.
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [urgency, version, operation, csrf]
+              properties:
+                urgency:
+                  type: string
+                  enum: [Kritisch, Hoch, Normal, Niedrig]
+                  description: Gewählte fachliche Dringlichkeitsstufe.
+                version:
+                  type: integer
+                  format: int64
+                  description: Version des bei der Bestätigung geprüften Fallstands.
+                operation:
+                  $ref: '#/components/schemas/StaffOperation'
+                csrf:
+                  $ref: '#/components/schemas/StaffCsrf'
+                reason:
+                  type: string
+                  description: Optionale Begründung für den internen Änderungsnachweis.
+      responses:
+        '200':
+          description: >
+            Camunda hat die Korrelation mit der zugeordneten Prozessinstanz
+            bestätigt. Die Antwort enthält keinen Körper. Das UI lädt das
+            Falldetail neu und zeigt die Stufe, sobald sie gespeichert ist.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '400':
+          description: >
+            Die Eingabe ist ungültig, der Fallstand ist veraltet oder der
+            Fallprozess lässt die Aktion nicht zu. Das gilt auch bei fehlender
+            Prozesszuordnung, fehlender wartender Empfangsstelle oder anderer
+            Eingabe mit bereits verwendeter Absende-ID. Das UI lädt den
+            aktuellen Fallstand und erhält Nachrichteneingabe und KI-Stream.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '401':
+          $ref: '#/components/responses/StaffWriteNeedsLogin'
+        '403':
+          $ref: '#/components/responses/StaffWriteDenied'
+        '404':
+          $ref: '#/components/responses/FallNichtVerfuegbar'
+        '500':
+          description: >
+            Ein technischer Fehler oder Timeout verhindert die Bestätigung.
+            Bei einem Timeout kann Camunda die Nachricht bereits korreliert
+            haben. Das UI lädt den gespeicherten Fallstand neu. PropertyFlow
+            wiederholt den Aufruf nicht automatisch.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+      x-propertyflow-idempotency:
+        key: operation
+        scope: Fall und manuelle Dringlichkeitseinstufung nach erneuter Zugriffsprüfung.
+        rule: >
+          Eine identische Wiederholung mit bereits bestätigter Korrelation
+          erhält erneut 200. Dieselbe Absende-ID bewirkt höchstens eine
+          Einstufung und erzeugt keine doppelten Historieneinträge oder
+          Benachrichtigungsaufträge. Abweichende Einstufungsdaten bei derselben
+          Absende-ID ergeben 400. Für neue Aktionen gelten die Versions- und
+          Abschlusssperren. Unveränderte manuelle Stufen und der erstmalige
+          Wechsel von automatischer zu manueller Einstufung folgen DRING-06.
+  /mitarbeiter/faelle/{id}/objekt-wohnung-zuordnen:
+    parameters:
+      - $ref: '#/components/parameters/StaffCaseId'
+    post:
+      operationId: mitarbeiterObjektWohnungZuordnen
+      tags: [Mitarbeitende]
+      summary: Objekt und Wohnung zuordnen
+      x-propertyflow-status: zielvertrag
+      description: >
+        PropertyFlow prüft Berechtigung, Fallversion und die Freigabe im
+        laufenden Fallprozess. Bei einem Stammdatenvorschlag prüft der Dienst
+        serverseitig, ob die referenzierte Wohnung zum referenzierten Objekt
+        gehört, und ermittelt daraus die Bezeichnung. Die Bezeichnung und
+        die alternative Freitexteingabe müssen nach Entfernen äusserer
+        Leerzeichen 1–200 Zeichen enthalten. Freitext erzeugt keine neuen
+        Stammdaten. PropertyFlow ordnet die fachliche Nachricht serverseitig
+        dem Fallprozess zu und wartet synchron auf die bestätigte
+        Camunda-Korrelation (UC-012, SS-003).
+
+        Der Worker speichert die bestätigte Zuordnung getrennt von der
+        ursprünglichen Mieterangabe. Diese bleibt unverändert und lesbar.
+        PropertyFlow dokumentiert den alten und den neuen Wert, Zeitpunkt
+        und Mitarbeiter und schützt die Speicherung vor konkurrierenden
+        Änderungen und einem zwischenzeitlichen Fallabschluss. Die
+        Zuordnung klärt den Hinweis «Zuordnung offen». Weitere Prüfgründe,
+        Kontaktadresse, Empfänger und Fall-Link bleiben bestehen (FALL-04).
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [version, operation, csrf]
+              oneOf:
+                - required: [assignment]
+                  not:
+                    anyOf:
+                      - required: [propertyId]
+                      - required: [unitId]
+                - required: [propertyId, unitId]
+                  not:
+                    required: [assignment]
+              properties:
+                assignment:
+                  type: string
+                  pattern: '\S'
+                  description: >
+                    Freitextzuordnung mit 1–200 Zeichen nach Entfernen
+                    äusserer Leerzeichen. Innere Leerzeichen bleiben erhalten.
+                propertyId:
+                  type: string
+                  pattern: '\S'
+                  description: Stammdatenreferenz des ausgewählten Objekts.
+                unitId:
+                  type: string
+                  pattern: '\S'
+                  description: Stammdatenreferenz der ausgewählten Wohnung.
+                version:
+                  type: integer
+                  format: int64
+                  description: Version des bei der Bestätigung geprüften Fallstands.
+                operation:
+                  $ref: '#/components/schemas/StaffOperation'
+                csrf:
+                  $ref: '#/components/schemas/StaffCsrf'
+      responses:
+        '200':
+          description: >
+            Camunda hat die Korrelation mit der zugeordneten Prozessinstanz
+            bestätigt. Die Antwort enthält keinen Körper. Das UI lädt das
+            Falldetail neu und zeigt die Zuordnung, sobald sie gespeichert ist.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '400':
+          description: >
+            Die Eingabe ist ungültig, der Fallstand ist veraltet oder der
+            Fallprozess lässt die Aktion nicht zu. Das gilt auch bei einer
+            unvollständigen oder ungültigen Referenz, einer Wohnung aus einem
+            anderen Objekt, fehlender Prozesszuordnung oder abweichender
+            Zuordnung mit derselben Absende-ID. Das UI lädt den aktuellen
+            Fallstand. Mitarbeitereingabe und KI-Stream bleiben erhalten.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '401':
+          $ref: '#/components/responses/StaffWriteNeedsLogin'
+        '403':
+          $ref: '#/components/responses/StaffWriteDenied'
+        '404':
+          $ref: '#/components/responses/FallNichtVerfuegbar'
+        '500':
+          description: >
+            Ein technischer Fehler oder Timeout verhindert die Bestätigung.
+            Bei einem Timeout kann Camunda die Nachricht bereits korreliert
+            haben. Das UI lädt den gespeicherten Fallstand neu und behält die
+            Eingabe. PropertyFlow wiederholt den Aufruf nicht automatisch.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+      x-propertyflow-idempotency:
+        key: operation
+        scope: Fall und Objekt-/Wohnungszuordnung nach erneuter Zugriffsprüfung.
+        rule: >
+          Eine identische Wiederholung mit bereits bestätigter Korrelation
+          erhält erneut 200. Dieselbe Absende-ID bewirkt höchstens eine
+          Zuordnung und erzeugt keine doppelten Historieneinträge. Verglichen
+          werden entweder das Referenzpaar oder der Freitext ohne äussere
+          Leerzeichen. Abweichende Zuordnungsdaten ergeben 400. Für neue
+          Aktionen gelten die Versions- und Abschlusssperren.
+  /mitarbeiter/faelle/{id}/externe-nachricht-veroeffentlichen:
+    parameters:
+      - $ref: '#/components/parameters/StaffCaseId'
+    post:
+      operationId: mitarbeiterExterneNachrichtVeroeffentlichen
+      tags: [Mitarbeitende]
+      summary: Externe Fallnachricht veröffentlichen
+      x-propertyflow-status: zielvertrag
+      description: >
+        Ein berechtigter Mitarbeiter sendet eine Information oder Rückfrage
+        zu einem aktiven Fall. PropertyFlow prüft Eingabe, Absende-ID und die
+        Prozessfreigabe für die Veröffentlichung. Camunda veranlasst die
+        Veröffentlichung im zugeordneten Fallprozess. Der PropertyFlow-Worker
+        speichert die externe Nachricht mit dem gewählten Antwortbedarf
+        dauerhaft. Danach ist sie im berechtigten Mieter- und Mitarbeiterverlauf
+        abrufbar. Der E-Mail-Versand folgt der Veröffentlichung. Die Pflicht
+        zur Benachrichtigung bleibt über einen Neustart hinweg nachvollziehbar
+        (UC-010, KOM-01, BEN-03).
+
+        Bei erforderlicher Mieterantwort bestimmt Camunda den Folgestatus
+        gemäss FALL-05. Bei laufender Wiedervorlage bleiben Termin und Status
+        «Wartet auf Wiedervorlage» bestehen und die Rückfrage bleibt offen.
+        Eine Informationsnachricht lässt frühere offene Rückfragen bestehen.
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [text, operation, csrf]
+              properties:
+                text:
+                  type: string
+                  pattern: '\S'
+                  description: Bei der Sendeaktion bestätigter externer Nachrichtentext.
+                answer:
+                  type: boolean
+                  default: false
+                  description: Bei true ist eine Mieterantwort erforderlich.
+                operation:
+                  $ref: '#/components/schemas/StaffOperation'
+                csrf:
+                  $ref: '#/components/schemas/StaffCsrf'
+      responses:
+        '200':
+          description: >
+            Die von Camunda veranlasste Nachricht ist dauerhaft gespeichert
+            und für den berechtigten Mieter im Fallverlauf sichtbar.
+            PropertyFlow prüft die Veröffentlichung anhand der Absende-ID.
+            Die Antwort enthält keinen Körper. Das UI lädt den gespeicherten
+            Verlauf neu. Der E-Mail-Versand folgt der Veröffentlichung. Die
+            HTTP-Antwort wartet nicht auf den Versand.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '400':
+          description: >
+            Die Formulareingabe ist ungültig, etwa weil der Nachrichtentext
+            leer ist. Text und Auswahl bleiben im Formular.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '401':
+          $ref: '#/components/responses/StaffWriteNeedsLogin'
+        '403':
+          $ref: '#/components/responses/StaffWriteDenied'
+        '404':
+          $ref: '#/components/responses/FallNichtVerfuegbar'
+        '409':
+          description: >
+            Der Fall ist geschlossen, der Fallprozess ist noch nicht
+            zugeordnet oder erlaubt die Veröffentlichung aktuell nicht, oder
+            dieselbe Absende-ID wurde mit anderem Text, anderer Sichtbarkeit
+            oder anderem Antwortbedarf verwendet. Text und Auswahl bleiben
+            im Formular. Das UI lädt den aktuellen Fallstand.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '500':
+          description: >
+            Ein technischer Fehler oder Timeout verhindert die Bestätigung
+            der Veröffentlichung. Bei unklarem Ausgang kann sie bereits
+            gespeichert sein. Text, Antwortbedarf und Absende-ID bleiben im
+            Formular. Das UI lädt den gespeicherten Verlauf neu. Eine
+            Wiederholung verwendet dieselbe Absende-ID und löst keine zweite
+            Veröffentlichung aus.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+      x-propertyflow-idempotency:
+        key: operation
+        scope: Fall und Mitarbeiterkommunikation nach erneuter Zugriffsprüfung.
+        rule: >
+          Eine identische Wiederholung einer veröffentlichten Nachricht
+          liefert erneut 200, auch nach zwischenzeitlichem Fallabschluss.
+          Verglichen werden der übermittelte Text einschliesslich Leerzeichen
+          sowie Sichtbarkeit und Antwortbedarf. Geänderte Eingaben mit
+          derselben Absende-ID ergeben 409. Wiederholte Aufrufe oder
+          Worker-Ausführungen erzeugen weder einen zweiten Verlaufseintrag
+          noch einen zusätzlichen Benachrichtigungsauftrag für dasselbe
+          Ereignis und denselben Empfänger. Eindeutig erfolglose Erstversuche
+          reservieren die ID nicht.
+  /mitarbeiter/faelle/{id}/internes-memo-speichern:
+    parameters:
+      - $ref: '#/components/parameters/StaffCaseId'
+    post:
+      operationId: mitarbeiterInternesMemoSpeichern
+      tags: [Mitarbeitende]
+      summary: Internes Memo speichern
+      x-propertyflow-status: zielvertrag
+      description: >
+        PropertyFlow prüft die Mitarbeiterberechtigung, den Fallzustand, die
+        Eingabe und die Absende-ID. Camunda veranlasst die Speicherung im
+        zugeordneten Fallprozess. Der PropertyFlow-Worker speichert das Memo
+        dauerhaft mit interner Sichtbarkeit, Absender aus der geprüften
+        Mitarbeitersitzung und serverseitigem Zeitpunkt. Nur berechtigte
+        Mitarbeitende sehen es im Fallverlauf (UC-011, KOM-01).
+
+        Das Memo löst keine E-Mail aus und setzt keinen Mieterantwortbedarf.
+        Fallstatus und Prüfbedarf bleiben unverändert. Mieteransicht und
+        Kommunikations-LLM erhalten weder das Memo noch daraus abgeleitete
+        Inhalte (KOM-02, BEN-01).
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [text, operation, csrf]
+              properties:
+                text:
+                  type: string
+                  pattern: '\S'
+                  description: Bei «Memo speichern» bestätigter interner Text.
+                operation:
+                  $ref: '#/components/schemas/StaffOperation'
+                csrf:
+                  $ref: '#/components/schemas/StaffCsrf'
+      responses:
+        '200':
+          description: >
+            Das von Camunda veranlasste Memo ist dauerhaft gespeichert und
+            im internen Fallverlauf abrufbar. PropertyFlow bestätigt die
+            Speicherung anhand der Absende-ID. Die Antwort enthält keinen
+            Körper. Das UI lädt den internen Verlauf neu und leert die Eingabe.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '400':
+          description: >
+            Die Formulareingabe ist ungültig, etwa weil der Memotext leer
+            ist. Die Eingabe bleibt im Formular.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '401':
+          $ref: '#/components/responses/StaffWriteNeedsLogin'
+        '403':
+          $ref: '#/components/responses/StaffWriteDenied'
+        '404':
+          $ref: '#/components/responses/FallNichtVerfuegbar'
+        '409':
+          description: >
+            Der Fall ist geschlossen, der Fallprozess ist noch nicht
+            zugeordnet oder erlaubt die Speicherung aktuell nicht, oder
+            dieselbe Absende-ID wurde mit anderem Text oder anderer
+            Sichtbarkeit verwendet. Die Eingabe bleibt im Formular. Das UI
+            lädt den aktuellen Fallstand.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '500':
+          description: >
+            Ein technischer Fehler oder Timeout verhindert die Bestätigung
+            der Speicherung. Bei unklarem Ausgang kann das Memo bereits
+            gespeichert sein. Text und Absende-ID bleiben im Formular. Das UI
+            lädt den gespeicherten Verlauf neu. Eine Wiederholung verwendet
+            dieselbe Absende-ID und erzeugt kein zweites Memo.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+      x-propertyflow-idempotency:
+        key: operation
+        scope: Fall und Mitarbeiterkommunikation nach erneuter Zugriffsprüfung.
+        rule: >
+          Eine identische Wiederholung eines gespeicherten Memos liefert
+          erneut 200, auch nach zwischenzeitlichem Fallabschluss. Verglichen
+          werden der übermittelte Text einschliesslich Leerzeichen und die
+          serverseitig festgelegte Sichtbarkeit. Ein anderer Text oder der
+          Wechsel zur externen Veröffentlichung mit derselben Absende-ID
+          ergibt 409. Parallel wiederholte Aufrufe oder Worker-Ausführungen
+          erzeugen höchstens ein Memo. Eindeutig erfolglose Erstversuche
+          reservieren die ID nicht.
+  /mitarbeiter/faelle/{id}/wiedervorlage:
+    parameters:
+      - $ref: '#/components/parameters/StaffCaseId'
+    post:
+      operationId: mitarbeiterWiedervorlageVerwalten
+      tags: [Mitarbeitende]
+      summary: Wiedervorlage verwalten
+      x-propertyflow-status: zielvertrag
+      description: >
+        PropertyFlow prüft die Mitarbeiterberechtigung, den angezeigten
+        Fallstand, die Eingabe und die Freigabe der Aktion im laufenden
+        Fallprozess. Es übergibt die Aktion synchron an die zugeordnete
+        Camunda-Instanz. Camunda führt den Timer im bestehenden Fallprozess.
+        Setzen und Ändern führen zu «Wartet auf Wiedervorlage». Löschen
+        beendet die Wartezeit und führt zu «In Bearbeitung». Der Worker
+        speichert Termin, Status und internen Änderungsnachweis gemeinsam.
+        Berücksichtigte Prüfgründe bleiben darin nachvollziehbar. Offene
+        Mieterfragen bleiben bestehen (UC-013, FALL-11, SS-003).
+
+        Verarbeitet Camunda während der Wartezeit eine neue Mieternachricht,
+        hebt es die Wiedervorlage auf und veranlasst sofort die
+        Mitarbeiterprüfung. Bei gleichzeitig fälligem Timer wird der Fall
+        einmal zur Prüfung vorgelegt. Überholte Timer und wiederholte
+        Ereignisse dürfen einen später gesetzten Termin nicht verändern.
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [action, version, operation, csrf]
+              properties:
+                action:
+                  type: string
+                  enum: [set, change, delete]
+                  description: Termin setzen, ändern oder löschen.
+                date:
+                  type: string
+                  format: date
+                  description: Gewähltes Kalenderdatum im Format JJJJ-MM-TT.
+                days:
+                  type: integer
+                  minimum: 1
+                  description: Positive Anzahl Tage bis zur Wiedervorlage.
+                version:
+                  type: integer
+                  format: int64
+                  description: Version des bei der Bestätigung geprüften Fallstands.
+                operation:
+                  $ref: '#/components/schemas/StaffOperation'
+                csrf:
+                  $ref: '#/components/schemas/StaffCsrf'
+                reason:
+                  type: string
+                  description: Optionale Begründung für den internen Änderungsnachweis.
+              oneOf:
+                - properties:
+                    action:
+                      enum: [set, change]
+                  oneOf:
+                    - required: [date]
+                    - required: [days]
+                - properties:
+                    action:
+                      const: delete
+                  not:
+                    anyOf:
+                      - required: [date]
+                      - required: [days]
+      responses:
+        '200':
+          description: >
+            Camunda hat die Aktion zur Wiedervorlage bestätigt. Der daraus
+            folgende Terminstand, Status und Änderungsnachweis sind dauerhaft
+            gespeichert. Die Antwort enthält keinen Körper. Das UI lädt den
+            gespeicherten Fallstand neu.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '400':
+          description: >
+            Die Eingabe ist ungültig, etwa weil beim Setzen oder Ändern Datum
+            und Tageszahl zugleich angegeben sind oder ein zulässiger Termin
+            fehlt. Die Eingabe bleibt im Formular.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '401':
+          $ref: '#/components/responses/StaffWriteNeedsLogin'
+        '403':
+          $ref: '#/components/responses/StaffWriteDenied'
+        '404':
+          $ref: '#/components/responses/FallNichtVerfuegbar'
+        '409':
+          description: >
+            Der Fallstand hat sich geändert, der Fallprozess ist noch nicht
+            zugeordnet oder lässt die Aktion aktuell nicht zu. Das gilt auch
+            beim Setzen mit bereits vorhandenem Termin, beim Ändern oder
+            Löschen ohne aktuellen Termin oder beim Wiederverwenden der
+            Absende-ID mit geänderten Aktionsdaten. Das UI lädt den aktuellen
+            Fallstand. Nachrichteneingabe und KI-Stream bleiben erhalten.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '500':
+          description: >
+            Ein technischer Fehler oder Timeout verhindert die Bestätigung.
+            Bei unklarem Ausgang kann die Aktion bereits wirksam sein. Das
+            UI lädt den gespeicherten Fallstand neu und behält Eingabe und
+            Absende-ID. PropertyFlow wiederholt die Aktion nicht automatisch.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+      x-propertyflow-idempotency:
+        key: operation
+        scope: Fall und Aktionen zur Wiedervorlage nach erneuter Zugriffsprüfung.
+        rule: >
+          Eine identische Wiederholung einer bestätigten Aktion erhält erneut
+          200. Aktion, ursprüngliche Terminangabe und Begründung werden bei
+          jeder Wiederholung verglichen. Für eine relative Tagesangabe gilt
+          weiterhin der beim ersten Auftrag ermittelte Termin. Mehrfache
+          Verarbeitung erzeugt höchstens einen wirksamen Timer und einen
+          Änderungsnachweis je Absende-ID. Geänderte Aktionsdaten mit
+          derselben Absende-ID ergeben 409. Die Fallversion wird bei jeder
+          neuen Aktion geprüft.
+  /mitarbeiter/faelle/{id}/abschliessen:
+    parameters:
+      - $ref: '#/components/parameters/StaffCaseId'
+    post:
+      operationId: mitarbeiterFallAbschliessen
+      tags: [Mitarbeitende]
+      summary: Fall abschliessen
+      x-propertyflow-status: zielvertrag
+      description: >
+        Das UI sendet den Auftrag nach ausdrücklicher Bestätigung im
+        Abschlussdialog. PropertyFlow prüft die Mitarbeiterberechtigung, die
+        angezeigte Fallversion, die Abschlussvoraussetzungen und die Freigabe
+        im laufenden Fallprozess (UC-014, FALL-07, FALL-10). PropertyFlow
+        übergibt den Auftrag synchron an die zugeordnete Camunda-Instanz.
+        Camunda veranlasst den Abschluss und beendet den Timer einer offenen
+        Wiedervorlage. Ein überholter Timer darf den Fall nicht wiedereröffnen.
+
+        Der Worker speichert den Status «Abgeschlossen» gemeinsam mit
+        dem Abschlussnachweis, entfernt einen offenen Wiedervorlagetermin
+        und beendet noch offenen Mieterantwortbedarf (FALL-11, KOM-04).
+        PropertyFlow speichert intern den handelnden Mitarbeiter aus der
+        geprüften Sitzung, den Zeitpunkt, die Quelle «Mitarbeiter» und den
+        Vermerk «Vom Mitarbeiter geprüft: keine weitere Bearbeitung erforderlich.»
+        Mit dem Abschluss greift die Schreibsperre für neue Nachrichten und
+        Memos. Berechtigte Personen können den Fall weiterhin lesen, auch über
+        einen gültigen persönlichen Fall-Link.
+
+        Nach der dauerhaften Speicherung folgt die Abschluss-E-Mail gemäss
+        BEN-05. Pro Abschluss entsteht ein logischer Abschlussmailauftrag.
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [version, operation, csrf]
+              properties:
+                version:
+                  type: integer
+                  format: int64
+                  description: Version des im Abschlussdialog geprüften Fallstands.
+                operation:
+                  $ref: '#/components/schemas/StaffOperation'
+                csrf:
+                  $ref: '#/components/schemas/StaffCsrf'
+      responses:
+        '200':
+          description: >
+            Camunda hat den Abschluss veranlasst. PropertyFlow hat den
+            Status «Abgeschlossen» und den zugehörigen Abschlussnachweis
+            dauerhaft gespeichert. Die Antwort enthält keinen Körper.
+            Das UI lädt den gespeicherten Fallstand neu. Der E-Mail-Versand
+            folgt der Speicherung. Die HTTP-Antwort wartet nicht auf den Versand.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '400':
+          description: Formulardaten fehlen oder sind ungültig, etwa die Fallversion.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '401':
+          $ref: '#/components/responses/StaffWriteNeedsLogin'
+        '403':
+          $ref: '#/components/responses/StaffWriteDenied'
+        '404':
+          $ref: '#/components/responses/FallNichtVerfuegbar'
+        '409':
+          description: >
+            Die Fallversion ist veraltet, der Fall ist bereits abgeschlossen,
+            der Fallprozess erlaubt den Abschluss aktuell nicht oder die
+            Abschlussvoraussetzungen sind nicht erfüllt. Dazu gehört auch
+            dieselbe Absende-ID mit einer abweichenden Fallversion. Das UI
+            lädt den aktuellen Fallstand.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '500':
+          description: >
+            Ein technischer Fehler oder Timeout verhindert die Bestätigung.
+            Bei unklarem Ausgang kann der Abschluss bereits gespeichert sein.
+            Das UI lädt den gespeicherten Fallstand neu und behält die
+            Absende-ID. PropertyFlow wiederholt den Auftrag nicht automatisch.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+      x-propertyflow-idempotency:
+        key: operation
+        scope: Fall und Mitarbeiterabschluss nach erneuter Zugriffsprüfung.
+        rule: >
+          Eine identische Wiederholung eines gespeicherten Abschlusses
+          bestätigt dasselbe Ereignis mit 200. Sie löst auch nach einer
+          zwischenzeitlichen Wiedereröffnung keinen erneuten Abschluss aus.
+          Wiederholte Aufrufe oder Worker-Ausführungen erzeugen höchstens
+          einen Abschlussnachweis und einen logischen Abschlussmailauftrag.
+          Dieselbe Absende-ID mit anderer Fallversion ergibt 409. Ein neuer
+          Abschluss erfordert einen aktiven Fall und den aktuellen Fallstand.
+  /mitarbeiter/faelle/{id}/wiedereroeffnen:
+    parameters:
+      - $ref: '#/components/parameters/StaffCaseId'
+    post:
+      operationId: mitarbeiterFallWiedereroeffnen
+      tags: [Mitarbeitende]
+      summary: Fall wiedereröffnen
+      x-propertyflow-status: zielvertrag
+      description: >
+        Das UI sendet den Auftrag nach ausdrücklicher Bestätigung im
+        Wiedereröffnungsdialog. PropertyFlow prüft die Mitarbeiterberechtigung,
+        die angezeigte Fallversion und ob der Fall abgeschlossen ist.
+        Camunda veranlasst die Wiedereröffnung auf Grundlage der geprüften
+        Mitarbeiteraktion. Der neue Status lautet «In Bearbeitung» oder bei
+        offenem Prüfbedarf «Mitarbeiterprüfung erforderlich». PropertyFlow
+        speichert den neuen Status gemeinsam mit Zeitpunkt und handelndem
+        Mitarbeiter. Case-ID, Ursprungsdaten und Historie einschliesslich des
+        bisherigen Abschlussnachweises bleiben erhalten (UC-015, FALL-07).
+
+        Erst nach der dauerhaften Speicherung sind neue Nachrichten und
+        Memos wieder zulässig. Beendete Rückfragen bleiben beendet. Alte
+        Timer und verspätete automatische Ergebnisse aus der Bearbeitung
+        vor dem letzten Abschluss dürfen den aktuellen Fallstand nicht
+        verändern. Die technische Fortsetzung bei bereits beendeter
+        Camunda-Instanz bleibt im Prozessentwurf festzulegen (SS-003).
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [version, operation, csrf]
+              properties:
+                version:
+                  type: integer
+                  format: int64
+                  description: Version des im Wiedereröffnungsdialog geprüften Fallstands.
+                operation:
+                  $ref: '#/components/schemas/StaffOperation'
+                csrf:
+                  $ref: '#/components/schemas/StaffCsrf'
+      responses:
+        '200':
+          description: >
+            Camunda hat die Wiedereröffnung veranlasst. PropertyFlow hat den
+            neuen Status und den Nachweis der Wiedereröffnung dauerhaft
+            gespeichert. Case-ID und bisherige Historie bleiben erhalten.
+            Die Antwort enthält keinen Körper. Das UI lädt den gespeicherten
+            Fallstand neu.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '400':
+          description: Formulardaten fehlen oder sind ungültig, etwa die Fallversion.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '401':
+          $ref: '#/components/responses/StaffWriteNeedsLogin'
+        '403':
+          $ref: '#/components/responses/StaffWriteDenied'
+        '404':
+          $ref: '#/components/responses/FallNichtVerfuegbar'
+        '409':
+          description: >
+            Die Fallversion ist veraltet, der Fall ist nicht abgeschlossen
+            oder die Aktion ist im aktuellen Prozessstand nicht zulässig.
+            Dazu gehört auch dieselbe Absende-ID mit einer abweichenden
+            Fallversion. Das UI lädt den aktuellen Fallstand.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '500':
+          description: >
+            Ein technischer Fehler oder Timeout verhindert die Bestätigung.
+            Bei unklarem Ausgang kann der neue Status bereits gespeichert
+            sein. Das UI lädt den gespeicherten Fallstand neu und behält die
+            Absende-ID. PropertyFlow wiederholt den Auftrag nicht automatisch.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+      x-propertyflow-idempotency:
+        key: operation
+        scope: Fall und Wiedereröffnung nach erneuter Zugriffsprüfung.
+        rule: >
+          Eine identische Wiederholung einer gespeicherten Wiedereröffnung
+          bestätigt dasselbe Ereignis mit 200. Auch nach einem erneuten
+          Abschluss löst sie keinen weiteren Statuswechsel aus. Wiederholte
+          Aufrufe und Worker-Ausführungen erzeugen höchstens einen Nachweis
+          der Wiedereröffnung. Dieselbe Absende-ID mit anderer Fallversion
+          ergibt 409. Eine neue Wiedereröffnung erfordert einen abgeschlossenen
+          Fall und den aktuellen Fallstand.
+  /mitarbeiter/faelle/{id}/nachrichten/{messageId}/antwortbedarf-aufheben:
+    parameters:
+      - $ref: '#/components/parameters/StaffCaseId'
+      - in: path
+        name: messageId
+        required: true
+        description: ID der ausgewählten veröffentlichten Rückfrage im adressierten Fall.
+        schema:
+          type: string
+          minLength: 1
+    post:
+      operationId: mitarbeiterAntwortbedarfAufheben
+      tags: [Mitarbeitende]
+      summary: Antwortbedarf aufheben
+      x-propertyflow-status: zielvertrag
+      description: >
+        PropertyFlow prüft die Mitarbeiterberechtigung, die Fallversion, den
+        aktiven Fall und den offenen Antwortbedarf der ausgewählten externen
+        Rückfrage. Der Dienst prüft serverseitig, ob die Nachrichten-ID zum
+        adressierten Fall gehört. Er übergibt genau diese Rückfrage synchron
+        an den zugeordneten Fallprozess. Camunda veranlasst die Aufhebung
+        ausschliesslich für diese Rückfrage. Der Worker speichert die manuelle
+        Aufhebung mit Nachrichten-ID, Mitarbeiteridentität und Zeitpunkt.
+        Die Nachricht und ihre ursprüngliche Kennzeichnung bleiben im Verlauf.
+        Andere offene Rückfragen bleiben bestehen (UC-028, KOM-03).
+
+        Camunda veranlasst den Wechsel zu «In Bearbeitung» nur, wenn nach
+        der Aufhebung keine offene Rückfrage, keine laufende Wiedervorlage
+        und kein vorrangiger Mitarbeiterprüfbedarf mehr bestehen. PropertyFlow
+        speichert Aufhebung und einen allfälligen Statuswechsel konsistent
+        auf dem aktuellen Fallstand. Eine verspätete Auswertung reaktiviert
+        den aufgehobenen Antwortbedarf nicht (FALL-05).
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [version, operation, csrf]
+              properties:
+                version:
+                  type: integer
+                  format: int64
+                  description: Version des beim Aufheben geprüften Fallstands.
+                operation:
+                  $ref: '#/components/schemas/StaffOperation'
+                csrf:
+                  $ref: '#/components/schemas/StaffCsrf'
+      responses:
+        '200':
+          description: >
+            Die von Camunda veranlasste Aufhebung für die ausgewählte
+            Rückfrage und ein allfälliger Statuswechsel sind dauerhaft
+            gespeichert. Die Antwort enthält keinen Körper. Das UI lädt
+            den gespeicherten Fallstand neu und behält die Nachrichteneingabe,
+            ihre Auswahl und den laufenden KI-Stream.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '400':
+          description: Formulardaten fehlen oder sind ungültig, etwa die Fallversion.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '401':
+          $ref: '#/components/responses/StaffWriteNeedsLogin'
+        '403':
+          $ref: '#/components/responses/StaffWriteDenied'
+        '404':
+          description: >
+            Der Fall oder die Rückfrage ist nicht verfügbar. Eine unbekannte
+            Nachrichten-ID und eine Nachrichten-ID aus einem anderen Fall
+            ergeben dieselbe Antwort ohne Fall- oder Nachrichtendaten.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '409':
+          description: >
+            Die Fallversion ist veraltet, der Fall ist nicht aktiv, die
+            Nachricht hat keinen offenen Antwortbedarf oder der Fallprozess
+            erlaubt die Aktion aktuell nicht. Dieselbe Absende-ID mit einer
+            anderen Nachrichten-ID oder Fallversion ergibt ebenfalls 409.
+            Das UI lädt den aktuellen Fallstand.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '500':
+          description: >
+            Ein technischer Fehler oder Timeout verhindert die Bestätigung.
+            Bei unklarem Ausgang kann die Aufhebung bereits gespeichert sein.
+            Das UI lädt den gespeicherten Fallstand neu und behält die
+            Absende-ID. PropertyFlow wiederholt den Auftrag nicht automatisch.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+      x-propertyflow-idempotency:
+        key: operation
+        scope: Fall und manuelle Aufhebung des Antwortbedarfs nach erneuter Zugriffsprüfung.
+        rule: >
+          Eine identische Wiederholung einer gespeicherten Aufhebung bestätigt
+          dasselbe Ereignis mit 200. Dieselbe Absende-ID ist an die gewählte
+          Nachrichten-ID und die ursprüngliche Fallversion gebunden.
+          Wiederholte Aufrufe oder Worker-Ausführungen erzeugen höchstens
+          einen Beendigungsvermerk und keinen zusätzlichen Statuswechsel.
+  /mitarbeiter/faelle/{id}/ki-formulierung:
+    parameters:
+      - $ref: '#/components/parameters/StaffCaseId'
+    post:
+      operationId: mitarbeiterKiFormulierungStarten
+      tags: [Mitarbeitende]
+      summary: KI-Formulierung starten und streamen
+      x-propertyflow-status: zielvertrag
+      description: >
+        Ein berechtigter Mitarbeiter startet aus der aktiven Fallansicht
+        einen Vorschlag für eine externe Nachricht. PropertyFlow prüft
+        Mitarbeitersitzung, Fallberechtigung, CSRF, Eingabe und ob der Fall
+        aktiv ist. Die Oberfläche startet pro Fallansicht höchstens einen
+        Versuch gleichzeitig und sperrt den Start während einer Nachrichten-
+        oder Memo-Speicherung. Der Browser erzeugt vor dem Start eine
+        attemptId und kann damit bereits beim Warten auf das erste Stück
+        abbrechen. PropertyFlow bindet die attemptId an Fall und Sitzung.
+        Ein erneuter Start mit derselben ID löst keinen zweiten Modellaufruf aus.
+
+        Der Versuch verwendet die beim Start übermittelte Sachanweisung und
+        den serverseitig freigegebenen Kommunikationskontext gemäss KOM-02.
+        Mitarbeitermemos, Systemmemos, interne Änderungsbegründungen und
+        daraus abgeleitete Inhalte bleiben aus dem Modellkontext. Nachträgliche
+        Eingabe- oder Statusänderungen beenden den laufenden Versuch nicht
+        und ändern seinen Kontext nicht. Der Vorschlag ist ungespeicherter
+        Text. Die Oberfläche zeigt ihn als Text an und bietet die bewusste
+        Übernahme erst nach vollständiger Ausgabe an. Senden und Veröffentlichen
+        sind eine separate Aktion gemäss UC-010. Die Formulierung ändert weder
+        den Fallstatus noch den Camunda-Fallprozess (UC-004, ADR-003).
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [text, attemptId, csrf]
+              properties:
+                text:
+                  type: string
+                  pattern: '\S'
+                  description: Bewusst eingegebene kurze Sachanweisung für die externe Nachricht.
+                attemptId:
+                  $ref: '#/components/schemas/StaffFormulationAttemptId'
+                csrf:
+                  $ref: '#/components/schemas/StaffCsrf'
+                internal:
+                  type: boolean
+                  const: false
+                  default: false
+                  description: Start nur für die externe Auswahl, also bei ausgeschaltetem «Intern».
+      responses:
+        '200':
+          description: |
+            Der Browser startet den Formular-POST mit `fetch` und liest
+            den Antwortkörper fortlaufend als UTF-8-Server-Sent Events.
+            Jedes Ereignis hat eine `event`-Zeile und JSON in `data`.
+
+            | Ereignis | Daten und Bedeutung |
+            | --- | --- |
+            | `delta` | `{"text":"…"}` enthält das nächste anzuhängende Textstück. |
+            | `complete` | `{}` bestätigt den vollständigen Vorschlag. |
+            | `error` | `{"code":"formulierung-fehlgeschlagen"}` meldet einen Fehler nach Beginn der HTTP-Antwort. |
+            | `aborted` | `{}` beendet den Stream nach wirksamem Abbruch, sofern der Stream noch verbunden ist. |
+
+            `complete`, `error` und `aborted` sind abschliessend. Der Stream
+            endet danach. Ein Ende ohne Abschlussereignis gilt als Fehler,
+            sofern der Browser den Versuch nicht selbst abgebrochen hat.
+            Die Oberfläche verbindet sich nicht automatisch neu. Nach Fehler
+            oder Abbruch bleibt die Mitarbeitereingabe erhalten. Verspätete
+            Stücke eines abgebrochenen Versuchs werden verworfen.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/event-stream:
+              schema:
+                type: string
+              example: |
+                event: delta
+                data: {"text":"Guten Tag,\n\n"}
+
+                event: delta
+                data: {"text":"wir haben den Techniker aufgeboten."}
+
+                event: complete
+                data: {}
+
+        '400':
+          description: >
+            Das Formular ist ungültig, etwa bei leerem Text, ungültiger
+            Versuchs-ID oder interner Auswahl. Es wird kein Modellaufruf gestartet.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '401':
+          $ref: '#/components/responses/StaffWriteNeedsLogin'
+        '403':
+          $ref: '#/components/responses/StaffWriteDenied'
+        '404':
+          $ref: '#/components/responses/FallNichtVerfuegbar'
+        '409':
+          description: >
+            Der Fall ist nicht aktiv oder die Versuchs-ID wurde bereits
+            gestartet oder abgebrochen. Ein neuer Versuch erhält eine neue ID.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '500':
+          description: >
+            Technischer Fehler oder Timeout vor Beginn der Stream-Antwort.
+            Die Mitarbeitereingabe bleibt erhalten.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+  /mitarbeiter/faelle/{id}/ki-formulierung/{attemptId}/abbrechen:
+    parameters:
+      - $ref: '#/components/parameters/StaffCaseId'
+      - in: path
+        name: attemptId
+        required: true
+        description: ID des beim Start adressierten Formulierungsversuchs.
+        schema:
+          $ref: '#/components/schemas/StaffFormulationAttemptId'
+    post:
+      operationId: mitarbeiterKiFormulierungAbbrechen
+      tags: [Mitarbeitende]
+      summary: Laufende KI-Formulierung abbrechen
+      x-propertyflow-status: zielvertrag
+      description: >
+        PropertyFlow prüft Mitarbeitersitzung, Fallberechtigung und CSRF.
+        Der Abbruch betrifft genau die attemptId im adressierten Fall und
+        in dieser Sitzung. PropertyFlow beendet die Verarbeitung dieses
+        Versuchs und gibt die Abbruchanforderung an den Modelladapter weiter.
+        Der Browser verwirft verspätete Textstücke. Die Mitarbeitereingabe
+        bleibt erhalten. Der Abbruch ändert weder Fallstatus noch den
+        Camunda-Fallprozess.
+
+        Trifft der Abbruch vor dem zugehörigen Start ein, merkt PropertyFlow
+        ihn während der Sitzung für dieselbe Fall- und Versuchs-ID vor. Der
+        zugehörige Start weist die ID mit 409 ab. Versuche in anderen
+        Sitzungen oder Fällen sind davon unberührt. Für die Steuerung werden
+        nur vorübergehende technische Zustände geführt. Eingabe und Vorschlag
+        werden nicht als Entwurf gespeichert.
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [csrf]
+              properties:
+                csrf:
+                  $ref: '#/components/schemas/StaffCsrf'
+      responses:
+        '204':
+          description: >
+            Der Versuch ist beendet oder der Abbruch ist für den noch nicht
+            eingetroffenen Start vorgemerkt. Erneutes Abbrechen ist zulässig.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '400':
+          description: Die Versuchs-ID oder das Formular hat ein ungültiges Format.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '401':
+          $ref: '#/components/responses/StaffWriteNeedsLogin'
+        '403':
+          $ref: '#/components/responses/StaffWriteDenied'
+        '404':
+          $ref: '#/components/responses/FallNichtVerfuegbar'
+        '500':
+          description: >
+            Der Abbruch kann technisch nicht bestätigt werden. Der Browser
+            zeigt keine weiteren Textstücke dieses Versuchs an und kann die
+            Abbruchanforderung mit derselben ID wiederholen.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+  /mitarbeiter/konten:
+    post:
+      operationId: mitarbeiterKontoAnlegen
+      tags: [Mitarbeitende]
+      summary: Mitarbeiterkonto anlegen
+      x-propertyflow-status: zielvertrag
+      x-propertyflow-required-permission: Mitarbeiterkonten verwalten
+      description: >
+        PropertyFlow prüft bei jedem Aufruf die aktive Mitarbeitersitzung,
+        das aktuelle Zusatzrecht «Mitarbeiterkonten verwalten» und den
+        CSRF-Nachweis. Das Formular enthält Name und geschäftliche
+        E-Mail-Adresse. Der Dienst vergibt serverseitig eine stabile
+        Benutzer-ID und die Mitarbeiterrolle. Die Kontoanlage vergibt kein
+        Kontoverwaltungsrecht. Konto und Audit werden gemeinsam dauerhaft
+        gespeichert. Das Audit enthält die anlegende Person, den Zeitpunkt,
+        die angelegte Benutzer-ID und die vergebene Rolle (UC-007, ZUG-04).
+
+        Die neue Person meldet sich anschliessend gemäss UC-006 per
+        E-Mail-Einmalcode an. Das erste Verwaltungskonto mit dem Zusatzrecht
+        wird bei der Ersteinrichtung einmalig per Serverbefehl angelegt.
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [name, email, csrf]
+              properties:
+                name:
+                  type: string
+                  pattern: '\S'
+                  description: Name der Person, für die das Konto bestimmt ist.
+                email:
+                  type: string
+                  pattern: '\S'
+                  description: >
+                    Geschäftliche E-Mail-Adresse. PropertyFlow prüft und
+                    vereinheitlicht sie gemäss der gemeinsamen E-Mail-Regel
+                    in ZUG-04. Die geprüfte Adresse hat höchstens 254
+                    ASCII-Zeichen.
+                csrf:
+                  $ref: '#/components/schemas/StaffCsrf'
+      responses:
+        '200':
+          description: >
+            Das Mitarbeiterkonto und sein Audit-Eintrag sind dauerhaft
+            gespeichert. Die Antwort zeigt die bestätigte Anlage in der
+            geschützten Kontoverwaltung.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/html:
+              schema:
+                $ref: '#/components/schemas/Html'
+        '400':
+          description: Name oder E-Mail-Adresse fehlt oder ist ungültig, oder das Formular enthält zusätzliche Felder.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '401':
+          $ref: '#/components/responses/StaffWriteNeedsLogin'
+        '403':
+          description: >
+            Die Sitzung gewährt keine aktive Mitarbeiterrolle oder kein
+            Zusatzrecht «Mitarbeiterkonten verwalten», oder der CSRF-Nachweis
+            fehlt oder ist ungültig.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '409':
+          description: >
+            Die vereinheitlichte E-Mail-Adresse ist bereits einem Konto
+            zugeordnet, auch bei einem bestehenden Mieterkonto. Ein erneuter
+            oder paralleler Aufruf erzeugt kein zweites Konto. Der Dienst
+            gibt keine bestehenden Kontodaten aus und ändert keine Rolle.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '500':
+          description: >
+            Die Anlage kann wegen eines technischen Fehlers nicht bestätigt
+            werden. Bei verloren gegangener Bestätigung verhindert die
+            Eindeutigkeitsprüfung eine doppelte Kontoanlage.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+  /mitarbeiter/konten/{userId}/zugriff-entziehen:
+    parameters:
+      - in: path
+        name: userId
+        required: true
+        description: Stabile Benutzer-ID des in der Kontoverwaltung geführten Mitarbeiterkontos.
+        schema:
+          type: string
+          minLength: 1
+    post:
+      operationId: mitarbeiterZugriffEntziehen
+      tags: [Mitarbeitende]
+      summary: Mitarbeiterzugriff entziehen
+      x-propertyflow-status: zielvertrag
+      x-propertyflow-required-permission: Mitarbeiterkonten verwalten
+      description: >
+        PropertyFlow prüft die aktive Mitarbeitersitzung, das aktuelle
+        Zusatzrecht «Mitarbeiterkonten verwalten» und den CSRF-Nachweis.
+        Die Verwaltung kann das adressierte Konto sperren oder dessen
+        Mitarbeiterrolle entziehen. Die Kontosperre verhindert die Anmeldung
+        mit diesem Konto. Der Rollenentzug belässt das Konto und entzieht
+        den Mitarbeiterzugriff einschliesslich des darauf beruhenden
+        Kontoverwaltungszugriffs (UC-029, ZUG-04).
+
+        Kontostand oder Rolle und Audit-Eintrag werden gemeinsam dauerhaft
+        gespeichert. Das Audit enthält die handelnde und die betroffene
+        Benutzer-ID, die Aktion und den Zeitpunkt. Mindestens ein aktives
+        Konto mit Mitarbeiterrolle und Kontoverwaltungsrecht muss verbleiben.
+        PropertyFlow prüft dies auch bei gleichzeitigen Verwaltungsaktionen.
+
+        Ab dem nächsten Zugriff prüft PropertyFlow im Web und über MCP
+        serverseitig den aktuellen Kontostand und die aktuelle Rolle.
+        Das gilt auch für bestehende Browsersitzungen und MCP-Delegationen.
+        Betroffene Lese- und Schreibzugriffe im Mitarbeiterbereich werden
+        abgewiesen. Ein gesperrtes Konto erhält keine neue Mitarbeitersitzung.
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [action, operation, csrf]
+              properties:
+                action:
+                  type: string
+                  enum: [konto-sperren, rolle-entziehen]
+                  description: Gewählte Verwaltungsaktion für das adressierte Konto.
+                operation:
+                  type: string
+                  minLength: 1
+                  x-propertyflow-max-utf16-code-units: 80
+                  description: An das Zielkonto gebundene Absende-ID aus dem Formular.
+                csrf:
+                  $ref: '#/components/schemas/StaffCsrf'
+      responses:
+        '200':
+          description: >
+            Die Kontosperre oder der Rollenentzug ist dauerhaft gespeichert
+            und auditiert. Die Antwort zeigt die bestätigte Aktion in der
+            geschützten Kontoverwaltung. Eine identische Wiederholung
+            bestätigt denselben Vorgang. Ist der gewünschte Zustand bereits
+            erreicht, bestätigt die Antwort diesen Zustand ohne weitere Änderung.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/html:
+              schema:
+                $ref: '#/components/schemas/Html'
+        '400':
+          description: Die Benutzer-ID oder die Formulareingabe fehlt oder ist ungültig.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '401':
+          $ref: '#/components/responses/StaffWriteNeedsLogin'
+        '403':
+          description: >
+            Aktive Mitarbeiterrolle, Zusatzrecht «Mitarbeiterkonten verwalten»
+            oder gültiger CSRF-Nachweis fehlen.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '404':
+          description: Das Mitarbeiterkonto ist nicht verfügbar. Die Antwort enthält keine Kontodaten.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '409':
+          description: >
+            Die Aktion würde dem letzten aktiven Konto mit
+            Kontoverwaltungsrecht den Verwaltungszugriff entziehen, oder die
+            Absende-ID wurde für dieses Zielkonto mit einer anderen Aktion
+            verwendet. Der Dienst lehnt die Änderung ab.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '500':
+          description: >
+            Die Änderung kann wegen eines technischen Fehlers nicht
+            bestätigt werden. Das UI lädt den aktuellen Kontostand neu.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+      x-propertyflow-idempotency:
+        key: operation
+        scope: Handelndes Konto und Zielkonto nach erneuter Zugriffsprüfung.
+        rule: >
+          Dieselbe Absende-ID mit derselben Aktion bestätigt den bereits
+          verarbeiteten Vorgang mit 200 und erzeugt keinen weiteren
+          Audit-Eintrag. Dieselbe ID mit einer anderen Aktion ergibt 409.
+  /mitarbeiter/faelle/{id}/kritische-entscheidung:
+    parameters:
+      - $ref: '#/components/parameters/StaffCaseId'
+    post:
+      operationId: mitarbeiterKritischeEntscheidungTreffen
+      tags: [Mitarbeitende]
+      summary: Kritische Fallentscheidung treffen
+      x-propertyflow-status: zielvertrag
+      description: >
+        Ein berechtigter Mitarbeiter trifft im Web eine persönliche
+        Entscheidung für genau die angezeigte kritische Handlung. Jede
+        native Camunda User Task für diese Entscheidung gehört zu genau
+        einer serverseitig geführten Handlung mit ihren geprüften Angaben.
+        Ändert sich die Handlung, muss der Prozess eine neue Aufgabe mit
+        eigenem Schlüssel bereitstellen. PropertyFlow prüft Mitarbeiterrolle,
+        Fall- und Aktionsberechtigung, Fallversion sowie die Zuordnung der
+        offenen Aufgabe zur Handlung und zum führenden Fallprozess.
+        PropertyFlow schliesst genau diese User Task synchron in Camunda ab
+        (UC-027, FALL-10, ADR-002).
+
+        Camunda übernimmt den Entscheid und bestimmt den Folgeschritt.
+        PropertyFlow speichert intern den Entscheid, die Handlung, die
+        Begründung, die handelnde Benutzer-ID aus der geprüften Sitzung und
+        den Zeitpunkt. Nur «freigeben» gilt als Freigabe für die konkrete
+        Handlung. «ablehnen» und «klaeren» werden ohne Freigabe gespeichert.
+        Eine andere Handlung benötigt eine eigene Entscheidung. Der Dienst
+        prüft bei einer späteren delegierten kritischen Aktion den passenden
+        Freigabenachweis serverseitig. Allfällige externe Beauftragungen
+        organisiert die Verwaltung ausserhalb von PropertyFlow. Für einen
+        Fallabschluss gelten die Regeln aus UC-014.
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [userTaskKey, version, decision, reason, operation, csrf]
+              properties:
+                userTaskKey:
+                  type: string
+                  pattern: '^[0-9]+$'
+                  description: Schlüssel der angezeigten Camunda User Task als Dezimalzeichenfolge.
+                version:
+                  type: integer
+                  format: int64
+                  description: Version des beim Entscheid geprüften Fallstands.
+                decision:
+                  type: string
+                  enum: [freigeben, ablehnen, klaeren]
+                  description: Die konkrete Handlung freigeben, ablehnen oder weitere Klärung verlangen.
+                reason:
+                  type: string
+                  pattern: '\S'
+                  description: Fachliche Begründung für den internen Entscheidungsnachweis.
+                operation:
+                  $ref: '#/components/schemas/StaffOperation'
+                csrf:
+                  $ref: '#/components/schemas/StaffCsrf'
+      responses:
+        '200':
+          description: >
+            Camunda hat den Abschluss der konkreten User Task bestätigt.
+            Der dazugehörige Entscheid und sein Audit-Nachweis sind dauerhaft
+            gespeichert. Die Antwort enthält keinen Körper. Das UI lädt den
+            gespeicherten Fallstand neu.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '400':
+          description: >
+            Ungültige Eingabe, veralteter Fallstand oder unzulässige Aufgabe.
+            Das gilt auch bei einer geänderten Handlung, einer inzwischen
+            beendeten Aufgabe oder einer Aufgabe aus einem anderen Fall.
+            Das UI lädt den aktuellen Fallstand. Eine neue Aufgabe bleibt offen.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '401':
+          $ref: '#/components/responses/StaffWriteNeedsLogin'
+        '403':
+          description: >
+            Mitarbeiterrolle, Berechtigung für die konkrete Aktion oder
+            gültiger CSRF-Nachweis fehlen.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '404':
+          $ref: '#/components/responses/FallNichtVerfuegbar'
+        '409':
+          description: Die Absende-ID wurde in diesem Fall bereits mit anderen Entscheidungsdaten verwendet.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '500':
+          description: >
+            Ein technischer Fehler oder Timeout verhindert die Bestätigung
+            des Entscheids. Camunda kann die Aufgabe bereits abgeschlossen
+            haben. Das UI lädt den gespeicherten Fallstand neu und behält die
+            Absende-ID. PropertyFlow wiederholt den Auftrag nicht automatisch.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+      x-propertyflow-idempotency:
+        key: operation
+        scope: Fall und handelndes Konto nach erneuter Zugriffsprüfung.
+        rule: >
+          Eine identische Wiederholung eines bestätigten Entscheids ergibt
+          erneut 200 und erzeugt keinen weiteren Audit-Eintrag. Die Absende-ID
+          ist an die ursprüngliche Fallversion, Aufgabe, Entscheidung und
+          Begründung gebunden. Geänderte Entscheidungsdaten ergeben 409.
+  /mitarbeiter/fallzugaenge/{id}/link-ersetzen:
+    parameters:
+      - $ref: '#/components/parameters/StaffCaseId'
+    post:
+      operationId: mitarbeiterFallLinkErsetzen
+      tags: [Mitarbeitende]
+      summary: Persönlichen Fall-Link ersetzen
+      x-propertyflow-status: zielvertrag
+      x-propertyflow-required-permission: Fallzugänge verwalten
+      description: >
+        Die geschützte Fallzugangsverwaltung ersetzt einen verlorenen oder
+        kompromittierten Link für den über {id} bestimmten Fall (UC-024).
+        Der Prüfnachweis muss die Identität und die aktuell gespeicherte
+        Kontaktadresse bestätigen. PropertyFlow aktiviert einen neuen
+        unabhängigen Token und sperrt den bisherigen in derselben Transaktion.
+        Case-ID, Historie und Bearbeitungsstatus bleiben erhalten. Beim
+        nächsten Aufruf sperrt PropertyFlow Lesen und Schreiben über den
+        alten Link.
+
+        PropertyFlow prüft Mitarbeitersitzung, Zusatzrecht «Fallzugänge
+        verwalten», CSRF und Fallberechtigung. Es prüft den serverseitigen
+        Nachweis für dieselbe einmalige Aktion, denselben Fall, die handelnde
+        Person, den aktuellen Fallstand und die bestätigte Adresse. Änderung,
+        Verbrauch des Prüfnachweises, Audit und genau ein logischer
+        Versandauftrag werden gemeinsam gespeichert. Das Audit hält Fall,
+        Handlung, Mitarbeiter, Zeitpunkt und Prüfreferenz fest. Klartexttoken
+        und Identitätsbelege bleiben aus Antwort und Audit. Die Aktion gehört
+        zur separaten Fallzugangsverwaltung und ist unabhängig von Camunda
+        (ZUG-05, ZUG-06).
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [version, verificationId, operation, csrf]
+              properties:
+                version:
+                  $ref: '#/components/schemas/FallzugangVersion'
+                verificationId:
+                  $ref: '#/components/schemas/FallzugangPruefnachweis'
+                operation:
+                  $ref: '#/components/schemas/StaffOperation'
+                csrf:
+                  $ref: '#/components/schemas/StaffCsrf'
+      responses:
+        '204':
+          description: >
+            Der neue Link ist aktiv und der alte Token dauerhaft gesperrt.
+            Audit und Versandauftrag sind gespeichert. Die Antwort enthält
+            weder einen Körper noch den neuen Link. Der Versand folgt
+            nachgelagert an die bestätigte Kontaktadresse.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '400':
+          $ref: '#/components/responses/FallzugangUngueltigeEingabe'
+        '401':
+          $ref: '#/components/responses/StaffWriteNeedsLogin'
+        '403':
+          $ref: '#/components/responses/FallzugangVerwaltungVerweigert'
+        '404':
+          $ref: '#/components/responses/FallNichtVerfuegbar'
+        '409':
+          $ref: '#/components/responses/FallzugangVerwaltungKonflikt'
+        '500':
+          $ref: '#/components/responses/FallzugangVerwaltungFehler'
+      x-propertyflow-idempotency:
+        key: operation
+        scope: Fall, handelndes Konto und Verwaltungsaktion nach erneuter Zugriffsprüfung.
+        rule: >
+          Eine identische Wiederholung eines bestätigten Vorgangs erhält
+          erneut 204, auch wenn der Prüfnachweis inzwischen verbraucht ist.
+          PropertyFlow prüft dies vor einer neuen Änderung. Geänderte Daten
+          unter derselben ID ergeben 409. Wiederholungen erzeugen weder
+          einen weiteren Token noch einen weiteren Versandauftrag.
+  /mitarbeiter/fallzugaenge/{id}/kontaktadresse-aendern:
+    parameters:
+      - $ref: '#/components/parameters/StaffCaseId'
+    post:
+      operationId: mitarbeiterFallKontaktadresseAendern
+      tags: [Mitarbeitende]
+      summary: Fall-Kontaktadresse ändern
+      x-propertyflow-status: zielvertrag
+      x-propertyflow-required-permission: Fallzugänge verwalten
+      description: >
+        Die geschützte Fallzugangsverwaltung korrigiert die Kontaktadresse
+        desselben Mieters (UC-025). PropertyFlow prüft und vereinheitlicht
+        die eingegebene Adresse gemäss ZUG-04. Der Prüfnachweis muss die
+        Identität und genau diese neue Adresse bestätigen. In derselben
+        Transaktion speichert PropertyFlow die aktuelle Adresse, aktiviert
+        einen neuen unabhängigen Link und sperrt den bisherigen Token.
+        Ursprüngliche Einreichungsdaten, Case-ID, Historie und Bearbeitungsstatus
+        bleiben erhalten. Ab dem nächsten Aufruf gilt die neue Adresse für
+        die Zuordnung zum verifizierten Mieterkonto im Web und über MCP.
+        Anmeldedaten eines Kontos werden durch die Aktion nicht geändert.
+
+        PropertyFlow prüft Mitarbeitersitzung, Zusatzrecht «Fallzugänge
+        verwalten», CSRF und Fallberechtigung. Es prüft den serverseitigen
+        Nachweis für dieselbe einmalige Aktion, denselben Fall, die handelnde
+        Person, den aktuellen Fallstand und die bestätigte Adresse. Änderung,
+        Verbrauch des Prüfnachweises, Audit und genau ein logischer
+        Versandauftrag werden gemeinsam gespeichert. Das Audit hält Fall,
+        Handlung, Mitarbeiter, Zeitpunkt und Prüfreferenz fest. Klartexttoken
+        und Identitätsbelege bleiben aus Antwort und Audit. Die Aktion gehört
+        zur separaten Fallzugangsverwaltung und ist unabhängig von Camunda
+        (ZUG-05, ZUG-06).
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [version, verificationId, operation, csrf, email]
+              properties:
+                version:
+                  $ref: '#/components/schemas/FallzugangVersion'
+                verificationId:
+                  $ref: '#/components/schemas/FallzugangPruefnachweis'
+                operation:
+                  $ref: '#/components/schemas/StaffOperation'
+                csrf:
+                  $ref: '#/components/schemas/StaffCsrf'
+                email:
+                  type: string
+                  pattern: '\S'
+                  description: Neue Kontaktadresse des geprüften Mieters gemäss der gemeinsamen E-Mail-Regel in ZUG-04.
+      responses:
+        '204':
+          description: >
+            Neue Kontaktadresse und Link sind dauerhaft gespeichert. Der
+            alte Token ist gesperrt. Audit und Versandauftrag sind gespeichert.
+            Die Antwort enthält weder einen Körper noch den neuen Link. Der
+            Versand folgt nachgelagert an die neue bestätigte Kontaktadresse.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '400':
+          $ref: '#/components/responses/FallzugangUngueltigeEingabe'
+        '401':
+          $ref: '#/components/responses/StaffWriteNeedsLogin'
+        '403':
+          $ref: '#/components/responses/FallzugangVerwaltungVerweigert'
+        '404':
+          $ref: '#/components/responses/FallNichtVerfuegbar'
+        '409':
+          $ref: '#/components/responses/FallzugangVerwaltungKonflikt'
+        '500':
+          $ref: '#/components/responses/FallzugangVerwaltungFehler'
+      x-propertyflow-idempotency:
+        key: operation
+        scope: Fall, handelndes Konto und Verwaltungsaktion nach erneuter Zugriffsprüfung.
+        rule: >
+          Eine identische Wiederholung eines bestätigten Vorgangs erhält
+          erneut 204, auch wenn der Prüfnachweis inzwischen verbraucht ist.
+          PropertyFlow prüft dies vor einer neuen Änderung. Geänderte Daten
+          unter derselben ID ergeben 409. Wiederholungen erzeugen weder
+          einen weiteren Token noch einen weiteren Versandauftrag.
+components:
+  schemas:
+    FallzugangVersion:
+      type: integer
+      format: int64
+      description: Version des im Verwaltungsablauf geprüften Fallstands.
+    FallzugangPruefnachweis:
+      type: string
+      pattern: '\S'
+      description: >
+        Referenz eines von PropertyFlow hinterlegten, befristeten und einmalig
+        verwendbaren Prüfnachweises. Eine blosse Referenz ohne passenden
+        serverseitigen Prüfnachweis berechtigt nicht zur Aktion.
+    StaffFormulationAttemptId:
+      type: string
+      format: uuid
+      description: Vom Browser neu erzeugte eindeutige ID für einen Formulierungsversuch.
+    StaffOperation:
+      type: string
+      minLength: 1
+      x-propertyflow-max-utf16-code-units: 80
+      description: Fallgebundene Absende-ID aus dem Formular.
+    StaffCsrf:
+      type: string
+      minLength: 1
+      description: CSRF-Token aus dem Formular der Browsersitzung.
+    StaffReturnTo:
+      type: string
+      format: uri-reference
+      description: Optionales Rückkehrziel auf der lokalen Fallübersicht.
+    Html:
+      type: string
+    MieternachrichtFormular:
+      type: object
+      required: [text, operation, csrf]
+      properties:
+        text:
+          type: string
+          minLength: 1
+          x-propertyflow-max-utf16-code-units: 2000
+          description: >
+            Nachricht mit Inhalt. Der Server wandelt CRLF und CR in LF um
+            und prüft höchstens 2’000 UTF-16-Codeeinheiten vor dem
+            Entfernen äusserer Leerzeichen.
+        operation:
+          type: string
+          minLength: 1
+          x-propertyflow-max-utf16-code-units: 80
+          description: Fallgebundene Absende-ID aus dem Formular mit höchstens 80 UTF-16-Codeeinheiten.
+        csrf:
+          type: string
+          minLength: 1
+          description: CSRF-Token aus der Fallansicht, an die Browsersitzung gebunden.
+  parameters:
+    StaffCaseId:
+      in: path
+      name: id
+      required: true
+      description: Referenz des Falls. Die Case-ID gewährt für sich keinen Zugriff.
+      schema:
+        type: string
+        minLength: 1
+    FallToken:
+      name: token
+      in: path
+      required: true
+      description: >
+        Vertraulicher Token des persönlichen Links. PropertyFlow prüft den
+        Token bei jedem Aufruf. Der Token und die URL mit dem Token gehören
+        nicht in technische Protokolle.
+      schema:
+        type: string
+        minLength: 1
+  headers:
+    BrowserLocation:
+      required: true
+      description: Ziel der Weiterleitung als relative URL.
+      schema:
+        type: string
+        format: uri-reference
+    PersonalCaseLocation:
+      required: true
+      description: >
+        Pfad der persönlichen Fallansicht mit vertraulichem Zugangstoken.
+        Bei einem konfigurierten Anwendungspfad steht dieser vor /mieter/fall.
+      schema:
+        type: string
+        format: uri-reference
+        pattern: '^/(?:[^/?#]+/)*mieter/fall/zugang/[^/?#]+$'
+    NoStore:
+      required: true
+      schema:
+        const: no-store
+    NoReferrer:
+      required: true
+      schema:
+        const: no-referrer
+  responses:
+    FallzugangUngueltigeEingabe:
+      description: Ein Formularfeld fehlt oder ist ungültig, oder das Formular enthält zusätzliche Felder.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+        Referrer-Policy:
+          $ref: '#/components/headers/NoReferrer'
+    FallzugangVerwaltungVerweigert:
+      description: >
+        Aktive Mitarbeiterrolle, Fallberechtigung, Zusatzrecht
+        «Fallzugänge verwalten» oder gültiger CSRF-Nachweis fehlen.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+        Referrer-Policy:
+          $ref: '#/components/headers/NoReferrer'
+    FallzugangVerwaltungKonflikt:
+      description: >
+        Der Fallstand wurde geändert, der Prüfnachweis ist unbekannt,
+        fehlt im Prüfbestand, passt nicht zur Aktion oder ist abgelaufen
+        oder bereits verbraucht. Auch geänderte Eingaben mit derselben
+        Absende-ID ergeben 409. Der gespeicherte Fallzugang wird durch
+        diesen Aufruf nicht geändert.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+        Referrer-Policy:
+          $ref: '#/components/headers/NoReferrer'
+    FallzugangVerwaltungFehler:
+      description: >
+        Die Änderung kann wegen eines technischen Fehlers nicht bestätigt
+        werden. Bei verloren gegangener Bestätigung kann sie bereits
+        gespeichert sein. Eine Wiederholung verwendet dieselben Eingaben
+        und dieselbe Absende-ID.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+        Referrer-Policy:
+          $ref: '#/components/headers/NoReferrer'
+    StaffLoginRedirect:
+      description: >
+        Bei Seitennavigation ohne gültige Mitarbeiteranmeldung verweist
+        Location auf das Anmeldeformular. PropertyFlow merkt das zulässige
+        Rückkehrziel serverseitig vor.
+      headers:
+        Location:
+          $ref: '#/components/headers/BrowserLocation'
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+        Referrer-Policy:
+          $ref: '#/components/headers/NoReferrer'
+    StaffReadNeedsLogin:
+      description: Hintergrundabruf ohne gültige Anmeldung. Die Antwort enthält keine Falldaten.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+        Referrer-Policy:
+          $ref: '#/components/headers/NoReferrer'
+    StaffReadDenied:
+      description: >
+        Die Anmeldung gewährt keine Mitarbeiterrechte. Die Antwort
+        enthält keine Falldaten. Bei Seitennavigation liefert sie
+        einen verständlichen Zugriffshinweis.
+      headers:
+        X-PropertyFlow-Access:
+          schema:
+            type: string
+            const: denied
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+        Referrer-Policy:
+          $ref: '#/components/headers/NoReferrer'
+      content:
+        text/plain:
+          schema:
+            type: string
+    StaffDetailRedirect:
+      description: >
+        Die lokale Demo hat die Eingabe verarbeitet. Location verweist
+        auf dasselbe Mitarbeiter-Falldetail.
+      headers:
+        Location:
+          $ref: '#/components/headers/BrowserLocation'
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+        Referrer-Policy:
+          $ref: '#/components/headers/NoReferrer'
+    StaffWriteNeedsLogin:
+      description: Die Anmeldung für die Schreibaktion fehlt oder ist abgelaufen.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+        Referrer-Policy:
+          $ref: '#/components/headers/NoReferrer'
+    StaffWriteDenied:
+      description: Fehlende Mitarbeiterrechte oder fehlender oder ungültiger CSRF-Nachweis.
+      headers:
+        X-PropertyFlow-Access:
+          description: Wird bei fehlenden Mitarbeiterrechten gesetzt.
+          schema:
+            type: string
+            const: denied
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+        Referrer-Policy:
+          $ref: '#/components/headers/NoReferrer'
+    HtmlAnsicht:
+      description: HTML-Ansicht erfolgreich geladen.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+        Referrer-Policy:
+          $ref: '#/components/headers/NoReferrer'
+      content:
+        text/html:
+          schema:
+            $ref: '#/components/schemas/Html'
+    InvalidCsrf:
+      description: Die Browsersitzung oder der zugehörige CSRF-Nachweis fehlt oder ist ungültig.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+        Referrer-Policy:
+          $ref: '#/components/headers/NoReferrer'
+      content:
+        text/html:
+          schema:
+            $ref: '#/components/schemas/Html'
+    FallNichtVerfuegbar:
+      description: Der Fall ist nicht verfügbar. Die Antwort enthält keine Falldaten.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+        Referrer-Policy:
+          $ref: '#/components/headers/NoReferrer'
+      content:
+        text/html:
+          schema:
+            $ref: '#/components/schemas/Html'
+    MieternachrichtUngueltig:
+      description: >
+        Ein Formularfeld fehlt oder ist ungültig. Bei zu langem Text zeigt
+        das Formular die vollständige Eingabe mit einem Hinweis zur
+        Längengrenze. Der Verlauf bleibt unverändert.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+        Referrer-Policy:
+          $ref: '#/components/headers/NoReferrer'
+      content:
+        text/html:
+          schema:
+            $ref: '#/components/schemas/Html'
+    MieternachrichtKonflikt:
+      description: >
+        Der Fallprozess ist noch nicht gestartet, der Fall ist abgeschlossen
+        oder dieselbe Absende-ID wurde bereits mit anderem Text gespeichert.
+        Es entsteht kein neuer Eintrag. Bei ausstehendem Prozessstart oder
+        Konflikt der Absende-ID bleibt der Text im Formular. Bei bestätigtem
+        Fallabschluss verwirft die Fallansicht ungesendeten Text und blendet
+        die Eingabe aus.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+        Referrer-Policy:
+          $ref: '#/components/headers/NoReferrer'
+      content:
+        text/html:
+          schema:
+            $ref: '#/components/schemas/Html'
+    MieternachrichtFehler:
+      description: >
+        Bei einem technischen Fehler oder Timeout gibt PropertyFlow das
+        HTML-Formular mit dem vollständigen Text, derselben Absende-ID und
+        einem Fehlerhinweis zurück. Ist Camunda schon bei der Vorprüfung
+        unerreichbar, bleibt eine neue Nachricht ungespeichert. Scheitert
+        die Bestätigung der Korrelation nach dem Commit, bleibt der
+        gespeicherte Verlaufseintrag erhalten. Bei einem Timeout kann die
+        Korrelation bereits erfolgt sein.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+        Referrer-Policy:
+          $ref: '#/components/headers/NoReferrer'
+      content:
+        text/html:
+          schema:
+            $ref: '#/components/schemas/Html'
+    FallLinkNichtVerfuegbar:
+      description: >
+        Der Link ist unbekannt, ungültig oder ersetzt. Die Antwort enthält
+        keine Falldaten und bestätigt keine Fall- oder Kontaktzuordnung.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+        Referrer-Policy:
+          $ref: '#/components/headers/NoReferrer'
+      content:
+        text/html:
+          schema:
+            type: string
+    FallzugriffRateLimit:
+      description: Das Rate Limit für den Aufruf wurde erreicht.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+        Referrer-Policy:
+          $ref: '#/components/headers/NoReferrer'
+      content:
+        text/html:
+          schema:
+            type: string
+  securitySchemes:
+    BrowserSession:
+      type: apiKey
+      in: cookie
+      name: JSESSIONID
+      description: >
+        Sitzungscookie aus dem Formularaufruf oder der Anmeldung. Schreibende
+        Formulare benötigen zusätzlich einen CSRF-Token. Konto und Rolle
+        werden für geschützte Routen serverseitig geprüft.

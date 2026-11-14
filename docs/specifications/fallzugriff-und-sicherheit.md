@@ -65,7 +65,8 @@ Die Matrix gilt für das Zielmodell aus [ADR-005](../architecture/adr/ADR-005-zu
 | Browser mit gültigem persönlichem Fall-Link | Genau den dem Token zugeordneten Fall mit veröffentlichtem Verlauf, wirksamer Dringlichkeit und freigegebener Stufenhistorie nach DRING-07. | Eine externe Nachricht im zugeordneten aktiven Fall senden. |
 | Angemeldeter Mieter mit verifizierter E-Mail-Adresse | Alle Fälle mit derselben aktuellen Kontaktadresse und deren mieteröffentliche Daten. | Neues Anliegen einreichen und in einem zugehörigen aktiven Fall eine externe Nachricht senden. |
 | Angemeldeter Mitarbeiter mit aktiver Mitarbeiterrolle | Alle Fälle im Mitarbeiterbereich mit veröffentlichtem Verlauf und internen Memos. Die Volltextsuche umfasst diese freigegebenen Inhalte. | Im Fallprozess vorgesehene Fachaktionen anstossen, etwa die Dringlichkeit einstufen, ein Memo erfassen, eine Nachricht veröffentlichen oder den Abschluss bestätigen. Camunda veranlasst die Statuswechsel gemäss FALL-06. |
-| Angemeldete Person mit zusätzlichem Kontoverwaltungsrecht | Geschützte Kontoverwaltung. Fallzugriff richtet sich nach der Mitarbeiterrolle. | Mitarbeiterkonten anlegen und die Mitarbeiterrolle gemäss UC-007 vergeben. |
+| Angemeldete Person mit aktiver Mitarbeiterrolle und zusätzlichem Kontoverwaltungsrecht | Geschützte Kontoverwaltung. Fallzugriff richtet sich nach der Mitarbeiterrolle. | Mitarbeiterkonten anlegen und die Mitarbeiterrolle gemäss UC-007 vergeben. Mitarbeiterkonten sperren oder die Mitarbeiterrolle gemäss UC-029 entziehen. |
+| Angemeldete Person mit aktiver Mitarbeiterrolle und dem Zusatzrecht «Fallzugänge verwalten» | Geschützte Fallzugangsverwaltung für berechtigte Fälle. | Nach serverseitig hinterlegter Prüfung einen Fall-Link ersetzen oder die Fall-Kontaktadresse desselben Mieters korrigieren (UC-024, UC-025). |
 | MCP-Client mit gültigem OAuth-Zugriffstoken eines angemeldeten Benutzers | Freigegebene Tools und Daten für Fälle, auf die das Konto aktuell Zugriff hat. | Ausdrücklich delegierte fachliche Aktionen innerhalb der Kontorechte und der Regeln für den konkreten Fall. |
 | Camunda-Integration und Hintergrunddienste mit technischer Identität | Nur die für die jeweilige Aufgabe erforderlichen Daten. | Definierte Systemaktionen über autorisierte PropertyFlow-Dienste. Die Worker speichern die von Camunda veranlassten Statuswechsel. Die Entscheidung zur Wiedereröffnung bleibt bei Mitarbeitenden gemäss FALL-07. |
 
@@ -75,11 +76,15 @@ Die Matrix gilt für das Zielmodell aus [ADR-005](../architecture/adr/ADR-005-zu
 | --- | --- | --- |
 | **Mieter** | Durch freiwillige Registrierung und Verifikation der E-Mail-Adresse gemäss [UC-005](../use_cases/UC-005-userkonto-eroeffnen.md). | Die Person kann neue Anliegen einreichen, Fälle mit passender aktueller Kontaktadresse und deren mieteröffentliche Daten einsehen und diese Fälle in der aktiven Phase mit externen Nachrichten ergänzen. |
 | **Mitarbeiter** | Eine berechtigte Person der Verwaltung legt das Konto mit der geschäftlichen E-Mail-Adresse an und weist ihm die Mitarbeiterrolle gemäss [UC-007](../use_cases/UC-007-mitarbeiterkonto-anlegen.md) zu. | Die Person kann im Mitarbeiterbereich Fälle und interne Memos einsehen und suchen sowie die im Fallprozess zulässigen Bearbeitungsaktionen anstossen. Für kritische Handlungen gilt [FALL-10](fallverwaltung.md#fall-10-automatisierung-und-menschliche-freigabe). |
-| **Mitarbeiterkonten verwalten** | Das erste Verwaltungskonto erhält das Zusatzrecht zur Mitarbeiterrolle bei der Servereinrichtung gemäss [UC-007](../use_cases/UC-007-mitarbeiterkonto-anlegen.md). | Die Person kann in der geschützten Kontoverwaltung Mitarbeiterkonten anlegen und die Mitarbeiterrolle vergeben. Der Fallzugriff richtet sich nach der Mitarbeiterrolle. |
+| **Mitarbeiterkonten verwalten** | Das erste Verwaltungskonto erhält das Zusatzrecht zur Mitarbeiterrolle bei der Servereinrichtung gemäss [UC-007](../use_cases/UC-007-mitarbeiterkonto-anlegen.md). | Die Person kann in der geschützten Kontoverwaltung Mitarbeiterkonten anlegen, die Mitarbeiterrolle vergeben, Mitarbeiterkonten sperren oder die Mitarbeiterrolle entziehen. Der Fallzugriff richtet sich nach der Mitarbeiterrolle. |
+| **Fallzugänge verwalten** | Separates Zusatzrecht für dafür zuständige Mitarbeitende. Die technische Rechtevergabe ist bei der Umsetzung festzulegen. | Fall-Link ersetzen und die Fall-Kontaktadresse nach der Prüfung gemäss ZUG-05 korrigieren. |
 
-Wer Mitarbeiterkonten sperren oder die Mitarbeiterrolle entziehen darf, bleibt
-im Verwaltungsablauf nach [UC-029](../use_cases/UC-029-mitarbeiterzugriff-entziehen.md)
-zu konkretisieren.
+Der Entzug des Mitarbeiterzugriffs setzt eine aktive Mitarbeiterrolle und
+das Zusatzrecht «Mitarbeiterkonten verwalten» voraus. Nach der Aktion muss
+mindestens ein aktives Konto mit Mitarbeiterrolle und Kontoverwaltungsrecht
+verbleiben. Diese Prüfung gilt auch bei parallelen Aktionen. Den Ablauf und
+die Wirkung auf bestehende Sitzungen und Delegationen beschreibt
+[UC-029](../use_cases/UC-029-mitarbeiterzugriff-entziehen.md).
 
 Der persönliche Fall-Link gewährt Zugriff auf den zugeordneten Fall gemäss
 [ZUG-03](#zug-03-direkter-linkaufruf-und-tokenprüfung). Der MCP-Client handelt
@@ -168,8 +173,9 @@ Anmeldedienst bleiben im technischen Zugriffsvertrag zu konkretisieren.
 
 - **Bestätigt am 10.10.2026:** Der persönliche Fall-Link läuft zeitlich nicht ab. Weder Inaktivität noch eine feste Dauer seit Ausstellung machen ihn ungültig. Auch der Fallabschluss setzt keine Ablauffrist. Eine Verlängerungs- oder Erneuerungsaktion aufgrund des Alters des Links ist nicht vorgesehen; die vorgeschlagene UI3-Aktion «Fall-Link ersetzen» wird nicht eingeführt.
 - **Vereinbart am 13.11.2026:** PropertyFlow aktiviert beim administrativen Ersatz einen neuen unabhängigen Token und sperrt den bisherigen in derselben Datenbanktransaktion. Nach dem Commit gilt der neue Link für denselben Fall. Weitere Lese- und Schreibaufrufe mit dem alten Token werden auch aus bereits geöffneten Tabs abgewiesen. Scheitert der Ersatz, gilt der bisherige Link weiter. Case-ID, Historie und Bearbeitungsstand bleiben erhalten.
-- Ein erforderlicher bewusster Ersatz eines verlorenen oder kompromittierten Links erfolgt über die Verwaltung nach geeigneter Identitätsprüfung an die bestätigte Kontaktadresse. Der sichere administrative Ablauf bleibt zu konkretisieren; daraus entsteht keine zusätzliche UI3-Aktion. Ein Adresswechsel benötigt einen separaten geprüften Ablauf.
-- Ob diese administrativen Zugriffsoperationen bei einem Camunda-Ausfall verfügbar sein müssen, bleibt in [UC-024](../use_cases/UC-024-fall-link-widerrufen-oder-ersetzen.md) und [UC-025](../use_cases/UC-025-fall-kontaktadresse-aendern.md) zu klären.
+- Der Zielvertrag für den administrativen Linkersatz und die Adresskorrektur verlangt das Zusatzrecht «Fallzugänge verwalten». Die Aktionen laufen in der separaten Fallzugangsverwaltung ausserhalb von UI3 und sind auch bei einem Camunda-Ausfall möglich. [UC-024](../use_cases/UC-024-fall-link-widerrufen-oder-ersetzen.md) · [UC-025](../use_cases/UC-025-fall-kontaktadresse-aendern.md)
+- PropertyFlow verlangt für jede Aktion einen serverseitig hinterlegten Prüfnachweis für Identität und bestätigte Adresse. Er ist an Fall, handelnde Person, geprüften Fallstand und Aktion gebunden, befristet und einmal verwendbar. Das konkrete Prüfverfahren und die Bedienung bleiben festzulegen.
+- Bei geprüfter Adresskorrektur desselben Mieters speichert PropertyFlow die neue aktuelle Adresse und ersetzt den bisherigen Link gemeinsam. Die neue Adresse gilt beim nächsten kontobasierten Abruf im Web und über MCP. Nach beiden Aktionen geht der gültige Link nachgelagert an die bestätigte Adresse. Der Versand liest die aktuell bestätigte Adresse und den aktuell gültigen Link aus PropertyFlow.
 - Automatischer öffentlicher Linkersatz ist eine optionale Erweiterung. Er muss neutral antworten, darf weder Fallbestand noch Kontaktzuordnung offenlegen und benötigt Missbrauchsschutz.
 - Normales Öffnen und normale Benachrichtigungen rotieren den Token nicht. Auch nach dem Fallabschluss bleibt der Fall über den gültigen Link lesbar. Die fachliche Abschlusssperre verhindert weitere Schreibzugriffe.
 - Die Aufbewahrung der Falldaten folgt eigenen Regeln. Der Ersatz betrifft ausschliesslich den persönlichen Zugang. Eine berechtigende Fallsitzung ist im direkten Tokenmodell nicht vorgesehen.
@@ -256,7 +262,7 @@ Die bisher in Screen 01 diskutierten Werte werden hier weitergeführt und sind *
 |---|---|
 | Tokenstärke | Mindestens 256 Bit kryptografische Zufallsentropie; URL-taugliche Darstellung und konkrete Hash-Verifikation im Service-Design festlegen. |
 | Routen | Direkte Fallansicht unter `/mieter/fall/zugang/{token}` gemäss ZUG-07; weitere Backend-Verträge werden bei der Umsetzung konkretisiert. |
-| Kontaktbestätigung und Linkersatz | Konkrete Identitätsprüfung, Adresswechsel, Berechtigung für den administrativen Linkersatz und Nachvollziehbarkeit festlegen. |
+| Kontaktbestätigung und Linkersatz | Verfahren zur Identitäts- und Adressprüfung, Rechtevergabe und Oberfläche konkretisieren. Der Zielvertrag definiert Prüfnachweis, Berechtigungsprüfung und Audit. |
 | Erstzugriff und Wiederholung | Sichere Bindung an den Einreichungskontext sowie Koordination von Annahme, Zugriffsdatensatz und Versandauftrag festlegen. |
 | Umsetzung der Token-Aufbewahrung | Hash für die Prüfung und separat verschlüsselte Kopie desselben Tokens für den Versand sind vereinbart. Verschlüsselungsverfahren, Schlüsselbereitstellung und -rotation, technische Entschlüsselungsrechte, Sicherungen und Löschfristen konkretisieren. |
 | Schutzparameter und Betrieb | Rate-Limit-Werte, Hash-Verfahren, Aufbewahrungsfristen, Formularschutz und technische Durchsetzung der Log-Redaktion konkretisieren. |

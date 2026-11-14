@@ -152,7 +152,7 @@ Im Zielablauf gibt der führende Camunda-Fallprozess die zulässigen Mitarbeiter
 | [UC-013 · Wiedervorlage verwalten](UC-013-wiedervorlage-verwalten.md) | Termin setzen, ändern und löschen in der Demo. Im Zielablauf beendet eine neue Mieternachricht die laufende Wiedervorlage und löst die sofortige Mitarbeiterprüfung aus. |
 | [UC-014 · Fall abschliessen](UC-014-fall-abschliessen.md) | Manueller Abschluss in der Demo. Die vereinbarten Systemabschlüsse sind geplant. |
 | [UC-015 · Fall wiedereröffnen](UC-015-fall-wiedereroeffnen.md) | Mitarbeiteraktion in der Demo. Technische Fortsetzung des Fallprozesses offen. |
-| [UC-027 · Kritische Fallentscheidung treffen](UC-027-kritische-fallentscheidung-treffen.md) | Menschliche Entscheidungsgrenzen vereinbart. Technischer Freigabevertrag offen. |
+| [UC-027 · Kritische Fallentscheidung treffen](UC-027-kritische-fallentscheidung-treffen.md) | HTTP-Zielvertrag für die konkrete Mitarbeiterentscheidung und ihren Audit-Nachweis beschrieben. BPMN und Umsetzung geplant. |
 | [UC-028 · Antwortbedarf aufheben](UC-028-antwortbedarf-aufheben.md) | Mitarbeiteraktion in der Demo. Dauerhafte Speicherung und Prozessabstimmung geplant. |
 
 ## Verarbeitung und Benachrichtigungen
@@ -174,10 +174,10 @@ Im Zielablauf gibt der führende Camunda-Fallprozess die zulässigen Mitarbeiter
 | [UC-007 · Mitarbeiterkonto anlegen](UC-007-mitarbeiterkonto-anlegen.md) | Kontoverwaltung und Ersteinrichtung im Zielablauf spezifiziert. |
 | [UC-022 · Mieter anmelden](UC-022-mieter-anmelden.md) | Anmeldung mit bestehendem Mieterkonto in der Demo. |
 | [UC-023 · MCP-Zugriff freigeben und widerrufen](UC-023-mcp-zugriff-delegieren.md) | Delegierter Zugriff und «Fallstand abrufen» im Zielablauf spezifiziert. |
-| [UC-024 · Persönlichen Fall-Link ersetzen](UC-024-fall-link-widerrufen-oder-ersetzen.md) | Direkter Ersatz vereinbart. Sicherer Verwaltungsablauf offen. |
-| [UC-025 · Fall-Kontaktadresse ändern](UC-025-fall-kontaktadresse-aendern.md) | Wirkung auf die Fallzuordnung vereinbart. Geprüfter Änderungsablauf offen. |
+| [UC-024 · Persönlichen Fall-Link ersetzen](UC-024-fall-link-widerrufen-oder-ersetzen.md) | HTTP-Zielvertrag für administrativen Linkersatz beschrieben. Prüfverfahren und Umsetzung offen. |
+| [UC-025 · Fall-Kontaktadresse ändern](UC-025-fall-kontaktadresse-aendern.md) | HTTP-Zielvertrag für geprüfte Adresskorrektur mit Linkersatz beschrieben. Prüfverfahren und Umsetzung offen. |
 | [UC-026 · Aus PropertyFlow abmelden](UC-026-abmelden.md) | Lokale Web-Abmeldung in der Demo. |
-| [UC-029 · Mitarbeiterzugriff entziehen](UC-029-mitarbeiterzugriff-entziehen.md) | Wirkung vereinbart. Verwaltungsablauf für Sperrung und Rollenentzug offen. |
+| [UC-029 · Mitarbeiterzugriff entziehen](UC-029-mitarbeiterzugriff-entziehen.md) | Zielvertrag für Kontosperre und Rollenentzug beschrieben. Umsetzung für Web und MCP geplant. |
 
 ## Bezug zur Architektur
 

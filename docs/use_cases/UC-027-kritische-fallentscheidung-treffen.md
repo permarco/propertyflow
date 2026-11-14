@@ -6,7 +6,7 @@
 **Primary Actor:** Berechtigter Mitarbeiter der Immobilienverwaltung  
 **Supporting Actor:** Camunda-Fallprozess\
 **Goal:** Über eine fachlich kritische Handlung entscheiden und die Entscheidung am konkreten Fall nachvollziehbar festhalten.  
-**Status:** Die Entscheidungsgrenzen sind vereinbart. Bedienung und technischer Freigabevertrag sind offen.
+**Status:** Entscheidungsgrenzen und [HTTP-Zielvertrag](../architecture/openapi/fallannahme.yaml) beschrieben. Bedienung, BPMN-Modell und Umsetzung stehen aus.
 
 ## Use-Case-Diagramm
 
@@ -35,8 +35,8 @@ style PF fill:#1e293b,stroke:#006fbb,stroke-width:2px,color:#ffffff
 ## Main Success Scenario
 
 1. PropertyFlow zeigt den fachlichen Prüfgrund und den aktuellen Fallstand im Mitarbeiterdetail.
-2. Der Mitarbeiter prüft die Angaben und entscheidet über die konkrete Handlung. Eine KI-Empfehlung kann dabei als Grundlage dienen.
-3. PropertyFlow prüft die Berechtigung und übermittelt die Entscheidung an Camunda. Camunda veranlasst die Übernahme. PropertyFlow hält Entscheidung, handelnden Mitarbeiter, Zeitpunkt, Bezug zur Handlung und fachlichen Grund fest.
+2. Der Mitarbeiter prüft die Angaben und gibt die konkret angezeigte Handlung frei, lehnt sie ab oder verlangt weitere Klärung. Er begründet seinen Entscheid. Eine KI-Empfehlung kann dabei als Grundlage dienen.
+3. PropertyFlow prüft Berechtigung und Fallversion sowie die Zuordnung der konkreten User Task zur geprüften Handlung und zum Fall. Camunda übernimmt den Entscheid beim synchronen Abschluss der Aufgabe und bestimmt den Folgeschritt. PropertyFlow speichert Entscheid, handelnden Mitarbeiter, Zeitpunkt, Bezug zur Handlung und Begründung dauerhaft im internen Nachweis.
 4. Die Verwaltung setzt eine allfällige externe Beauftragung ausserhalb von PropertyFlow um. Für einen Fallabschluss gilt zusätzlich [UC-014](UC-014-fall-abschliessen.md).
 
 ## Alternative Flows
@@ -54,3 +54,5 @@ style PF fill:#1e293b,stroke:#006fbb,stroke-width:2px,color:#ffffff
 - **UC-027-BR-001:** Die endgültige Entscheidung bei den in FALL-10 aufgeführten Gründen trifft ein berechtigter Mensch. Eine neue Mieternachricht hebt eine ausstehende Pflichtprüfung für sich allein nicht auf.
 - **UC-027-AK-01:** Ein Systemabschluss mit weiterhin offenem Pflichtprüfgrund wird abgelehnt. Der Fall bleibt zur Mitarbeiterprüfung verfügbar.
 - **UC-027-AK-02:** Eine Freigabe zu Handlung A reicht für Handlung B nicht aus. Die Entscheidung zu A ist mit Person, Zeitpunkt und Bezug prüfbar.
+- **UC-027-AK-03:** Der Mitarbeiter öffnet eine Aufgabe zu Handlung A. Die Handlung wird geändert und erhält eine neue Aufgabe. Der veraltete Aufruf zur alten Aufgabe wird abgewiesen. Die neue Aufgabe bleibt offen.
+- **UC-027-AK-04:** Der Mitarbeiter lehnt die Handlung ab oder verlangt weitere Klärung. Der Entscheid ist im Audit nachvollziehbar und gewährt keine Freigabe. Die identische Wiederholung erzeugt keinen weiteren Audit-Eintrag.
