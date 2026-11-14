@@ -1,18 +1,15 @@
+import { launchBrowser } from './browser-launcher.mjs';
 // Run against a disposable frontend-demo instance; creates a local mock case.
 // node --test src/test/browser/tenant-refresh-error.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { createRequire } from 'node:module';
-import path from 'node:path';
 import { staffStorageState } from './staff-test-login.mjs';
 
-const require = createRequire(path.resolve('target/frontend-tools/package.json'));
-const { chromium } = require('playwright');
 const base = process.env.DEMO_URL || 'http://127.0.0.1:8082';
 
 test('UI1: Abruffehler erhält Verlauf und Entwurf; nächster Abruf behebt den Fehler', { timeout: 65000 }, async () => {
-    const browser = await chromium.launch({ channel: 'msedge', headless: true });
+    const browser = await launchBrowser();
     try {
         const staff = await browser.newContext({ storageState: await staffStorageState(browser) });
         const context = await browser.newContext({ locale: 'de-CH' });

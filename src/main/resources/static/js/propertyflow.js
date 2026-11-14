@@ -46,7 +46,7 @@ function denyAccess(needsLogin = false) {
         : 'Zugriff verweigert. Automatische Aktualisierungen und Speichern sind gestoppt. Ungesendete Eingaben bleiben erhalten.';
     notice.classList.add('error');
     const reload = document.createElement('a');
-    reload.href = location.href;
+    reload.href = needsLogin && !document.body.classList.contains('staff-page') ? '/anmelden' : location.href;
     reload.textContent = needsLogin ? 'Erneut anmelden' : 'Seite neu laden';
     notice.append(' ', reload);
     syncComposer();
@@ -174,11 +174,19 @@ function replaceRegion(selector, page) {
     const current = $(selector), next = $(selector, page);
     if (current && next) current.replaceWith(next.cloneNode(true));
 }
+function editorSummary(details) {
+    if (!details) return null;
+    const fieldId = $('[id]', details)?.id;
+    const current = fieldId ? document.getElementById(fieldId)?.closest('details')
+        : details.classList.contains('confirmation') ? $('#case-sidebar .confirmation') : null;
+    return current?.querySelector('summary');
+}
 function applyCase(page, notify = false, forceSidebar = false) {
     const oldHead = $('#case-head'), nextHead = $('#case-head', page);
     if (!nextHead) throw new Error('Die Fallansicht konnte nicht geladen werden.');
     const changed = oldHead.dataset.version !== nextHead.dataset.version;
     if (!changed && !forceSidebar) return;
+    const active = document.activeElement;
     const changes = [];
     for (const id of ['case-status', 'case-urgency', 'case-followup']) {
         const old = $('#' + id)?.textContent, next = $('#' + id, page)?.textContent;
@@ -202,6 +210,13 @@ function applyCase(page, notify = false, forceSidebar = false) {
     // Open edit forms retain their original version, so concurrent changes produce a conflict.
     closed = nextHead.dataset.closed === 'true';
     syncComposer();
+    // Replacing a region must not send keyboard users back to the document start.
+    if (!active.isConnected) {
+        const replacement = active.id ? document.getElementById(active.id) : null;
+        const target = replacement?.getClientRects().length ? replacement
+            : editorSummary(active.closest('details')) || $('#history');
+        target?.focus({ preventScroll: true });
+    }
     if (notify && changed && $('#case-sidebar')) {
         $('#update-text').textContent = changes.length ? changes.join('\n') : 'Neue Daten im Verlauf.';
         if (!$('#updates').open) $('#updates').showModal();
@@ -218,6 +233,7 @@ document.addEventListener('click', event => {
             $('#case-sidebar').replaceWith(pendingSidebar);
             pendingSidebar = null;
         }
+        editorSummary(details)?.focus();
     }
 });
 document.addEventListener('submit', async event => {
@@ -228,6 +244,9 @@ document.addEventListener('submit', async event => {
     const data = new URLSearchParams(new FormData(form));
     if (event.submitter?.name) data.set(event.submitter.name, event.submitter.value);
     const isMessage = form.id === 'message-form';
+    const restoreFocus = form.contains(document.activeElement);
+    const details = form.closest('details');
+    let failed = false;
     saving = true;
     readController?.abort();
     const buttons = [...form.querySelectorAll('button')];
@@ -238,8 +257,7 @@ document.addEventListener('submit', async event => {
         const response = await fetch(form.getAttribute('action'), {
             method: 'POST', body: data, headers: { Accept: 'text/html', 'X-PropertyFlow-Request': 'partial' }
         });
-        if (document.body.classList.contains('staff-page')
-                && (response.status === 401 || response.headers.get('X-PropertyFlow-Access') === 'denied')) {
+        if (response.status === 401 || response.headers.get('X-PropertyFlow-Access') === 'denied') {
             denyAccess(response.status === 401);
             return;
         }
@@ -257,19 +275,62 @@ document.addEventListener('submit', async event => {
         showSaveNotice(isMessage ? 'Im Demo-Arbeitsspeicher gespeichert.' : 'Änderung gespeichert.', false, true);
         if (isMessage) $('#history').scrollTop = $('#history').scrollHeight;
     } catch (error) {
+        failed = true;
         showSaveNotice(error.message || 'Speichern momentan nicht möglich. Ihre Eingabe bleibt erhalten.', true);
     } finally {
         saving = false;
         buttons.forEach(b => b.disabled = false);
         syncComposer(); sizeComposer();
+        // Respect a deliberate focus move while the request was in flight.
+        if (restoreFocus && !accessDenied && (document.activeElement === document.body || form.contains(document.activeElement))) {
+            const target = failed ? $('#save-state') : isMessage && !closed ? message : editorSummary(details) || $('#history');
+            target?.focus();
+        }
     }
 });
-$('#intake-form')?.addEventListener('submit', event => {
-    if ([...event.target.querySelectorAll('[required]')].some(field => !field.value.trim())) {
-        event.preventDefault(); return;
+document.addEventListener('submit', async event => {
+    const form = event.target;
+    if (!form.matches('#intake-form')) return;
+    event.preventDefault();
+    if (saving || [...form.querySelectorAll('[required]')].some(field => !field.value.trim())) return;
+    const data = new URLSearchParams(new FormData(form));
+    const button = $('button', form);
+    const label = button.textContent;
+    saving = true;
+    button.disabled = true;
+    button.textContent = 'Wird gespeichert …';
+    try {
+        const response = await fetch(form.action, {
+            method: 'POST', body: data, headers: { Accept: 'text/html', 'X-PropertyFlow-Request': 'partial' }
+        });
+        if (response.ok && response.redirected) {
+            location.assign(response.url);
+            return;
+        }
+        const page = parse(await response.text());
+        if (!$('#intake-form', page)) throw new Error('Die Antwort konnte nicht geladen werden.');
+        replaceRegion('header', page);
+        replaceRegion('main', page);
+        $('#form-error')?.focus();
+    } catch {
+        // Keep both the inputs and their operation ID when the server may already
+        // have saved. An explicit retry can then recover the original result.
+        let notice = $('#form-error');
+        if (!notice) {
+            notice = document.createElement('div');
+            notice.id = 'form-error';
+            notice.className = 'error';
+            notice.setAttribute('role', 'alert');
+            notice.tabIndex = -1;
+            form.before(notice);
+        }
+        notice.textContent = 'Die Bestätigung konnte nicht geladen werden. Ihre Eingaben bleiben erhalten. Bitte versuchen Sie das Absenden erneut.';
+        notice.focus();
+    } finally {
+        saving = false;
+        button.disabled = false;
+        button.textContent = label;
     }
-    const button = $('button', event.target);
-    button.disabled = true; button.textContent = 'Wird gespeichert …';
 });
 
 const filters = $('#filters');
@@ -400,7 +461,7 @@ async function refresh() {
     } catch (error) {
         if (error.name !== 'AbortError') {
             if (error.status === 403 || error.status === 401) {
-                denyAccess(error.status === 401 && document.body.classList.contains('staff-page'));
+                denyAccess(error.status === 401);
             }
             else {
                 showSaveNotice('Aktualisierung momentan nicht möglich. Stand: ' + lastRead, true);

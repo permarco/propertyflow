@@ -1,14 +1,11 @@
+import { launchBrowser } from './browser-launcher.mjs';
 // Run against a disposable frontend-demo instance with standard mock cases.
 // node --test src/test/browser/list-sorting.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { createRequire } from 'node:module';
-import path from 'node:path';
 import { staffStorageState } from './staff-test-login.mjs';
 
-const require = createRequire(path.resolve('target/frontend-tools/package.json'));
-const { chromium } = require('playwright');
 const base = process.env.DEMO_URL || 'http://127.0.0.1:8082';
 const columns = ['Fall', 'Objekt / Wohnung', 'Eingang', 'Letzte Aktion des Mieters', 'Wiedervorlage', 'Dringlichkeit', 'Bearbeitungsstatus'];
 const urgency = ['Noch nicht bewertet', 'Kritisch', 'Hoch', 'Normal', 'Niedrig'];
@@ -20,7 +17,7 @@ function dateValue(text) {
 }
 
 test('UI2: alle sieben Spalten sortieren in beide Richtungen und erhalten die Auswahl', { timeout: 30000 }, async () => {
-    const browser = await chromium.launch({ channel: 'msedge', headless: true });
+    const browser = await launchBrowser();
     try {
         const context = await browser.newContext({ locale: 'de-CH', viewport: { width: 1440, height: 900 },
             storageState: await staffStorageState(browser) });
