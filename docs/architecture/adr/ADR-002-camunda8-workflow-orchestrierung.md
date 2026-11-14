@@ -429,11 +429,15 @@ sequenceDiagram
 
 ### Synchrone Nachrichtenkorrelation
 
-PropertyFlow ermittelt den `processInstanceKey` der aktuell zugeordneten Instanz serverseitig. Wenn PropertyFlow eine fachliche Aktion oder ein Ereignis an diese Instanz übergibt, wartet es synchron auf die Korrelation. Das gilt insbesondere für Mitarbeiteraktionen über Web und MCP. Camunda muss im aktuellen BPMN-Schritt eine passende wartende Stelle für die Nachricht haben. Das BPMN-Modell legt je unterstützter Aktion und Ereignis fest, an welchen Stellen sie zulässig sind, wie der Prozess fortsetzt und wie er fachliche Fehler behandelt. Es gelten die Prozessfreigaben und die Regeln für kritische Aktionen. [FALL-06](../../specifications/fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow) · [FALL-10](../../specifications/fallverwaltung.md#fall-10-automatisierung-und-menschliche-freigabe)
+Bei fachlichen Übergaben, die das BPMN-Modell als Nachrichtenempfang vorsieht, wartet PropertyFlow synchron auf die Korrelation mit der zugeordneten Instanz. PropertyFlow ermittelt den `processInstanceKey` serverseitig. Das BPMN-Modell legt fest, in welchen Schritten eine Nachricht zulässig ist, wie der Prozess fortsetzt und wie er fachliche Fehler behandelt. Es gelten die Prozessfreigaben und die Regeln für kritische Aktionen. [FALL-06](../../specifications/fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow) · [FALL-10](../../specifications/fallverwaltung.md#fall-10-automatisierung-und-menschliche-freigabe)
 
-Bei «Bearbeitung fortsetzen» liefert PropertyFlow dem Browser nach erfolgreicher Berechtigungsprüfung `200`, sobald Camunda die Korrelation mit der erwarteten Instanz bestätigt hat. `400` bedeutet eine ungültige Aktion oder eine fehlende passende wartende Stelle. `500` bedeutet einen technischen Fehler oder Timeout. Bei einem Timeout kann Camunda die Nachricht bereits korreliert haben. Die Oberfläche lädt den gespeicherten Fallstand neu. Nach der Korrelation veranlasst Camunda den Statuswechsel. Der neue Status erscheint nach dem Speichern durch den PropertyFlow-Dienst.
+**Mieterergänzung.** Nach dem Speichern der Nachricht wartet PropertyFlow im selben Browseraufruf synchron auf die bestätigte Korrelation mit der zugeordneten Fallprozessinstanz. Erst danach meldet es dem Browser Erfolg. Ist Camunda nicht erreichbar oder scheitert die Korrelation technisch, einschliesslich Timeout, antwortet PropertyFlow mit HTTP `500`. Der Text bleibt im Formular. Eine bereits gespeicherte Nachricht bleibt im Fallverlauf erhalten. Bei einem Timeout kann Camunda die Nachricht bereits korreliert haben. Eine Wiederholung im Browser verwendet dieselbe Absende-ID. [SS-003](../schnittstellenentwurf-block-3.md#ss-003--camunda-integrationsvertrag) · [UC-009](../../use_cases/UC-009-mieteranliegen-ergaenzen.md)
 
-Den Mitarbeiterablauf beschreibt [UC-012](../../use_cases/UC-012-fall-fachlich-steuern.md#synchroner-vertrag-für-die-mitarbeiteraktion).
+### Synchroner Abschluss von User Tasks
+
+Für jeden Prozesszustand mit einer nativen Camunda User Task gilt dieselbe Regel. Wenn eine Aktion die Aufgabe abschliesst, bezieht sich die Entscheidung auf die konkrete Aufgabe (`userTaskKey`) und den geprüften Fallstand. PropertyFlow prüft serverseitig Berechtigung, Fallstand, zulässige Aktion und ob die Aufgabe offen ist und zum Fallprozess (`processInstanceKey`) gehört. Es schliesst genau diese Aufgabe synchron ab und meldet Erfolg erst nach der Bestätigung durch Camunda. Ein veralteter Aufruf wird abgewiesen. Eine neu geöffnete Aufgabe hat einen eigenen Schlüssel und bleibt davon unberührt. Für zugelassene Aktionen über Web und MCP gilt dieselbe serverseitige Prüfung.
+
+«Bearbeitung fortsetzen» ist die Anwendung dieser Regel bei «Mitarbeiterprüfung erforderlich». Camunda steuert den Folgeschritt. Der neue Fallstatus «In Bearbeitung» wird sichtbar, sobald der PropertyFlow-Worker ihn gespeichert hat. Die HTTP-Antworten und die Behandlung eines Timeouts stehen im Integrationsvertrag. [SS-003](../schnittstellenentwurf-block-3.md#ss-003--camunda-integrationsvertrag) · [UC-012](../../use_cases/UC-012-fall-fachlich-steuern.md#synchroner-vertrag-für-die-mitarbeiteraktion)
 
 ### Wiedervorlage
 
@@ -683,9 +687,9 @@ RAG / Empfehlung
   Datenbanktransaktion
 - Idempotenz und verteilte Fehlerfälle müssen bewusst behandelt werden
 
-### Preis der synchronen Korrelation
+### Preis der synchronen Übergaben
 
-Die synchrone Korrelation macht die Antwortzeit und Verfügbarkeit von Bearbeitungsaktionen von Camunda abhängig. Der Prozess muss für jede vorgesehene Übergabe einen passenden Nachrichtenempfang modellieren. Ein gepufferter Versand könnte Nachrichten bei vorübergehend fehlender Warteposition zwischenspeichern. Für Bearbeitungsaktionen ist die sofortige Rückmeldung zur Korrelation massgeblich. Beim Intake erlaubt der dauerhafte Startauftrag die Bestätigung auch bei unerreichbarem Camunda.
+Synchrone Task-Abschlüsse und Nachrichtenkorrelationen machen die Antwortzeit und Verfügbarkeit der jeweiligen Aktionen von Camunda abhängig. Für Task-Abschlüsse muss der Aufruf die konkrete Aufgabe und den geprüften Fallstand referenzieren. Für Nachrichtenübergaben muss der Prozess einen passenden Nachrichtenempfang modellieren. Beim Intake erlaubt der dauerhafte Startauftrag die Bestätigung auch bei unerreichbarem Camunda.
 
 
 ## Auswirkungen auf die Architektur
@@ -731,9 +735,9 @@ Camunda 8 ist nicht Bestandteil des modularen Monolithen selbst.
 - Camunda abschalten, ein Anliegen einreichen und den gespeicherten Fall als «Eingegangen» abrufen. Nach Wiederanlauf wird der Prozess gestartet und die Instanz dem Fall zugeordnet.
 - Camunda den Prozess starten lassen, die Startantwort verwerfen und die Zuordnung im ersten Worker vorübergehend an einem Datenbankfehler scheitern lassen. Den Starter währenddessen erneut ausführen. Nach Behebung des Fehlers muss der Worker den ursprünglichen Prozess zuordnen und den Startauftrag erledigen. Der ausführliche Prüffall steht unter [SS-003](../schnittstellenentwurf-block-3.md#prüffall--verlorene-startantwort-und-datenbankfehler).
 - Die Abschlussmeldung eines bereits gespeicherten Bewertungsjobs vor Camunda unterbrechen. Bei erneuter Zustellung meldet der Worker den Abschluss mit der gespeicherten Bewertung. Den Nachweis für Modellaufruf, Verlauf und Mailauftrag beschreibt [E3](../schnittstellenentwurf-block-3.md#prüffall--bewertungsjob-erneut-zugestellt).
-- Zwei Fallprozesse mit derselben wartenden Aktion starten. «Bearbeitung fortsetzen» für einen Fall muss zur zugeordneten Instanz korrelieren. PropertyFlow liefert `200`. Solange der Worker noch nicht gespeichert hat, zeigt der Abruf den bisherigen Fallstatus. Der andere Fall bleibt unverändert.
-- Die Aktion bei einem Prozess ohne passenden Nachrichteneingang senden. PropertyFlow liefert `400`. Der Fall bleibt unverändert und es entsteht keine weitere Prozessinstanz.
-- Die Camunda-Antwort nach erfolgreicher Korrelation verwerfen. PropertyFlow liefert `500`, wiederholt die Nachricht nicht automatisch und zeigt beim nächsten Abruf den von einem Worker bereits gespeicherten Fallstand.
+- Zwei Fallprozesse mit je einer offenen Mitarbeiterprüfung starten. «Bearbeitung fortsetzen» schliesst über den `userTaskKey` nur die Aufgabe des gewählten Falls ab. PropertyFlow liefert `200`. Bis zum Commit des Workers zeigt der Abruf den bisherigen Fallstatus.
+- Dieselbe Mitarbeiterprüfung zweimal nacheinander in einer Fallprozessinstanz öffnen. Die Aktion aus dem alten Tab ergibt `400`. Die zweite Aufgabe bleibt offen und der Fallstand bleibt unverändert. [SS-003 · Prüffall](../schnittstellenentwurf-block-3.md#prüffall--bearbeitung-aus-einem-alten-tab)
+- Die Camunda-Antwort nach erfolgreichem Task-Abschluss verwerfen. PropertyFlow liefert `500`. Die Oberfläche lädt den gespeicherten Fallstand neu. Der Aufruf wird nicht automatisch wiederholt.
 
 
 ## Kriterien für eine Neubewertung

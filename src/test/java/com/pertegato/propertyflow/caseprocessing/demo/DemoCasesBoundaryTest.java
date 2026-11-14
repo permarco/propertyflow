@@ -30,7 +30,9 @@ class DemoCasesBoundaryTest {
                         .map(value -> Arguments.of(field, value))),
                 Stream.of(Arguments.of(0, "t".repeat(151)), Arguments.of(1, "u".repeat(201)),
                         Arguments.of(2, "invalid"), Arguments.of(2, "a@b@c.ch"),
-                        Arguments.of(2, "a".repeat(250) + "@b.ch"), Arguments.of(3, "d".repeat(2001)),
+                        Arguments.of(2, "a".repeat(65) + "@b.ch"),
+                        Arguments.of(2, "a".repeat(64) + "@" + "b".repeat(63) + "." + "c".repeat(63) + "." + "d".repeat(62)),
+                        Arguments.of(3, "d".repeat(2001)),
                         Arguments.of(4, "o".repeat(81))));
     }
 
@@ -51,7 +53,7 @@ class DemoCasesBoundaryTest {
 
     @Test
     void submissionAcceptsExactMaximumLengths() {
-        String email = "a".repeat(249) + "@b.ch";
+        String email = "a".repeat(64) + "@" + "b".repeat(63) + "." + "c".repeat(63) + "." + "d".repeat(61);
         String description = "d".repeat(1997) + "\n\uD83D\uDE80";
         String formDescription = description.replace("\n", "\r\n");
         String token = cases.create("scope", "t".repeat(150), "u".repeat(200), email, formDescription, "o".repeat(80));

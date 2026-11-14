@@ -73,6 +73,15 @@ sequenceDiagram
         Mail-->>Versand: Annahme bestätigen
         Versand->>Fall: Übergabe vermerken
         Versand->>Prozess: Job abschliessen
+    else E-Mail-Dienst lehnt Statusmail dauerhaft ab
+        Mail-->>Versand: Ablehnung melden
+        Versand->>Fall: Ablehnung speichern
+        Fall-->>Versand: Commit bestätigt
+        Versand->>Prozess: Job mit «Klärung nötig» abschliessen
+        opt Fall ist aktiv
+            Prozess->>Prozess: Mitarbeiterprüfung eröffnen
+            Note over Prozess,Fall: Status-Worker speichert<br/>«Mitarbeiterprüfung erforderlich»
+        end
     else Timeout nach möglicher Übergabe
         Note over Versand,Mail: Übermittlung unklar
         Versand->>Fall: Unklaren Ausgang festhalten
@@ -82,7 +91,8 @@ sequenceDiagram
 ## Alternative Flows
 
 - **Vorübergehender Versandfehler.** Die Versandpflicht bleibt nachvollziehbar und der Auftrag kann wiederholt werden. Die gespeicherte Falländerung bleibt wirksam.
-- **Unklarer Übermittlungsausgang, Rückläufer oder dauerhafter Fehler.** PropertyFlow hält den Zustand nachvollziehbar fest. Bei klärungsbedürftigem Versand gilt für aktive Fälle der Prüfhinweis aus FALL-05. Ein abgeschlossener Fall bleibt abgeschlossen.
+- **Dauerhafte Ablehnung einer Statusmail.** Der Mail-Worker speichert die Ablehnung in PropertyFlow. Nach dem Commit schliesst er den Job des Send Tasks mit dem fachlichen Ergebnis «Klärung nötig» ab. Camunda eröffnet bei einem aktiven Fall die Mitarbeiterprüfung. Der zuständige Status-Worker speichert «Mitarbeiterprüfung erforderlich» mit dem internen Prüfgrund «E-Mail-Versand klären». Bei einem abgeschlossenen Fall bleibt die Ablehnung als interner Hinweis am Fall nachvollziehbar. [SS-002](../architecture/schnittstellenentwurf-block-3.md#ss-002--statusmail-aus-dem-fallprozess) · [BEN-04](../specifications/benachrichtigungen-und-zustellung.md#ben-04-wiederholungen-und-zustellnachweis)
+- **Unklarer Übermittlungsausgang, Rückläufer oder anderer dauerhafter Fehler.** PropertyFlow hält den Zustand nachvollziehbar fest. Bei klärungsbedürftigem Versand gilt für aktive Fälle der Prüfhinweis aus FALL-05. Ein abgeschlossener Fall bleibt abgeschlossen.
 - **Fallzugang ungültig oder Versandkopie unlesbar.** Die Versandfunktion blockiert die E-Mail mit Fall-Link und macht den Klärungsbedarf sichtbar.
 
 ## Postconditions
@@ -98,3 +108,4 @@ sequenceDiagram
 - **UC-019-AK-02:** Den E-Mail-Dienst während einer Falländerung abschalten und PropertyFlow neu starten. Die Änderung und der Auftrag bleiben erhalten. Eine Wiederholung desselben Ereignisses erzeugt keinen zusätzlichen logischen Auftrag.
 - **UC-019-AK-03:** Einen ungültigen Zugang und einen unklaren Übermittlungsausgang prüfen. Der Versandstatus macht die jeweilige Situation nachvollziehbar.
 - **UC-019-AK-04:** Eine Statusmail wartet auf den ersten Versand. Die Verwaltung korrigiert die Fall-Kontaktadresse desselben Mieters geprüft von A auf B. Der Mail-Worker lädt die Versanddaten und sendet die Mail an B mit dem aktuell gültigen Fall-Link. Die Mail beschreibt den ursprünglich gespeicherten Statuswechsel. A erhält diese Mail nicht.
+- **UC-019-AK-05:** Der E-Mail-Dienst lehnt die Statusmail eines aktiven Falls auf «In Bearbeitung» wegen einer ungültigen Empfängeradresse dauerhaft ab. Die Ablehnung ist gespeichert, bevor der Mail-Worker «Klärung nötig» an Camunda meldet. Camunda eröffnet die Mitarbeiterprüfung und der Status-Worker speichert «Mitarbeiterprüfung erforderlich» mit dem internen Prüfgrund «E-Mail-Versand klären». Der ursprüngliche Statuswechsel bleibt im Verlauf erhalten.

@@ -1,5 +1,6 @@
 package com.pertegato.propertyflow.access.service;
 
+import com.pertegato.propertyflow.access.contract.EmailAddress;
 import com.pertegato.propertyflow.access.demo.DemoAccounts;
 import com.pertegato.propertyflow.access.demo.DemoAccounts.Account;
 import jakarta.annotation.PreDestroy;
@@ -80,7 +81,7 @@ public final class StaffLogin {
     }
 
     private void requestCode(String email, boolean registration) {
-        String normalizedEmail = DemoAccounts.normalizeEmail(email);
+        String normalizedEmail = EmailAddress.normalize(email);
         Instant requestedAt = clock.instant();
         reserveRequest(normalizedEmail, requestedAt);
 
@@ -95,7 +96,7 @@ public final class StaffLogin {
     public Optional<UUID> verifyCode(String email, String code) {
         String normalizedEmail;
         try {
-            normalizedEmail = DemoAccounts.normalizeEmail(email);
+            normalizedEmail = EmailAddress.normalize(email);
         } catch (IllegalArgumentException exception) {
             return Optional.empty();
         }

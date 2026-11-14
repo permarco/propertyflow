@@ -3,6 +3,7 @@ package com.pertegato.propertyflow.access.web;
 import com.pertegato.propertyflow.access.demo.DemoAccounts;
 import com.pertegato.propertyflow.access.service.StaffCodeDelivery;
 import com.pertegato.propertyflow.caseprocessing.demo.DemoCases;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -21,6 +22,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -376,6 +378,68 @@ class StaffAccessWebTest {
         String token = submitCase(session, operation, "Korrigierte Eingabe");
         assertEquals("Korrigierte Eingabe", cases.tenant(token).title());
         assertEquals(before + 1, cases.list("", "", true, "default", false, 1).total());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"m\u0131eter@example.test", "\u212Aonto@example.test"})
+    void directHttpSubmissionRejectsUnicodeEmailAndAllowsCorrectedRetry(String address) throws Exception {
+        MockHttpSession session = submissionSession();
+        String operation = UUID.randomUUID().toString();
+        int before = cases.list("", "", true, "default", false, 1).total();
+
+        mvc.perform(post("/mieter/fall").session(session)
+                        .param("csrf", session.getAttribute(StaffWebSession.CSRF).toString())
+                        .param("operation", operation)
+                        .param("title", "E-Mail-Prüfung")
+                        .param("unit", "Wohnung 2")
+                        .param("description", "Beschreibung")
+                        .param("email", address))
+                .andExpect(status().isBadRequest());
+        assertEquals(before, cases.list("", "", true, "default", false, 1).total());
+
+        String token = submitCase(session, operation, "E-Mail-Prüfung");
+        assertEquals(TENANT_EMAIL, cases.tenant(token).email());
+        assertEquals(before + 1, cases.list("", "", true, "default", false, 1).total());
+    }
+
+    @Test
+    void verifiedTenantCannotListReadOrWriteLegacyCaseWithDotlessI() throws Exception {
+        String suffix = "-" + UUID.randomUUID() + "@example.test";
+        String verifiedAddress = "mieter" + suffix;
+        String ownToken = cases.create("test-scope", "Eigenes Anliegen", "Wohnung 1", " " + verifiedAddress.toUpperCase(Locale.ROOT) + " ",
+                "Eigene Beschreibung", UUID.randomUUID().toString());
+        String legacyToken = cases.create("test-scope", "Fremdes Anliegen", "Wohnung 2", "placeholder" + suffix,
+                "Fremde Beschreibung", UUID.randomUUID().toString());
+        String ownId = cases.tenant(ownToken).id();
+        String legacyId = cases.tenant(legacyToken).id();
+        // Seed an address from before the shared input validation was introduced.
+        Object legacyCase = ReflectionTestUtils.invokeMethod(cases, "data", legacyId);
+        assertNotNull(legacyCase);
+        ReflectionTestUtils.setField(legacyCase, "email", "m\u0131eter" + suffix);
+        DemoCases.View before = cases.get(legacyId);
+
+        MockHttpSession session = submissionSession();
+        session.setAttribute(StaffWebSession.ACCOUNT, staffAccounts.activateVerifiedTenant(verifiedAddress).id());
+
+        assertEquals(verifiedAddress, cases.tenant(ownToken).email());
+        mvc.perform(get("/mieter/faelle").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString(ownId)))
+                .andExpect(content().string(not(containsString(legacyId))));
+        mvc.perform(get("/mieter/faelle/" + ownId).session(session))
+                .andExpect(status().isOk());
+        mvc.perform(get("/mieter/faelle/" + legacyId).session(session))
+                .andExpect(status().isNotFound())
+                .andExpect(content().string(not(containsString("Fremde Beschreibung"))));
+        mvc.perform(post("/mieter/faelle/" + legacyId + "/nachrichten").session(session)
+                        .param("csrf", session.getAttribute(StaffWebSession.CSRF).toString())
+                        .param("operation", UUID.randomUUID().toString())
+                        .param("text", "Unberechtigter Schreibversuch"))
+                .andExpect(status().isNotFound());
+        assertEquals(before, cases.get(legacyId));
+        mvc.perform(get("/mieter/fall/zugang/" + legacyToken))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Fremde Beschreibung")));
     }
 
     private MockHttpSession submissionSession() throws Exception {

@@ -41,6 +41,8 @@ Die Aktion «Neues Anliegen melden» eröffnet die Erfassung. Erst eine neue erf
 
 Für die Web-Erfassung sind Betreff, Beschreibung und Objekt-/Wohnungsreferenz vorgesehen. Ohne Anmeldung wird zusätzlich eine E-Mail-Adresse eingegeben. Bei Einreichung aus einem angemeldeten, verifizierten Mieterkonto übernimmt der Dienst die verifizierte Konto-Adresse serverseitig als Fall-Kontaktadresse; sie ist kein Eingabefeld und darf nicht durch mitgesendete Werte überschrieben werden. Die Kontaktadresse bleibt für Fallzuordnung und Benachrichtigungen erforderlich. Die [Screen-Spezifikation](../frontend/ansicht-01-mieter-fallansicht.md#31-eingabefelder) definiert die Darstellung und Fehlertexte und führt die Review-Vorschläge zu den übrigen Feldlängen. Der Server prüft die geltenden Eingaberegeln unabhängig vom Browser.
 
+Für eingegebene Kontaktadressen gilt dieselbe serverseitige E-Mail-Prüfung wie für Konto-Adressen gemäss [ZUG-04](fallzugriff-und-sicherheit.md#mieterzugriff). PropertyFlow speichert die geprüfte, vereinheitlichte Adresse und weist ungültige Adressen vor der Fallanlage ab.
+
 Die Beschreibung eines neuen Anliegens muss einen Inhalt haben und darf höchstens **2’000 UTF-16-Codeeinheiten** umfassen. Vor der Längenprüfung vereinheitlicht der Server CRLF und einzelne CR zu LF. Die Grenze gilt vor dem Entfernen äusserer Leerzeichen. Für die dauerhafte Speicherung des vollständigen angenommenen Beschreibungstexts ist in PostgreSQL der Spaltentyp `TEXT` vorgesehen. Die Fallannahme setzt die Längengrenze durch.
 
 Die Annahme umfasst fachlich:
@@ -110,7 +112,7 @@ flowchart LR
         A -->|"Menschliche Prüfung nötig"| P
         A -->|"Freigegebene Rückfrage [1]"| M
         P -->|"Bearbeitung fortsetzen"| B
-        B -->|"Neuer Prüfbedarf"| P
+        B -->|"Neuer Prüfbedarf, z. B.<br/>Statusmail dauerhaft abgelehnt"| P
         B -->|"Rückfrage veröffentlicht [1]"| M
         M -->|"Alle Antworten verarbeitet [2]"| P
         M -->|"Letzten Antwortbedarf aufgehoben [1]"| B
@@ -162,7 +164,7 @@ Mit **Entwurf** bezeichnete Übergänge sind noch zu konkretisieren. Insbesonder
 | Eingegangen | Dauerhaft in PropertyFlow gespeichert, aber noch nicht erfolgreich in Camunda registriert; noch kein aktiver Fall. |
 | In Abklärung | Automatische Analyse oder fachliche Abklärung läuft. |
 | Wartet auf Mieterantwort | Eine Rückfrage wurde veröffentlicht; benötigte Informationen fehlen noch. |
-| Mitarbeiterprüfung erforderlich | Menschliche Prüfung ist nötig, etwa nach einem Analysefehler, bei verbleibender Unklarheit oder wegen einer verpflichtenden menschlichen Entscheidung nach FALL-10. |
+| Mitarbeiterprüfung erforderlich | Menschliche Prüfung ist nötig, etwa nach einem Analysefehler, bei klärungsbedürftigem E-Mail-Versand, bei verbleibender Unklarheit oder wegen einer verpflichtenden menschlichen Entscheidung nach FALL-10. |
 | In Bearbeitung | Das weitere Vorgehen wurde festgelegt; die Umsetzung läuft. |
 | Wartet auf externe Rückmeldung | Informationen oder eine Rückmeldung beispielsweise von Hauswart oder Fachstelle stehen aus. |
 | Wartet auf Wiedervorlage | Ein Mitarbeiter hat die erneute Prüfung terminiert. Camunda wartet bis zum Termin oder bis zur nächsten gespeicherten Mieternachricht gemäss FALL-11. |
@@ -369,6 +371,8 @@ Diese Kriterien dienen der späteren Umsetzung und sind keine bereits ausgeführ
 Das Öffnen der Erfassung und eine abgewiesene Eingabe erzeugen keinen angenommenen Fall. Erst nach dauerhaftem Speichern wird die Case-ID mit Erfolg zurückgegeben; Ursprungsmeldung und fachlicher Eingang sind eindeutig nachvollziehbar.
 
 Eine Beschreibung mit genau 2’000 UTF-16-Codeeinheiten nach Zeilenumbruchnormalisierung wird angenommen und vollständig gespeichert. Eine Beschreibung mit 2’001 Codeeinheiten wird auch bei direkter Übermittlung an den Server abgewiesen.
+
+Bei direkter Übermittlung der Kontaktadresse `mıeter@example.test` mit punktlosem `ı` weist PropertyFlow die Eingabe ab. Es wird kein Fall angelegt.
 
 ### FALL-AK-02
 

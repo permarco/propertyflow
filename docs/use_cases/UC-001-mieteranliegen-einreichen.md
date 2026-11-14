@@ -43,8 +43,9 @@ style PF fill:#1e293b,stroke:#006fbb,stroke-width:2px,color:#ffffff
 4. Die Mieterin oder der Mieter sendet das Formular ab.
 5. Das System prüft die Angaben serverseitig und behandelt Wiederholungen gemäss FALL-03.
 6. PropertyFlow speichert das Anliegen gemäss FALL-02 mit einer Case-ID und dem Status «Eingegangen». Mit der Speicherung werden der Prozessstart und die Bestätigungsbenachrichtigung zuverlässig veranlasst.
-7. Nach bestätigter Speicherung öffnet sich die persönliche Fallansicht mit der Case-ID und den gespeicherten Angaben. PropertyFlow übergibt den Startauftrag asynchron zur Einreichung an Camunda. Camunda steuert danach die Statuswechsel im Fallprozess gemäss [FALL-06](../specifications/fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow).
-8. Der persönliche Fall-Link mit ausschliesslich einem geheimen Token als Zugangswert wird zusätzlich per E-Mail versendet. PropertyFlow ordnet den Token serverseitig dem Fall zu; die lesbare Case-ID bleibt in der Ansicht. Der Versandzustand ist vom fachlichen Annahmeerfolg getrennt. Auslöser, Inhalt und Fehlerbehandlung folgen [Benachrichtigungen und Zustellung](../specifications/benachrichtigungen-und-zustellung.md).
+7. Nach bestätigter Speicherung öffnet sich die persönliche Fallansicht mit der Case-ID und den gespeicherten Angaben. Bis zur bestätigten Zuordnung der Camunda-Instanz bleibt der Fall auf «Eingegangen» und ist für Berechtigte nur lesbar.
+8. PropertyFlow übergibt den Startauftrag asynchron zur Einreichung an Camunda. Camunda startet eine Prozessinstanz. Der erste Job ordnet sie dem Fall zu. Nach bestätigter Zuordnung steuert Camunda die fachlichen Statuswechsel gemäss [FALL-06](../specifications/fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow) und [SS-003](../architecture/schnittstellenentwurf-block-3.md#ss-003--camunda-integrationsvertrag).
+9. Der persönliche Fall-Link mit ausschliesslich einem geheimen Token als Zugangswert wird zusätzlich per E-Mail versendet. PropertyFlow ordnet den Token serverseitig dem Fall zu; die lesbare Case-ID bleibt in der Ansicht. Der Versandzustand ist vom fachlichen Annahmeerfolg getrennt. Auslöser, Inhalt und Fehlerbehandlung folgen [Benachrichtigungen und Zustellung](../specifications/benachrichtigungen-und-zustellung.md).
 
 ### Sequenzdiagramm
 
@@ -73,11 +74,19 @@ sequenceDiagram
     PF->>PF: Eingaben prüfen
     PF->>DB: Fall als «Eingegangen»<br/>mit Startauftrag speichern
     DB-->>PF: Speicherung bestätigt
+    Note over PF,DB: Bis zur bestätigten Instanzzuordnung<br/>«Eingegangen» und nur lesbar
     par Rückmeldung an den Mieter
         PF-->>B: Fallannahme bestätigen
         B-->>M: Persönliche Fallansicht mit Case-ID<br/>und gespeicherten Angaben öffnen
     and Asynchroner Prozessstart
-        PF->>C: Fallprozess mit Case-ID starten
+        PF->>C: Neue Prozessinstanz mit Case-ID<br/>und Startkennung starten
+        W->>C: Ersten Job übernehmen
+        C-->>W: Auftrag zur Instanzzuordnung
+        W->>PF: Prozessinstanz zuordnen
+        PF->>DB: Instanzzuordnung speichern<br/>und Startauftrag erledigen
+        DB-->>PF: Commit bestätigt
+        PF-->>W: Zuordnung bestätigen
+        W->>C: Jobabschluss melden
         opt Statuswechsel im Fallprozess
             W->>C: Job übernehmen
             C-->>W: Auftrag zum Statuswechsel
@@ -120,8 +129,8 @@ sequenceDiagram
 **Trigger:** Der Fall ist gespeichert, aber Camunda-Prozessstart, Mailversand oder KI-Verarbeitung können vorübergehend nicht abgeschlossen werden.
 
 1. Die Annahmebestätigung und Case-ID bleiben gültig.
-2. Ist Camunda beim Prozessstart nicht erreichbar, holt PropertyFlow den Start im Hintergrund nach. Der neue Fall bleibt bis zum ersten durch Camunda veranlassten Übergang auf «Eingegangen». Andere ausstehende Folgeaufträge werden gemäss dem Integrationsvertrag wiederholt oder zur Bearbeitung sichtbar gemacht.
-3. Der Fall bleibt nach FALL-06 aktiv und für Berechtigte lesbar. Vor dem Prozessstart und bei nicht verfügbarem Camunda sind Bearbeitungsaktionen für Mitarbeitende gesperrt. Bei verfügbarem Camunda kann der Prozess bei einem fachlichen Prüfgrund eine Mitarbeiteraufgabe bereitstellen.
+2. Ist Camunda beim Prozessstart nicht erreichbar, holt PropertyFlow den Start im Hintergrund nach. Bis zur bestätigten Instanzzuordnung bleibt der Fall auf «Eingegangen» und ist für Berechtigte nur lesbar. Danach steuert Camunda die fachlichen Statuswechsel. [FALL-05](../specifications/fallverwaltung.md#fall-05-fachlicher-lebenszyklus) · [FALL-06](../specifications/fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow)
+3. Bei einem späteren Camunda-Ausfall bleibt der zuletzt gespeicherte Fallstand für Berechtigte lesbar. Bearbeitungsaktionen sind bis zum Wiederanlauf gesperrt. Andere ausstehende Folgeaufträge werden gemäss dem Integrationsvertrag wiederholt oder zur Bearbeitung sichtbar gemacht.
 
 ### A5: Objektzuordnung noch unklar
 
@@ -141,7 +150,7 @@ Bei abgelaufener Anmeldung wird keine Konto-Adresse aus Browserdaten übernommen
 ### Success Postconditions
 
 - Der Fall wurde dauerhaft angenommen; Case-ID und Ursprungseingabe sind gespeichert.
-- Der Fall befindet sich in der aktiven Phase. Der Camunda-Prozessstart kann noch ausstehen.
+- Bis zur bestätigten Instanzzuordnung bleibt der Fall auf «Eingegangen» und ist für Berechtigte nur lesbar. Danach beginnt die aktive Phase gemäss [FALL-05](../specifications/fallverwaltung.md#fall-05-fachlicher-lebenszyklus). Camunda steuert die fachlichen Statuswechsel.
 - Die Mieterin oder der Mieter sieht die Bestätigung und kann den angelegten Fall direkt unter dem gültigen persönlichen Tokenlink öffnen. Die Case-ID ist im Inhalt sichtbar; der GET-Fallaufruf leitet nicht auf eine andere Falladresse weiter.
 - Nachgelagerte Verarbeitung und Benachrichtigung sind zuverlässig veranlasst; ihr Abschluss ist keine Voraussetzung für den Annahmeerfolg.
 - Die Erstbewertung der Dringlichkeit wird im Camunda-gesteuerten Ablauf nach [DRING-05](../specifications/dringlichkeitsbewertung.md#dring-05-erst--und-neubewertung-im-prozess) veranlasst. Ohne wirksame System- oder manuelle Einstufung bleibt «Noch nicht bewertet» sichtbar.
@@ -161,6 +170,8 @@ Die Eingabeprüfung folgt [FALL-02](../specifications/fallverwaltung.md#fall-02-
 ### UC-001-BR-002: Keine KI-Abhängigkeit für die Erfassung
 
 Die Annahme und das Verhalten bei ausgefallenen Folgekomponenten richten sich nach [FALL-02](../specifications/fallverwaltung.md#fall-02-erfolgreiche-annahme), [FALL-06](../specifications/fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow) und [FALL-09](../specifications/fallverwaltung.md#fall-09-fehler-und-grenzfälle).
+
+[FALL-AK-03](../specifications/fallverwaltung.md#fall-ak-03) prüft die lesbare Fallansicht auf «Eingegangen» bei ausstehender Zuordnung und die anschliessende Steuerung durch Camunda. Der [Prüffall in SS-003](../architecture/schnittstellenentwurf-block-3.md#prüffall--verlorene-startantwort-und-datenbankfehler) deckt eine verlorene Startantwort und einen Fehler beim Speichern der Zuordnung ab.
 
 ### UC-001-BR-003: Eindeutige Fallidentität
 
