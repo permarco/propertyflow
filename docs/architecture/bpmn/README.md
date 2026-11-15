@@ -1,14 +1,14 @@
 # PropertyFlow-Fallprozess
 
 [propertyflow-fallprozess-entwurf.bpmn](propertyflow-fallprozess-entwurf.bpmn)
-ist der führende BPMN-Entwurf 0.10 zur gemeinsamen Besprechung, Stand 15.11.2026.
+ist der führende BPMN-Entwurf 0.13 zur gemeinsamen Besprechung, Stand 15.11.2026.
 Er enthält BPMN-Diagrammkoordinaten und kann im Camunda Modeler geöffnet werden.
 
 ## Dateien – hier bearbeiten
 
 | Datei | Inhalt / typische Änderung |
 |---|---|
-| [propertyflow-fallprozess-entwurf.bpmn](propertyflow-fallprozess-entwurf.bpmn) | Hauptablauf, durchgängiger Mieternachrichteneingang, automatische Veröffentlichung, fachlicher Abschluss und Abschlussmail |
+| [propertyflow-fallprozess-entwurf.bpmn](propertyflow-fallprozess-entwurf.bpmn) | Hauptablauf, durchgängiger Mieternachrichteneingang, automatische Veröffentlichung, fachlicher Abschluss ohne zusätzliche Abschlussmail |
 | [mieterantwort-pruefen.bpmn](mieterantwort-pruefen.bpmn) | Offene Fragen auswerten, Teilantworten, Fortsetzungen nach der Mieterantwort |
 | [mitarbeiterbearbeitung.bpmn](mitarbeiterbearbeitung.bpmn) | Mitarbeiterprüfung, weitere Bearbeitung, Entscheidung und Aufruf der Wiedervorlage |
 | [wiedervorlage.bpmn](wiedervorlage.bpmn) | Termin/Timer, Änderung, Löschung und Mitarbeiterrückfrage während der Wartephase |
@@ -29,7 +29,7 @@ Präzisierung von ADR-002/SS-003 sind noch nicht im Backend implementiert.
 ## Ansichten
 
 Die Hauptansicht zeigt den Rahmen **«Aktiven Fall bearbeiten»** zwischen
-technischer Startvorbereitung und Abschlussbenachrichtigung. Im Modeler diesen
+technischer Startvorbereitung und Prozessende. Im Modeler diesen
 Teilprozess öffnen: Dort liegt der bisherige Hauptablauf mit seiner Anordnung.
 Er zeigt die bestätigte Prozesszuordnung, den Einstieg in
 **«In Abklärung»**, die Dringlichkeitsbewertung und den Service Task
@@ -77,7 +77,7 @@ einen führenden Fallprozesses. Der fachliche Abschluss
 erfolgt ausschliesslich im Service Task **«Abschluss prüfen und speichern»**.
 Erst danach beendet das terminierende Ende den Bereich «Aktiven Fall bearbeiten»
 einschliesslich laufender Nachrichtenauswertungen und Empfang. Der äussere
-Prozess veranlasst anschliessend die Abschlussbenachrichtigung. Die normalen
+Prozess endet danach ohne zusätzliche Benachrichtigung. Die normalen
 Endereignisse der übrigen Teilprozesse sind keine Fallabschlüsse.
 
 ## Rückweg bei veralteter Nachrichtenauswertung (Stand 0.11)
@@ -223,12 +223,12 @@ und KOM-AK-24 legen die Reihenfolge fest. `RValidate` prüft den aktuellen Stand
 | Priorität | Bedingung | Modellweg |
 |---|---|---|
 | 1 | Pflichtprüfbedarf oder Analysefehler | `R08` → `RReview` → `F21` → Mitarbeiterprüfung |
-| 2 | Zulässiger Systemabschluss samt Textfreigabe | `R07` → `RClose` → `F20` → Antwort veröffentlichen, Abschluss erneut prüfen |
+| 2 | Zulässiger Systemabschluss mit anschliessender LLM-Nachricht | `R07` → `RClose` → `F20` → Antwort veröffentlichen, Abschluss erneut prüfen |
 | 3 | Alle bisherigen Fragen beantwortet, kein zulässiger Abschluss | Ebenfalls `R08` → `RReview` → `F21`; keine Umgehung durch neue Fragen |
 | 4 | Fragen offen, weitere notwendige Katalogfrage zulässig | `R09` → `RQuestion` → `F18` → Katalogfrage veröffentlichen |
 | 5 | Fragen offen, keine weitere Frage nötig | `R10` → `RWait` → `F19` → weiter auf Antworten warten |
 
-Fehlende geeignete Textfreigabe, unzuverlässige Grundlage oder notwendige Fragen
+Inhaltlich unzulässige Abschlussnachricht, unzuverlässige Grundlage oder notwendige Fragen
 ausserhalb des Katalogs folgen weiterhin den bestehenden Prüfregeln. Ein
 überholtes Ergebnis ist kein Default-Grund für Mitarbeiterprüfung: Das neue
 Randereignis `RAnalysisStale` an `RValidate` führt über `RCurrentAnalysis` zur
@@ -322,7 +322,7 @@ keine bereits ausgeführten Laufzeittests:
    Mitarbeiterentscheidung: genau eine zulässige Fortsetzung; alte Marker heben
    keine inzwischen bewusst neu gesetzte Wiedervorlage auf.
 7. Abschluss während laufender Auswertung: Empfang und Nebenpfade enden,
-   Abschlussbenachrichtigung wird veranlasst; verspätete Ergebnisse wirken nicht mehr.
+   keine zusätzliche Abschlussmail; verspätete Ergebnisse wirken nicht mehr.
 8. Fehler in der zentralen Analyse: vorhandene Dringlichkeit bleibt erhalten;
    der aktuelle Hauptpfad erhält Prüfbedarf, eine bestehende Prüfung wird ergänzt.
 9. Veralteter Mitarbeiterabschluss nach erledigter User Task: Fehlerpfad führt
@@ -354,7 +354,7 @@ auf die erste Empfehlung beziehungsweise die Auswertung einer Mieterantwort an:
 Die positiven Wege `F10`, `R07` und `F20` setzen diese Prüfung voraus. In den
 beiden Ansichten erläutern die Prüfhinweise die Gründe und Statusgrenzen.
 `AutoAnswer` prüft vor Veröffentlichung erneut die aktuelle Grundlage und die
-gesonderte Textfreigabe; `Close` prüft die Systemabschlussbedingungen unmittelbar
+Inhaltsprüfung im erzeugenden Worker; `Close` prüft die Systemabschlussbedingungen unmittelbar
 bei der Speicherung erneut. Der Mitarbeiterweg `F16` folgt weiterhin seinen
 eigenen Regeln und wird nicht auf die beiden automatischen Status beschränkt.
 Der Rückweg `STAFF_CLOSURE_STALE` bleibt ausschliesslich der Konfliktpfad für
@@ -381,54 +381,26 @@ festgelegt und nachfolgend im Modell eingeordnet.
 
 ## Automatische Antworten vor Fallabschluss
 
-**Bestätigt am 15.11.2026:**
+**Vereinfachter Stand 0.13:** Bei zulässigem Systemabschluss erzeugt der Service Task
+**«LLM-Nachricht erstellen und versenden»** (`AutoAnswer`) eine individuelle Nachricht,
+prüft ihren Inhalt im Worker und speichert sie samt zuverlässigem Versandauftrag.
+Die Nachricht darf den Abschluss mitteilen. Kein fester Vorlagenkatalog und kein
+gesonderter Vorlagenprüfschritt; kein neuer Entwurf im Mitarbeiter-UI.
+
+Bei inhaltlich unzulässiger Nachricht führt `CLOSURE_MESSAGE_INVALID` zur
+Mitarbeiterprüfung, ohne Veröffentlichung oder automatischen Abschluss. Technische
+LLM-/Speicherfehler folgen Job-Retries und Incidents. Vor Veröffentlichung
+überholte Grundlage führt weiterhin über `PUBLICATION_BASIS_STALE` zur aktuellen
+Auswertung. Nach Veröffentlichung führt `AUTO_CLOSURE_STALE` an `Close` über
+`CurrentAnalysis` erneut zu `Validate`. Bereits veröffentlichte Nachricht und
+Versandauftrag werden nicht nochmals erzeugt; Mitarbeiterentscheidungen bleiben
+vorrangig. Die Worker müssen Aktualität und Idempotenz auch bei Retries prüfen.
+
+Nach erfolgreichem Abschluss endet der Hauptprozess ohne zusätzlichen Mail-Schritt.
+Der Mitarbeiterweg führt direkt zur Abschlussprüfung, ohne obligatorische Nachricht
+und ohne Abschlussmail. Freiwillige Nachricht und KI-Formulierungshilfe im UI bleiben.
 [KOM-06](../../specifications/fallkommunikation.md#kom-06-automatische-antworten-vor-fallabschluss)
-enthält die vollständigen Texte und Veröffentlichungsbedingungen:
-
-- **AT-001:** Behebung des ganzen Anliegens laut gespeicherter Mieterrückmeldung,
-  ohne weiteren Hilfebedarf. Der Text behauptet keine eigene Kontrolle oder Reparatur.
-- **AT-002:** Kein Bearbeitungsbedarf nach einer passenden freigegebenen Fachregel.
-  Das Muster benötigt den zur konkreten Regelversion freigegebenen Erklärungstext.
-  Ohne diesen Text oder die konkrete Regel bleibt diese Antwortart gesperrt.
-
-`Recommend` und `NRecommend` empfehlen Antwortart und Belege. `Validate` und
-`RValidate` prüfen zusätzlich zum Abschlussgrund die passende Textfreigabe.
-`AutoAnswer` heisst jetzt **«Antwortvorlage prüfen und veröffentlichen»** und
-prüft unmittelbar vor Speicherung erneut Status, aktuelle Nachrichten,
-Prozessfreigabe, Prüfgründe und Textfassung. Veröffentlicht wird ausschliesslich
-die hinterlegte Vorlage, ohne freie LLM-Ergänzungen und unter Wahrung von KOM-02.
-Die Systemantwort setzt keinen neuen Antwortbedarf und hebt bestehende Fragen
-nicht vorzeitig auf. Fehlende geeignete Textfreigabe benötigt Mitarbeiterprüfung;
-überholte oder doppelte Ergebnisse allein erzeugen weiterhin keine neue Aufgabe.
-
-Der Ablauf bleibt **Antwort veröffentlichen → Abschluss erneut prüfen und
-speichern → Abschlussbenachrichtigung**. Ein Text vor der Abschlussspeicherung
-darf weder «Ihr Fall ist abgeschlossen» behaupten noch den Abschluss zusagen.
-Die vollständigen Antwortvorlagen stehen zusätzlich in der Dokumentation von
-`AutoAnswer`; die sichtbaren Prüfhinweise erläutern die Beschränkung nach KOM-06.
-
-Ist die Antwort bereits gespeichert, aber `Close` scheitert oder erkennt eine
-inzwischen unzulässige Grundlage, bleibt sie einmalig im Verlauf. Ohne erfolgreichen
-Abschluss bleiben Fall und noch offener Antwortbedarf aktiv; der normale Weg zu
-`ActiveEnd` und `MailOrder` wird nicht als erfolgreich durchlaufen. Ein Retry
-veröffentlicht keine zweite Antwort und prüft die aktuellen Abschlussbedingungen
-erneut. Scheitert bereits `AutoAnswer`, darf der automatische Weg nicht ohne
-erfolgreiche Veröffentlichung zu `Close` fortgesetzt werden. Technische Fehler
-allein erzeugen keine neue Mitarbeiterprüfung. Bereits erfolgreich gespeicherte
-identische Abschlüsse bleiben idempotent erfolgreich.
-
-`STAFF_CLOSURE_STALE` bleibt der gesonderte Konfliktpfad für bestätigte
-Mitarbeiterabschlüsse. Es wird kein pauschaler neuer Fehlerpfad für veraltete
-automatische Ergebnisse eingeführt. Die technische Koordination nach einem
-unterdrückten Ergebnis und die Wiederholungsbedingungen sind vor Ausführung
-noch zu konkretisieren. Die fachlichen Folgen sind jetzt festgelegt.
-
-`MailOrder` bestätigt erst den gespeicherten Abschluss. Die Veröffentlichung
-der Antwort besitzt ihre eigene Benachrichtigungspflicht nach BEN-01; sie fällt
-bei ausbleibendem Abschluss nicht weg. Eine Zusammenlegung mit der Abschlussmail
-ist nicht vereinbart. KOM-AK-18 bis KOM-AK-21 beschreiben die späteren Tests zu
-Vorlagen, Statusschutz, konkurrierenden Änderungen und Wiederholungen. Sie sind
-kein Nachweis bereits ausgeführter Backend- oder Camunda-Laufzeittests.
+und BEN-05 beschreiben das Verhalten; Laufzeitumsetzung steht aus.
 
 ## Automatische Rückfragen
 
@@ -476,9 +448,9 @@ Fortsetzung nach verworfenen, fehlerhaften oder neu zu bewertenden Ergebnissen
 an jeder aktiven Hauptprozessposition; diese ist durch die sichtbaren
 Hauptausgänge noch nicht vollständig modelliert. Für automatische Rückfragen sind die Fachregeln in
 KOM-05 vereinbart; die beiden Systemabschlussgründe samt Statusgrenzen und
-Nachweisanforderungen sind in FALL-07 bestätigt. KOM-06 legt Antwortvorlagen,
+Nachweisanforderungen sind in FALL-07 bestätigt. KOM-06 legt individuelle LLM-Nachrichten,
 Veröffentlichungsbedingungen und die fachlichen Folgen eines ausgebliebenen
-Abschlusses fest. Konkrete Zuständigkeitsregeln mit Erklärungstexten sowie die
+Abschlusses fest. Konkrete freigegebene Zuständigkeitsregeln sowie die
 technische Fehler- und Wiederholungskoordination bleiben auszuarbeiten. Wiedereröffnung und externe
 Wartephasen gehören noch nicht zum hier gemeinsam besprochenen Prozessabschnitt.
 
@@ -506,3 +478,27 @@ Grundlagen: [Fallverwaltung](../../specifications/fallverwaltung.md),
 Der Einstieg in «In Abklärung» und die Regeln für automatische Katalogrückfragen
 wurden im Chat am 14.11.2026 bestätigt. Spezifikation, Use Cases und Entwurf
 sind darauf abgestimmt; es wurde keine Backend-Logik ergänzt.
+
+Prüfung des vereinfachten Stands 0.13: alle fünf BPMN-Dateien bestehen die
+XML-Schemaprüfung und den Import/Export mit Zeebe-Erweiterungen ohne Warnungen.
+Automatischer Nachrichtenweg, direkter Mitarbeiterabschluss, Inhaltsfehlerpfad
+und Aktualitätsrückwege sind strukturell geprüft; der Abschlussmail-Schritt ist
+entfernt. Geänderte Diagramme wurden gerendert und visuell geprüft. Keine
+Backend- oder Camunda-Laufzeittests, da weiterhin nicht ausführbarer Entwurf.
+
+## Mitarbeiternachricht als Nebenaktion (Stand 0.14)
+
+In `mitarbeiterbearbeitung.bpmn` ist unterhalb des Hauptablaufs der aufgeklappte
+nicht unterbrechende Ereignis-Teilprozess **«Nachricht senden – Prüfung bleibt offen»**
+zu sehen: interner Sendeauftrag → Auftrag prüfen, Nachricht/Versandauftrag speichern
+→ nur Nebenaktion beendet. `SReview` wird weder abgeschlossen noch neu angelegt.
+Auch mit Antwortbedarf bleibt die Mitarbeiterprüfung bestehen. Der bestehende
+Hauptpfad `SQuestion` nach bewusster Fortsetzungsentscheidung bleibt separat.
+
+Der Event-Teilprozess liegt im Mitarbeiterprozess; die Bindung an die aktuelle
+Prüfaufgabe wird deshalb zusätzlich serverseitig geprüft. Er ist kein weiterer
+Mieterempfang. [KOM-01](../../specifications/fallkommunikation.md#mitarbeiternachricht-als-nebenaktion-während-offener-prüfung)
+und KOM-AK-27 definieren Wiederholungsschutz und konkurrierende Entscheidungen.
+Laufende Nebenaufträge müssen beendet beziehungsweise als ungültig aufgelöst
+werden; ein Incident kann die technische Beendigung der Kindinstanz verzögern.
+Keine Backend-Implementierung oder Änderung des HTTP-Vertrags.

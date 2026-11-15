@@ -142,10 +142,10 @@ mit gleichzeitig fälligem Timer stehen aus.
 `POST /mitarbeiter/faelle/{id}/abschliessen` übergibt den bestätigten
 Mitarbeiterentscheid an den Fallprozess. Camunda veranlasst den Abschluss
 und beendet eine offene Wiedervorlage. `200` folgt erst nach dauerhafter
-Speicherung von «Abgeschlossen» und Abschlussnachweis. Die Abschluss-E-Mail
-folgt nachgelagert. Ein Integrationstest soll dauerhafte Speicherung,
-beendeten Timer und den einzelnen logischen Mailauftrag bei Wiederholung
-nachweisen. Die Umsetzung steht aus.
+Speicherung von «Abgeschlossen» und Abschlussnachweis. Der Mitarbeiterabschluss
+erzeugt keine automatische Nachricht oder E-Mail. Ein Integrationstest soll
+dauerhafte Speicherung, beendeten Timer und das Ausbleiben von Nachrichten-/
+Mailaufträgen auch bei Wiederholung nachweisen. Die Umsetzung steht aus.
 [UC-014](../use_cases/UC-014-fall-abschliessen.md)
 
 `POST /mitarbeiter/faelle/{id}/wiedereroeffnen` erfasst die bestätigte

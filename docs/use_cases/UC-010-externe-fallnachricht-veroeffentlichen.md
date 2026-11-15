@@ -58,13 +58,18 @@ flowchart TD
 
     SENDEN --> PROZESS --> PUBLIKATION --> ANTWORT
     ANTWORT -->|"Nein"| INFORMATION
-    ANTWORT -->|"Ja"| WIEDERVORLAGE
+    ANTWORT -->|"Ja"| PRUEFUNG{"Mitarbeiterprüfung offen?"}
+    PRUEFUNG -->|"Ja"| PRUEFUNG_BLEIBT["Rückfrage offen · dieselbe Prüfaufgabe und Status bleiben"]
+    PRUEFUNG -->|"Nein"| WIEDERVORLAGE
     WIEDERVORLAGE -->|"Nein"| RUECKFRAGE
     WIEDERVORLAGE -->|"Ja"| TERMIN
     PUBLIKATION --> MAIL
 ```
 
 ## Alternative Flows
+
+- **Laufende Mitarbeiterprüfung:** Senden ist eine Nebenaktion. Mit oder ohne «Mieterantwort erforderlich» bleiben Status und dieselbe Prüfaufgabe offen; keine automatische Erledigung und kein Wechsel in den Wartestatus. Neue Mieterantwort ergänzt dieselbe Aufgabe. Regeln und Konkurrenzschutz: [KOM-01](../specifications/fallkommunikation.md#mitarbeiternachricht-als-nebenaktion-während-offener-prüfung).
+
 
 - **Speicherung fehlgeschlagen oder Ausgang unklar.** PropertyFlow bestätigt keinen unbelegten Erfolg. Text und Auswahl bleiben für eine sichere Wiederholung erhalten. [UI3](../frontend/ansicht-03-mitarbeiter-falldetail.md#rückmeldung-nach-senden-oder-memo-speicherung)
 - **Fall geschlossen oder Berechtigung fehlt.** Der Dienst lehnt das Veröffentlichen ab. [KOM-04](../specifications/fallkommunikation.md#kom-04-nachrichtensperre-nach-fallabschluss)

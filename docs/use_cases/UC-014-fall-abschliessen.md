@@ -36,7 +36,7 @@ style PF fill:#1e293b,stroke:#006fbb,stroke-width:2px,color:#ffffff
 1. Der Mitarbeiter beurteilt den aktuellen Fall und wählt «Fall abschliessen» in UI3.
 2. Er bestätigt den Abschluss im Dialog. PropertyFlow prüft Rolle, Fallstand und die geltenden fachlichen Voraussetzungen und übermittelt die Entscheidung an Camunda.
 3. Camunda veranlasst den fachlichen Abschluss. Der PropertyFlow-Dienst prüft die bestätigte Entscheidungsgrundlage unmittelbar bei der Speicherung erneut und speichert «Abgeschlossen» mit Zeitpunkt, Quelle, handelnder Person und dem festen internen Mitarbeitervermerk.
-4. PropertyFlow beendet offene Wiedervorlagen und den offenen Mieterantwortbedarf, sperrt neue interne und externe Nachrichten und veranlasst die Abschluss-E-Mail.
+4. PropertyFlow beendet offene Wiedervorlagen und den offenen Mieterantwortbedarf, sperrt neue interne und externe Nachrichten ohne eine automatische Nachricht oder E-Mail zu veranlassen.
 
 ## Alternative Flows
 
@@ -47,7 +47,7 @@ style PF fill:#1e293b,stroke:#006fbb,stroke-width:2px,color:#ffffff
 - **KI-Auswertung läuft noch.** Sie blockiert einen bewussten Mitarbeiterabschluss am aktuellen Fallstand einschliesslich neuer gespeicherter Mieternachrichten nicht. Nach erfolgreichem Abschluss bleiben verspätete Ergebnisse unwirksam. [FALL-07](../specifications/fallverwaltung.md#mitarbeiterabschluss-während-laufender-ki-auswertung)
 - **Mitarbeiterentscheidung veraltet.** Vor User-Task-Abschluss wird die Aktion abgewiesen und dieselbe Aufgabe bleibt offen. Wird der Konflikt erst danach bei der fachlichen Abschlussspeicherung erkannt, führt Camunda zurück zur Mitarbeiterprüfung und stellt genau eine neue Aufgabe für den aktuellen Stand bereit. Alte Abschlussfreigabe und alter Aufgabenschlüssel gelten dafür nicht. Kein erfolgreicher Abschlussnachweis und kein Abschlussmailauftrag; der Fall bleibt aktiv. Ein technischer Speicherfehler allein löst diesen Rückweg nicht aus. [FALL-07](../specifications/fallverwaltung.md#mitarbeiterabschluss-während-laufender-ki-auswertung)
 - **Abbruch oder Fehler.** Der bisherige Fallstand und offene Antwortbedarf bleiben erhalten. Eine zuvor bereits veröffentlichte Abschlussmitteilung bleibt im Verlauf.
-- **Automatische Antwort vor Abschluss.** Der automatische Antwortzweig veröffentlicht ausschliesslich die passende freigegebene Vorlage nach [KOM-06](../specifications/fallkommunikation.md#kom-06-automatische-antworten-vor-fallabschluss) und prüft danach den Abschluss erneut am aktuellen Fallstand. Die Antwort behauptet keinen bereits erfolgten Abschluss. Scheitert der Abschluss oder ist die Grundlage inzwischen überholt, bleibt die Antwort im Verlauf; ohne erfolgreichen Abschluss entsteht keine Abschlussmail. Ein Retry veröffentlicht keine zweite Antwort und erhält keine pauschale Abschlussfreigabe.
+- **Automatische Nachricht vor Abschluss.** LLM-Nachricht erzeugen, im Worker prüfen, extern speichern und Versand zuverlässig beauftragen; danach aktuellen Fallstand erneut prüfen und abschliessen. Kein Warten auf SMTP, keine zweite Abschlussmail. Technische Fehler: Retries/Incident; unzulässiger Inhalt: Mitarbeiterprüfung. Bei veralteter Grundlage aktuelle Auswertung übernehmen; bereits veröffentlichte Nachricht nicht wiederholen. [KOM-06](../specifications/fallkommunikation.md#kom-06-automatische-antworten-vor-fallabschluss)
 - **Camunda nicht erreichbar.** Der bisherige Fallstand bleibt lesbar. Ein Abschluss wird erst nach Übernahme des durch Camunda veranlassten Übergangs als erfolgreich angezeigt.
 
 ## Flussdiagramm · Abschlusswege
@@ -65,12 +65,16 @@ flowchart TD
     GRUND -->|"Unklar oder widersprüchlich"| ABKLAEREN["Fall aktiv halten und nötigen Prüfbedarf führen"]
     FREIGABE -->|"Ja"| MITARBEITER["Mitarbeiterprüfung erhalten oder bereitstellen"]
     FREIGABE -->|"Nein"| DATEN{"Alle relevanten Nachrichten berücksichtigt und Grundlage aktuell?"}
-    DATEN -->|"Ja"| ABSCHLUSS
+    DATEN -->|"Ja"| NACHRICHT["Individuelle LLM-Nachricht erzeugen, prüfen, speichern und Versand beauftragen"]
+    NACHRICHT -->|"Zulässig und gespeichert"| ABSCHLUSS
+    NACHRICHT -->|"Inhalt unzulässig"| MITARBEITER
+    NACHRICHT -->|"Grundlage veraltet"| NEU
     DATEN -->|"Nein"| NEU["Alten Vorschlag nicht ausführen · aktuellen Stand berücksichtigen"]
 
     ABSCHLUSS --> SPEICHERN["Fachlichen Abschluss in PropertyFlow übernehmen"]
     SPEICHERN -->|"Mitarbeiterentscheidung inzwischen veraltet"| MITARBEITER
-    SPEICHERN -->|"Erfolgreich gespeichert"| ABGESCHLOSSEN["Nachrichtensperre · offenen Antwortbedarf und Timer beenden · Abschlussmail veranlassen"]
+    SPEICHERN -->|"Automatische Grundlage inzwischen veraltet"| NEU
+    SPEICHERN -->|"Erfolgreich gespeichert"| ABGESCHLOSSEN["Nachrichtensperre · offenen Antwortbedarf und Timer beenden · keine Abschlussmail"]
 ```
 
 ## Postconditions
@@ -80,11 +84,11 @@ flowchart TD
 ## Business Rules und Prüfkriterien
 
 - **UC-014-BR-001** Die serverseitig geprüften Abschlussgründe und die aktuell geltende Pflicht zur menschlichen Entscheidung bestimmen die Zulässigkeit des Abschlusses. [FALL-07](../specifications/fallverwaltung.md#fall-07-abschluss-und-zeit-danach) · [FALL-10](../specifications/fallverwaltung.md#fall-10-automatisierung-und-menschliche-freigabe)
-- **UC-014-BR-002** Nach erfolgreichem Abschluss entsteht pro Abschluss ein logischer Mailauftrag. [BEN-05](../specifications/benachrichtigungen-und-zustellung.md#ben-05-fallabschluss-und-sicherheit)
+- **UC-014-BR-002** Abschlussstatus erzeugt keine Mail. Automatischer Abschluss benötigt vorher die individuelle Nachricht samt Versandauftrag; Mitarbeiterabschluss benötigt keine Nachricht. [BEN-05](../specifications/benachrichtigungen-und-zustellung.md#ben-05-fallabschluss-und-sicherheit)
 - **UC-014-AK-01** Nach manuellem Abschluss sind der Abschlussnachweis und der Status gespeichert. Ein direkter Schreibaufruf für eine Nachricht oder ein Memo wird abgelehnt. Ein bestehender Fall-Link bleibt zum Lesen nutzbar.
 - **UC-014-AK-02** Die beiden vereinbarten Systemgründe führen bei eindeutiger Prüfung zum Abschluss. Bei ausstehender menschlicher Entscheidung bleibt der Fall trotz Behebungsbestätigung aktiv.
 - **UC-014-AK-03** Ein wiederholter Abschluss erzeugt weder einen zweiten Abschlussnachweis noch einen weiteren logischen Mailauftrag.
 - **UC-014-AK-04** Beide Systemabschlussgründe bei bereits laufender Mitarbeiterprüfung prüfen, auch ohne weiteren FALL-10-Grund. Kein automatischer Abschluss ist zulässig. Dies gilt bei systemseitigem wie menschlichem Ursprung des Prüfbedarfs und bei einer Mitarbeiterprüfung, die erst nach Vorbereitung des automatischen Abschlusses begonnen hat. Ein bestätigter Mitarbeiterabschluss am aktuellen Fallstand bleibt möglich (FALL-AK-21).
 - **UC-014-AK-05** Laufende KI-Auswertung, veraltete Aktion vor User-Task-Abschluss, Konflikt bei der späteren Abschlussspeicherung, wiederholte Konflikte und verspätete Ergebnisse gemäss FALL-AK-22 prüfen. Ein fachlicher Konflikt erzeugt keinen Abschluss; ein identischer bereits erfolgreicher Abschluss erzeugt beim Retry keine erneute Mitarbeiterprüfung.
 - **UC-014-AK-06** Systemabschlüsse nach FALL-AK-23 bis FALL-AK-26 prüfen: zulässige Status, Behebung des gesamten Anliegens, gültige und vollständig belegte Fachregel, verbleibender Hilfebedarf, widersprechende beziehungsweise neue Nachrichten und wiederholte Ausführung. Die Klassifikation als möglicher Abschlussgrund allein ist keine Veröffentlichungsfreigabe für einen Antworttext.
-- **UC-014-AK-07** Antwortvorlagen, Veröffentlichungsschutz, Fehler zwischen Antwort und Abschluss sowie Wiederholungen gemäss KOM-AK-18 bis KOM-AK-21 prüfen. Eine gespeicherte Antwort allein beendet weder den Fall noch offenen Antwortbedarf; die Abschlussmail setzt den erfolgreichen fachlichen Abschluss voraus.
+- **UC-014-AK-07** Individuelle Nachricht, Worker-Inhaltsprüfung, technische Retries und Wiederholungsschutz gemäss KOM-AK-18 bis KOM-AK-21 prüfen. Nachricht samt Versandauftrag vor Systemabschluss; Mitarbeiterabschluss ohne Nachricht; niemals zusätzliche Abschlussmail.

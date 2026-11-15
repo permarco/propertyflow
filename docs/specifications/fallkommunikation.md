@@ -53,6 +53,49 @@ Beispiele: «Der Techniker ist informiert und wird Sie für einen Termin kontakt
 
 Eine reine Informationsnachricht hebt keinen bereits offenen Antwortbedarf auf. Der Eingang irgendeiner Mieternachricht erledigt eine Rückfrage nicht automatisch; die inhaltliche Klärung und Prozessfortsetzung folgen FALL-05 und KOM-03. **Bedienung in UI3 bestätigt:** Toggle «Mieterantwort erforderlich» im selben Stil neben dem Toggle «Intern», beim Öffnen standardmässig ausgeschaltet und nur für externe Nachrichten verfügbar. Interne Memos dürfen keinen Mieterantwortbedarf setzen; dies wird serverseitig geprüft.
 
+### Mitarbeiternachricht als Nebenaktion während offener Prüfung
+
+**Bestätigt am 15.11.2026:** Während «Mitarbeiterprüfung erforderlich» kann der
+Mitarbeiter über das bestehende UI eine externe Nachricht senden. Dies ist eine
+Nebenaktion: dieselbe User Task «Fall prüfen und Vorgehen entscheiden» bleibt
+offen, ihr Schlüssel und der Status bleiben erhalten. Senden erledigt weder
+Prüfgründe noch eine Mitarbeiterentscheidung und erzeugt keine neue Aufgabe.
+
+Mit «Mieterantwort erforderlich» wird zusätzlich Antwortbedarf an der Nachricht
+geführt, ohne auf «Wartet auf Mieterantwort» umzuschalten. Ohne diese Auswahl
+entsteht kein neuer Antwortbedarf; bestehender Antwortbedarf bleibt erhalten.
+Eine spätere Mieterantwort wird zentral empfangen und ausgewertet und ergänzt
+dieselbe Prüfung. Erst eine bewusste Mitarbeiterentscheidung gibt die weitere
+Bearbeitung, Wiedervorlage oder den Abschluss frei.
+
+Im Mitarbeiter-BPMN bildet ein nicht unterbrechender Ereignis-Teilprozess
+`SMessageSide` diese Nebenaktion ab. Sein internes Sendeereignis gehört zu einem
+berechtigten Mitarbeiterauftrag, nicht zum öffentlichen Mieternachrichteneingang.
+Weil der Empfang im Mitarbeiterprozess liegt, muss der Dienst ausdrücklich auf
+die aktuelle offene Prüfaufgabe begrenzen: Mitarbeiterberechtigung, Fall,
+führende Bearbeitung, Kindinstanz und User-Task-Zuordnung sowie den aktuellen
+Fallstand vor Veröffentlichung prüfen. Kein blosser Client-Prozessschlüssel als
+Autorisierung. Text, Absender und Antwortbedarf stammen aus dem bestätigten
+Sendeauftrag; das Modell entscheidet diese Angaben nicht selbst.
+
+Der Worker speichert die externe Nachricht, gegebenenfalls Antwortbedarf und
+zuverlässigen Versandauftrag mit Wiederholungsschutz. Pro Ereignis bleibt die
+Auftragsreferenz lokal; keine überschreibbare globale letzte Nachricht und keine
+Änderung der Entscheidungs-/Rückgabevariablen des Mitarbeiter-Hauptpfads. Die
+Nebenaktion enthält keine zusätzliche LLM-Erzeugung; die vorhandene freiwillige
+Formulierungshilfe im UI bleibt unverändert. Interne Memos folgen ihrem eigenen Weg.
+
+Gleichzeitige Mitarbeiterentscheidung und Veröffentlichung werden gegen denselben
+aktuellen Stand geprüft. Bereits gespeicherte Nachricht bleibt erhalten. Ist die
+zugehörige Prüfaufgabe vor Veröffentlichung beendet oder der Fall abgeschlossen,
+wird dieser alte Nebenauftrag nicht nachträglich veröffentlicht und reaktiviert
+keine Aufgabe. Ablehnung wird als solche nachvollziehbar, nicht als Sendeerfolg.
+Eine erfolgreiche Wiederholung liefert nur den bestehenden Nachweis. Technische
+Fehler folgen Job-Retries/Incidents; neue fachliche Wirkung erfordert weiterhin
+eine gültige Aufgabe. Ein normales Ende des Nebenpfads beendet nur diesen Auftrag.
+Die technische Korrelation, Rückmeldung ans UI und Synchronisation sind noch zu
+implementieren; keine neue öffentliche Route oder geänderte HTTP-Semantik festgelegt.
+
 ## KOM-02: LLM-Kommunikation ohne interne Memos
 
 **Präzisiert und bestätigt am 10.10.2026:** Interne Memos werden niemals automatisch als Kontext für die Generierung von Kommunikationsnachrichten durch ein LLM verwendet. Ein Mitarbeiter darf bewusst eine kurze Sachanweisung für die externe Nachricht eingeben, auch wenn dieselbe Information bereits in einem internen Memo steht. Er entscheidet, welche Sachinformationen er zur Formulierung übergibt, und prüft den erzeugten Text vor dem Senden. Die Kontextgrenze gilt für Antworten, Rückfragen und Kommunikationsentwürfe, einschliesslich später manuell freigegebener Entwürfe.
@@ -163,7 +206,7 @@ Der Prozess verwendet denselben Rückweg zur aktuellen zentralen Auswertung wie 
 
 **Reihenfolge der Speicherung:** Wird die Mieternachricht zuerst wirksam gespeichert, ist die alte Veröffentlichung zu unterdrücken. Wird die Veröffentlichung zuerst erfolgreich gespeichert, bleibt sie samt ihrer Benachrichtigungspflicht bestehen; die danach gespeicherte Mieternachricht wird gegen den dann aktuellen Verlauf und bei einer Rückfrage gegen deren Antwortbedarf ausgewertet. Kein rückwirkendes Löschen, kein Zurücknehmen der Veröffentlichung und keine doppelte Nachricht bei Wiederholung. Bei einer bereits veröffentlichten automatischen Antwort bleibt die erneute Abschlussprüfung aus KOM-06 erforderlich.
 
-Im BPMN führen unterbrechende Fehler-Randereignisse an «Katalogrückfrage veröffentlichen» und «Antwortvorlage prüfen und veröffentlichen» zum gemeinsamen Schritt «Aktuelle Auswertung übernehmen / abwarten» zurück. `PUBLICATION_BASIS_STALE` ist ein fachlicher Platzhalter für die vor Speicherung unterdrückte Veröffentlichung. Ein technischer Speicherfehler oder die Wiederholung einer bereits erfolgreichen Veröffentlichung löst diesen fachlichen Rückweg nicht allein aus. Ein neuer Mieterkontakt löst ihn nicht direkt aus; der Dienst muss den Konflikt feststellen. Technische Transaktions- und Versionsverträge bleiben vor der ausführbaren Umsetzung festzulegen.
+Im BPMN führen unterbrechende Fehler-Randereignisse an «Katalogrückfrage veröffentlichen» und «LLM-Nachricht erstellen und versenden» zum gemeinsamen Schritt «Aktuelle Auswertung übernehmen / abwarten» zurück. `PUBLICATION_BASIS_STALE` ist ein fachlicher Platzhalter für die vor Speicherung unterdrückte Veröffentlichung. Ein technischer Speicherfehler oder die Wiederholung einer bereits erfolgreichen Veröffentlichung löst diesen fachlichen Rückweg nicht allein aus. Ein neuer Mieterkontakt löst ihn nicht direkt aus; der Dienst muss den Konflikt feststellen. Technische Transaktions- und Versionsverträge bleiben vor der ausführbaren Umsetzung festzulegen.
 
 ### Längengrenze für Mieternachrichten
 
@@ -186,12 +229,12 @@ Bei einer laufenden Wiedervorlage hat die sofortige Vorlage nach FALL-11 Vorrang
 | Priorität | Ergebnis am aktuellen Fallstand | Fortsetzung |
 |---|---|---|
 | 1 | Verpflichtender menschlicher Prüfbedarf oder festgestellter Analysefehler | Mitarbeiterprüfung. Eine bereits laufende Prüfung bleibt dieselbe Aufgabe. Ein positiver Abschlussvorschlag übergeht keinen Prüfbedarf. |
-| 2 | Vollständig belegter, zulässiger Systemabschluss einschliesslich passender Textfreigabe | Freigegebene Antwort nach KOM-06 veröffentlichen, danach den Abschluss nochmals prüfen. Die Auswertung selbst schliesst den Fall nicht ab. |
+| 2 | Vollständig belegter, zulässiger Systemabschluss mit anschliessender individueller LLM-Nachricht | Freigegebene Antwort nach KOM-06 veröffentlichen, danach den Abschluss nochmals prüfen. Die Auswertung selbst schliesst den Fall nicht ab. |
 | 3 | Alle zuvor offenen Fragen beantwortet, aber kein zulässiger Systemabschluss | Mitarbeiterprüfung gemäss FALL-05. Keine neue Frage stellen, um diesen Übergang zu umgehen. |
 | 4 | Fragen bleiben offen und eine weitere notwendige Katalogfrage ist nach KOM-05 zulässig | Nur die neue notwendige Frage veröffentlichen. Bereits offene, beantwortete oder bewusst aufgehobene Fragen nicht wiederholen. Danach weiter auf Antworten warten. |
 | 5 | Fragen bleiben offen und keine weitere Frage ist erforderlich | Weiter auf Antworten warten, ohne neue Nachricht, zusätzlichen Antwortbedarf oder Benachrichtigungsauftrag. Eine Teilantwort allein erzeugt keinen Prüfbedarf. |
 
-Unklare fachliche Einordnung, fehlende geeignete Textfreigabe und notwendige Fragen ausserhalb des Katalogs folgen weiterhin den Prüfregeln aus FALL-07/KOM-05/KOM-06; sie werden nicht stillschweigend als «keine weitere Frage erforderlich» behandelt. Ist bei eindeutig erledigtem Gesamtanliegen ein Systemabschluss zulässig, dürfen gegenstandslose Rückfragen gemäss FALL-07 bis zum erfolgreichen Abschluss offen bleiben; sie werden nicht als beantwortet erfunden. Eine reine Informationsnachricht ohne zuvor offene Rückfragen löst den Übergang wegen vollständiger Beantwortung nicht aus.
+Unklare fachliche Einordnung, inhaltlich unzulässige Abschlussnachricht und notwendige Fragen ausserhalb des Katalogs folgen weiterhin den Prüfregeln aus FALL-07/KOM-05/KOM-06; sie werden nicht stillschweigend als «keine weitere Frage erforderlich» behandelt. Ist bei eindeutig erledigtem Gesamtanliegen ein Systemabschluss zulässig, dürfen gegenstandslose Rückfragen gemäss FALL-07 bis zum erfolgreichen Abschluss offen bleiben; sie werden nicht als beantwortet erfunden. Eine reine Informationsnachricht ohne zuvor offene Rückfragen löst den Übergang wegen vollständiger Beantwortung nicht aus.
 
 Die Reihenfolge setzt eine aktuelle, zum Fall und zur Bearbeitung passende Auswertung voraus. Ein überholtes oder bereits verarbeitetes Ergebnis ist kein fachlicher Ausgang zur Mitarbeiterprüfung. Wird während der Antwortprüfung eine weitere relevante Nachricht gespeichert, wird die aktuelle zentrale Auswertung übernommen beziehungsweise abgewartet und danach erneut geprüft. Fehlt sie, wird ihre Erstellung über dieselbe zentrale Verarbeitung veranlasst. Keine zweite unabhängige Analyse und keine weitere Nachrichtenkorrelation. «Weiter warten» verwendet einen bereits entschiedenen Ergebnisstand nicht nochmals als neue Antwort; eine schon verfügbare neuere Auswertung darf aber nicht verloren gehen. Verbrauch und Ergebnisstand müssen deshalb nachvollziehbar gebunden sein.
 
@@ -284,58 +327,67 @@ Der interne Entscheidungsnachweis hält Fall- und Verarbeitungsbezug, geprüften
 
 ## KOM-06: Automatische Antworten vor Fallabschluss
 
-**Bestätigt am 15.11.2026:** Für den Prozesszweig «Automatische Antwort → Fallabschluss» sind die folgenden beiden Antwortarten und Veröffentlichungsbedingungen vereinbart. Sie ergänzen die [Systemabschlussregeln aus FALL-07](fallverwaltung.md#regeln-für-den-automatischen-fallabschluss). Ein belegter Abschlussgrund allein erlaubt keine beliebige automatisch formulierte Antwort. Die Regeln sind fachlich bestätigt; Backend-Umsetzung und ausführbare Prozessverträge stehen aus. Automatische Rückfragen folgen weiterhin KOM-05; bewusst von Mitarbeitenden geprüfte und gesendete Antworten folgen KOM-01/KOM-02.
+**Vereinfacht und bestätigt am 15.11.2026:** Bei fachlich zulässigem Systemabschluss
+formuliert das LLM eine individuelle fallbezogene Nachricht. Feste Antwortvorlagen
+und ein gesonderter Schritt zur Vorlagenfreigabe entfallen. Die beiden zulässigen
+Abschlussgründe und menschlichen Entscheidungsgrenzen aus FALL-07/FALL-10 bleiben.
 
-### Antwortvorlagen – Fassung 1 vom 15.11.2026
+### Ablauf und Prüfung im Worker
 
-**AT-001 · Problem laut Mieter behoben**
+1. Zulässigen automatischen Abschluss am aktuellen Fallstand feststellen.
+2. Individuelle LLM-Nachricht erzeugen und im selben Worker prüfen. Keine unbelegten
+   Aussagen oder internen Inhalte; Kontextgrenzen aus KOM-02 gelten weiter.
+   Die Nachricht darf den Abschluss mitteilen. Kein zusätzlicher Prüf- oder
+   Freigabedialog beim Mitarbeiter und kein Prozessentwurf im UI-Antwortfeld.
+3. Nachricht mit Systemherkunft extern im Fallverlauf speichern und ihren
+   E-Mail-Versand zuverlässig beauftragen. Dies gilt als «verschickt» für den
+   Prozess; weder SMTP-Annahme noch Postfachzustellung abwarten. Kein neuer Antwortbedarf.
+4. Aktuellen Fallstand nochmals prüfen und «Abgeschlossen» speichern.
+   Danach keine zusätzliche Abschlussmail oder generische Statusmail für diesen Übergang.
 
-> Vielen Dank für Ihre Rückmeldung. Sie haben bestätigt, dass das gemeldete Problem behoben ist. Aus Ihrer Rückmeldung ergibt sich kein weiterer Unterstützungsbedarf.
+Die LLM-Erzeugung läuft hinter dem Modell-Port. Hohe Modellkonfidenz oder gültiges
+Schema ersetzen keine Inhaltsprüfung durch den Dienst. Kein zweites LLM ist
+vorgeschrieben. Der Dienst prüft zudem Fall-/Prozessbezug, zulässigen Status,
+Abschlussgrund, aktuelle Nachrichten und den Vorrang menschlicher Entscheidungen.
+Mitarbeiterprüfung, Mitarbeiterbearbeitung und Wiedervorlage werden nicht übergangen.
+Bei fehlender gültiger Fachregel ist kein automatischer Abschluss wegen fehlenden
+Verwaltungsbedarfs zulässig; ein eigener freigegebener Erklärungstext ist nicht nötig.
 
-Die Vorlage darf nur verwendet werden, wenn eine gespeicherte Mieterrückmeldung die bereits eingetretene Behebung des gesamten offenen Anliegens ohne weiteren Hilfebedarf eindeutig belegt und keine aktuellen Widersprüche vorliegen. Vorläufige Besserung, angekündigte Reparatur oder verbleibende Folgeschäden genügen nicht. Die Antwort benennt den Mieter als Informationsquelle; sie behauptet weder eine eigene Kontrolle noch eine Reparatur durch die Verwaltung. Die vollständigen Voraussetzungen aus FALL-07 gelten zusätzlich.
+### Fehler, Aktualität und Wiederholungen
 
-**AT-002 · Kein Bearbeitungsbedarf der Verwaltung**
+Technische LLM-, Speicher- oder Bereitstellungsfehler werden als fehlgeschlagene
+Camunda-Jobs mit konfigurierten Retries behandelt; ausgeschöpfte Versuche führen
+zum Incident. Kein zusätzlicher fachlicher Fehlerpfad allein wegen technischer Fehler.
+Eine inhaltlich unzulässige generierte Nachricht wird nicht veröffentlicht und
+führt ohne automatischen Abschluss zur Mitarbeiterprüfung. Eine bestehende
+Prüfung wird ergänzt, nicht dupliziert.
 
-> Für das von Ihnen beschriebene Anliegen gilt: [freigegebene Erklärung zur konkreten Fachregel]. Deshalb ist hierfür keine weitere Bearbeitung durch die Verwaltung vorgesehen.
+Veraltete Grundlagen vor Veröffentlichung führen über `PUBLICATION_BASIS_STALE`
+zur aktuellen Auswertung und erneuten Prüfung. Trifft nach Veröffentlichung vor
+Abschluss eine neue relevante Nachricht ein, gilt der Rückweg
+`AUTO_CLOSURE_STALE`. Bereits gespeicherte Nachricht und Versandauftrag bleiben
+erhalten und werden nicht erneut erzeugt. Jeder Abschlussversuch prüft Aktualität
+und Mitarbeiterentscheidungen erneut. Bereits erfolgreicher identischer Abschluss
+bleibt Erfolg. Offener Antwortbedarf endet erst mit erfolgreichem Abschluss.
+Nach Abschluss oder aus einer früheren Bearbeitung keine späte neue Wirkung.
 
-AT-002 ist ein freigegebenes **Textmuster**, noch keine unmittelbar verwendbare Antwort. Jede konkrete, ausdrücklich für automatischen Abschluss freigegebene Fachregel benötigt einen zugehörigen freigegebenen Erklärungstext. Regelkennung, Regelversion, Geltungsbereich und zugehörige Textfassung müssen eindeutig zusammenpassen. Der Dienst setzt ausschliesslich diese hinterlegte Erklärung ein; das LLM darf sie weder selbst formulieren noch ergänzen. Ein unvervollständigter Platzhalter wird niemals veröffentlicht.
+Versand im Hintergrund folgt BEN-03/BEN-04. Ein verzögerter Mailversand nimmt
+einen gespeicherten Abschluss nicht zurück. Die zuverlässige Beauftragung und
+Wiederholungsschutz müssen vor Ausführung technisch umgesetzt werden.
 
-Die Regel muss das ganze offene Anliegen abdecken; alle erforderlichen Angaben und Ausschlussbedingungen müssen nach FALL-07 geklärt sein. Bei Ausnahmen, Widersprüchen, begründeten Einwänden oder weiteren offenen Teilproblemen ist AT-002 nicht zulässig. Die Antwort erklärt den fehlenden Verwaltungsbedarf und behauptet keine ausgeführte Reparatur. Solange eine passende freigegebene Fachregel oder ihr Erklärungstext fehlt, bleibt diese Antwortart gesperrt. Diese Spezifikation gibt selbst keinen konkreten Zuständigkeitskatalog frei; eine ähnliche Antwort aus der Wissenssuche genügt nicht.
+### Mitarbeiterabschluss und Nachvollziehbarkeit
 
-### Voraussetzungen für die Veröffentlichung
+Mitarbeiter dürfen ohne Nachricht abschliessen. Bei Bedarf senden sie vorher
+über das bestehende UI eine Nachricht, optional mit der bestehenden KI-
+Formulierungshilfe. Kein zusätzliches Kommentarfeld und keine automatische
+Nachricht oder Abschlussmail beim Mitarbeiterabschluss. Interner Abschlussnachweis,
+Nachrichtensperre und Beendigung offener Wiedervorlagen bleiben bestehen.
 
-Alle Bedingungen müssen unmittelbar vor dem Speichern der externen Nachricht erfüllt sein:
-
-1. **Zulässiger Status und Prozessfreigabe:** Der gespeicherte Status ist «In Abklärung» oder «Wartet auf Mieterantwort», und der führende Fallprozess gibt den automatischen Abschlussweg frei. In Mitarbeiterprüfung, Mitarbeiterbearbeitung, Wiedervorlage und externer Wartephase erfolgt keine automatische Abschlussantwort. Der Ursprung eines Mitarbeiterprüfbedarfs erlaubt keine Ausnahme.
-2. **Belegter Grund ohne offene Prüfgründe:** Sämtliche gemeinsamen und grundbezogenen Voraussetzungen aus FALL-07 sind erfüllt. Offene menschliche Entscheidungen, offene Objektzuordnung, fehlgeschlagene Analyse oder klärungsbedürftiger Versand sperren die Veröffentlichung. Eine bereits berücksichtigte Mitarbeiterentscheidung gibt keine pauschalen Folgehandlungen frei.
-3. **Aktuelle Grundlage:** Alle relevanten gespeicherten Mieternachrichten sind berücksichtigt. Eine neue noch nicht ausgewertete Nachricht, eine Mitarbeiterentscheidung oder eine geänderte Regelgrundlage darf nicht übergangen werden. Prüfung und Speicherung werden gegen konkurrierende Änderungen gemeinsam abgesichert.
-4. **Freigegebener Text:** Antwortart und Fassung sind bekannt und passen zum belegten Grund. AT-001 wird unverändert übernommen; AT-002 verwendet ausschliesslich die zur konkreten Regelversion freigegebene Erklärung im vorgegebenen Muster. Keine freien LLM-Ergänzungen und kein automatischer Ersatz durch eine andere Antwortart bei fehlender Textfreigabe.
-5. **Zulässiger Inhalt und Kontext:** Keine internen Memos, internen Änderungsbegründungen oder daraus abgeleiteten Inhalte gemäss KOM-02. Keine Kostenentscheidungen, erfundenen Massnahmen, Beauftragungen, Technikertermine oder individuellen Handlungsanweisungen. Auch ein Fachregeltext eröffnet keine Ausnahme von diesen Grenzen. Die Antwort darf keinen bereits erfolgten Fallabschluss behaupten oder einen zukünftigen Abschluss zusagen.
-6. **Einmalige Veröffentlichung:** Ein wiederholter oder parallel bearbeiteter Auftrag erzeugt höchstens eine Nachricht und einen logischen Benachrichtigungsauftrag für diese Veröffentlichung. Identische Wiederholungen werden als solche erkannt; sie liefern keine neue Abschlussfreigabe.
-
-Das LLM empfiehlt Antwortart und Belege, bei AT-002 zusätzlich die Fachregelreferenz. Der Dienst prüft die Ausführungsbedingungen und verwendet die hinterlegte Textfassung. Hohe Modellkonfidenz, formal gültige Ausgabe und feste Textbausteine beweisen keine semantisch korrekte Zuordnung. Die Einordnung ist vor automatischer Wirksamkeit mit positiven, negativen und mehrdeutigen Fällen zu evaluieren; dafür ist kein zweites LLM vorgeschrieben.
-
-Die veröffentlichte Nachricht besitzt Systemherkunft und externe, fallbezogene Sichtbarkeit. Sie verlangt keine neue Mieterantwort und hebt bestehende offene Rückfragen nicht vorzeitig auf. Deren Antwortbedarf endet erst beim erfolgreichen Abschluss, soweit er nicht bereits nach seinen eigenen Regeln beendet wurde. Erst die Veröffentlichung persistiert den Text; keine zusätzliche externe Entwurfsspeicherung. Die Benachrichtigung folgt BEN-01, ohne auf SMTP-Zustellung zu warten.
-
-Fehlende oder ungeeignete Textfreigabe führt zur Mitarbeiterprüfung; während einer bestehenden Prüfung wird dieselbe Aufgabe ergänzt. Doppelte oder überholte Ergebnisse sowie eine inzwischen andere Bearbeitung sind für sich kein neuer Prüfgrund: nichts neu veröffentlichen, den aktuellen Fallstand berücksichtigen und keine Mitarbeiterentscheidung verdrängen. Die genaue technische Fortsetzung bleibt vor Ausführung festzulegen.
-
-### Veröffentlichung, Abschluss und Fehler dazwischen
-
-Die Reihenfolge ist verbindlich:
-
-1. Die fachliche Antwort am aktuellen Fallstand prüfen und veröffentlichen.
-2. Die Abschlussbedingungen nochmals am dann aktuellen Fallstand prüfen und den fachlichen Abschluss speichern. Die Veröffentlichung allein setzt den Status nicht auf «Abgeschlossen» und ersetzt keine Abschlussprüfung.
-3. Erst nach erfolgreicher Abschlussspeicherung den Abschluss gemäss [BEN-05](benachrichtigungen-und-zustellung.md#ben-05-fallabschluss-und-sicherheit) bestätigen. Vorher darf kein Text behaupten «Ihr Fall ist abgeschlossen».
-
-Scheitert die Veröffentlichung, wird dieser automatische Weg nicht als erfolgreich beendet und nicht ohne seine Antwort zum Abschluss fortgesetzt. Ist die Antwort bereits gespeichert, aber die anschliessende Abschlussspeicherung scheitert oder ihre Grundlage inzwischen überholt, bleibt die Nachricht unverändert im Verlauf; sie wird weder zurückgenommen noch beim Retry nochmals veröffentlicht. Der Fall bleibt ohne erfolgreichen Abschluss aktiv, und noch offener Antwortbedarf bleibt bestehen. Es entstehen kein erfolgreicher Abschlussnachweis und kein Abschlussmailauftrag. Vor jedem neuen Abschlussversuch gelten erneut die aktuellen Voraussetzungen; eine alte Veröffentlichung ist keine dauerhafte Freigabe.
-
-Ein technischer Speicherfehler allein ist kein fachlicher Grund für eine neue Mitarbeiterprüfung. Eine inzwischen erforderliche Mitarbeiterentscheidung behält dagegen Vorrang. Ein bereits erfolgreich gespeicherter identischer Abschluss wird bei Wiederholung als Erfolg erkannt und erzeugt keine zweite Abschlussmail. Nach Abschluss oder für Ergebnisse aus einer Bearbeitung vor dem letzten Abschluss gilt weiterhin KOM-04, auch nach Wiedereröffnung.
-
-Die Textvorlagen müssen auch dann sachlich zutreffen, wenn kein Abschluss folgt. Deshalb beschreiben sie die zum Veröffentlichungszeitpunkt geprüfte fachliche Grundlage und behaupten keinen zukünftigen Prozessausgang. Eine spätere neue Information bleibt im Verlauf nachvollziehbar; sie führt nicht zum rückwirkenden Umschreiben einer Nachricht. Veröffentlichung und erfolgreicher Abschluss bleiben getrennte Benachrichtigungsauslöser nach BEN-01/BEN-05; eine Zusammenlegung ihrer E-Mails ist damit nicht vereinbart.
-
-### Nachvollziehbarkeit
-
-Der Entscheidungsnachweis hält Fall- und Prozessbezug, geprüften Fallstand, Abschlussgrund, Belegreferenzen, Antwortart und Textfassung sowie bei AT-002 Regelkennung, Regelversion und zugehörige Erklärung fest. Bei erfolgreicher Veröffentlichung besteht ein Bezug zur gespeicherten Nachricht. Wiederholung, unterdrückte Veröffentlichung, Prüfbedarf und fehlgeschlagener Abschluss bleiben unterscheidbar. Die bestehenden Kontext- und Protokollgrenzen gelten weiter; weder vollständige Prompts noch interne Memos werden dafür pauschal protokolliert. Konkrete technische Vertragsfelder und Synchronisierung werden bei der Umsetzung festgelegt.
+Fall, Bearbeitung, geprüfte Grundlage, Abschlussgrund und Belege sowie gespeicherte
+Nachricht und stabiler Veröffentlichungsauftrag bleiben nachvollziehbar. Keine
+Vorlagenkennung oder vorgeschriebene Textfassung; bei regelgestütztem Abschluss
+weiterhin Regelkennung/-version. Keine vollständigen Prompts oder internen Memos
+pauschal protokollieren. Dies ist Spezifikation, keine Backend-Implementierung.
 
 ## Verantwortlichkeiten und Umsetzung
 
@@ -428,21 +480,36 @@ Eine Teilantwort erledigt nur die beantwortete Frage; andere bleiben offen, ohne
 
 In jedem der sechs aktiven Bearbeitungsstatus eine neue Mieternachricht mit gültigem Zugriff, laufendem Prozess und erreichbarem Camunda übermitteln, jeweils auch ohne offene Rückfrage. Die Nachricht wird genau einmal gespeichert und an den bestehenden Fallprozess übergeben. Auch während eines Wechsels zwischen Analyse, Mitarbeiteraufgabe und Wartephase darf keine fehlende Empfangsbereitschaft allein wegen der Prozessposition entstehen. Wiederholungen erzeugen weder doppelte fachliche Wirkung derselben Nachricht noch eine zusätzliche Mitarbeiteraufgabe. Bei «Mitarbeiterprüfung erforderlich» ergänzen Nachricht und zulässige Auswertung dieselbe Aufgabe; der Status bleibt auch bei einer Behebungsbestätigung unverändert (FALL-AK-21). Bei Wiedervorlage gilt weiterhin die sofortige Aufhebung und Vorlage nach FALL-11. Fehlender Zugriff, noch nicht gestarteter Prozess, nicht erreichbares Camunda und abgeschlossener Fall behalten ihre bisherigen Fehler- beziehungsweise Sperrregeln.
 
-### KOM-AK-18: Antwortarten und Textbindung
+### KOM-AK-18: Individuelle LLM-Nachricht und Fehler
 
-AT-001 mit eindeutig bestätigter Gesamtbehebung ohne weiteren Hilfebedarf prüfen; veröffentlichter Text entspricht exakt der freigegebenen Vorlage. Vorläufige Besserung, geplante Reparatur, Restschäden und Widersprüche verhindern die automatische Antwort. AT-002 nur mit gültiger, vollständig anwendbarer Fachregel und passendem freigegebenem Erklärungstext veröffentlichen. Fehlende oder unpassende Regel-/Textfassung, unbekannte Antwortart, ungelöster Platzhalter und freie LLM-Zusätze werden nicht veröffentlicht und führen bei fortbestehendem Bedarf zur Mitarbeiterprüfung. Eine ähnliche Wissensquelle ersetzt keine Freigabe. Keine Reparaturbehauptung beim Grund «kein Bearbeitungsbedarf».
+Beide zulässigen Abschlussgründe mit individuellen Nachrichten prüfen. Keine feste
+Textvorlage erforderlich. Unbelegte Aussagen oder interne Inhalte verhindern
+Veröffentlichung und automatischen Abschluss und führen zur Mitarbeiterprüfung.
+Technischer Modellfehler verwendet Job-Retries/Incident statt Inhaltsfehlerpfad.
+Die Nachricht darf den Abschluss mitteilen. Kein automatischer Entwurf im Mitarbeiter-UI.
 
 ### KOM-AK-19: Veröffentlichungsschutz und Kontext
 
-Beide Antwortarten in allen Bearbeitungsstatus sowie mit offenen Prüfgründen prüfen. Nur «In Abklärung» und «Wartet auf Mieterantwort» mit aktueller Prozessfreigabe und sämtlichen FALL-07-Bedingungen erlauben die Veröffentlichung. Neue unberücksichtigte Nachrichten und zwischenzeitliche Mitarbeiterentscheidungen sperren alte Vorschläge. Eine laufende Mitarbeiterprüfung bleibt dieselbe Aufgabe, unabhängig vom Ursprung des Prüfbedarfs. KOM-AK-04/05 gelten auch für die Empfehlung einer Antwortart; interne Inhalte und Ableitungen fehlen im Kommunikationskontext. Veröffentlicht werden nur externe Nachrichten mit Systemherkunft und ohne neuen Antwortbedarf. Kein Text behauptet oder verspricht den noch nicht gespeicherten Abschluss.
+Nur bei zulässigem Systemabschluss und aktueller Grundlage veröffentlichen.
+Mitarbeiterentscheidungen und manuelle Einstufungen schützen, KOM-02 einhalten.
+Neue Nachricht während Generierung verhindert Veröffentlichung des veralteten Textes.
+Nachricht und zuverlässiger Versandauftrag müssen vor Abschluss gespeichert sein;
+ein langsamer Mailserver blockiert den Abschluss nicht.
 
-### KOM-AK-20: Antwort gespeichert, Abschluss ausgeblieben
+### KOM-AK-20: Nachricht gespeichert, Abschluss ausgeblieben
 
-Nach erfolgreicher Veröffentlichung einen technischen Abschlussfehler beziehungsweise eine neue Mieternachricht oder Mitarbeiterentscheidung vor dem Abschluss auslösen. Die gespeicherte Antwort bleibt einmalig im Verlauf; ohne erfolgreichen Abschluss bleibt der Fall aktiv, offener Antwortbedarf endet nicht und es entsteht keine Abschlussmail. Ein neuer Versuch prüft den aktuellen Fallstand erneut und verwendet keine alte pauschale Abschlussfreigabe. Ein Speicherfehler allein erzeugt keine neue Mitarbeiterprüfung. Scheitert bereits die Veröffentlichung, folgt auf diesem Weg kein Abschluss. Erfolgreiche Speicherung von Antwort und Abschluss bestätigt dagegen den Abschluss erst nach dessen Commit; beide Benachrichtigungsauslöser bleiben getrennt.
+Nach Veröffentlichung neue Nachricht oder technische Speicherstörung auslösen.
+Bei neuer Grundlage erneut prüfen; bei technischer Störung Job-Retry. Bereits
+gespeicherte Nachricht und Versandauftrag bleiben einmalig. Ohne Commit kein
+Abschluss. Auch nach erfolgreichem Abschluss kein zusätzlicher Abschlussmailauftrag.
 
-### KOM-AK-21: Wiederholungen und verspätete Ergebnisse
+### KOM-AK-21: Wiederholungen und Mitarbeiterabschluss
 
-Parallele und wiederholte Veröffentlichungsaufträge erzeugen genau eine Nachricht und einen zugehörigen logischen Mailauftrag. Wiederholung nach bereits gespeicherter Antwort veröffentlicht nichts zusätzlich; sie berechtigt nicht zu einem inzwischen unzulässigen Abschluss. Ein bereits erfolgreicher identischer Abschluss bleibt Erfolg und erzeugt keine zweite Abschlussmail. Nach Abschluss und nach späterer Wiedereröffnung bleiben automatische Ergebnisse aus der vorherigen Bearbeitung unwirksam. Doppelte oder überholte Ergebnisse allein erzeugen keine zusätzliche Mitarbeiteraufgabe. Antwort und Entscheidungsnachweis bleiben auf passende Belege, Textfassung und gegebenenfalls Regelversion zurückführbar.
+Parallele Wiederholungen erzeugen eine Nachricht und einen logischen Versandauftrag.
+Erfolgreicher identischer Abschluss bleibt Erfolg; verspätete Ergebnisse nach
+Abschluss/Wiedereröffnung bleiben unwirksam. Mitarbeiterabschluss ohne vorherige
+Nachricht ist möglich und erzeugt weder Nachricht noch Mail, auch keine generische
+Statusmail. Eine freiwillig vorher gesendete Mitarbeiternachricht bleibt unabhängig.
 
 ### KOM-AK-22: Neue Nachricht während automatischer Analyse
 
@@ -478,6 +545,73 @@ Abschluss, Wiedereröffnung mit neuer Bearbeitung und bereits wirksam verarbeite
 Ergebnisse führen zum Ende ohne neue Wirkung. Technische Speicherfehler nutzen
 Retry statt fachlichem Konfliktpfad; erfolgreiche Wiederholungen bleiben idempotent.
 Dies sind Anforderungen an spätere Laufzeittests, keine implementierten Nachweise.
+
+### Veralteter automatischer Abschluss nach veröffentlichter Antwort
+
+**Bestätigt am 15.11.2026:** Zwischen automatischer Antwort und Abschluss prüft
+`Close` die aktuelle Grundlage nochmals. Ist sie weiterhin gültig, wird der Fall
+abgeschlossen; danach entsteht keine zusätzliche Abschlussbenachrichtigung.
+
+Macht eine neue relevante Mieternachricht die noch nicht wirksam gespeicherte
+Systemabschlussgrundlage veraltet, meldet der Dienst ausdrücklich
+`AUTO_CLOSURE_STALE`. Der unterbrechende Rückweg führt über `CurrentAnalysis`
+(aktuelle zentrale Auswertung übernehmen/abwarten) erneut zu `Validate`
+(Ausführungsbedingungen und Abschlussgründe prüfen). Kein direkter Rücksprung
+zum Abschluss und keine automatische Mitarbeiterprüfung allein wegen des Konflikts.
+Alle relevanten Nachrichten und die bereits veröffentlichte Antwort gehen in
+die neue Prüfung ein. Eine zwischenzeitliche Mitarbeiterentscheidung bleibt
+vorrangig; der Rückweg reaktiviert keine alte Aufgabe, setzt keinen Status zurück
+und nimmt keinen gespeicherten Abschluss zurück.
+
+Die veröffentlichte Antwort und ihr logischer Benachrichtigungsauftrag bleiben
+unverändert erhalten. Ihr Veröffentlichungsbezug muss auch über den Rückweg
+und Teilprozessaufrufe erhalten beziehungsweise aus PropertyFlow geladen werden.
+Wird nach erneuter fachlicher Prüfung derselbe Antwortauftrag wieder erreicht,
+erkennt `AutoAnswer` ihn als bereits veröffentlicht und speichert weder dieselbe
+Antwort noch deren Mailauftrag erneut. Das ersetzt weder die aktuelle Inhalts-/
+Ausführungsprüfung noch die erneute Prüfung in `Close`; ein altes Ergebnis ist
+keine dauerhafte Freigabe. Eine sachlich andere Antwort ist kein Retry und
+unterliegt erneut allen Regeln aus KOM-06. Die konkrete Zuordnung der Aufträge
+und Ergebnisvariablen bleibt vor ausführbarer Umsetzung festzulegen.
+
+Ein rein technischer Speicherfehler verwendet technischen Retry statt
+`AUTO_CLOSURE_STALE`: beim erneuten Versuch Aktualität prüfen, Antwort nicht
+nochmals senden. Bereits erfolgreich gespeicherter identischer Abschluss wird
+idempotent als Erfolg behandelt, ohne zweiten Abschluss oder Abschlussmailauftrag.
+`STAFF_CLOSURE_STALE` bleibt ausschliesslich für veraltete Mitarbeiterabschlüsse.
+Ohne erfolgreichen Abschluss bleiben Fall und noch offener Antwortbedarf aktiv;
+der normale Weg zum terminierenden Ende wird nicht genommen.
+
+### KOM-AK-26: Konflikt nach veröffentlichter automatischer Antwort
+
+Antwort erfolgreich speichern, dann vor Abschluss eine neue Nachricht speichern:
+keine Abschlussspeicherung, Rückweg über aktuelle Auswertung und erneute Prüfung.
+Die vorhandene Antwort bleibt genau einmal erhalten. Bei erneut zulässigem
+identischem Antwortauftrag keine zweite Antwort und kein zweiter Antwortmailauftrag;
+aktuelle Abschlussbedingungen trotzdem prüfen. Weitere Nachricht während des
+Rückwegs, inzwischen getroffene Mitarbeiterentscheidung und zwischenzeitlichen
+Abschluss gesondert prüfen: keine Rücknahme oder Wiederaufnahme. Technischen
+Speicherfehler getrennt auslösen: Retry ohne künstliche Mitarbeiterprüfung.
+Erfolgreichen identischen Abschluss wiederholen: ein Abschluss und kein zusätzlicher
+Abschlussmailauftrag. Ein tatsächlich anderer Antwortauftrag benötigt eine neue
+fachliche Freigabe. Dies sind spätere Laufzeitprüfungen, keine implementierten Tests.
+
+### KOM-AK-27: Mitarbeiternachricht während offener Prüfung
+
+Normale Nachricht und Nachricht mit Antwortbedarf jeweils während offener Prüfung
+senden: eine externe Nachricht und ein logischer Versandauftrag, unveränderte
+User-Task-ID und Status «Mitarbeiterprüfung erforderlich». Nur beim gesetzten
+Toggle entsteht neuer Antwortbedarf. Wiederholungen duplizieren nichts; zwei
+verschiedene Aufträge behalten getrennte Inhalte und Kennungen. Mieterantwort
+und KI-Auswertung ergänzen dieselbe Aufgabe, ohne sie zu erledigen.
+
+Fremden Fall, unberechtigten Mitarbeiter, falsche Kind-/Aufgabenzuordnung und
+bereits erledigte Prüfaufgabe ablehnen. Senden gegen Entscheidung/Abschluss in
+beiden Speicherreihenfolgen prüfen: gespeicherte Nachricht bleibt, veralteter
+noch unveröffentlichter Auftrag bleibt ohne Wirkung. Technischer Fehler lässt
+Prüfung offen; Wiederholung prüft erneut. Kein Überschreiben der Hauptpfad-
+Entscheidung durch Nebenpfadvariablen. Diese Kriterien sind spätere
+Integrationstests, keine bereits ausgeführten Laufzeitnachweise.
 
 ## Abgleich mit bestehenden Dokumenten
 

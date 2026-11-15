@@ -113,8 +113,8 @@ Eine neuere bewusste Terminentscheidung darf ein alter Kontakt nicht aufheben.
 
 Bei fachlichem Abschluss endet `ActiveCase` mit seinen aktiven Calls und ihrem
 Nachrichtenempfang. Späte Worker-/LLM-Ergebnisse werden zusätzlich serverseitig
-abgewiesen. Die abschliessende Mail bleibt im Hauptprozess nach dem erfolgreichen
-fachlichen Commit. Interne Übergaben dürfen Abschluss oder Mitarbeiterentscheidungen
+abgewiesen. Die automatische Nachricht samt Versandauftrag entsteht vor dem fachlichen
+Abschluss. Der Abschluss selbst erzeugt keine Mail. Interne Übergaben dürfen Abschluss oder Mitarbeiterentscheidungen
 nicht rückgängig machen.
 
 Die bisherige Beschreibung in ADR-002/SS-003 bindet Aufgaben an den führenden
@@ -139,7 +139,7 @@ werden nicht stillschweigend umgestellt.
 - Mitarbeiter-Task nur im aktuellen, autorisierten Aufrufbaum freigeben;
   fremde, alte oder bereits abgeschlossene Kindinstanzen zurückweisen.
 - Abschluss während laufender Kindarbeit und interner Nachlieferung prüfen;
-  kein Wiederaufleben und genau ein logischer Abschlussmailauftrag.
+  kein Wiederaufleben und keine zusätzliche Abschlussmail.
 
 Diese Laufzeitprüfungen stehen aus. XML-Schema, Modeler-Import und Modellverknüpfungen
 belegen nur die strukturelle Aufteilung. Zeile 4 der fachlichen Fortsetzungstabelle
@@ -174,3 +174,31 @@ späte externe Ergebnisse benötigen weiterhin die serverseitige Abschlussprüfu
 Vor Ausführung zusätzlich prüfen: zwei gleichzeitige Nachrichten behalten ihre
 jeweilige ID, Wiederholungen erzeugen keine zweite Wirkung, Abbruch verhindert
 späte Änderungen und ein Verarbeitungsfehler deaktiviert nicht den Empfang.
+
+## Vereinfachter Abschluss (Stand 0.13)
+
+Die fachlichen Kindprozess-Ergebnisse bleiben unverändert. `CLOSE` auf dem
+Mieterantwortweg führt im Hauptprozess zuerst zur individuellen LLM-Nachricht
+mit Worker-Prüfung und zuverlässigem Versandauftrag. Der bestätigte
+Mitarbeiterabschluss führt direkt zu `Close`, ohne Nachricht. Kein abschliessender
+Mail-Task und keine zweite Abschlussbenachrichtigung. Technische Fehler folgen
+Job-Retries/Incidents; unzulässiger Nachrichteninhalt führt vor Veröffentlichung
+zur Mitarbeiterprüfung. Aktuelle Grundlage und Wiederholungsschutz bleiben Pflicht.
+
+## Mitarbeiternachricht während Prüfung (Stand 0.14)
+
+`Message_StaffReviewSend` startet `SMessageSide` nicht unterbrechend in der
+aktuellen Mitarbeiterinstanz. Nur autorisierte Aufträge zur aktuellen offenen
+`SReview`-Aufgabe sind zulässig. Die tatsächliche Engine-Korrelation und
+Rückmeldung an den sendenden HTTP-Aufruf sind noch festzulegen; dies ändert
+keinen öffentlichen HTTP-Vertrag. Keine zusätzliche externe Mieter-Subscription.
+
+Die Auftragsreferenz bleibt pro Nebenaktion lokal. Der Worker lädt den bestätigten
+Text und Antwortbedarf über den zuständigen Dienst, prüft erneut den aktuellen
+Aufgabenstand und speichert Nachricht/Versandauftrag idempotent. Er schreibt keine
+Hauptpfadvariablen `outcome` oder `decisionRef` und beendet keine User Task.
+Parallele Sendungen überschreiben einander nicht. Beendete Prüfaufgabe oder
+Abschluss verhindert neue Veröffentlichung aus einem alten Auftrag; schon
+veröffentlichte Nachricht bleibt bestehen. Laufende Nebenaktionen müssen bei
+Fortsetzung ohne alte fachliche Wirkung aufgelöst werden; ein Incident kann die
+technische Kindinstanzbeendigung verzögern. Fachliche Regeln: KOM-01, Tests: KOM-AK-27.

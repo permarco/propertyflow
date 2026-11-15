@@ -243,7 +243,7 @@ Nach Beantwortung aller zuvor offenen Rückfragen zeigt die Ansicht den gespeich
 
 Sobald PropertyFlow den fachlichen Abschluss nach [FALL-07](../specifications/fallverwaltung.md#fall-07-abschluss-und-zeit-danach) bestätigt, zeigt die Ansicht **«Abgeschlossen»**.
 
-Der Abschluss kann durch einen Mitarbeiter oder durch das System erfolgen. Vereinbarte Systemgründe sind eine eindeutige Bestätigung des Mieters «Problem behoben, keine weitere Hilfe nötig» oder eindeutig fehlender Bearbeitungsbedarf der Verwaltung gemäss hinterlegter Fachregel, etwa ein dem Mieter zugeordneter Glühbirnenwechsel. In beiden Fällen gelten dieselbe Leseansicht, Nachrichtensperre und Abschlussmail. Der Mieter teilt die Behebung über eine Nachricht mit; die eigentliche Statusänderung übernimmt PropertyFlow nach FALL-07.
+Der Abschluss kann durch einen Mitarbeiter oder durch das System erfolgen. Vereinbarte Systemgründe sind eine eindeutige Bestätigung des Mieters «Problem behoben, keine weitere Hilfe nötig» oder eindeutig fehlender Bearbeitungsbedarf der Verwaltung gemäss hinterlegter Fachregel, etwa ein dem Mieter zugeordneter Glühbirnenwechsel. In beiden Fällen gelten dieselbe Leseansicht und Nachrichtensperre, aber keine Abschlussmail. Der Mieter teilt die Behebung über eine Nachricht mit; die eigentliche Statusänderung übernimmt PropertyFlow nach FALL-07.
 
 - Betreff, Case-ID, ursprüngliche Angaben, wirksame Dringlichkeit mit Quelle und der vollständige mieteröffentliche Verlauf einschliesslich Dringlichkeitsereignissen bleiben einsehbar.
 - Objekt/Wohnung und maskierte E-Mail-Adresse bleiben direkt im Kopf sichtbar; die ursprüngliche Beschreibung bleibt als erste Mieternachricht im Verlauf lesbar. Es gibt keine separate Ursprungsansicht.
@@ -273,9 +273,9 @@ Nach erfolgreicher Tokenprüfung wird die Fallansicht direkt unter derselben URL
 
 ### 6.1 E-Mail-Benachrichtigungen
 
-Gemäss [Benachrichtigungen und Zustellung](../specifications/benachrichtigungen-und-zustellung.md) erhält der Mieter eine E-Mail bei Fallannahme, jeder eigenen gespeicherten Nachricht, veröffentlichten externen KI-/Mitarbeiternachrichten, sichtbaren fachlichen Status- und wirksamen Dringlichkeitsänderungen sowie Fallabschluss. Interne Memos, Entwürfe, unveränderte Bewertungen und technische Verarbeitungsschritte lösen keine E-Mail aus.
+Gemäss [Benachrichtigungen und Zustellung](../specifications/benachrichtigungen-und-zustellung.md) erhält der Mieter eine E-Mail bei Fallannahme, jeder eigenen gespeicherten Nachricht, veröffentlichten externen KI-/Mitarbeiternachrichten, sichtbaren fachlichen Statusänderungen ausser Abschluss sowie wirksamen Dringlichkeitsänderungen. Interne Memos, Entwürfe, unveränderte Bewertungen und technische Verarbeitungsschritte lösen keine E-Mail aus.
 
-Die E-Mail enthält eine kurze Änderungsinformation, Case-ID und denselben gültigen persönlichen Link; vollständige Nachrichten bleiben in dieser Fallansicht. Auch eine bereits geöffnete Ansicht ersetzt die E-Mail nicht. Mailfehler nehmen eine bestätigte Speicherung nicht zurück. Die Abschlussmail erzeugt keinen neuen Nachrichteneintrag nach Schliessung.
+Die E-Mail enthält eine kurze Änderungsinformation, Case-ID und denselben gültigen persönlichen Link; vollständige Nachrichten bleiben in dieser Fallansicht. Auch eine bereits geöffnete Ansicht ersetzt die E-Mail nicht. Mailfehler nehmen eine bestätigte Speicherung nicht zurück. Der Abschluss selbst erzeugt keine Mail; beim Systemabschluss wurde die individuelle Nachricht samt Versandauftrag bereits vorher gespeichert.
 
 ### 6.2 Zentrale Regeln und Umsetzung im Screen
 

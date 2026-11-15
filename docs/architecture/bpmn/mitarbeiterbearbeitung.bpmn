@@ -1,6 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_PropertyFlow_Staff_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
-  <bpmn:process id="PropertyFlow_Staff_Draft" name="Mitarbeiterprüfung&#10;und weitere Bearbeitung · Fachentwurf 0.12" isExecutable="false">
+  <bpmn:message id="Message_StaffReviewSend" name="Mitarbeiternachricht während Prüfung senden" />
+  <bpmn:process id="PropertyFlow_Staff_Draft" name="Mitarbeiterprüfung und weitere Bearbeitung · Fachentwurf 0.14" isExecutable="false">
     <bpmn:documentation>
 Dateiaufteilung 0.9: untergeordneter Prozess, nur durch Call Activity starten. Keine eigene führende Fallzuordnung. Eingaben caseId, leadingProcessInstanceKey und entryContextRef; Rückgaben outcome und decisionRef. Explizite instanzübergreifende Aktualisierung gemäss teilprozess-vertraege.md erforderlich; keine live gemeinsam genutzten Elternvariablen. Nicht ausführbar, kein Backend implementiert.</bpmn:documentation>
     <bpmn:startEvent id="SStart" name="Prüfbedarf">
@@ -18,7 +19,8 @@ FALL-AK-27: Beim Einstieg aus Kontakt- oder Timerweg dieselbe versionsgebundene 
     </bpmn:serviceTask>
     <bpmn:userTask id="SReview" name="Fall prüfen und&#10;Vorgehen entscheiden">
       <bpmn:documentation>UC-012 / FALL-06: dieselbe aktuelle User Task an geprüften Fallstand binden. Nur bewusste Mitarbeiterentscheidungen veranlassen Fortsetzen, Wiedervorlage oder Abschluss. Neue Mieternachrichten und ihre zulässige Neubewertung ergänzen diese Aufgabe, ohne sie zu beenden. Auch eine Behebungsbestätigung oder der Wegfall eines ursprünglich systemseitigen Prüfgrundes erlaubt keinen automatischen Statuswechsel. Internes Memo allein beendet keine Prüfung. Nach Abschlusskonflikt ist dies eine neue Aufgabe zum aktuellen Fallstand. Sie übernimmt keine alte Abschlussentscheidung. Ein bewusster Abschluss auf aktueller Grundlage darf auch bei noch laufender KI-Auswertung bestätigt werden.
-Bei Call-Aufteilung gehört diese User Task zur Mitarbeiter-Kindinstanz. Autorisierung anhand serverseitig verifizierter Zuordnung von userTaskKey, aktueller Kindinstanz, Call-Aufruf, führender Instanz und Fall prüfen. Keine Freigabe allein durch frei übergebenen Prozessschlüssel. ADR-002/SS-003 vor ausführbarer Umsetzung präzisieren.</bpmn:documentation>
+Bei Call-Aufteilung gehört diese User Task zur Mitarbeiter-Kindinstanz. Autorisierung anhand serverseitig verifizierter Zuordnung von userTaskKey, aktueller Kindinstanz, Call-Aufruf, führender Instanz und Fall prüfen. Keine Freigabe allein durch frei übergebenen Prozessschlüssel. ADR-002/SS-003 vor ausführbarer Umsetzung präzisieren.
+SMessageSide veröffentlicht Mitarbeiternachrichten als Nebenaktion. Senden beendet diese User Task nicht, auch nicht bei gesetztem Antwortbedarf. Nur der bewusste Entscheid verwendet S03. KONKURRENZ: alter Sendeauftrag darf nach Aufgabenabschluss nicht neu veröffentlicht werden; KOM-AK-27.</bpmn:documentation>
       <bpmn:incoming>S02</bpmn:incoming>
       <bpmn:outgoing>S03</bpmn:outgoing>
     </bpmn:userTask>
@@ -122,11 +124,28 @@ FALL-11 Zeile 5: Dieselbe Erledigungs- und Prüfzuordnung wie Timerweg WClearTim
     </bpmn:serviceTask>
     <bpmn:sequenceFlow id="S20" sourceRef="SContactDuringFollowUp" targetRef="SStopFollowUp" />
     <bpmn:sequenceFlow id="S21" sourceRef="SStopFollowUp" targetRef="SReviewStatus" />
+    <bpmn:subProcess id="SMessageSide" name="Nachricht senden – Prüfung bleibt offen" triggeredByEvent="true">
+      <bpmn:documentation>KOM-01 / KOM-AK-27: Nicht unterbrechende Nebenaktion für die aktuelle offene SReview-Aufgabe. Der Empfang liegt im Mitarbeiterprozess; der Dienst begrenzt ihn ausdrücklich auf die serverseitig verifizierte offene Prüfaufgabe. Interner autorisierter Sendeauftrag, kein Mieternachrichtenempfang. Lokale Auftragsreferenz pro Ausführung; keine Rückgabe oder Überschreibung von outcome/decisionRef und keine Completion von SReview. Bereits laufende Nebenaufträge müssen beendet oder ohne Wirkung aufgelöst werden, bevor die Kindinstanz normal endet; technische Incidents können deren Ende verzögern. Technische Korrelation und HTTP-Rückmeldung bleiben vor Umsetzung festzulegen.</bpmn:documentation>
+      <bpmn:startEvent id="SMessageStart" name="Sendeauftrag eingegangen" isInterrupting="false">
+        <bpmn:outgoing>SM01</bpmn:outgoing>
+        <bpmn:messageEventDefinition id="SMessageStart_definition" messageRef="Message_StaffReviewSend" />
+      </bpmn:startEvent>
+      <bpmn:serviceTask id="SMessagePublish" name="Prüfaufgabe und Auftrag prüfen&#10;Nachricht + Versandauftrag speichern">
+        <bpmn:documentation>Berechtigten Mitarbeiter, Fall, führende Instanz, Kindinstanz, aktuelle offene Prüfaufgabe und Fallstand prüfen. Externen Text und Toggle nur aus dem ausdrücklich bestätigten Sendeauftrag übernehmen. Optional Antwortbedarf speichern; niemals Statuswechsel oder SReview-Abschluss auslösen. Nachricht und Versandauftrag idempotent speichern, vor erneuter Wirkung konkurrierende Entscheidung/Abschluss berücksichtigen. Bereits veröffentlichter identischer Auftrag bleibt Erfolg ohne Duplikat; alter unveröffentlichter Auftrag nach Aufgabenende wird abgelehnt und als ohne Wirkung beendet, kein Sendeerfolg. Technische Fehler: Job-Retries/Incident. Kein zusätzlicher Modellaufruf, keine internen Memos, keine unbeabsichtigte globale Variablenpropagation. Details KOM-01/KOM-AK-27.</bpmn:documentation>
+        <bpmn:incoming>SM01</bpmn:incoming>
+        <bpmn:outgoing>SM02</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:endEvent id="SMessageEnd" name="Nur Nebenaktion beendet">
+        <bpmn:incoming>SM02</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SM01" sourceRef="SMessageStart" targetRef="SMessagePublish" />
+      <bpmn:sequenceFlow id="SM02" sourceRef="SMessagePublish" targetRef="SMessageEnd" />
+    </bpmn:subProcess>
     <bpmn:textAnnotation id="SQuestionNote">
-      <bpmn:text>Rückfrage während offener Mitarbeiterprüfung:
-Als zulässige Nebenaktion veröffentlichen; die aktuelle Aufgabe
-und vorrangiger Prüfbedarf bleiben bestehen. Kein automatischer
-Wechsel in den Wartestatus. Technische Nebenaktion noch offen.</bpmn:text>
+      <bpmn:text>Nachrichten während offener Mitarbeiterprüfung:
+Senden als nicht unterbrechende Nebenaktion (unten).
+Auch mit Antwortbedarf bleiben Status und dieselbe Aufgabe offen.
+Nur eine bewusste Mitarbeiterentscheidung führt im Hauptpfad weiter.</bpmn:text>
     </bpmn:textAnnotation>
     <bpmn:textAnnotation id="SConcurrencyNote">
       <bpmn:text>Mieterkontakt beendet die betroffene Wiedervorlage vor der KI-Auswertung.
@@ -335,6 +354,32 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
         <di:waypoint x="420" y="470" />
         <di:waypoint x="255" y="470" />
         <di:waypoint x="255" y="225" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="SMessageSide_di" bpmnElement="SMessageSide" bioc:stroke="#4c1d95" bioc:fill="#ede9fe" isExpanded="true">
+        <dc:Bounds x="70" y="940" width="1710" height="230" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SMessageStart_di" bpmnElement="SMessageStart" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
+        <dc:Bounds x="180" y="1020" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="110" y="1068" width="180" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SMessagePublish_di" bpmnElement="SMessagePublish" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
+        <dc:Bounds x="430" y="995" width="320" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SMessageEnd_di" bpmnElement="SMessageEnd" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
+        <dc:Bounds x="1030" y="1020" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="965" y="1068" width="180" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SM01_di" bpmnElement="SM01" bioc:stroke="#4c1d95">
+        <di:waypoint x="216" y="1038" />
+        <di:waypoint x="430" y="1038" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SM02_di" bpmnElement="SM02" bioc:stroke="#4c1d95">
+        <di:waypoint x="750" y="1038" />
+        <di:waypoint x="1030" y="1038" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

@@ -28,7 +28,7 @@ Die [Evaluationsgrundlage](evaluationsgrundlage.md#bewertungsprinzip) beschreibt
 - Die sichtbare Antwort erklärt die Zuständigkeit des Mieters. Sie enthält keine Behauptung, die Lampe sei repariert worden.
 - Die Antwort wird vor dem Abschluss gespeichert und veröffentlicht. Sie bleibt unter derselben Case-ID lesbar.
 - PropertyFlow speichert den Status «Abgeschlossen», die Abschlussquelle «System» und die geprüfte Fachregel als Grundlage. Der Camunda-Fallprozess durchläuft den Abschlusszweig.
-- Der Abschluss erzeugt genau einen logischen Abschlussmailauftrag. Eine Wiederholung erzeugt keine weitere Antwort und keinen zusätzlichen Abschlussnachweis oder Abschlussmailauftrag.
+- Die automatische Nachricht vor Abschluss erzeugt einen logischen Versandauftrag; der Abschluss selbst erzeugt keine zusätzliche Mail. Eine Wiederholung erzeugt keine weitere Antwort und keinen zusätzlichen Abschlussnachweis oder Abschlussmailauftrag.
 
 [FALL-07 · Abschluss](../specifications/fallverwaltung.md#fall-07-abschluss-und-zeit-danach) · [KOM-04 · Nachrichtensperre](../specifications/fallkommunikation.md#kom-04-nachrichtensperre-nach-fallabschluss) · [BEN-05 · Fallabschluss und Sicherheit](../specifications/benachrichtigungen-und-zustellung.md#ben-05-fallabschluss-und-sicherheit)
 

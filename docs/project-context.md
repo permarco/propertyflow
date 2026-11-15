@@ -309,14 +309,14 @@ Die Regeln sind bestätigt, die technische Umsetzung steht aus.
 
 Für automatische Antworten vor Fallabschluss gilt
 [KOM-06](specifications/fallkommunikation.md#kom-06-automatische-antworten-vor-fallabschluss):
-Das LLM empfiehlt Antwortart und Belege; der Dienst veröffentlicht nur die
-freigegebene Vorlage zur belegten Behebung oder den zur passenden Fachregel
-freigegebenen Erklärungstext. Kein freier LLM-Zusatz und keine Abschlussbehauptung
-vor erfolgreicher Abschlussspeicherung. Status, aktuelle Grundlage und Prüfgründe
-werden vor Veröffentlichung und Abschluss geprüft. Eine bereits veröffentlichte
-Antwort bleibt bei gescheitertem Abschluss einmalig im Verlauf; sie erlaubt keinen
-Abschluss auf alter Grundlage. Konkrete Zuständigkeitsregeln samt Erklärungstexten
-und die technische Umsetzung stehen weiterhin aus.
+Nach fachlicher Freigabe erzeugt das LLM eine individuelle Nachricht. Der Worker
+prüft sie, speichert sie extern und beauftragt zuverlässig den E-Mail-Versand.
+Danach aktuellen Fallstand erneut prüfen und abschliessen. Keine festen Vorlagen,
+kein separater Vorlagenprüfschritt, keine zusätzliche Abschlussmail. Technische
+Fehler folgen Job-Retries/Incidents; unzulässiger Inhalt führt zur Mitarbeiterprüfung.
+Bereits gespeicherte Nachrichten werden bei Wiederholung nicht nochmals gesendet.
+Mitarbeiterabschluss ist ohne Nachricht möglich und erzeugt keine automatische
+Mail. Die bestehende Formulierungshilfe im UI bleibt unverändert.
 
 Mieternachrichten sind in jedem aktiven Bearbeitungsstatus zulässig, auch ohne
 offene Rückfrage. Der Fallprozess muss während der aktiven Bearbeitung

@@ -6,7 +6,7 @@
 
 ## Zweck und fachliche Grundlage
 
-Der Mieter erhält eine E-Mail, wenn sich der für ihn sichtbare Fallverlauf ändert. Die E-Mail informiert kurz über die Änderung und führt mit dem persönlichen Link zur Fallansicht. Der vollständige Nachrichtentext bleibt dort. Dies gilt auch für eigene Nachrichten des Mieters und für den Fallabschluss.
+Der Mieter erhält eine E-Mail, wenn sich der für ihn sichtbare Fallverlauf ändert. Die E-Mail informiert kurz über die Änderung und führt mit dem persönlichen Link zur Fallansicht. Der vollständige Nachrichtentext bleibt dort. Dies gilt auch für eigene Nachrichten des Mieters. Der Statuswechsel zu «Abgeschlossen» ist ausdrücklich ausgenommen (BEN-05).
 
 Dieses Dokument definiert Auslöser, Mailinhalt und die erforderliche Zuverlässigkeit. Die Architektur des wiederverwendbaren Mieterlinks und seiner Speicherung begründet [ADR-004](../architecture/adr/ADR-004-tokenbasierter-mieterzugriff.md). [Fallverwaltung](fallverwaltung.md) definiert Annahme und Lebenszyklus, [Fallkommunikation](fallkommunikation.md) Sichtbarkeit und Veröffentlichung, [Fallzugriff und Sicherheit](fallzugriff-und-sicherheit.md) den persönlichen Link und seine geschützte Speicherung. Die [Mieteransicht](../frontend/ansicht-01-mieter-fallansicht.md) bildet diese Regeln ab.
 
@@ -14,7 +14,7 @@ PropertyFlow bleibt Eigentümer der fachlichen Daten. Camunda 8 orchestriert die
 
 ## BEN-01: Auslöser und Ausschlüsse
 
-Für jedes dauerhaft gespeicherte, für den Mieter sichtbare Änderungsereignis wird eine E-Mail-Benachrichtigung veranlasst. Auslöser ist die fachliche Änderung, nicht das Öffnen der Ansicht oder ein technischer Worker-Aufruf.
+Für jedes nachstehend als Auslöser bezeichnete dauerhaft gespeicherte Änderungsereignis wird eine E-Mail-Benachrichtigung veranlasst. Auslöser ist die fachliche Änderung, nicht das Öffnen der Ansicht oder ein technischer Worker-Aufruf.
 
 | Ereignis | E-Mail | Zeitpunkt |
 |---|---|---|
@@ -22,9 +22,9 @@ Für jedes dauerhaft gespeicherte, für den Mieter sichtbare Änderungsereignis 
 | Weitere Nachricht des Mieters gespeichert | Ja, auch wenn er sie selbst abgeschickt hat | Nach dauerhafter Speicherung. |
 | Externe KI-/Systemnachricht veröffentlicht | Ja | Erst wenn die vollständige Nachricht gespeichert und für den Mieter veröffentlicht ist. |
 | Externe Mitarbeiternachricht veröffentlicht | Ja | Nach Speicherung und ausdrücklicher Veröffentlichung. |
-| Für den Mieter sichtbarer fachlicher Status geändert | Ja | Nach dauerhaftem Statuswechsel in PropertyFlow. Unveränderte Statuswerte erzeugen kein Ereignis. |
+| Für den Mieter sichtbarer fachlicher Status geändert, ausser Abschluss | Ja | Nach dauerhaftem Statuswechsel in PropertyFlow. Unveränderte Statuswerte erzeugen kein Ereignis. |
 | Mieteröffentliche Dringlichkeit erstmals bewertet oder geändert | Ja | Nach gespeicherter Stufenänderung mit Historieneintrag gemäss [DRING-07](dringlichkeitsbewertung.md#dring-07-änderungshistorie-und-mietertransparenz). Ein unverändertes Bewertungsergebnis erzeugt keine Änderungsmail. |
-| Fall fachlich abgeschlossen | Ja, ausdrücklich als Abschlussinformation | Nach gespeichertem Abschluss. Der Abschluss ist ein eigener Typ der Statusbenachrichtigung und erzeugt nicht zusätzlich eine zweite generische Statusmail. |
+| Fall fachlich abgeschlossen | Nein | Weder Abschlussmail noch generische Statusmail. Automatischer Abschluss benötigt vorher die individuelle Nachricht samt Versandauftrag; Mitarbeiterabschluss benötigt keine Nachricht. |
 | Internes Memo angelegt oder geändert | Nein | Auch keine Hinweise oder Metadaten dazu versenden. |
 | Externer Entwurf oder KI-Teilantwort | Nein | Eine spätere Veröffentlichung ist dagegen ein Auslöser. |
 | Technischer Camunda-Schritt, Wiederholung oder Incident | Nein | Nur ein daraus resultierendes sichtbares fachliches Ereignis kann auslösen. |
@@ -40,7 +40,7 @@ Empfänger ist die dem Fall zugeordnete Kontaktadresse. Eine technisch beliebig 
 
 Die E-Mail enthält:
 
-- Eine kurze, zum Ereignis passende Information, beispielsweise «Ihre Nachricht wurde gespeichert», «Eine neue Nachricht liegt vor» oder «Ihr Fall wurde abgeschlossen».
+- Eine kurze, zum Ereignis passende Information, beispielsweise «Ihre Nachricht wurde gespeichert», «Eine neue Nachricht liegt vor».
 - Die lesbare Case-ID als Referenz.
 - Den persönlichen Link zur Fallansicht, solange der zugehörige Zugang gültig ist.
 - Den Hinweis: «Dieser Link ermöglicht Zugriff auf Ihren Fall. Bitte behandeln Sie ihn vertraulich.»
@@ -89,15 +89,24 @@ In Version 1 gilt dieser Ablauf für die direkte dauerhafte Ablehnung beim Versa
 
 ## BEN-05: Fallabschluss und Sicherheit
 
-Der gespeicherte fachliche Abschluss löst auch dann eine Abschlussmail aus, wenn keine separate Abschlussnachricht erstellt wurde. **Für UI3 bestätigt am 10.10.2026:** Eine zusätzliche externe Abschlussmitteilung ist optional und wird vor dem Abschluss über das bestehende Textfeld gesendet, wie in FALL-07 geregelt. Ihre Veröffentlichung und der fachliche Abschluss bleiben unterschiedliche Ereignisse mit den jeweils geltenden Benachrichtigungspflichten. Das spätere Versenden der E-Mail erzeugt keinen neuen Historieneintrag und umgeht die Nachrichtensperre nach KOM-04 nicht.
+**Vereinfacht am 15.11.2026:** Der Statuswechsel zu «Abgeschlossen» erzeugt
+keine Abschlussmail und keine generische Statusmail, unabhängig von seiner Quelle.
 
-Dies gilt gleichermassen für einen Mitarbeiterabschluss und für die vereinbarten Systemabschlüsse nach FALL-07. Ein Abschluss wegen mieterseitiger Eigenverantwortung darf in der Information nicht als vom System bestätigte Reparatur dargestellt werden. Die Abschlussmail bestätigt den fachlichen Abschluss; der zugrunde liegende Fall bleibt lesbar.
+Beim automatischen Abschluss wird vorher eine individuelle LLM-Nachricht nach
+[KOM-06](fallkommunikation.md#kom-06-automatische-antworten-vor-fallabschluss)
+geprüft, extern gespeichert und ihr Versand zuverlässig beauftragt. Danach wird
+der aktuelle Fallstand erneut geprüft und abgeschlossen. Es gibt keinen zweiten
+Mailauftrag nach dem Abschluss. Die E-Mail zur veröffentlichten Nachricht folgt
+BEN-02; der vollständige individuelle Text steht im Fallverlauf.
 
-**Präzisiert am 15.11.2026:** Automatische fachliche Antworten vor dem Abschluss folgen [KOM-06](fallkommunikation.md#kom-06-automatische-antworten-vor-fallabschluss). Sie behaupten keinen bereits erfolgten Abschluss. Bleibt nach ihrer Veröffentlichung der Abschluss aus, bleibt ihre eigene Benachrichtigungspflicht bestehen; ein Abschlussmailauftrag entsteht erst nach erfolgreicher fachlicher Abschlussspeicherung. Antwortveröffentlichung und Abschluss bleiben getrennte Auslöser mit jeweils einmaliger logischer Wirkung. Eine Zusammenlegung ihrer E-Mails ist nicht vereinbart.
+Beim Mitarbeiterabschluss ist keine Nachricht erforderlich. Der Mitarbeiter kann
+vorher freiwillig über das bestehende UI senden. Der Abschluss selbst erzeugt
+keine Kommunikationsnachricht und keine E-Mail; der interne Nachweis bleibt erhalten.
 
-Ein gültiger Link öffnet den abgeschlossenen Fall lesend. Der Abschluss widerruft den Token nicht. Die Abschlussmail behauptet deshalb weder Schreibrechte noch einen erneuten Prozessstart. Da mit dem Abschluss noch offener Mieterantwortbedarf gemäss KOM-04 endet, fordert die Abschlussmail keine Antwort auf bisherige Rückfragen an.
-
-Versandaufträge und Fehlerdaten unterliegen den Token- und Datenschutzregeln aus ZUG-06. Der Token wird nur durch die berechtigte Versandfunktion entschlüsselt. Er gehört weder in normale Protokolle noch in Camunda-Variablen oder KI-Kontexte. Interne Memos und deren Metadaten dürfen keine Benachrichtigung beeinflussen oder darin erscheinen.
+Ein gültiger persönlicher Link öffnet den abgeschlossenen Fall lesend. Abschluss
+widerruft keinen Token; noch offener Antwortbedarf endet gemäss KOM-04.
+Versandaufträge und Fehlerdaten folgen ZUG-06. Tokens gehören nicht in Logs,
+Camunda-Variablen oder KI-Kontexte; interne Memos beeinflussen keine Kommunikation.
 
 ## Prüfkriterien
 
@@ -106,7 +115,7 @@ Die folgenden Kriterien sind Anforderungen an spätere Tests, keine bereits erbr
 - **BEN-AK-01:** Fallannahme erzeugt einen Bestätigungsauftrag. Eine sichere Einreichungswiederholung erzeugt weder einen neuen Fall noch eine zweite logische Bestätigung.
 - **BEN-AK-02:** Eine eigene weitere Mieter-Nachricht sowie jede veröffentlichte externe Mitarbeiter- oder KI-Nachricht erzeugen je eine Benachrichtigungspflicht. Speicherung, Veröffentlichung und Ereigniswiederholungen werden getrennt geprüft.
 - **BEN-AK-03:** Interne Memos, externe Entwürfe, KI-Teilantworten, GET-Aufrufe und rein technische Workflow-Schritte erzeugen keine Mieter-E-Mail und keine Hinweise auf interne Inhalte.
-- **BEN-AK-04:** Ein sichtbarer fachlicher Statuswechsel und der Fallabschluss erzeugen Benachrichtigungen. Dies gilt für Mitarbeiterabschlüsse und die beiden vereinbarten Systemabschlussgründe aus FALL-07. Der Abschluss erzeugt keine zusätzliche generische Statusmail und benötigt keinen nachträglichen Nachrichteneintrag. Fehlender Verwaltungsbedarf wird nicht als bestätigte Reparatur ausgegeben.
+- **BEN-AK-04:** Abschluss durch Mitarbeiter erzeugt keine Nachricht und keine Mail. Automatischer Abschluss setzt eine vorher gespeicherte individuelle Nachricht mit einem logischen Versandauftrag voraus; danach keine zusätzliche Abschluss- oder generische Statusmail. Andere sichtbare Statuswechsel behalten ihre Benachrichtigungsregel.
 - **BEN-AK-05:** Mails enthalten kurze Vorlageninformation, Case-ID, gültigen persönlichen Link und Vertraulichkeitshinweis; vollständige Nachrichten, sensible Freitexte und interne Inhalte fehlen. Wiederholungen verwenden denselben gültigen Token.
 - **BEN-AK-06:** Ein Neustart nach fachlicher Speicherung verliert keine Versandpflicht. Vorübergehende Fehler sind wiederholbar; dauerhafte oder unklare Ergebnisse bleiben nachvollziehbar. Mailausfälle nehmen weder Fallannahme noch Nachrichten oder andere bestätigte Änderungen zurück. Bei klärungsbedürftigem Versand gelten Status und Hinweis nach FALL-05; abgeschlossene Fälle werden nicht wiedereröffnet. Unveränderte Statuswerte erzeugen auch bei Versandwiederholungen keine neuen Statusmailaufträge.
 - **BEN-AK-07:** Einen Fall-Link ersetzen, während eine E-Mail aussteht. Die E-Mail enthält den neuen gültigen Link. Ein unverändert gültiger Token bleibt auch lange nach Ausstellung für spätere Benachrichtigungen nutzbar. Fehlende Schlüssel und Entschlüsselungsfehler führen zu sichtbarer Klärung, niemals zu automatischem Tokenersatz oder einer falschen Erfolgsmarkierung.
@@ -118,6 +127,6 @@ Die folgenden Kriterien sind Anforderungen an spätere Tests, keine bereits erbr
 
 - Übergabeverfahren für weitere Auslöser ausserhalb des beschriebenen Statusmail-Ablaufs, Ereignis-/Versandkennungen, Maildienst und dessen Idempotenz- beziehungsweise Rückläuferunterstützung.
 - Wiederholungsabstände und -grenzen, interne Fehlerzuständigkeit, Aufbewahrung und Bereinigung von Versandnachweisen.
-- Konkrete Versandvorlagen und Übergangsereignisse für die vereinbarten Statuswerte gemäss FALL-05. Eine externe Abschlussmitteilung und der Abschluss sind unterschiedliche Ereignisse; ob beide in einer gemeinsamen E-Mail bestätigt werden dürfen, bleibt offen. Bis dahin wird keine ihrer Benachrichtigungspflichten verworfen.
+- Konkrete Versandvorlagen für die verbleibenden Benachrichtigungsauslöser. Der Abschlussstatus ist kein eigener Versandauslöser; BEN-05 ist entschieden.
 
 Die vereinbarten Benachrichtigungsregeln gelten für Screen 01 und die interne Versandbearbeitung. Screen 02 zeigt bei aktivem Prüfbedarf den fachlichen Status nach FALL-05, aber keine Versandhinweise. Die offenen Punkte betreffen die Konkretisierung beziehungsweise Umsetzung und werden nicht als bereits beschlossen dargestellt. Der [Geltungsbereich von Streaming und Abbruch](fallkommunikation.md#abgleich-mit-bestehenden-dokumenten) ist geklärt: Diese Funktionen gehören zum Mitarbeiterdetail gemäss ADR-003 und UC-004. Die Mieteransicht bleibt eine asynchrone Fallansicht. Gemeinsame JPG-Entwürfe folgen erst nach den drei Screen-Spezifikationen samt technischen Wireframes.
