@@ -455,6 +455,168 @@ Aktionen im folgenden Vertrag 0.34 festgelegt. Backend-Umsetzung bleibt offen.
 
 ### Vorrang einer laufenden Mitarbeiterprüfung
 
+### Gemeinsamer Auftragsrahmen für Mitarbeiteraktionen (B09.2)
+
+**Bestätigt am 15.11.2026:** Mitarbeiteraktionen verwenden einen gemeinsamen
+Auftragsrahmen. Er vereinheitlicht die Prüfung bestehender Fachaktionen und
+Endpunkte; er definiert keinen neuen universellen HTTP-Endpunkt und keine
+zusätzlichen erlaubten Statusübergänge.
+
+| Angabe | Herkunft und Bedeutung |
+|---|---|
+| Fall-ID | Der Client benennt den betroffenen Fall; die ID gewährt keine Berechtigung. |
+| Aktion und Eingaben | Fachlich definierte Aktion mit ihren zulässigen Daten; keine beliebigen Feld- oder Statusänderungen. |
+| Bestätigte Fallversion | Der vom Mitarbeiter gesehene und bestätigte Stand, nicht eine bei Ausführung stillschweigend eingesetzte neuere Version. |
+| Operations-ID | Bleibt bei Wiederholung desselben logischen Auftrags gleich; Auftraggeber-/Fallbindung und Inhaltsprüfung gemäss B07 bleiben Pflicht. |
+| Mitarbeiteridentität | Wird vom Server aus der authentifizierten Anmeldung übernommen und dem Auftrag zugeordnet; kein frei wählbares Client-Feld. |
+| Bearbeitungsbezug | Der zur angezeigten Aktion gehörende Bezug wird serverseitig auf Fall, Durchlauf und den passenden Call-/Warte-/Task-Kontext geprüft und an den Auftrag gebunden. |
+
+**Schutz vor alten Browser-Tabs:** Der Dienst muss feststellen können, auf welche
+Bearbeitung sich die bestätigte Aktion bezog. Nur die zum Ausführungszeitpunkt
+neueste Aufgabe zu suchen genügt nicht. Clientseitig zurückgegebene Bezüge sind
+Prüfangaben, keine Berechtigungsnachweise. Sie dürfen weder den Zielprozess frei
+wählen noch eine neue Aufgabe als Ersatz für eine inzwischen beendete Aufgabe
+autorisieren. Eine überholte Mitarbeiterentscheidung wird abgelehnt und nicht
+automatisch auf einen neuen Durchlauf oder eine neue Aufgabe übertragen.
+
+Fallversion und Bearbeitungsbezug werden bei Annahme sowie vor der fachlichen
+Ausführung gegen den aktuellen Stand geprüft. Die erneute Rechteprüfung und die
+Abgrenzung zum Logout richten sich nach
+[ZUG-04](fallzugriff-und-sicherheit.md#berechtigung-bei-verzögerter-ausführung-von-mitarbeiteraufträgen-b09).
+Für Nebenaktionen oder Aktionen während automatischer Abklärung und Warten auf
+Mieterantwort ist keine nicht vorhandene Mitarbeiter-User-Task erforderlich.
+Der Bearbeitungsbezug beschreibt dort den zuständigen Prozess-/Call-/Wartekontext.
+Die Wiedereröffnung bleibt eine eigene Aktion gemäss FALL-07; der Rahmen setzt
+dafür keinen noch aktiven alten Prozess voraus.
+
+Der gemeinsame Vertrag «Falldaten ergänzen» konkretisiert diesen Rahmen für seine
+drei Aktionsarten. Die serverseitige Zielauflösung regelt B09.3; das konkrete
+Transportformat des Bearbeitungsbezugs bleibt bei der technischen Anbindung festzulegen.
+
+**Geplante Prüfung, noch kein Laufzeitnachweis:** Eine Entscheidung aus einem
+alten Tab nach Wechsel der Aufgabe beziehungsweise nach Wiedereröffnung ablehnen;
+keine neue Aufgabe abschliessen. Manipulierte Fall-/Bearbeitungsbezüge und eine
+veraltete Fallversion ablehnen. Eine zulässige Nebenaktion ohne Mitarbeiter-User-Task
+akzeptieren. Wiederholungen derselben Operations-ID gemäss B07 ohne Doppelwirkung
+behandeln und geänderten Inhalt unter derselben ID zurückweisen.
+
+### Serverseitige Zielauflösung für Mitarbeiteraufträge (B09.3)
+
+**Bestätigt am 15.11.2026:** Beim Anzeigen einer Mitarbeiteraktion liefert das
+Backend den zugehörigen Bearbeitungsbezug mit. Beim Absenden prüft der Dienst
+diesen Bezug gegen die gespeicherte, verifizierte Prozesszuordnung des Falls.
+Er bestimmt das konkrete Camunda-Ziel aus Aktionsart und gültigem Kontext;
+ein vom Client übergebener Prozess- oder Task-Schlüssel wählt kein beliebiges Ziel.
+Die Prüfung unmittelbar vor der fachlichen Ausführung gemäss B09.2 bleibt Pflicht.
+
+| Aktion | Zuständiges Ziel |
+|---|---|
+| Entscheidung zu einer Mitarbeiteraufgabe | Die konkrete offene Aufgabe, auf die sich die Bestätigung bezieht. |
+| Nachricht oder Falldaten ergänzen als Nebenaktion | Der für Aktion und Phase vorgesehene Nebenprozess im verifizierten aktiven Durchlauf; kein Aufgabenabschluss. |
+| Wiedervorlage ändern oder löschen | Die aktuelle, zum bestätigten Bezug gehörende Wiedervorlage. |
+| Wiedereröffnung | Der autorisierte Einstieg in einen neuen Durchlauf desselben abgeschlossenen Falls gemäss FALL-07; keine Wiederverwendung einer alten Aufgabe. |
+
+Die Tabelle ersetzt keine aktionsspezifischen Übergänge: Eine Mitarbeiterrückfrage
+mit Antwortbedarf folgt weiterhin dem für die jeweilige Phase vereinbarten Weg.
+
+- **Überholter Bezug:** Ist die bestätigte Aufgabe, Wartephase oder der Durchlauf
+  nicht mehr zuständig, wird die Aktion abgelehnt. Keine Übertragung auf eine
+  inzwischen neue Aufgabe oder einen neuen Durchlauf. Das UI verlangt eine
+  Aktualisierung der Grundlage; vorhandene Eingaben bleiben erhalten.
+- **Unklare Zuordnung:** Kann das Ziel nicht zuverlässig festgestellt werden,
+  wird kein Ersatzprozess und keine zweite Mitarbeiteraufgabe gestartet. Es wird
+  kein Erfolg behauptet. Ein bereits angenommener Auftrag bleibt im technischen
+  Abgleich gemäss B07, bis sein Ergebnis beziehungsweise seine Zuständigkeit
+  geklärt ist; eine unklare Engine-Antwort ist kein Nachweis einer Ablehnung.
+- **Wiederholung:** Abgleich und Wiederholung verwenden denselben logischen
+  Auftrag. Die zuverlässige Fortsetzung und der Schutz vor Doppelwirkung aus B07
+  gelten auch bei verlorenen Antworten und zwischenzeitlichem Prozesswechsel.
+
+**Geplante Prüfung, noch kein Laufzeitnachweis:** Alte Aufgaben- und
+Wiedervorlagebezüge nach einem Wechsel zurückweisen, ohne das neue Ziel zu ändern.
+Eine Nebenaktion dem passenden aktiven Scope zuordnen, ohne eine Aufgabe zu
+beenden. Bei fehlender oder widersprüchlicher Prozesszuordnung sowie verlorenem
+Engine-Ergebnis weder Ersatzinstanz noch falsche Erfolgsmeldung erzeugen;
+denselben Auftrag abgleichen. Wiedereröffnung nur über den vorgesehenen Einstieg
+prüfen. Das konkrete Transportformat und die ausführbare Camunda-Anbindung
+bleiben Implementierungsarbeit.
+
+### Auftragszustände und UI-Rückmeldungen (B09.4)
+
+**Bestätigt am 15.11.2026:** Die Rückmeldung unterscheidet Annahme und fachliche
+Ausführung einer Mitarbeiteraktion. Die folgenden Zustände betreffen den einzelnen
+Auftrag; sie sind keine zusätzlichen Fallstatus.
+
+| Auftragszustand | Bedeutung | UI-Rückmeldung |
+|---|---|---|
+| Angenommen / in Verarbeitung | Der Auftrag wurde angenommen, die fachliche Änderung ist noch nicht bestätigt. | «Wird verarbeitet …»; noch keine Erfolgsmeldung. |
+| Erfolgreich ausgeführt | Die fachliche Änderung ist nachweislich wirksam. | «Erfolgreich ausgeführt»; Fallansicht mit dem aktuellen Stand aktualisieren. |
+| Abgelehnt | Eine definitive Ablehnung liegt vor, beispielsweise wegen überholter Grundlage oder fehlender Berechtigung. | Verständlichen Grund anzeigen, etwa «Der Fall wurde inzwischen geändert. Bitte aktualisieren.»; eingegebene Inhalte erhalten. |
+| Ergebnis technisch unklar | Die Ausführung ist noch nicht zuverlässig bestätigt oder ausgeschlossen. | «Ausführung noch nicht bestätigt.»; Ergebnis desselben Auftrags erneut abfragen beziehungsweise abgleichen. |
+
+«Ergebnis technisch unklar» beschreibt die fehlende Gewissheit über den Ausgang,
+nicht einen fachlichen Fehler oder einen zusätzlichen Fallzustand. Ein Timeout
+ist weder ein Erfolgsnachweis noch eine sichere Ablehnung. Es wird deswegen kein
+neuer logischer Auftrag mit neuer Operations-ID ausgelöst. Wiederholung und
+Abgleich folgen B07 mit derselben Auftragsidentität.
+
+Eine spätere Ablehnung nach zunächst bestätigter Annahme muss dem Mitarbeiter
+ebenfalls sichtbar werden. Eine Annahmebestätigung darf nicht dauerhaft als
+Erfolg stehen bleiben. Die Ergebnisabfrage unterliegt weiterhin den aktuellen
+Zugriffsrechten; eine Rückmeldung gewährt keinen zusätzlichen Fallzugriff.
+Vorhandene Eingaben bleiben bei Ablehnung für eine bewusste erneute Bearbeitung
+erhalten; sie werden nicht automatisch auf einen neuen Fallstand übertragen.
+
+**Geplante Prüfung, noch kein Laufzeitnachweis:** Verzögerte Ausführung zuerst
+als Verarbeitung und erst nach bestätigter Wirkung als Erfolg anzeigen. Frühe
+und späte Ablehnung mit verständlichem Grund und erhaltenen Eingaben prüfen.
+Bei Timeout den unklaren Ausgang darstellen und denselben Auftrag abgleichen,
+ohne Doppelwirkung oder neue Operations-ID. Die Fallstatus bleiben unverändert
+durch reine Änderungen der Auftragsrückmeldung. Konkrete HTTP-Antworten und die
+technische Aktualisierung der Anzeige werden mit SS-003 bei der Implementierung
+abgeglichen; diese Regeln führen keinen neuen öffentlichen Endpunkt ein.
+
+### Worker-Rechte und Prüfungen vor der Ausführung (B09.5)
+
+**Bestätigt am 15.11.2026:** Ein Worker darf nur die für ihn vorgesehene
+Fachaktion ausführen. Ein Camunda-Job allein ist keine fachliche Freigabe.
+Der zuständige Anwendungsdienst prüft Auftragsherkunft, Berechtigung und
+aktuellen Fallstand unmittelbar vor der Änderung; die Prüfung sitzt nicht nur
+im UI, im BPMN oder in einer Werkzeugbeschreibung.
+
+Der Worker erhält eine Auftragsreferenz und lädt die massgebenden Daten im
+Backend. Der Dienst prüft die Zuordnung zu Aktion, Fall und zuständigem
+Bearbeitungsbezug gemäss B09.2/B09.3. Eine Referenz allein gewährt keine Rechte.
+Frei gesetzte Prozessvariablen wie `freigegeben=true`, übergebene Benutzer-IDs
+oder eine LLM-Empfehlung ersetzen keinen geprüften Auftrag und keine Freigabe.
+
+| Auftragsart | Prüfung vor der Wirkung |
+|---|---|
+| Mitarbeiteraktion | Gespeicherter Auftrag mit geprüfter Herkunft, zugeordneter Mitarbeiteridentität und aktuellen erforderlichen Rechten; bestätigte Fallversion und gültiger Bearbeitungsbezug. B09.1 zum Logout bleibt verbindlich. |
+| Automatische Aktion | Für das System ausdrücklich zulässige Aktion, aktueller Fallstand und alle vereinbarten Automatisierungsbedingungen einschliesslich menschlichem Prüfvorrang. Keine erfundene Mitarbeiterfreigabe. |
+| Mailversand | Gültiger gespeicherter Versandauftrag mit serverseitig festgelegtem Empfänger und für diesen Versand freigegebenem Inhalt gemäss den Kommunikations- und Benachrichtigungsregeln. Kein frei wählbarer Versand aus Job- oder LLM-Daten. |
+
+Beispiel: Ein ursprünglich zulässiger automatischer Abschluss darf nicht mehr
+wirksam werden, wenn inzwischen zwingender Mitarbeiterprüfbedarf besteht.
+Auch ein bereits gestarteter Job umgeht diese Prüfung nicht. Für Wiederholungen,
+veraltete Ergebnisse und konkurrierende Änderungen gelten die bestehenden
+Versions- und Idempotenzregeln aus B07.
+
+Der Versand einer bereits gespeicherten externen Nachricht bleibt ein separater
+Folgeauftrag. Ein zwischenzeitlicher Fallabschluss hebt diese Mailpflicht nicht
+auf; der Mail-Worker darf dadurch aber keine neue Nachricht veröffentlichen.
+Die Inhaltsfreigabe bezeichnet die jeweils vereinbarten fachlichen Prüfungen,
+keinen zusätzlichen manuellen Antwortvorlagen-Freigabeschritt.
+
+**Geplante Prüfung, noch kein Laufzeitnachweis:** Manipulierte Auftragsreferenzen,
+abweichende Aktionen und frei gesetzte Freigabevariablen zurückweisen. Eine
+Mitarbeiteraktion nach Rechteentzug sowie einen automatischen Abschluss nach
+neu entstandenem zwingendem Prüfbedarf ohne fachliche Wirkung abweisen.
+Versandempfänger und Inhalt aus dem gespeicherten Auftrag verwenden;
+unzulässige Überschreibungen verhindern. Die bestehende Mailpflicht nach
+Fallabschluss und den Wiederholungsschutz getrennt prüfen. Technische
+Worker-Zugänge, Jobtypen und ausführbare Bindungen sind noch umzusetzen.
+
 ### Fortsetzungsvertrag: genau eine aktuelle Bearbeitung (B07)
 
 **Bestätigt am 15.11.2026 – Entwurf 0.35:** Pro Fall gibt es genau einen führenden

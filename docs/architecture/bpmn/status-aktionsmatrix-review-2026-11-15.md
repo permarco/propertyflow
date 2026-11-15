@@ -5,7 +5,8 @@ Dieser Bericht ersetzt die überholte Erstprüfungs-Matrix. Die Befundkennungen
 B01–B10 bleiben für Nachverfolgung erhalten. Frühere Modellstände sind keine
 zusätzlichen offenen Anforderungen.
 
-**Umfang:** Konsolidierter Abgleich bis Gesamtstand 0.34. B02.1–B02.3 sind im
+**Umfang:** Konsolidierter Abgleich bis Gesamtstand 0.35 mit den dokumentierten
+B09.1–B09.5-Verträgen. B02.1–B02.3 sind im
 Entwurf behandelt; die festgestellten Dokumentationswidersprüche B01/B08 sind bereinigt.
 Backend-Implementierung und Laufzeitnachweise stehen weiterhin aus.
 
@@ -26,7 +27,7 @@ keine ausführbare oder getestete Gesamtlösung.
 | B06 – Mailanbindung | Im Entwurf behandelt | Dauerhafte Mailpflicht, Start, Wiederholungsschutz und Versandfehler implementieren/testen. |
 | B07 – Gleichzeitige Aktionen und einmalige Fortsetzung | Vertrag festgelegt, Ausgänge im Entwurf 0.35 ergänzt | Technische Umsetzung und Laufzeitnachweise FALL-AK-44 stehen aus. |
 | B08 – Dokumentationskonsistenz | Festgestellte Widersprüche bereinigt | Aktuelle Übersicht 0.34 verwenden; historische technische Stände sind ausdrücklich gekennzeichnet. |
-| B09 – Rechtebindung und Aktionsbezug | Technischer Vertrag teilweise vorhanden | Rechte über führende Instanz, Kind, Call und gegebenenfalls User Task vollständig konkretisieren. |
+| B09 – Rechtebindung und Aktionsbezug | B09.1–B09.5 in der Spezifikation festgelegt | Transportformat, HTTP-/UI-Anbindung, technische Worker-Zugänge und ausführbare Zielbindung implementieren und prüfen. Kein Laufzeitnachweis. |
 | B10 – Ausführbare Bindungen und Tests | Offen | Worker-Typen, Gateway-Bedingungen, Korrelation, Variablen und Integrationstests schrittweise ergänzen. |
 
 **«Im Entwurf behandelt» ist kein Laufzeitnachweis.** Der Anbindungsentscheid für B02.3 ist mit CaseDataSide und dem gemeinsamen
@@ -228,9 +229,61 @@ bestätigten Fallstand und Idempotenzkennung. Für statusneutrale Aktionen und
 Aktionen während Reply/Automatic darf keine nicht vorhandene Mitarbeiter-User-Task
 vorausgesetzt werden. Ein frei übergebener Prozessschlüssel autorisiert nichts.
 
-Restarbeit: gemeinsame technische Auftragsform, serverseitige Auflösung des
-aktuellen Zielscopes und Verhalten bei früher/später Ablehnung inklusive
-HTTP-/UI-Rückmeldung konkretisieren. Unterbrechungen verwenden gespeicherte
+**B09.1 – festgelegt (15.11.2026):** Berechtigung bei Annahme und unmittelbar vor
+der fachlichen Ausführung erneut prüfen. Kontosperre oder Entzug erforderlicher
+Rechte lehnen einen noch nicht ausgeführten Auftrag ohne fachliche Änderung ab;
+der Grund wird am Auftrag protokolliert. Logout allein widerruft einen gültig
+angenommenen Auftrag nicht. Bereits wirksame Änderungen bleiben bestehen.
+Verbindliche Regel und geplante Prüffälle:
+[ZUG-04 · verzögerte Mitarbeiteraufträge](../../specifications/fallzugriff-und-sicherheit.md#berechtigung-bei-verzögerter-ausführung-von-mitarbeiteraufträgen-b09).
+Dokumentarisch festgelegt; keine Backend-Implementierung oder Laufzeittests.
+
+**B09.2 – festgelegt (15.11.2026):** Gemeinsamer Auftragsrahmen mit Fall-ID,
+Aktion/Eingaben, bestätigter Fallversion, Operations-ID, serverseitig übernommener
+Mitarbeiteridentität und geprüftem Bearbeitungsbezug. Alte Entscheidungen werden
+nicht auf die jeweils neueste Aufgabe oder einen neuen Durchlauf übertragen.
+Nebenaktionen setzen keine nicht vorhandene Mitarbeiter-User-Task voraus.
+Vertrag und geplante Prüffälle stehen zentral in
+[FALL-06 · gemeinsamer Auftragsrahmen](../../specifications/fallverwaltung.md#gemeinsamer-auftragsrahmen-für-mitarbeiteraktionen-b092).
+Kein neuer universeller HTTP-Endpunkt, keine Backend- oder BPMN-Änderung und kein
+Laufzeitnachweis. Zielauflösung siehe B09.3; das konkrete Transportformat bleibt
+Implementierungsarbeit.
+
+**B09.3 – festgelegt (15.11.2026):** Das Backend liefert den Bearbeitungsbezug zur
+angezeigten Aktion und prüft ihn beim Absenden gegen die verifizierte Zuordnung.
+Aktionsart und Kontext bestimmen Aufgabe, Nebenprozess, Wiedervorlage oder
+Wiedereröffnungseinstieg. Überholte Bezüge werden ohne Übertragung auf neue Ziele
+abgelehnt. Unklare Zuordnung verlangt technischen Abgleich gemäss B07, keinen
+Ersatzprozess und keine falsche Erfolgsmeldung. Eine unklare Engine-Antwort ist
+keine nachgewiesene Ablehnung.
+Vertrag und geplante Prüffälle:
+[FALL-06 · serverseitige Zielauflösung](../../specifications/fallverwaltung.md#serverseitige-zielauflösung-für-mitarbeiteraufträge-b093).
+Keine Backend- oder BPMN-Änderung und kein Laufzeitnachweis.
+
+**B09.4 – festgelegt (15.11.2026):** Auftragsrückmeldungen unterscheiden
+angenommen/in Verarbeitung, erfolgreich ausgeführt, abgelehnt und technisch
+unklaren Ausgang. Erst bestätigte fachliche Wirkung erlaubt die Erfolgsmeldung.
+Frühe und späte Ablehnung bleiben sichtbar, Eingaben erhalten. Timeout erzeugt
+weder eine sichere Ablehnung noch einen neuen Auftrag; Abgleich mit derselben
+Identität gemäss B07. Keine zusätzlichen Fallstatus.
+Vertrag und geplante Prüffälle:
+[FALL-06 · Auftragszustände und UI-Rückmeldungen](../../specifications/fallverwaltung.md#auftragszustände-und-ui-rückmeldungen-b094).
+Keine Backend- oder BPMN-Änderung und kein Laufzeitnachweis.
+
+**B09.5 – festgelegt (15.11.2026):** Worker führen nur ihre vorgesehene Fachaktion
+aus. Der Dienst lädt den Auftrag über die Referenz und prüft Herkunft, aktuelle
+Rechte beziehungsweise Systemregeln, Fallstand und Bearbeitungsbezug vor der
+Wirkung. Job, frei gesetzte Freigabevariable oder LLM-Empfehlung allein autorisieren
+nichts. Mailversand verwendet den gespeicherten Versandauftrag; eine bereits
+bestehende Mailpflicht bleibt vom späteren Fallabschluss getrennt.
+Vertrag und geplante Prüffälle:
+[FALL-06 · Worker-Rechte](../../specifications/fallverwaltung.md#worker-rechte-und-prüfungen-vor-der-ausführung-b095).
+Keine Backend- oder BPMN-Änderung und kein Laufzeitnachweis.
+
+**B09 ist damit auf Vertragsebene behandelt.** Offen bleiben das konkrete
+Transportformat, HTTP-Anbindung und UI-Aktualisierung, technische Worker-Zugänge
+mit begrenzten Rechten sowie die ausführbare Zielbindung und deren Tests unter B10.
+Unterbrechungen verwenden gespeicherte
 Entscheide, nicht normale Outputs des abgebrochenen Kindes. Keine zusätzliche
 Fachfunktion nötig; Abgleich mit ADR-002/SS-003 und Implementierung erforderlich.
 
@@ -263,9 +316,10 @@ Prüfpläne, keine erfolgreichen Testläufe.
 
 ## Nächste Schritte
 
-1. B09 für den ersten ausführbaren Ablauf technisch konkretisieren, einschliesslich
-   der festgelegten Nebenaktionsverträge aus B02.
-2. B10 schrittweise implementieren und gegen PostgreSQL/Camunda testen.
+1. Für B10 einen ersten durchgängigen Ablauf abgrenzen und die ausführbaren
+   Jobverträge, Zielbindungen und HTTP-Rückmeldungen anhand B07/B09 festlegen.
+2. Nach gesonderter Freigabe schrittweise implementieren und gegen
+   PostgreSQL/Camunda testen, einschliesslich Rechte-, Konflikt- und Retry-Fällen.
 
 Bestehende Entscheidungen bleiben verbindlich: menschlicher Prüfvorrang,
 Nachricht vor Systemabschluss, Mitarbeiterabschluss ohne Nachrichtenpflicht,

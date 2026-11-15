@@ -117,6 +117,35 @@ UI2 und UI3 setzen für Lesen und Schreiben ein aktives, persönlich angemeldete
 
 Die fachlichen Fallrechte sind für die Mitarbeiterrolle einheitlich. Vor Prozessstart und bei unerreichbarem Camunda können Mitarbeitende Fälle einsehen. Für Änderungen im Fallprozess muss Camunda die konkrete Fachaktion erlauben. PropertyFlow setzt diese Grenze auch bei direkten Web- und MCP-Aufrufen durch. Für die Prüfung und Freigaben gelten [FALL-06](fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow), [FALL-07](fallverwaltung.md#fall-07-abschluss-und-zeit-danach) und [FALL-10](fallverwaltung.md#fall-10-automatisierung-und-menschliche-freigabe). PropertyFlow ordnet Änderungen und Freigaben der persönlichen Benutzer-ID zu. Fehlende oder abgelaufene Anmeldungen sperren den Mitarbeiterzugriff bis zur erneuten Anmeldung. Bei einem gesperrten Konto oder entzogener Mitarbeiterrolle weist der Dienst den nächsten Zugriff zurück.
 
+### Berechtigung bei verzögerter Ausführung von Mitarbeiteraufträgen (B09)
+
+**Bestätigt am 15.11.2026:** Der Dienst prüft die Berechtigung bei der Annahme
+und erneut unmittelbar vor der fachlichen Ausführung eines Mitarbeiterauftrags.
+Massgebend sind das aktuelle Konto, die aktive Mitarbeiterrolle und die für die
+konkrete Aktion erforderlichen Rechte. Die bei der Annahme geprüfte persönliche
+Benutzer-ID bleibt dem Auftrag zugeordnet; eine frühere Freigabe ersetzt die
+erneute Rechteprüfung nicht.
+
+- Ist das Konto inzwischen gesperrt oder ein erforderliches Recht entzogen,
+  wird der noch nicht ausgeführte Auftrag abgelehnt. Er bewirkt keine fachliche
+  Änderung. Ablehnungsgrund und Ergebnis werden am Auftrag protokolliert.
+- Ein Logout widerruft einen bereits gültig angenommenen Auftrag nicht. Seine
+  Ausführung setzt keine weiterhin offene Browsersitzung voraus, wohl aber die
+  aktuellen Rechte des Auftraggebers. Neue Web-Aufträge benötigen erneut eine
+  gültige Anmeldung.
+- Bereits wirksam ausgeführte Änderungen werden durch einen späteren Logout,
+  eine Kontosperre oder einen Rechteentzug nicht rückgängig gemacht. Wiederholungen
+  dürfen keine zweite Wirkung auslösen; der Wiederholungsschutz gemäss FALL-06
+  bleibt bestehen.
+- Die erneute Rechteprüfung ersetzt weder die Prüfung des aktuellen Fallstands
+  noch die Bindung an die zuständige Prozessfortsetzung.
+
+**Geplante Prüfung, noch kein Laufzeitnachweis:** Einen angenommenen Auftrag
+verzögert ausführen und vorher jeweils Konto sperren, Mitarbeiterrolle entziehen
+oder nur ausloggen. Sperre und Rechteentzug verhindern die Änderung; Logout
+allein verhindert sie nicht. Zusätzlich die Wiederholung eines bereits wirksam
+ausgeführten Auftrags auf ausbleibende Doppelwirkung prüfen.
+
 ### E-Mail-Einmalcode für Registrierung und Anmeldung
 
 Bei der freiwilligen Mieterregistrierung dient der Code als Nachweis für die
