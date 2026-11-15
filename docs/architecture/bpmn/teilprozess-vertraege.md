@@ -143,7 +143,7 @@ werden nicht stillschweigend umgestellt.
 
 Diese Laufzeitprüfungen stehen aus. XML-Schema, Modeler-Import und Modellverknüpfungen
 belegen nur die strukturelle Aufteilung. Zeile 4 der fachlichen Fortsetzungstabelle
-bleibt der nächste Besprechungspunkt.
+ist in KOM-03 bestätigt; KOM-AK-25 beschreibt die ausstehenden Laufzeitprüfungen.
 
 ## Nachrichtenverarbeitung als eigener Aufruf (Stand 0.10)
 

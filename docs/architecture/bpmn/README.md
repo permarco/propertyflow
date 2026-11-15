@@ -80,6 +80,21 @@ einschliesslich laufender Nachrichtenauswertungen und Empfang. Der äussere
 Prozess veranlasst anschliessend die Abschlussbenachrichtigung. Die normalen
 Endereignisse der übrigen Teilprozesse sind keine Fallabschlüsse.
 
+## Rückweg bei veralteter Nachrichtenauswertung (Stand 0.11)
+
+In `mieternachricht-verarbeiten.bpmn` liegt an **«Aktuelle Auswertung geschützt
+bereitstellen»** (`NApply`) das unterbrechende Fehlerereignis **«Auswertung
+veraltet»**. Der fachliche Fehler `TENANT_EVALUATION_STALE` führt zu
+**«Aktuelle Grundlage übernehmen / abwarten»**, danach zur Prüfung
+**«Noch anzuwenden?»**: aktuelle Grundlage erneut durch NApply prüfen oder
+den Nachrichtenaufruf ohne neue Wirkung beenden. Eingangswirkungen und
+Wiedervorlage-Aufhebung werden auf diesem Rückweg nicht nochmals ausgeführt.
+
+Die [Worker-Regeln in KOM-03](../../specifications/fallkommunikation.md#worker-regeln-bei-mitarbeiterprüfung-und-veralteter-auswertung)
+schützen bestehende Aufgaben und Mitarbeiterentscheidungen; KOM-AK-25 nennt
+die späteren Prüffälle. Der Fehler ist vom technischen Retry und von einem
+Analysefehler getrennt. Die BPMN-Datei bleibt nicht ausführbar; keine Worker implementiert.
+
 ## Mieternachrichten und Vorrang der Mitarbeiterprüfung
 
 **Bestätigt am 14.11.2026:** Mieter können in jedem aktiven Bearbeitungsstatus

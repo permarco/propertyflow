@@ -84,6 +84,55 @@ An den Mieter werden als Kommunikationsnachrichten ausschliesslich vollständige
 
 Die konkrete Aktualisierung der Darstellung beschreibt [Screen 01](../frontend/ansicht-01-mieter-fallansicht.md). Für die in [Vision](../vision.md) optional vorgesehenen KI-Rückfragen sind die Veröffentlichungsregeln in [KOM-05](#kom-05-automatische-rueckfragen) festgelegt. Die technische Umsetzung steht aus; die Einordnung als optionale Erweiterung bleibt bestehen.
 
+### Worker-Regeln bei Mitarbeiterprüfung und veralteter Auswertung
+
+**Bestätigt am 15.11.2026 – Fortsetzungstabelle, Zeile 4:** Die drei Ausgänge
+bei «Aktuelle Bearbeitung» wählen den Bearbeitungskontext. Die folgenden
+Prüfungen erfolgen im Dienst hinter den Service Tasks, nicht durch ein weiteres LLM.
+
+- **NKeepReview – dieselbe Mitarbeiteraufgabe ergänzen:** Nachricht, Fall,
+  führende Instanz und aktuelle Aufgabe über die verifizierte Kindzuordnung prüfen.
+  Nur die bestehende offene Aufgabe ergänzen; keine zweite Aufgabe erzeugen,
+  keine erledigte Aufgabe reaktivieren und keine zwischenzeitliche Entscheidung
+  zurücknehmen. «Problem behoben» ist lediglich eine Empfehlung. Ist die Aufgabe
+  inzwischen erledigt, bleibt ihre Entscheidung bestehen; die weitere Auswertung
+  muss den aktuellen Bearbeitungskontext verwenden.
+- **NApply – Auswertung geschützt bereitstellen:** Unmittelbar vor fachlicher
+  Speicherung Fall-/Bearbeitungsstand, relevante Nachrichten, Aufgabenstand,
+  führenden Prozess und manuelle Dringlichkeit prüfen. Prüfung und Speicherung
+  gegen konkurrierende Änderungen absichern. Mitarbeiterprüfung wird weder
+  automatisch beendet noch ihr Status geändert. Versionierte Bereitstellung an
+  den richtigen Instanzbereich ist ausdrücklich und wiederholbar durchzuführen.
+- **NFailure – Analysefehler:** Fehlergrundlage bereitstellen; vorhandene
+  Dringlichkeit erhalten und eine bestehende Mitarbeiterprüfung ergänzen.
+  Keine zweite Aufgabe allein wegen dieses Fehlers. Auch Fehlerergebnisse
+  durchlaufen vor ihrer Wirkung die Aktualitätsprüfung in NApply.
+
+Ist das noch nicht wirksam gespeicherte Ergebnis veraltet, meldet NApply den
+fachlichen BPMN-Fehler `TENANT_EVALUATION_STALE`. Die alte Grundlage wird nicht
+angewandt und löst kein Bereitschaftssignal aus. Der Rückweg führt zu
+**«Aktuelle Grundlage übernehmen / abwarten»**. Dieser Dienst prüft zunächst,
+ob die Verarbeitung noch zur aktiven Bearbeitung gehört. Bei Abschluss, alter
+Prozesszuordnung oder bereits wirksam verarbeitetem Ergebnis endet dieser
+Nachrichtenaufruf ohne neue Wirkung. Eine spätere Wiedereröffnung macht alte
+Ergebnisse nicht wieder gültig.
+
+Andernfalls verwendet der Dienst eine passende aktuelle zentrale Auswertung,
+wartet auf eine bereits laufende oder veranlasst die fehlende über dieselbe
+zentrale Verarbeitung. Die Koordination darf weder auf das eigene verworfene
+Ergebnis warten noch parallele unabhängige Analysen derselben Grundlage starten.
+Anschliessend geht es erneut zu NApply; weitere Änderungen können erneut den
+Rückweg auslösen. Der Rückweg wiederholt nicht die Eingangswirkungen NKeepReview
+oder NWake und hebt insbesondere keine inzwischen neu gesetzte Wiedervorlage auf.
+Er setzt keinen Status zurück und erteilt keine Veröffentlichungs-/Abschlussfreigabe.
+
+Ein tatsächlicher Analysefehler bleibt vom Versionskonflikt getrennt. Ein rein
+technischer Speicher-/Bereitstellungsfehler verwendet technische Wiederholung,
+nicht `TENANT_EVALUATION_STALE`. Bereits erfolgreiche Wiederholungen bleiben
+idempotent; fehlende interne Zustellung wird versionsgeprüft nachgeliefert.
+Worker, Synchronisation und Warteverfahren sind noch nicht implementiert.
+Prüfnachweis: KOM-AK-25.
+
 ### Neue Mieternachricht während automatischer Analyse
 
 **Bestätigt am 15.11.2026 – Fortsetzungstabelle, Zeile 1:** Geht während der automatischen Analyse oder Empfehlung im Status «In Abklärung» eine neue Mieternachricht ein, gehört sie zur aktuellen Entscheidungsgrundlage. Eine Auswertung, die diese relevante gespeicherte Nachricht noch nicht berücksichtigt, darf keine Rückfrage, Antwort oder Abschlussaktion auslösen und keine aktuelle Einstufung überschreiben. Die Nachricht bleibt gespeichert; ein veraltetes Ergebnis allein erzeugt keine Mitarbeiterprüfung.
@@ -400,6 +449,25 @@ Den konkurrierenden Ablauf in beiden Speicherreihenfolgen prüfen: Mieternachric
 Alle fünf Prioritäten aus «Fortsetzung nach einer Mieterantwort im Wartestatus» mit aktuellen Auswertungen prüfen. Pflichtprüfbedarf oder Analysefehler schlägt einen gleichzeitig vorgeschlagenen Systemabschluss. Ein zulässiger Abschluss benötigt KOM-06 und eine erneute Abschlussprüfung. Vollständige Beantwortung ohne zulässigen Abschluss führt zur Mitarbeiterprüfung, auch wenn das Modell eine weitere Frage vorschlägt. Eine Teilantwort ohne weiteren Grund bleibt im Wartestatus; nur die eindeutig beantwortete Frage endet. Eine zusätzliche notwendige zulässige Katalogfrage wird einmalig veröffentlicht; vorhandene Fragen werden nicht wiederholt. Unzuverlässige Einordnung oder notwendige Frage ausserhalb des Katalogs nicht als blosses Weiterwarten behandeln.
 
 Das Beispiel mit Beginn und Raum prüfen, einschliesslich zuerst fertiger Auswertung vor Eintritt in den Warteschritt, erneuter Zustellung und weiterer Nachricht während der Antwortprüfung. Nur aktueller Ergebnisstand entscheidet, kein zweiter Analysepfad und kein wiederholter Verbrauch eines bereits entschiedenen Ergebnisses. Rückkehr aus Zeile 2 mit verbliebenen offenen Fragen ohne weitere Aktion führt ebenfalls zum Antwortwarten. Ein überholtes Ergebnis allein erzeugt keine Mitarbeiterprüfung. Zwischenzeitliche Mitarbeiterentscheidung, Wiedervorlage und Abschluss bleiben geschützt. Dies sind Anforderungen an spätere Tests, keine bereits ausgeführten Laufzeitnachweise.
+
+### KOM-AK-25: Worker-Schutz und veraltete Nachrichtenauswertung
+
+Während offener Mitarbeiterprüfung zwei Nachrichten und vertauscht eintreffende
+KI-Ergebnisse prüfen: dieselbe Aufgabe bleibt offen, nur die aktuelle Grundlage
+wird ergänzt. «Alles behoben» beendet weder Aufgabe noch Fall. Eine inzwischen
+erledigte Aufgabe wird nicht reaktiviert. Manuelle Dringlichkeit bleibt erhalten.
+Fehler ergänzen eine bestehende Prüfung, ohne eine zweite Aufgabe zu erzeugen.
+
+Am Bereitstellungs-Worker eine neue Nachricht oder Mitarbeiterentscheidung vor
+dem Commit auslösen: keine veraltete fachliche Änderung und kein Bereitschaftssignal.
+Der BPMN-Rückweg übernimmt eine fertige aktuelle Auswertung, wartet auf eine
+laufende oder veranlasst eine fehlende über dieselbe zentrale Verarbeitung.
+Kein Warten auf das eigene verworfene Ergebnis und keine doppelte unabhängige
+Analyse derselben Grundlage. Eine weitere Änderung erzwingt erneut die Prüfung.
+Abschluss, Wiedereröffnung mit neuer Bearbeitung und bereits wirksam verarbeitete
+Ergebnisse führen zum Ende ohne neue Wirkung. Technische Speicherfehler nutzen
+Retry statt fachlichem Konfliktpfad; erfolgreiche Wiederholungen bleiben idempotent.
+Dies sind Anforderungen an spätere Laufzeittests, keine implementierten Nachweise.
 
 ## Abgleich mit bestehenden Dokumenten
 

@@ -1,9 +1,10 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_PropertyFlow_TenantMessage_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+  <bpmn:error id="Error_TenantEvaluationStale" name="Nachrichtenauswertung veraltet" errorCode="TENANT_EVALUATION_STALE" />
   <bpmn:error id="Error_TriageFailure" name="KI-Analyse fehlgeschlagen" errorCode="TRIAGE_ANALYSIS_FAILED">
     <bpmn:documentation>Fachliche Fehlerreaktion des Entwurfs. Der spätere Worker meldet eine festgestellte fehlgeschlagene Analyse oder ungültige Modellausgabe ausdrücklich als diesen BPMN-Fehler. Ein technischer Jobfehler allein aktiviert den Fehlerpfad nicht. Die Mitarbeiterprüfung wartet nicht auf das Ausschöpfen automatischer Wiederholungen.</bpmn:documentation>
   </bpmn:error>
-  <bpmn:process id="PropertyFlow_TenantMessage_Draft" name="Mieternachricht verarbeiten · Fachentwurf 0.10" isExecutable="false">
+  <bpmn:process id="PropertyFlow_TenantMessage_Draft" name="Mieternachricht verarbeiten · Fachentwurf 0.11" isExecutable="false">
     <bpmn:documentation>Nur per Call Activity aus dem zentralen Nachrichteneingang starten. Eingaben caseId, leadingProcessInstanceKey und tenantMessageId; keine Rückgabe von Variablen. Pro Nachricht eigener Aufruf. NIdentify prüft Fall, führende Instanz, Aufrufzuordnung und gespeicherte Nachricht. NApply/NWake liefern aktuelle Steuerinformationen ausdrücklich an den richtigen fremden Instanzbereich; keine impliziten gemeinsamen Variablen. Kein eigener Mieterempfang, keine führende Fallzuordnung. teilprozess-vertraege.md; keine Backend-Implementierung.</bpmn:documentation>
     <bpmn:startEvent id="NProcessingStart" name="Nachrichtenverarbeitung aufgerufen">
       <bpmn:outgoing>N01</bpmn:outgoing>
@@ -29,7 +30,8 @@
     </bpmn:exclusiveGateway>
     <bpmn:serviceTask id="NKeepReview" name="Dieselbe Mitarbeiteraufgabe&#10;um Nachricht ergänzen">
       <bpmn:documentation>Mitarbeiterprüfung erforderlich bleibt unabhängig vom Ursprung bestehen. Auch eine Behebungsbestätigung schliesst weder Fall noch Aufgabe. Keine zweite Aufgabe. Eine inzwischen erfolgte Mitarbeiterentscheidung hat Vorrang; dieser Nebenpfad darf keine alte Aufgabe reaktivieren.
-Die aktuelle Mitarbeiteraufgabe gehört zur verifizierten Kindinstanz. Persistente neue Grundlage bereitstellen; keine Kopie alter Statusvariablen in die Kindinstanz und keine neue Aufgabe nur durch Nachrichteneingang.</bpmn:documentation>
+Die aktuelle Mitarbeiteraufgabe gehört zur verifizierten Kindinstanz. Persistente neue Grundlage bereitstellen; keine Kopie alter Statusvariablen in die Kindinstanz und keine neue Aufgabe nur durch Nachrichteneingang.
+Unmittelbar vor Wirkung aktuelle Aufgabe prüfen. Bei inzwischen erledigter Aufgabe nur aktuellen Kontext verwenden, keine Reaktivierung; KOM-03 Worker-Regeln.</bpmn:documentation>
       <bpmn:incoming>N05</bpmn:incoming>
       <bpmn:outgoing>N08</bpmn:outgoing>
     </bpmn:serviceTask>
@@ -77,9 +79,11 @@ KOM-06: Antwortart AT-001 oder AT-002 mit Belegreferenzen empfehlen, bei AT-002 
     </bpmn:serviceTask>
     <bpmn:serviceTask id="NApply" name="Aktuelle Auswertung&#10;geschützt bereitstellen">
       <bpmn:documentation>Vor Speicherung Fallversion, Nachrichtensatz, Prozess, Aufgabenstand und manuelle Dringlichkeit erneut prüfen. Aktuelle Auswertung bzw. Fehlerergebnis dauerhaft speichern; überholte Ergebnisse verwerfen oder mit neuem Stand neu bewerten. Mitarbeiterprüfung erforderlich bleibt geschützt, auch wenn die Auswertung alles erledigt empfiehlt. Versionierten Bereitschaftsstand für den Hauptpfad im ActiveCase-Bereich bereitstellen und an die aktuelle Antwort-Kindinstanz ausdrücklich nachliefern; eine lokale Variable im Ereignispfad genügt nicht. Eine bereits vor Beginn des Antwortwartens fertige Auswertung bleibt konsumierbar. Idempotente Wiederholung repariert gegebenenfalls die Bereitstellung, erzeugt aber keine zweite fachliche Wirkung. Genaue Variablen, atomare Aktualisierung und Reaktionswege vor Ausführung festlegen. Eine hier gespeicherte Empfehlung für einen Systemabschluss ist nur Entscheidungsgrundlage. Sie umgeht weder die beiden zulässigen Status noch die Grund- und Belegprüfung in Validate/RValidate und Close. Während Mitarbeiterprüfung bleibt der Statusschutz erhalten. Neue Nachrichten müssen in den geprüften Stand eingehen; ein älteres Ergebnis darf diesen Stand nicht als aktuell markieren.
-Dateiaufteilung: Ergebnis in PropertyFlow dauerhaft sichern und die aktuelle Antwort-Kindinstanz gezielt mit versionierter Bereitschaft versorgen. Mitarbeiteraufgaben lesen den aktuellen Fallstand. Nachlieferung und Registrierung ohne Lücke, keine ungültige alte Kindinstanz überschreiben. Kein automatischer Variablendurchgriff über Call Activities.</bpmn:documentation>
+Dateiaufteilung: Ergebnis in PropertyFlow dauerhaft sichern und die aktuelle Antwort-Kindinstanz gezielt mit versionierter Bereitschaft versorgen. Mitarbeiteraufgaben lesen den aktuellen Fallstand. Nachlieferung und Registrierung ohne Lücke, keine ungültige alte Kindinstanz überschreiben. Kein automatischer Variablendurchgriff über Call Activities.
+KOM-03 Zeile 4: Bei noch nicht wirksam gespeicherter veralteter Grundlage ausdrücklich TENANT_EVALUATION_STALE melden; keine fachliche Änderung oder Bereitschaftsmeldung mit altem Ergebnis. Rückweg NCurrentEvaluation und erneute Prüfung. Technischer Fehler bleibt Retry, bereits erfolgreicher identischer Auftrag bleibt idempotent.</bpmn:documentation>
       <bpmn:incoming>N13</bpmn:incoming>
       <bpmn:incoming>N17</bpmn:incoming>
+      <bpmn:incoming>N_Current_Apply</bpmn:incoming>
       <bpmn:outgoing>N14</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:endEvent id="NEnd" name="Eingang verarbeitet;&#10;Hauptpfad läuft weiter">
@@ -102,6 +106,27 @@ Dateiaufteilung: Ergebnis in PropertyFlow dauerhaft sichern und die aktuelle Ant
     <bpmn:sequenceFlow id="N15" sourceRef="NAnalysisFailure" targetRef="NFailure" />
     <bpmn:sequenceFlow id="N16" sourceRef="NRecommendationFailure" targetRef="NFailure" />
     <bpmn:sequenceFlow id="N17" sourceRef="NFailure" targetRef="NApply" />
+    <bpmn:boundaryEvent id="NApplyStale" name="Auswertung veraltet" attachedToRef="NApply" cancelActivity="true">
+      <bpmn:outgoing>N_Stale_Current</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="NApplyStale_definition" errorRef="Error_TenantEvaluationStale" />
+    </bpmn:boundaryEvent>
+    <bpmn:serviceTask id="NCurrentEvaluation" name="Aktuelle Grundlage&#10;übernehmen / abwarten">
+      <bpmn:documentation>KOM-03 Zeile 4 / KOM-AK-25: Zuerst aktuellen Fall, Bearbeitungszyklus und führende Instanz prüfen. Abgeschlossen, alter Aufruf oder bereits wirksam verarbeitet: keine neue Wirkung. Sonst aktuelle zentrale Auswertung übernehmen, laufende abwarten oder fehlende zentral veranlassen; keine doppelte Analyse und kein Warten auf eigenes verworfenes Ergebnis. NKeepReview/NWake nicht erneut ausführen. Keine Rücknahme neuer Mitarbeiterentscheidung. Anschliessend NApply erneut prüfen lassen. Warteverfahren und Ergebnisrouting noch nicht implementiert.</bpmn:documentation>
+      <bpmn:incoming>N_Stale_Current</bpmn:incoming>
+      <bpmn:outgoing>N_Current_Route</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="NCurrentRoute" name="Noch anzuwenden?">
+      <bpmn:incoming>N_Current_Route</bpmn:incoming>
+      <bpmn:outgoing>N_Current_Apply</bpmn:outgoing>
+      <bpmn:outgoing>N_Current_End</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="NObsoleteEnd" name="Keine neue Wirkung">
+      <bpmn:incoming>N_Current_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="N_Stale_Current" sourceRef="NApplyStale" targetRef="NCurrentEvaluation" />
+    <bpmn:sequenceFlow id="N_Current_Route" sourceRef="NCurrentEvaluation" targetRef="NCurrentRoute" />
+    <bpmn:sequenceFlow id="N_Current_Apply" sourceRef="NCurrentRoute" targetRef="NApply" name="Aktuelle Grundlage" />
+    <bpmn:sequenceFlow id="N_Current_End" sourceRef="NCurrentRoute" targetRef="NObsoleteEnd" name="Überholt / bereits erledigt" />
     <bpmn:textAnnotation id="NRule">
       <bpmn:text>Ein Eingang pro gespeicherter Nachricht; keine zweite Fallprozessinstanz.
 Mitarbeiterprüfung: dieselbe Aufgabe bleibt offen, kein automatischer Abschluss.
@@ -288,6 +313,54 @@ Dateigrenze: aktuelle Kindinstanz gezielt aktualisieren; keine gemeinsamen Call-
         <di:waypoint x="1195" y="590" />
         <di:waypoint x="1725" y="590" />
         <di:waypoint x="1725" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="NApplyStale_di" bpmnElement="NApplyStale" bioc:stroke="#9a3412" bioc:fill="#fff7ed">
+        <dc:Bounds x="1707" y="162" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1750" y="125" width="140" height="35" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="NCurrentEvaluation_di" bpmnElement="NCurrentEvaluation" bioc:stroke="#9a3412" bioc:fill="#fff7ed">
+        <dc:Bounds x="1380" y="-135" width="230" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="NCurrentRoute_di" bpmnElement="NCurrentRoute" bioc:stroke="#9a3412" bioc:fill="#fff7ed">
+        <dc:Bounds x="1170" y="-115" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1125" y="-55" width="140" height="35" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="NObsoleteEnd_di" bpmnElement="NObsoleteEnd" bioc:stroke="#9a3412" bioc:fill="#fff7ed">
+        <dc:Bounds x="1032" y="-108" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="985" y="-45" width="140" height="35" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="N_Stale_Current_di" bpmnElement="N_Stale_Current" bioc:stroke="#9a3412">
+        <di:waypoint x="1725" y="162" />
+        <di:waypoint x="1725" y="-90" />
+        <di:waypoint x="1610" y="-90" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="N_Current_Route_di" bpmnElement="N_Current_Route" bioc:stroke="#9a3412">
+        <di:waypoint x="1380" y="-90" />
+        <di:waypoint x="1220" y="-90" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="N_Current_Apply_di" bpmnElement="N_Current_Apply" bioc:stroke="#9a3412">
+        <di:waypoint x="1195" y="-115" />
+        <di:waypoint x="1195" y="-210" />
+        <di:waypoint x="1880" y="-210" />
+        <di:waypoint x="1880" y="315" />
+        <di:waypoint x="1725" y="315" />
+        <di:waypoint x="1725" y="270" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1450" y="-250" width="160" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="N_Current_End_di" bpmnElement="N_Current_End" bioc:stroke="#9a3412">
+        <di:waypoint x="1170" y="-90" />
+        <di:waypoint x="1068" y="-90" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1010" y="-160" width="160" height="40" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
