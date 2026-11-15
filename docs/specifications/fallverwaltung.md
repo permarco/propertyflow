@@ -110,7 +110,7 @@ flowchart LR
     Z["Abgeschlossen"]
     E -->|"1"| Start
     Start -->|"2"| A
-    A -->|"4"| M
+    A -->|"4 / 29"| M
     M -->|"9"| B
     W -->|"17"| B
     B -->|"6"| P
@@ -162,7 +162,7 @@ Die Pfeilnummern verweisen auf die Übergänge in der Tabelle. Die Anmerkungen i
 | 1 | Eingegangen | Prozessstart | Erfolgreich in Camunda registriert |
 | 2 | Prozessstart | In Abklärung | Erster Bearbeitungsschritt · Entwurf |
 | 3 | In Abklärung | Mitarbeiterprüfung erforderlich | Menschliche Prüfung nötig |
-| 4 | In Abklärung | Wartet auf Mieterantwort | Freigegebene Rückfrage [1] |
+| 4 | In Abklärung | Wartet auf Mieterantwort | Automatische Katalogrückfrage [1] |
 | 5 | Mitarbeiterprüfung erforderlich | In Bearbeitung | Bearbeitung fortsetzen |
 | 6 | In Bearbeitung | Mitarbeiterprüfung erforderlich | Neuer Prüfbedarf, z. B. Statusmail dauerhaft abgelehnt |
 | 7 | In Bearbeitung | Wartet auf Mieterantwort | Rückfrage veröffentlicht [1] |
@@ -187,6 +187,7 @@ Die Pfeilnummern verweisen auf die Übergänge in der Tabelle. Die Anmerkungen i
 | 26 | Wartet auf externe Rückmeldung | Abgeschlossen | Mitarbeiter bestätigt Abschluss [3][4] |
 | 27 | Wartet auf externe Rückmeldung | Mitarbeiterprüfung erforderlich | Neuer zwingender Prüfbedarf [4] |
 | 28 | Wartet auf Mieterantwort | Abgeschlossen | Direkter Mitarbeiterabschluss [3] |
+| 29 | In Abklärung | Wartet auf Mieterantwort | Mitarbeiterrückfrage mit «Mieterantwort erforderlich» veröffentlicht [1]; kontrollierte Ablösung der automatischen Abklärung gemäss FALL-06 |
 
 - **[1]** Keine laufende Wiedervorlage und kein vorrangiger Mitarbeiterprüfbedarf; automatische Rückfragen benötigen die serverseitig geprüften Ausführungsbedingungen nach [KOM-05](fallkommunikation.md#kom-05-automatische-rueckfragen). Für zulässige Katalogrückfragen ist keine zusätzliche menschliche Einzelfreigabe vorgesehen.
 - **[2]** Kein zulässiger automatischer Abschluss und keine laufende Wiedervorlage.
@@ -286,6 +287,101 @@ Vor dem Prozessstart und bei nicht verfügbarem Camunda bleiben Fälle für bere
 Ergänzungen zu bestehenden Fällen setzen einen laufenden Fallprozess und erreichbares Camunda voraus. Bis dahin bleibt der ungesendete Text im Mieterformular. Die Fallannahme startet Camunda weiterhin asynchron. [UC-009](../use_cases/UC-009-mieteranliegen-ergaenzen.md) · [SS-003](../architecture/schnittstellenentwurf-block-3.md#ss-003--camunda-integrationsvertrag)
 
 Der Prozess gibt die jeweilige Mitarbeiteraktion an der dafür vorgesehenen Stelle frei. Eine Aktion darf keinen Fallstand aus einer bereits abgeschlossenen Aufgabe überschreiben. Während der Mitarbeiterprüfung wartet Camunda auf die fachliche Entscheidung. Verspätete automatische Ergebnisse aus einem früheren Prozessschritt dürfen den Fall in dieser Phase nicht ändern. Beim Fortsetzen prüft PropertyFlow den aktuellen Fallstand und die Zuordnung zur passenden Prozessaufgabe. Bei einem Konflikt wird die Aktion nicht als erfolgreich angezeigt. Eingaben und laufende Formulierung bleiben erhalten.
+
+### Mitarbeiterrückfrage während «In Abklärung»
+
+**Bestätigt am 15.11.2026 – Übergang 29:** Berechtigte Mitarbeitende dürfen
+während «In Abklärung» eine externe Nachricht mit «Mieterantwort erforderlich»
+veröffentlichen. Der Mitarbeiter formuliert die Frage selbst; die Einschränkung
+auf den Katalog automatischer Rückfragen gilt dafür nicht. Eine reine Information
+oder ein Entwurf löst diesen Übergang nicht aus.
+
+- Der Dienst prüft Berechtigung, führenden Prozessdurchlauf, aktuellen Fallstand,
+  Status und vorrangigen Prüfbedarf. Ein bereits geänderter Bearbeitungsstand
+  darf durch einen alten Auftrag nicht überschrieben werden.
+- Erst die erfolgreiche Veröffentlichung speichert die Nachricht, den offenen
+  Antwortbedarf, den Status «Wartet auf Mieterantwort» und die Mailpflicht
+  konsistent. Camunda führt diese Aktion und setzt beim Mieterwartepfad fort;
+  auf die tatsächliche E-Mail-Zustellung wird nicht gewartet (BEN-03).
+- Die bisherige automatische Abklärung wird kontrolliert abgelöst. Laufende
+  Modellaufrufe müssen technisch nicht abbrechbar sein; ihre verspäteten Ergebnisse
+  dürfen jedoch keine konkurrierende Nachricht, Statusänderung oder Schliessung
+  mehr bewirken. Auch bereits erteilte automatische Freigaben verlieren ihre Wirkung.
+- Veröffentlichung und konkurrierende automatische Aktionen müssen auf derselben
+  aktuellen Grundlage koordiniert werden. Ist eine automatische Veröffentlichung
+  oder eine andere Mitarbeiterentscheidung bereits wirksam geworden, wird der
+  veraltete Rückfrageauftrag ohne weitere Veröffentlichung zurückgewiesen; die
+  bestehende Wirkung bleibt erhalten. Der Mitarbeiter erhält den aktuellen Stand.
+- Zwingender Prüfbedarf hat Vorrang. Liegt er vor der Veröffentlichung vor, wird
+  dieser Übergang nicht ausgeführt; der Prüfpfad bleibt massgeblich. Entsteht er
+  nach der Veröffentlichung, bleibt die Nachricht erhalten und die Fortsetzung
+  führt zur Mitarbeiterprüfung. Der offene Antwortbedarf hebt diese Prüfung nicht auf.
+- Wiederholungen desselben erfolgreichen Auftrags erzeugen weder eine zweite
+  Nachricht noch einen zweiten Versandauftrag oder einen zweiten Wartepfad.
+  Weitere Mieternachrichten laufen weiterhin über den zentralen Nachrichteneingang;
+  ihre Verarbeitung und die Fortsetzung nach einer Antwort folgen KOM-03.
+
+Der BPMN-Fachentwurf zeigt den internen Mitarbeitereingang und die Ablösung der
+aktiven automatischen Schritte. Atomare Speicherung, zuverlässige Übergabe und
+Synchronisierung mit laufenden Jobs sind Anforderungen an die spätere Umsetzung,
+noch keine implementierte Backend-Funktion.
+
+### Zentrale Mitarbeiterfreigabe: Daten ergänzen
+
+**Bestätigt am 15.11.2026:** Berechtigte Mitarbeitende dürfen in allen sechs
+aktiven Bearbeitungsstatus Daten ergänzen. Diese Freigabe ist die zentrale
+fachliche Quelle für UI, Dienste und BPMN. Die Detailregeln zu Inhalt, Prüfung,
+Sichtbarkeit und Benachrichtigung bleiben in den jeweils verlinkten Spezifikationen.
+
+| Status | Daten ergänzen | Wirkung auf laufende Bearbeitung |
+|---|---|---|
+| Eingegangen | Nein; nur berechtigt lesen | Prozessaktivierung abwarten. |
+| In Abklärung | Ja | Laufende Analyse nicht allein durch die Nebenaktion beenden. |
+| Mitarbeiterprüfung erforderlich | Ja | Dieselbe Prüfaufgabe bleibt offen. |
+| In Bearbeitung | Ja | Dieselbe Bearbeitungsaufgabe bleibt offen. |
+| Wartet auf Mieterantwort | Ja | Wartephase und bisheriger Antwortbedarf bleiben bestehen. |
+| Wartet auf externe Rückmeldung | Ja | Externe Wartephase bleibt bestehen. |
+| Wartet auf Wiedervorlage | Ja | Wiedervorlage, Termin und Timer bleiben bestehen. |
+| Abgeschlossen | Nein; nur berechtigt lesen | Wiedereröffnung bleibt eine separate Mitarbeiteraktion. |
+
+«Daten ergänzen» umfasst ausschliesslich diese bestehenden Aktionen:
+
+- Internes Memo erfassen, gemäss [KOM-01](fallkommunikation.md#kom-01-interne-und-externe-nachrichten).
+- Reine externe Informationsnachricht **ohne neuen Antwortbedarf** veröffentlichen,
+  ebenfalls gemäss KOM-01. Eine ältere offene Rückfrage wird dadurch nicht erledigt.
+- Objekt-/Wohnungszuordnung bestätigen oder korrigieren, gemäss
+  [FALL-04](#fall-04-ursprungsdaten-und-zuordnung).
+- Dringlichkeit manuell ändern, gemäss
+  [Dringlichkeitsbewertung](dringlichkeitsbewertung.md). Der manuelle Vorrang bleibt geschützt.
+
+Die Aktion selbst beendet keine User Task, keine automatische Bearbeitung und
+keine Wartephase; sie ändert den fachlichen Bearbeitungsstatus nicht. Sie bestätigt
+keine Prüfgründe als berücksichtigt und erteilt keine Abschluss- oder Kostenfreigabe.
+Benachrichtigungen zu veröffentlichten Informationen und wirksamen
+Dringlichkeitsänderungen richten sich weiterhin nach
+[BEN-01](benachrichtigungen-und-zustellung.md#ben-01-auslöser-und-ausschlüsse).
+Interne Memos erzeugen keine Mieterbenachrichtigung.
+
+Entsteht durch die ergänzten Daten **neuer zwingender Prüfbedarf**, folgt separat
+der bereits festgelegte Prüfpfad. Deshalb kann die zusätzliche fachliche Erkenntnis
+zum Statuswechsel führen, nicht jedoch das blosse Ausführen einer Nebenaktion.
+Ebenso bleiben laufende Auswertungen an ihre aktuelle fachliche Grundlage gebunden:
+Eine relevante Änderung darf nicht von einem alten KI-Ergebnis überschrieben werden.
+
+Die Freigabe gilt nur bei laufendem, zugeordnetem Fallprozess und erreichbarem
+Camunda. Der Dienst prüft Mitarbeiterberechtigung, aktuelle Prozesszuordnung,
+Fallstand und aktionsspezifische Eingaben serverseitig; ein direkter Web-/MCP-Aufruf
+umgeht dies nicht. Die Aktion muss einer zulässigen Nebenaktion zugeordnet werden,
+darf aber nicht den Abschluss einer Mitarbeiter-User-Task voraussetzen. Bei
+Konflikt oder fehlender Bestätigung wird kein Erfolg behauptet; die bestehenden
+Regeln zum Erhalt von Mitarbeitereingabe und KI-Formulierung bleiben bestehen.
+
+Rückfragen **mit** Antwortbedarf, Antwortbedarf aufheben, Bearbeitung fortsetzen,
+Wiedervorlage setzen/ändern/löschen, externe Wartephase, Abschluss und Wiedereröffnung
+sind hiervon getrennte Aktionen. Deren bestehende Regeln bleiben bestehen; noch
+nicht bestätigte zusätzliche Übergänge aus der vorgeschlagenen Aktionsmatrix
+werden durch diese Grundregel ausdrücklich nicht freigegeben. BPMN-Anbindung und
+Backend-Umsetzung dieser gemeinsamen Freigabe stehen noch aus.
 
 ### Vorrang einer laufenden Mitarbeiterprüfung
 
@@ -984,6 +1080,19 @@ Mitarbeiterentscheidung und abgeschlossener/wiedereröffneter Fall bleiben vor a
 Meldungen geschützt. Dies sind geplante Integrationsprüfungen, keine ausgeführten
 Laufzeittests.
 
+### FALL-AK-34: Daten ergänzen in allen aktiven Status
+
+Jede der vier freigegebenen Aktionsarten in jedem der sechs aktiven Status prüfen:
+fachliche Daten werden korrekt gespeichert, dieselbe Aufgabe beziehungsweise
+Wartephase bleibt bestehen; Wiedervorlagetermin und Timer werden nicht beendet.
+Informationsnachrichten erledigen keine offenen Fragen, Memos bleiben intern und
+manuelle Dringlichkeit bleibt vor späteren KI-Ergebnissen geschützt. Neuen
+zwingenden Prüfbedarf aus geänderten Daten separat prüfen: bestehender Prüfpfad,
+keine pauschale Statusänderung durch jede Nebenaktion. Vor Aktivierung, nach
+Abschluss, bei unerreichbarem Camunda, fehlender Berechtigung oder veraltetem
+Fallstand werden unzulässige Aktionen auch bei direktem Zugriff abgewiesen.
+Dies sind geplante Integrationsprüfungen, keine ausgeführten Laufzeittests.
+
 ## Offene Entscheidungen und Weiterentwicklung
 
 - Konkrete Case-ID-Darstellung und Beziehung zur technischen Prozessreferenz.
@@ -999,3 +1108,20 @@ Laufzeittests.
 ### Nachweis gelöschter Wiedervorlagen – Präzisierung vom 13.10.2026
 
 Das interne Löschereignis enthält den vorherigen Termin und den neuen Zustand, beispielsweise «Wiedervorlage gelöscht: bisher 20.10.2026 → keine Wiedervorlage», mit Änderungszeitpunkt und optionaler interner Begründung. Dies gilt auch, wenn kein älteres Setzereignis vorhanden ist. Eine Wiederholung derselben erfolgreichen Aktion erzeugt keinen weiteren Eintrag; ohne vorhandenen Termin erzeugt eine neue Löschaktion keinen fingierten Löschvorgang.
+
+### FALL-AK-35: Mitarbeiterrückfrage löst automatische Abklärung ab
+
+Geplante Prüfungen, noch kein ausgeführter Backend-Test:
+
+- Rückfrage mit Antwortbedarf in «In Abklärung»: genau eine externe Nachricht,
+  offener Antwortbedarf, Status «Wartet auf Mieterantwort» und ein Versandauftrag;
+  der Prozess setzt im Mieterwartepfad fort, ohne auf SMTP zu warten.
+- Reine Information oder nicht veröffentlichter Entwurf: Status und Abklärung bleiben.
+- Verzögerte KI-Ergebnisse nach Übernahme: keine Veröffentlichung und kein Abschluss;
+  dies auch unmittelbar vor Katalogrückfrage, automatischer Antwort oder Abschluss prüfen.
+- Automatische Veröffentlichung zuerst wirksam: veralteten Mitarbeiterauftrag
+  ohne zusätzliche Nachricht zurückweisen; gespeicherte Nachricht erhalten.
+- Zwingender Prüfbedarf vor beziehungsweise nach Veröffentlichung: kein Übergang
+  entgegen der Mitarbeiterpriorität; bereits gespeicherte Nachricht bleibt erhalten.
+- Retry, falsche Berechtigung, alter Durchlauf und konkurrierender Statuswechsel:
+  keine doppelten Wirkungen und kein Überschreiben des aktuellen Zustands.

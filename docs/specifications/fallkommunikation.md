@@ -695,3 +695,14 @@ Die ursprüngliche Kennzeichnung «Mieterantwort erforderlich» bleibt unveränd
 ### Wiederholung einer Nachricht mit abweichendem Inhalt – Präzisierung vom 13.10.2026
 
 Bei Nachrichten bindet die erfolgreiche fallgebundene Absende-ID den ursprünglichen Anfrageinhalt: Text, interne/externe Auswahl, Antwortbedarf und Absenderrolle. Identische Wiederholungen erzeugen keine weitere Nachricht und bestätigen die frühere Speicherung, auch nach zwischenzeitlichem Abschluss. Dieselbe ID mit abweichendem Inhalt wird mit Konflikt zurückgewiesen; der geänderte Inhalt wird nicht gespeichert und nicht als erfolgreich übernommen ausgegeben. Im aktiven Fall bleiben Text und Auswahl im Browser erhalten. Die bestätigte UI1-Ausnahme bei erkanntem Abschluss bleibt gültig. Der Benutzer prüft den Verlauf vor einem neuen Sendevorgang; es erfolgt kein automatischer Neuversand mit neuer ID. Verglichen wird der übermittelte Text einschliesslich Leerzeichen, nicht nur der getrimmte Speicherwert. Fehlgeschlagene Erstversuche reservieren die ID nicht.
+
+### Mitarbeiterrückfrage während der automatischen Abklärung
+
+Für eine bewusst veröffentlichte Mitarbeiterrückfrage mit «Mieterantwort
+ erforderlich» im Status «In Abklärung» gilt zentral
+[FALL-06: Mitarbeiterrückfrage während In Abklärung](fallverwaltung.md#mitarbeiterrückfrage-während-in-abklärung)
+mit Übergang 29 und den geplanten Prüfungen FALL-AK-35. Sie löst die automatische
+Abklärung kontrolliert ab und eröffnet «Wartet auf Mieterantwort». Eine reine
+Information tut dies nicht. Mitarbeitertext braucht keine automatische Katalogfreigabe.
+Die bereits festgelegten Regeln für Fragen während Mitarbeiterprüfung oder
+Wiedervorlage bleiben bestehen.

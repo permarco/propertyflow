@@ -13,7 +13,11 @@ kein Warten des Fallprozesses auf SMTP. Keine Zusatz-Abschlussmail.
 Siehe [Versandmodell](fallbenachrichtigung-versenden.bpmn) und
 [BEN-03](../../specifications/benachrichtigungen-und-zustellung.md#ben-03-speicherung-und-zuverlässige-übergabe).
 
-B01–B05 und B07–B10 bleiben offen. Die folgenden Befunde und Zählwerte dokumentieren
+B02/B03 sind teilweise geklärt: Daten ergänzen bleibt in allen aktiven Status eine
+Nebenaktion. Übergang 29 (Mitarbeiterrückfrage aus In Abklärung) ist in FALL-06,
+im Zustandsdiagramm und im Hauptmodell 0.24 ergänzt. Weitere markierte
+Mitarbeiterübergänge sowie technische Synchronisierung bleiben offen.
+B01, B04/B05 und B07–B10 bleiben offen. Die folgenden Befunde und Zählwerte dokumentieren
 den Stand der Erstprüfung mit fünf Modellen; nun existiert zusätzlich das sechste
 Versandmodell mit Jobtypen und Routingbedingungen. B10 bleibt für die
 Ausführungsreife der Gesamtlösung relevant. Der nachfolgende ursprüngliche B06-Befund

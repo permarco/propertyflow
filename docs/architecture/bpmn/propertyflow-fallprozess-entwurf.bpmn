@@ -1,5 +1,6 @@
-<?xml version='1.0' encoding='UTF-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_PropertyFlow_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+  <bpmn:message id="Message_StaffQuestionClarification" name="Mitarbeiterrückfrage während Abklärung angefordert" />
   <bpmn:message id="Message_ReviewRequired" name="Fachlicher Prüfbedarf festgestellt" />
   <bpmn:message id="Message_StaffCloseReply" name="Mitarbeiterabschluss im Mieterwartepfad angefordert" />
   <bpmn:message id="Message_ClearAnswer" name="Antwortbedarf aufheben angefordert" />
@@ -19,7 +20,7 @@
   <bpmn:error id="Error_AnalysisStale" name="Analysegrundlage überholt" errorCode="ANALYSIS_BASIS_STALE">
     <bpmn:documentation>Fachlicher Platzhalter für Zeilen 1 und 3: Die Auswertung enthält neue relevante gespeicherte Mieternachrichten noch nicht. In Validate führt der Konflikt zur aktuellen Analysegrundlage; in RValidate zur aktuellen Antwortauswertung. Kein technischer Jobfehler und kein Analysefehler. Meldung durch den späteren Prüfdienst, nicht automatisch durch blossen Nachrichteneingang. Keine zweite unabhängige Verarbeitung; aktuelle Mitarbeiterentscheidung und Abschluss schützen. Keine Ausführungsimplementierung.</bpmn:documentation>
   </bpmn:error>
-  <bpmn:process id="PropertyFlow_Case_Draft" name="PropertyFlow · Fallprozess · Fachentwurf 0.21" isExecutable="false">
+  <bpmn:process id="PropertyFlow_Case_Draft" name="PropertyFlow · Fallprozess · Fachentwurf 0.24" isExecutable="false">
     <bpmn:documentation>Fachentwurf 0.13, nicht ausführbar. Individuelle LLM-Nachricht im AutoAnswer-Worker erzeugen, prüfen, speichern und Versand beauftragen; danach Close. Kein Vorlagenkatalog, keine zusätzliche Abschlussmail. Mitarbeiterabschluss ohne Nachricht. Menschliche Priorität, Aktualität, Rückfragen, Wiedervorlage und bisherige Konfliktrückwege bleiben. Technische Fehler: Job-Retries/Incidents. Start-/Kindinstanz-Verträge weiterhin vor Ausführung konkretisieren; keine Backend-Implementierung.
 Fachentwurf 0.15: Wiedereröffnung startet eine neue Instanz für denselben Fall; direkter Mitarbeiterpfad gemäss FALL-07. Keine Backend-Implementierung.</bpmn:documentation>
     <bpmn:subProcess id="ActiveCase" name="Aktiven Fall bearbeiten">
@@ -38,13 +39,15 @@ Nur Erstanlage. Eine Wiedereröffnung darf ausschliesslich ReopenCase zuordnen; 
         <bpmn:outgoing>F02</bpmn:outgoing>
       </bpmn:serviceTask>
       <bpmn:serviceTask id="Clarification" name="Status speichern:&#10;In Abklärung">
-        <bpmn:documentation>BEN-03 / 0.23: Bei tatsächlicher benachrichtigungspflichtiger Änderung Ereignis und Mailpflicht dauerhaft zusammen sichern. Der dauerhafte Starter startet fallbenachrichtigung-versenden.bpmn mit mailOrderRef; dort beauftragen Camunda-Send-Tasks den Mail-Worker. Hier kein direkter SMTP-Aufruf und kein Warten auf SMTP. Unveränderte Werte und identische Wiederholungen erzeugen keine neue Mailpflicht. </bpmn:documentation>
+        <bpmn:documentation>BEN-03 / 0.23: Bei tatsächlicher benachrichtigungspflichtiger Änderung Ereignis und Mailpflicht dauerhaft zusammen sichern. Der dauerhafte Starter startet fallbenachrichtigung-versenden.bpmn mit mailOrderRef; dort beauftragen Camunda-Send-Tasks den Mail-Worker. Hier kein direkter SMTP-Aufruf und kein Warten auf SMTP. Unveränderte Werte und identische Wiederholungen erzeugen keine neue Mailpflicht.
+FALL-06 Übergang 29: Übernommene Mitarbeiterrückfrage sperrt jede weitere automatische Wirkung dieses Abklärungslaufs; verspätete Ergebnisse verwerfen. Status und Übergangsbezug vor jedem Schreiben konsistent prüfen.</bpmn:documentation>
         <bpmn:incoming>F02</bpmn:incoming>
         <bpmn:outgoing>F03</bpmn:outgoing>
       </bpmn:serviceTask>
       <bpmn:serviceTask id="Triage" name="Dringlichkeit&#10;bewerten">
         <bpmn:documentation>BEN-03 / 0.23: Bei tatsächlicher benachrichtigungspflichtiger Änderung Ereignis und Mailpflicht dauerhaft zusammen sichern. Der dauerhafte Starter startet fallbenachrichtigung-versenden.bpmn mit mailOrderRef; dort beauftragen Camunda-Send-Tasks den Mail-Worker. Hier kein direkter SMTP-Aufruf und kein Warten auf SMTP. Unveränderte Werte und identische Wiederholungen erzeugen keine neue Mailpflicht. Triage über Modell-Port. Vorhandene manuelle Dringlichkeit hat Vorrang. Bei festgestelltem Analysefehler oder ungültiger Modellausgabe meldet der spätere Worker TRIAGE_ANALYSIS_FAILED. Der unterbrechende Fehlerpfad führt unmittelbar zur Mitarbeiterprüfung; Vorgehen bestimmen wird in diesem Durchlauf nicht aufgerufen. Eine vorhandene Einstufung bleibt erhalten, sonst gilt Noch nicht bewertet. Keine erfundene Stufe. Technische Speicherfehler bleiben von dieser fachlichen Analysefehlerreaktion getrennt.
-KOM-03 Zeile 1: Ergebnis vor Übernahme gegen relevante gespeicherte Nachrichten prüfen; keine aktuelle Einstufung durch alte Grundlage überschreiben. Neue Nachrichten berücksichtigt die zentrale Auswertung. Ein überholter Erfolgsstand darf keine Folgeaktion autorisieren; Validate führt zur aktuellen Auswertung zurück. Keine technische Pflicht zum Abbruch laufender Modellaufrufe.</bpmn:documentation>
+KOM-03 Zeile 1: Ergebnis vor Übernahme gegen relevante gespeicherte Nachrichten prüfen; keine aktuelle Einstufung durch alte Grundlage überschreiben. Neue Nachrichten berücksichtigt die zentrale Auswertung. Ein überholter Erfolgsstand darf keine Folgeaktion autorisieren; Validate führt zur aktuellen Auswertung zurück. Keine technische Pflicht zum Abbruch laufender Modellaufrufe.
+FALL-06 Übergang 29: Übernommene Mitarbeiterrückfrage sperrt jede weitere automatische Wirkung dieses Abklärungslaufs; verspätete Ergebnisse verwerfen. Status und Übergangsbezug vor jedem Schreiben konsistent prüfen.</bpmn:documentation>
         <bpmn:incoming>F03</bpmn:incoming>
         <bpmn:outgoing>F04</bpmn:outgoing>
       </bpmn:serviceTask>
@@ -57,7 +60,8 @@ KOM-03 Zeile 1: Ergebnis vor Übernahme gegen relevante gespeicherte Nachrichten
         <bpmn:documentation>UC-018/021: erlaubten Fallkontext und freigegebene Fachregeln verwenden. Rückfrage, Antwort mit Systemabschluss oder Mitarbeiterprüfung vorschlagen. Für Rückfragen passende Frage-IDs aus KOM-05 für notwendige fehlende Sachangaben auswählen; keine freien Textzusätze automatisch veröffentlichen. Bekannte Angaben und bisherigen Antwortbedarf berücksichtigen. Keine internen Memos oder Ableitungen daraus an Kommunikations-LLM; auch nicht bei anschliessender menschlicher Prüfung. Für einen vorgeschlagenen Systemabschluss genau einen der bestätigten FALL-07-Gründe mit Belegstellen zur vollständigen Behebung beziehungsweise mit Regelkennung und -version für den gesamten Sachverhalt begründen. Keine unbekannten Tatsachen oder Zuständigkeitsregeln ergänzen. Fehlende Belege und Widersprüche offen ausweisen. Der Vorschlag erteilt keine dauerhafte Abschluss- oder Veröffentlichungsfreigabe; diese werden separat am aktuellen Stand geprüft.
  Die Empfehlung enthält noch keinen zu versendenden Text; AutoAnswer erzeugt später die individuelle LLM-Nachricht und prüft sie im Worker. Empfehlung ist keine Ausführungsfreigabe; Kontextgrenze KOM-02 bleibt verbindlich.
 KOM-03 Zeile 1: Ergebnis vor Übernahme gegen relevante gespeicherte Nachrichten prüfen; keine aktuelle Einstufung durch alte Grundlage überschreiben. Neue Nachrichten berücksichtigt die zentrale Auswertung. Ein überholter Erfolgsstand darf keine Folgeaktion autorisieren; Validate führt zur aktuellen Auswertung zurück. Keine technische Pflicht zum Abbruch laufender Modellaufrufe.
-KOM-06: Abschlussgrund und Belege empfehlen. Individuelle Abschlussnachricht erst im nachgelagerten AutoAnswer-Worker erzeugen und dort prüfen; keine Antwortart-/Vorlagenwahl.</bpmn:documentation>
+KOM-06: Abschlussgrund und Belege empfehlen. Individuelle Abschlussnachricht erst im nachgelagerten AutoAnswer-Worker erzeugen und dort prüfen; keine Antwortart-/Vorlagenwahl.
+FALL-06 Übergang 29: Übernommene Mitarbeiterrückfrage sperrt jede weitere automatische Wirkung dieses Abklärungslaufs; verspätete Ergebnisse verwerfen. Status und Übergangsbezug vor jedem Schreiben konsistent prüfen.</bpmn:documentation>
         <bpmn:incoming>F04</bpmn:incoming>
         <bpmn:outgoing>F05</bpmn:outgoing>
       </bpmn:serviceTask>
@@ -66,7 +70,8 @@ KOM-06: Abschlussgrund und Belege empfehlen. Individuelle Abschlussnachricht ers
 KOM-06: Individuelle Nachricht erst nach fachlicher Freigabe im AutoAnswer-Worker erzeugen und inhaltlich prüfen. Unzulässiger Inhalt führt zur Mitarbeiterprüfung, technische Generierungsfehler folgen Retries/Incident. Keine feste Textfassung.
 Zeile 1 bestätigt: Neue Nachricht während automatischer Analyse macht die unvollständige Grundlage unzulässig. Bei weiterhin In Abklärung über ANALYSIS_BASIS_STALE zu CurrentAnalysis und danach erneut prüfen. Kein Weg über den Default-Ausgang zur Mitarbeiterprüfung allein wegen veralteter Grundlage. Zeile 2: QuestionStale und AutoAnswerStale führen vor Veröffentlichung ebenfalls über CurrentAnalysis zurück.
 Bei Rückkehr aus Zeile 2 den bisherigen Rückfragenkontext berücksichtigen: Alle zuvor offenen Fragen beantwortet und kein zulässiger Systemabschluss sowie keine vorrangige Wiedervorlage -&gt; Mitarbeiterprüfung nach FALL-05. Dies nicht durch neue Katalogfragen umgehen. Teilantworten lassen übrige Fragen offen; reine Information ohne zuvor offene Fragen löst diesen Übergang nicht allein aus. Kein Statuswechsel zu In Abklärung durch den Rückweg. Fachliche Ergebnis- und Wartewege gelten weiter; technische Koordination bleibt vor Ausführung festzulegen.
-Zeile 3 / KOM-AK-24, am aktuellen Fallstand in dieser Reihenfolge: 1. Pflichtprüfbedarf oder Analysefehler -&gt; Mitarbeiterprüfung. 2. Zulässiger Systemabschluss mit anschliessender LLM-Nachricht -&gt; Antwort veröffentlichen und Abschluss erneut prüfen. 3. Alle zuvor offenen Fragen beantwortet, kein zulässiger Abschluss -&gt; Mitarbeiterprüfung, nicht durch neue Fragen umgehen. 4. Fragen bleiben offen und weitere notwendige Katalogfrage zulässig -&gt; nur diese neue Frage veröffentlichen. 5. Fragen offen und keine weitere Frage nötig -&gt; weiter warten ohne neue Kommunikation. Unzuverlässige Grundlage, fehlende zulässigen Nachrichteninhalt und notwendige Frage ausserhalb des Katalogs folgen den bestehenden Prüfregeln, kein stilles Weiterwarten. Teilantwort allein ist kein Prüfgrund. Kein Status In Abklärung allein durch Antwortauswertung. Zwischenzeitliche Mitarbeiterentscheidung und Abschluss schützen.</bpmn:documentation>
+Zeile 3 / KOM-AK-24, am aktuellen Fallstand in dieser Reihenfolge: 1. Pflichtprüfbedarf oder Analysefehler -&gt; Mitarbeiterprüfung. 2. Zulässiger Systemabschluss mit anschliessender LLM-Nachricht -&gt; Antwort veröffentlichen und Abschluss erneut prüfen. 3. Alle zuvor offenen Fragen beantwortet, kein zulässiger Abschluss -&gt; Mitarbeiterprüfung, nicht durch neue Fragen umgehen. 4. Fragen bleiben offen und weitere notwendige Katalogfrage zulässig -&gt; nur diese neue Frage veröffentlichen. 5. Fragen offen und keine weitere Frage nötig -&gt; weiter warten ohne neue Kommunikation. Unzuverlässige Grundlage, fehlende zulässigen Nachrichteninhalt und notwendige Frage ausserhalb des Katalogs folgen den bestehenden Prüfregeln, kein stilles Weiterwarten. Teilantwort allein ist kein Prüfgrund. Kein Status In Abklärung allein durch Antwortauswertung. Zwischenzeitliche Mitarbeiterentscheidung und Abschluss schützen.
+FALL-06 Übergang 29: Übernommene Mitarbeiterrückfrage sperrt jede weitere automatische Wirkung dieses Abklärungslaufs; verspätete Ergebnisse verwerfen. Status und Übergangsbezug vor jedem Schreiben konsistent prüfen.</bpmn:documentation>
         <bpmn:incoming>F05</bpmn:incoming>
         <bpmn:incoming>F_Current_Validate</bpmn:incoming>
         <bpmn:outgoing>F06</bpmn:outgoing>
@@ -79,7 +84,8 @@ Zeile 3 / KOM-AK-24, am aktuellen Fallstand in dieser Reihenfolge: 1. Pflichtpr�
       <bpmn:serviceTask id="CurrentAnalysis" name="Aktuelle Auswertung&#10;übernehmen / abwarten">
         <bpmn:documentation>KOM-03 / KOM-AK-22/23: Bereits vorhandene aktuelle Auswertung aus der zentralen Verarbeitung übernehmen. Eine passende laufende Auswertung abwarten; fehlt sie, ihre Erstellung über dieselbe zentrale Verarbeitung veranlassen. Keine zweite unabhängige Analyse und kein weiterer externer Nachrichtenempfänger. Alle relevanten gespeicherten Nachrichten einbeziehen; bei weiterem Eingang erneut aktuellen Stand verlangen. Vor Rückkehr Fallstand und Prozessfreigabe prüfen. Bei Zeile 1 zunächst In Abklärung beibehalten; bei Zeile 2 den aktuellen zulässigen Status erhalten, insbesondere Wartet auf Mieterantwort nicht durch den Rückweg zurücksetzen; Mitarbeiterentscheidung, Pflichtprüfbedarf und Abschluss haben Vorrang. Tatsächlicher Analysefehler folgt der Fehlerbehandlung, kein endloses Warten auf ein erfolgreiches Ergebnis. Der Task fasst Bereitstellung und Warten fachlich zusammen: ausführbares Warteverfahren, Ergebnisverbrauch, Variablen und Fehlerkoordination noch festzulegen. Kein blockierender Worker-Vertrag vorgeschrieben. Rückkehr ausschliesslich zu Validate, keine Veröffentlichung oder Abschlussfreigabe durch diesen Schritt.
 Rückwege von Katalogrückfrage und automatischer Antwort verwenden dieselbe zentrale Verarbeitung. Bisherige Rückfragen, aktueller Antwortbedarf und bereits berücksichtigte Mitarbeiterentscheidungen bleiben Teil der Prüfung. Kein Verbrauch eines alten Ergebnisses für eine neue Grundlage, keine zweite unabhängige Auswertung, keine Übernahme alter Veröffentlichungsfreigaben.
-Rückweg AUTO_CLOSURE_STALE: bereits veröffentlichte Antwort und ihren Auftragsbezug laden/erhalten; aktuelle Auswertung einschliesslich neuer Nachrichten verwenden. Keine alte Abschlussfreigabe übernehmen. Mitarbeiterentscheidung und Abschluss schützen; keine zweite identische Antwort. KOM-AK-26.</bpmn:documentation>
+Rückweg AUTO_CLOSURE_STALE: bereits veröffentlichte Antwort und ihren Auftragsbezug laden/erhalten; aktuelle Auswertung einschliesslich neuer Nachrichten verwenden. Keine alte Abschlussfreigabe übernehmen. Mitarbeiterentscheidung und Abschluss schützen; keine zweite identische Antwort. KOM-AK-26.
+FALL-06 Übergang 29: Übernommene Mitarbeiterrückfrage sperrt jede weitere automatische Wirkung dieses Abklärungslaufs; verspätete Ergebnisse verwerfen. Status und Übergangsbezug vor jedem Schreiben konsistent prüfen.</bpmn:documentation>
         <bpmn:incoming>F_AnalysisStale_Current</bpmn:incoming>
         <bpmn:incoming>F_QuestionStale_Current</bpmn:incoming>
         <bpmn:incoming>F_AutoAnswerStale_Current</bpmn:incoming>
@@ -97,7 +103,8 @@ Zeile 3 / KOM-AK-24, am aktuellen Fallstand in dieser Reihenfolge: 1. Pflichtpr�
       </bpmn:exclusiveGateway>
       <bpmn:serviceTask id="Question" name="Katalogrückfrage&#10;veröffentlichen">
         <bpmn:documentation>BEN-03 / 0.23: Bei tatsächlicher benachrichtigungspflichtiger Änderung Ereignis und Mailpflicht dauerhaft zusammen sichern. Der dauerhafte Starter startet fallbenachrichtigung-versenden.bpmn mit mailOrderRef; dort beauftragen Camunda-Send-Tasks den Mail-Worker. Hier kein direkter SMTP-Aufruf und kein Warten auf SMTP. Unveränderte Werte und identische Wiederholungen erzeugen keine neue Mailpflicht. KOM-05: Unmittelbar vor Speicherung Fallversion, Prozessfreigabe, Katalog und Antwortbedarf erneut konsistent prüfen. Nur hinterlegten freigegebenen Fragetext veröffentlichen; kein freier LLM-Zusatz. Erst erfolgreiche Veröffentlichung erzeugt Antwortbedarf. Systemherkunft, externe Sichtbarkeit und Entscheidungsbezug festhalten. Idempotente Wiederholungen erzeugen keine zweite Nachricht; keine bereits offene, beantwortete oder bewusst aufgehobene Frage reaktivieren. Vorrang von Mitarbeiterprüfung und Wiedervorlage sowie Abschluss nach KOM-04 wahren. Technische Synchronisierung bleibt festzulegen.
-Zeile 2 bestätigt: Nachrichtenstand prüfen und Veröffentlichung mit konkurrierender Nachrichtenspeicherung konsistent synchronisieren. Neue relevante Nachricht zuerst gespeichert -&gt; vor Speicherung PUBLICATION_BASIS_STALE melden; keine Veröffentlichung und kein normaler Folgeweg. Veröffentlichung zuerst gespeichert -&gt; erhalten, nachfolgende Nachricht gegen aktuellen Verlauf auswerten. Kein rückwirkendes Löschen oder neuer Mailauftrag beim Retry. Die Wiederholung einer schon erfolgreichen Veröffentlichung allein meldet keinen fachlichen Konflikt. Technische DB-Fehler getrennt behandeln.</bpmn:documentation>
+Zeile 2 bestätigt: Nachrichtenstand prüfen und Veröffentlichung mit konkurrierender Nachrichtenspeicherung konsistent synchronisieren. Neue relevante Nachricht zuerst gespeichert -&gt; vor Speicherung PUBLICATION_BASIS_STALE melden; keine Veröffentlichung und kein normaler Folgeweg. Veröffentlichung zuerst gespeichert -&gt; erhalten, nachfolgende Nachricht gegen aktuellen Verlauf auswerten. Kein rückwirkendes Löschen oder neuer Mailauftrag beim Retry. Die Wiederholung einer schon erfolgreichen Veröffentlichung allein meldet keinen fachlichen Konflikt. Technische DB-Fehler getrennt behandeln.
+FALL-06 Übergang 29: Übernommene Mitarbeiterrückfrage sperrt jede weitere automatische Wirkung dieses Abklärungslaufs; verspätete Ergebnisse verwerfen. Status und Übergangsbezug vor jedem Schreiben konsistent prüfen.</bpmn:documentation>
         <bpmn:incoming>F07</bpmn:incoming>
         <bpmn:incoming>F18</bpmn:incoming>
         <bpmn:outgoing>F08</bpmn:outgoing>
@@ -125,6 +132,7 @@ Ruft mieterantwort-pruefen.bpmn auf. Vertrag: teilprozess-vertraege.md. Untergeo
         <bpmn:incoming>F19</bpmn:incoming>
         <bpmn:incoming>F_RefreshWait</bpmn:incoming>
         <bpmn:incoming>CA06</bpmn:incoming>
+        <bpmn:incoming>SQ08</bpmn:incoming>
         <bpmn:outgoing>F09</bpmn:outgoing>
       </bpmn:callActivity>
       <bpmn:exclusiveGateway id="ReplyRoute" name="Ergebnis der Antwortprüfung" default="F21">
@@ -140,7 +148,8 @@ Nach Call-Rückkehr ausschliesslich replyOutcome / replyDecisionRef auswerten. U
       <bpmn:serviceTask id="AutoAnswer" name="LLM-Nachricht erstellen&#10;und versenden">
         <bpmn:documentation>BEN-03 / 0.23: Bei tatsächlicher benachrichtigungspflichtiger Änderung Ereignis und Mailpflicht dauerhaft zusammen sichern. Der dauerhafte Starter startet fallbenachrichtigung-versenden.bpmn mit mailOrderRef; dort beauftragen Camunda-Send-Tasks den Mail-Worker. Hier kein direkter SMTP-Aufruf und kein Warten auf SMTP. Unveränderte Werte und identische Wiederholungen erzeugen keine neue Mailpflicht. KOM-06, vereinfachte Version: Nach zulässiger Systemabschlussentscheidung eine individuelle LLM-Nachricht über den Modell-Port erzeugen. Im selben Worker Inhalt, Fall-/Prozessbezug, aktuelle relevante Nachrichten, Abschlussgrund und Mitarbeiterpriorität prüfen; KOM-02 einhalten. Keine festen Antwortvorlagen oder separate Textfreigabe. Die Nachricht darf den Abschluss mitteilen. Bei inhaltlich unzulässiger Ausgabe CLOSURE_MESSAGE_INVALID melden: nichts veröffentlichen, kein automatischer Abschluss, Mitarbeiterprüfung. Technische Modell-/Speicherfehler über Job-Retries und nach Ausschöpfung Incident, nicht über diesen fachlichen Fehler.
 Vollständige Nachricht extern mit Systemherkunft speichern und E-Mail-Versand zuverlässig beauftragen; kein Warten auf SMTP-Annahme oder Zustellung. Erst danach F11 zu Close. Keine neue Rückfrage und kein vorzeitiges Beenden offenen Antwortbedarfs. Keine Übernahme in das Mitarbeiter-Antwortfeld.
-Vor Veröffentlichung veraltete Grundlage: PUBLICATION_BASIS_STALE, keine alte Nachricht speichern. Bereits erfolgreich veröffentlichter identischer Auftrag wird nicht nochmals generiert, gespeichert oder beauftragt; gespeicherten Bezug verwenden, aktuelle Zulässigkeit und Close trotzdem erneut prüfen. Bei AUTO_CLOSURE_STALE-Rückweg vorhandene Nachricht samt Versandauftrag erhalten. Ein anderer Auftrag braucht neue fachliche Prüfung. Nach Abschluss und für alte Bearbeitungen keine neue Wirkung. Keine zusätzliche Abschlussmail nach Close. Technische Umsetzung steht aus.</bpmn:documentation>
+Vor Veröffentlichung veraltete Grundlage: PUBLICATION_BASIS_STALE, keine alte Nachricht speichern. Bereits erfolgreich veröffentlichter identischer Auftrag wird nicht nochmals generiert, gespeichert oder beauftragt; gespeicherten Bezug verwenden, aktuelle Zulässigkeit und Close trotzdem erneut prüfen. Bei AUTO_CLOSURE_STALE-Rückweg vorhandene Nachricht samt Versandauftrag erhalten. Ein anderer Auftrag braucht neue fachliche Prüfung. Nach Abschluss und für alte Bearbeitungen keine neue Wirkung. Keine zusätzliche Abschlussmail nach Close. Technische Umsetzung steht aus.
+FALL-06 Übergang 29: Übernommene Mitarbeiterrückfrage sperrt jede weitere automatische Wirkung dieses Abklärungslaufs; verspätete Ergebnisse verwerfen. Status und Übergangsbezug vor jedem Schreiben konsistent prüfen.</bpmn:documentation>
         <bpmn:incoming>F10</bpmn:incoming>
         <bpmn:incoming>F20</bpmn:incoming>
         <bpmn:outgoing>F11</bpmn:outgoing>
@@ -155,7 +164,8 @@ Vor Veröffentlichung veraltete Grundlage: PUBLICATION_BASIS_STALE, keine alte N
 KOM-06 für den automatischen Antwortweg F11: Eine veröffentlichte Antwort ersetzt keine erneute Prüfung der aktuellen Abschlussgrundlage. Scheitert die Speicherung oder ist der Abschluss inzwischen unzulässig, bleibt die Antwort einmalig und unverändert im Verlauf. Ohne erfolgreichen Abschluss bleiben der Fall aktiv und noch offene Rückfragen bestehen; kein erfolgreicher Abschlussnachweis und kein Abschlussmailauftrag. Die schon bestehende Benachrichtigungspflicht zur Antwort entfällt nicht. Kein erfolgreicher Übergang zu ActiveEnd bei gescheitertem Abschluss. Beim Retry Antwort nicht erneut veröffentlichen, aktuellen Stand prüfen; bereits erfolgreich gespeicherten identischen Abschluss idempotent bestätigen. Kein pauschaler STAFF_CLOSURE_STALE-Fehler für einen veralteten Systemvorschlag. Technische Koordination der jeweils aktuellen Fortsetzung noch festzulegen.
 Bei veralteter noch nicht gespeicherter Systemabschlussgrundlage nach Antwort ausdrücklich AUTO_CLOSURE_STALE melden. CurrentAnalysis -&gt; Validate; vorhandene Antwort und Veröffentlichungsbezug erhalten. Technischer Fehler bleibt Retry, erfolgreicher identischer Abschluss bleibt Erfolg. KOM-AK-26.
 Vereinfachter Stand: Der Abschluss erzeugt keine Nachricht und keinen Versandauftrag, auch keine generische Statusmail. Beim Systemweg ist Nachricht samt Versandauftrag bereits in AutoAnswer gespeichert. Mitarbeiterweg darf ohne Nachricht abschliessen. Technischer Jobfehler: Retries/Incident; keine doppelte Nachricht. Aktuelle Grundlage erneut prüfen; AUTO_CLOSURE_STALE und STAFF_CLOSURE_STALE bleiben getrennt.
-0.20: Eingang CR06 verwendet den persistierten Mitarbeiterauftrag zum abgebrochenen Reply-Call, nicht dessen Outputs und keine Systemabschlussfreigabe. Keine AutoAnswer-Stufe. Fachlich veraltete übernommene Entscheidung meldet STAFF_CLOSURE_STALE. Keine neue Analyse oder Nachricht als Voraussetzung. Antwortbedarf endet erst mit erfolgreichem Abschlusscommit.</bpmn:documentation>
+0.20: Eingang CR06 verwendet den persistierten Mitarbeiterauftrag zum abgebrochenen Reply-Call, nicht dessen Outputs und keine Systemabschlussfreigabe. Keine AutoAnswer-Stufe. Fachlich veraltete übernommene Entscheidung meldet STAFF_CLOSURE_STALE. Keine neue Analyse oder Nachricht als Voraussetzung. Antwortbedarf endet erst mit erfolgreichem Abschlusscommit.
+FALL-06 Übergang 29: Übernommene Mitarbeiterrückfrage sperrt jede weitere automatische Wirkung dieses Abklärungslaufs; verspätete Ergebnisse verwerfen. Status und Übergangsbezug vor jedem Schreiben konsistent prüfen.</bpmn:documentation>
         <bpmn:incoming>F11</bpmn:incoming>
         <bpmn:incoming>F16</bpmn:incoming>
         <bpmn:incoming>CR06</bpmn:incoming>
@@ -189,6 +199,7 @@ Ruft mitarbeiterbearbeitung.bpmn auf. Vertrag: teilprozess-vertraege.md. Unterge
         <bpmn:incoming>F_Reopen_Staff</bpmn:incoming>
         <bpmn:incoming>CA05</bpmn:incoming>
         <bpmn:incoming>PN11</bpmn:incoming>
+        <bpmn:incoming>SQ09</bpmn:incoming>
         <bpmn:outgoing>F15</bpmn:outgoing>
       </bpmn:callActivity>
       <bpmn:exclusiveGateway id="StaffRoute" name="Fortsetzung">
@@ -468,8 +479,130 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
       </bpmn:serviceTask>
       <bpmn:sequenceFlow id="PN10" name="" sourceRef="ReplyReviewNeeded" targetRef="ReviewNeedPrepare" />
       <bpmn:sequenceFlow id="PN11" name="Aktuelle Mitarbeiterprüfung" sourceRef="ReviewNeedPrepare" targetRef="Staff" />
+      <bpmn:subProcess id="StaffQuestionSide" triggeredByEvent="true" name="Mitarbeiterrückfrage während In Abklärung">
+        <bpmn:documentation>FALL-06 Übergang 29 / FALL-AK-35. Interner nicht unterbrechender Auftragseingang; noch keine Veröffentlichung allein durch Nachrichteneingang. Nur berechtigte Mitarbeiterrückfrage mit Antwortbedarf. Lokale Auftragsvariablen; kein zusätzlicher Empfänger für Mieternachrichten. Abgelehnte Aufträge verändern den laufenden Hauptpfad nicht.</bpmn:documentation>
+        <bpmn:startEvent id="StaffQuestionStart" isInterrupting="false" name="Rückfrage angefordert">
+          <bpmn:outgoing>SQ01</bpmn:outgoing>
+          <bpmn:messageEventDefinition id="StaffQuestionStart_definition" messageRef="Message_StaffQuestionClarification" />
+        </bpmn:startEvent>
+        <bpmn:serviceTask id="StaffQuestionPublish" name="Auftrag prüfen und Rückfrage&#10;mit Antwortbedarf veröffentlichen">
+          <bpmn:documentation>FALL-06 ist die zentrale Regel: Berechtigung, Auftrags-ID, Fallversion, führenden Durchlauf und Status In Abklärung prüfen. Pflichtprüfbedarf sperrt diesen Übergang. Veralteten Auftrag ohne Veröffentlichung ablehnen, insbesondere wenn eine konkurrierende automatische Veröffentlichung bereits wirksam ist. Bei Annahme Mitarbeitertext, Antwortbedarf, Status Wartet auf Mieterantwort und Mailpflicht konsistent sichern; keine Katalogpflicht, keine LLM-Textfreigabe. Automatische Schreibfreigaben dabei entziehen. Erfolgreiche Wiederholung liefert den gespeicherten Übergang. BEN-03: dauerhafter Versandauftrag an separaten Mailprozess, kein Warten auf SMTP. Zuverlässige Fortsetzung nach DB-Commit erforderlich; fachliche Ablehnung ist kein technischer Retry-Fehler.</bpmn:documentation>
+          <bpmn:incoming>SQ01</bpmn:incoming>
+          <bpmn:outgoing>SQ02</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:exclusiveGateway id="StaffQuestionResult" name="Veröffentlicht?">
+          <bpmn:incoming>SQ02</bpmn:incoming>
+          <bpmn:outgoing>SQ03</bpmn:outgoing>
+          <bpmn:outgoing>SQ05</bpmn:outgoing>
+        </bpmn:exclusiveGateway>
+        <bpmn:serviceTask id="StaffQuestionSignal" name="Übernahme für aktuellen&#10;Automatikschritt bereitstellen">
+          <bpmn:documentation>Dauerhaften Übergangsbezug zuverlässig an aktuellen automatischen Schritt im führenden Durchlauf vermitteln; Marker staffQuestionTakeoverReady gilt nur für diesen übernommenen Abklärungslauf. Gegen Aktivitätswechsel und verspätete Worker koordinieren. Marker bleibt bis zum Verbrauch wirksam; auch nachfolgend aktivierte automatische Schritte dürfen ihn nicht überlaufen. Kein normaler Output eines abgebrochenen Jobs erforderlich. Technisches Zustell-/Unterbrechungsverfahren vor ausführbarer Fassung festlegen.</bpmn:documentation>
+          <bpmn:incoming>SQ03</bpmn:incoming>
+          <bpmn:outgoing>SQ04</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:endEvent id="StaffQuestionDone" name="Übernahme bereitgestellt">
+          <bpmn:incoming>SQ04</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:endEvent id="StaffQuestionRejected" name="Abgelehnt: aktuellen Stand anzeigen&#10;Laufender Pfad bleibt">
+          <bpmn:incoming>SQ05</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="SQ01" sourceRef="StaffQuestionStart" targetRef="StaffQuestionPublish" />
+        <bpmn:sequenceFlow id="SQ02" sourceRef="StaffQuestionPublish" targetRef="StaffQuestionResult" />
+        <bpmn:sequenceFlow id="SQ03" sourceRef="StaffQuestionResult" targetRef="StaffQuestionSignal" name="Ja / bereits übernommen" />
+        <bpmn:sequenceFlow id="SQ04" sourceRef="StaffQuestionSignal" targetRef="StaffQuestionDone" />
+        <bpmn:sequenceFlow id="SQ05" sourceRef="StaffQuestionResult" targetRef="StaffQuestionRejected" name="Nein" />
+      </bpmn:subProcess>
+      <bpmn:exclusiveGateway id="StaffQuestionJoin" name="Mitarbeiterrückfrage&#10;übernommen">
+        <bpmn:incoming>SQ_Takeover_Clarification</bpmn:incoming>
+        <bpmn:incoming>SQ_Takeover_Triage</bpmn:incoming>
+        <bpmn:incoming>SQ_Takeover_Recommend</bpmn:incoming>
+        <bpmn:incoming>SQ_Takeover_Validate</bpmn:incoming>
+        <bpmn:incoming>SQ_Takeover_CurrentAnalysis</bpmn:incoming>
+        <bpmn:incoming>SQ_Takeover_Question</bpmn:incoming>
+        <bpmn:incoming>SQ_Takeover_AutoAnswer</bpmn:incoming>
+        <bpmn:incoming>SQ_Takeover_Close</bpmn:incoming>
+        <bpmn:outgoing>SQ06</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+      <bpmn:serviceTask id="StaffQuestionContinue" name="Aktuellen Warte- oder&#10;Prüfkontext bereitstellen">
+        <bpmn:documentation>Gespeicherte erfolgreiche Mitarbeiterrückfrage verwenden, nicht erneut veröffentlichen. Aktuelle Prozesszuordnung und inzwischen entstandenen zwingenden Prüfbedarf prüfen. Ohne Prüfbedarf replyEntryContextRef für genau einen Reply-Aufruf setzen. Bei neuem Prüfbedarf staffEntryContextRef für Mitarbeiterprüfung setzen; Nachricht und Antwortbedarf erhalten. Marker zuverlässig konsumieren und alte automatische Ergebnisse sperren. Hauptempfang und übrige Nebenaktionen bleiben aktiv.</bpmn:documentation>
+        <bpmn:incoming>SQ06</bpmn:incoming>
+        <bpmn:outgoing>SQ07</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:exclusiveGateway id="StaffQuestionNext" name="Zwingender&#10;Prüfbedarf?">
+        <bpmn:incoming>SQ07</bpmn:incoming>
+        <bpmn:outgoing>SQ08</bpmn:outgoing>
+        <bpmn:outgoing>SQ09</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+      <bpmn:sequenceFlow id="SQ06" sourceRef="StaffQuestionJoin" targetRef="StaffQuestionContinue" />
+      <bpmn:sequenceFlow id="SQ07" sourceRef="StaffQuestionContinue" targetRef="StaffQuestionNext" />
+      <bpmn:sequenceFlow id="SQ08" sourceRef="StaffQuestionNext" targetRef="Reply" name="Nein: Mieterantwort abwarten" />
+      <bpmn:sequenceFlow id="SQ09" sourceRef="StaffQuestionNext" targetRef="Staff" name="Ja: Mitarbeiterprüfung" />
+      <bpmn:boundaryEvent id="StaffQuestionAtClarification" attachedToRef="Clarification" cancelActivity="true">
+        <bpmn:documentation>Fachlicher Unterbrechungsmarker nur für bestätigte Mitarbeiterrückfrage aus In Abklärung im aktuellen Durchlauf. Bedingung und Zustellung sind Entwurf, keine zugesicherte Engine-Ausführung. Nicht für reguläre spätere Mieterwarte- oder Mitarbeiterpfade aktivieren.</bpmn:documentation>
+        <bpmn:outgoing>SQ_Takeover_Clarification</bpmn:outgoing>
+        <bpmn:conditionalEventDefinition id="StaffQuestionAtClarification_definition">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffQuestionTakeoverReady = true</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:sequenceFlow id="SQ_Takeover_Clarification" sourceRef="StaffQuestionAtClarification" targetRef="StaffQuestionJoin" />
+      <bpmn:boundaryEvent id="StaffQuestionAtTriage" attachedToRef="Triage" cancelActivity="true">
+        <bpmn:documentation>Fachlicher Unterbrechungsmarker nur für bestätigte Mitarbeiterrückfrage aus In Abklärung im aktuellen Durchlauf. Bedingung und Zustellung sind Entwurf, keine zugesicherte Engine-Ausführung. Nicht für reguläre spätere Mieterwarte- oder Mitarbeiterpfade aktivieren.</bpmn:documentation>
+        <bpmn:outgoing>SQ_Takeover_Triage</bpmn:outgoing>
+        <bpmn:conditionalEventDefinition id="StaffQuestionAtTriage_definition">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffQuestionTakeoverReady = true</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:sequenceFlow id="SQ_Takeover_Triage" sourceRef="StaffQuestionAtTriage" targetRef="StaffQuestionJoin" />
+      <bpmn:boundaryEvent id="StaffQuestionAtRecommend" attachedToRef="Recommend" cancelActivity="true">
+        <bpmn:documentation>Fachlicher Unterbrechungsmarker nur für bestätigte Mitarbeiterrückfrage aus In Abklärung im aktuellen Durchlauf. Bedingung und Zustellung sind Entwurf, keine zugesicherte Engine-Ausführung. Nicht für reguläre spätere Mieterwarte- oder Mitarbeiterpfade aktivieren.</bpmn:documentation>
+        <bpmn:outgoing>SQ_Takeover_Recommend</bpmn:outgoing>
+        <bpmn:conditionalEventDefinition id="StaffQuestionAtRecommend_definition">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffQuestionTakeoverReady = true</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:sequenceFlow id="SQ_Takeover_Recommend" sourceRef="StaffQuestionAtRecommend" targetRef="StaffQuestionJoin" />
+      <bpmn:boundaryEvent id="StaffQuestionAtValidate" attachedToRef="Validate" cancelActivity="true">
+        <bpmn:documentation>Fachlicher Unterbrechungsmarker nur für bestätigte Mitarbeiterrückfrage aus In Abklärung im aktuellen Durchlauf. Bedingung und Zustellung sind Entwurf, keine zugesicherte Engine-Ausführung. Nicht für reguläre spätere Mieterwarte- oder Mitarbeiterpfade aktivieren.</bpmn:documentation>
+        <bpmn:outgoing>SQ_Takeover_Validate</bpmn:outgoing>
+        <bpmn:conditionalEventDefinition id="StaffQuestionAtValidate_definition">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffQuestionTakeoverReady = true</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:sequenceFlow id="SQ_Takeover_Validate" sourceRef="StaffQuestionAtValidate" targetRef="StaffQuestionJoin" />
+      <bpmn:boundaryEvent id="StaffQuestionAtCurrentAnalysis" attachedToRef="CurrentAnalysis" cancelActivity="true">
+        <bpmn:documentation>Fachlicher Unterbrechungsmarker nur für bestätigte Mitarbeiterrückfrage aus In Abklärung im aktuellen Durchlauf. Bedingung und Zustellung sind Entwurf, keine zugesicherte Engine-Ausführung. Nicht für reguläre spätere Mieterwarte- oder Mitarbeiterpfade aktivieren.</bpmn:documentation>
+        <bpmn:outgoing>SQ_Takeover_CurrentAnalysis</bpmn:outgoing>
+        <bpmn:conditionalEventDefinition id="StaffQuestionAtCurrentAnalysis_definition">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffQuestionTakeoverReady = true</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:sequenceFlow id="SQ_Takeover_CurrentAnalysis" sourceRef="StaffQuestionAtCurrentAnalysis" targetRef="StaffQuestionJoin" />
+      <bpmn:boundaryEvent id="StaffQuestionAtQuestion" attachedToRef="Question" cancelActivity="true">
+        <bpmn:documentation>Fachlicher Unterbrechungsmarker nur für bestätigte Mitarbeiterrückfrage aus In Abklärung im aktuellen Durchlauf. Bedingung und Zustellung sind Entwurf, keine zugesicherte Engine-Ausführung. Nicht für reguläre spätere Mieterwarte- oder Mitarbeiterpfade aktivieren.</bpmn:documentation>
+        <bpmn:outgoing>SQ_Takeover_Question</bpmn:outgoing>
+        <bpmn:conditionalEventDefinition id="StaffQuestionAtQuestion_definition">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffQuestionTakeoverReady = true</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:sequenceFlow id="SQ_Takeover_Question" sourceRef="StaffQuestionAtQuestion" targetRef="StaffQuestionJoin" />
+      <bpmn:boundaryEvent id="StaffQuestionAtAutoAnswer" attachedToRef="AutoAnswer" cancelActivity="true">
+        <bpmn:documentation>Fachlicher Unterbrechungsmarker nur für bestätigte Mitarbeiterrückfrage aus In Abklärung im aktuellen Durchlauf. Bedingung und Zustellung sind Entwurf, keine zugesicherte Engine-Ausführung. Nicht für reguläre spätere Mieterwarte- oder Mitarbeiterpfade aktivieren.</bpmn:documentation>
+        <bpmn:outgoing>SQ_Takeover_AutoAnswer</bpmn:outgoing>
+        <bpmn:conditionalEventDefinition id="StaffQuestionAtAutoAnswer_definition">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffQuestionTakeoverReady = true</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:sequenceFlow id="SQ_Takeover_AutoAnswer" sourceRef="StaffQuestionAtAutoAnswer" targetRef="StaffQuestionJoin" />
+      <bpmn:boundaryEvent id="StaffQuestionAtClose" attachedToRef="Close" cancelActivity="true">
+        <bpmn:documentation>Fachlicher Unterbrechungsmarker nur für bestätigte Mitarbeiterrückfrage aus In Abklärung im aktuellen Durchlauf. Bedingung und Zustellung sind Entwurf, keine zugesicherte Engine-Ausführung. Nicht für reguläre spätere Mieterwarte- oder Mitarbeiterpfade aktivieren.</bpmn:documentation>
+        <bpmn:outgoing>SQ_Takeover_Close</bpmn:outgoing>
+        <bpmn:conditionalEventDefinition id="StaffQuestionAtClose_definition">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffQuestionTakeoverReady = true</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:sequenceFlow id="SQ_Takeover_Close" sourceRef="StaffQuestionAtClose" targetRef="StaffQuestionJoin" />
       <bpmn:textAnnotation id="MainDraft">
-        <bpmn:text>FACHENTWURF 0.21 · 15.11.2026
+        <bpmn:text>FACHENTWURF 0.24 · 15.11.2026
 Nicht ausführbar / kein Deployment.
 Bisheriger Hauptablauf in «Aktiven Fall bearbeiten».
 Nachrichteneingang oben links separat öffnen.</bpmn:text>
@@ -531,7 +664,7 @@ Startart und Auftragsreferenz aus einem serverseitig autorisierten Startauftrag 
     <bpmn:sequenceFlow id="P01" sourceRef="ProcessStart" targetRef="PrepareProcessKey" />
     <bpmn:sequenceFlow id="P02" sourceRef="PrepareProcessKey" targetRef="ActiveCase" />
     <bpmn:textAnnotation id="ProcessScopeNote">
-      <bpmn:text>FACHENTWURF 0.21 · nicht ausführbar
+      <bpmn:text>FACHENTWURF 0.24 · nicht ausführbar
 Im Teilprozess «Aktiven Fall bearbeiten» liegen der bisherige Hauptablauf
 und der durchgängige Mieternachrichteneingang.
 Empfang vor fachlicher Aktivierung; Ende erst nach gespeichertem Abschluss.
@@ -1128,6 +1261,143 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
         <di:waypoint x="-90" y="-150" />
         <di:waypoint x="1630" y="-150" />
         <di:waypoint x="1630" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StaffQuestionSide_di" bpmnElement="StaffQuestionSide" isExpanded="true">
+        <dc:Bounds x="200" y="2580" width="1650" height="340" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffQuestionStart_di" bpmnElement="StaffQuestionStart">
+        <dc:Bounds x="250" y="2710" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffQuestionPublish_di" bpmnElement="StaffQuestionPublish">
+        <dc:Bounds x="350" y="2680" width="300" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffQuestionResult_di" bpmnElement="StaffQuestionResult">
+        <dc:Bounds x="740" y="2705" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffQuestionSignal_di" bpmnElement="StaffQuestionSignal">
+        <dc:Bounds x="880" y="2680" width="290" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffQuestionDone_di" bpmnElement="StaffQuestionDone">
+        <dc:Bounds x="1300" y="2710" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffQuestionRejected_di" bpmnElement="StaffQuestionRejected">
+        <dc:Bounds x="750" y="2840" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SQ01_di" bpmnElement="SQ01">
+        <di:waypoint x="286" y="2728" />
+        <di:waypoint x="350" y="2728" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SQ02_di" bpmnElement="SQ02">
+        <di:waypoint x="650" y="2728" />
+        <di:waypoint x="740" y="2730" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SQ03_di" bpmnElement="SQ03">
+        <di:waypoint x="790" y="2730" />
+        <di:waypoint x="880" y="2730" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SQ04_di" bpmnElement="SQ04">
+        <di:waypoint x="1170" y="2730" />
+        <di:waypoint x="1300" y="2728" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SQ05_di" bpmnElement="SQ05">
+        <di:waypoint x="765" y="2755" />
+        <di:waypoint x="768" y="2840" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StaffQuestionJoin_di" bpmnElement="StaffQuestionJoin">
+        <dc:Bounds x="3250" y="1025" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffQuestionContinue_di" bpmnElement="StaffQuestionContinue">
+        <dc:Bounds x="3380" y="1000" width="270" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffQuestionNext_di" bpmnElement="StaffQuestionNext">
+        <dc:Bounds x="3750" y="1025" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SQ06_di" bpmnElement="SQ06">
+        <di:waypoint x="3300" y="1050" />
+        <di:waypoint x="3380" y="1050" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SQ07_di" bpmnElement="SQ07">
+        <di:waypoint x="3650" y="1050" />
+        <di:waypoint x="3750" y="1050" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SQ08_di" bpmnElement="SQ08">
+        <di:waypoint x="3775" y="1025" />
+        <di:waypoint x="3775" y="-300" />
+        <di:waypoint x="1955" y="-300" />
+        <di:waypoint x="1955" y="465" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SQ09_di" bpmnElement="SQ09">
+        <di:waypoint x="3800" y="1050" />
+        <di:waypoint x="3900" y="1050" />
+        <di:waypoint x="3900" y="-400" />
+        <di:waypoint x="1595" y="-400" />
+        <di:waypoint x="1595" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StaffQuestionAtClarification_di" bpmnElement="StaffQuestionAtClarification">
+        <dc:Bounds x="580.0" y="687.0" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SQ_Takeover_Clarification_di" bpmnElement="SQ_Takeover_Clarification">
+        <di:waypoint x="598.0" y="723.0" />
+        <di:waypoint x="598.0" y="1050" />
+        <di:waypoint x="3250" y="1050" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StaffQuestionAtTriage_di" bpmnElement="StaffQuestionAtTriage">
+        <dc:Bounds x="810.0" y="687.0" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SQ_Takeover_Triage_di" bpmnElement="SQ_Takeover_Triage">
+        <di:waypoint x="828.0" y="723.0" />
+        <di:waypoint x="828.0" y="1050" />
+        <di:waypoint x="3250" y="1050" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StaffQuestionAtRecommend_di" bpmnElement="StaffQuestionAtRecommend">
+        <dc:Bounds x="1040.0" y="687.0" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SQ_Takeover_Recommend_di" bpmnElement="SQ_Takeover_Recommend">
+        <di:waypoint x="1058.0" y="723.0" />
+        <di:waypoint x="1058.0" y="1050" />
+        <di:waypoint x="3250" y="1050" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StaffQuestionAtValidate_di" bpmnElement="StaffQuestionAtValidate">
+        <dc:Bounds x="1270.0" y="687.0" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SQ_Takeover_Validate_di" bpmnElement="SQ_Takeover_Validate">
+        <di:waypoint x="1288.0" y="723.0" />
+        <di:waypoint x="1288.0" y="1050" />
+        <di:waypoint x="3250" y="1050" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StaffQuestionAtCurrentAnalysis_di" bpmnElement="StaffQuestionAtCurrentAnalysis">
+        <dc:Bounds x="1170" y="412" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SQ_Takeover_CurrentAnalysis_di" bpmnElement="SQ_Takeover_CurrentAnalysis">
+        <di:waypoint x="1188" y="412" />
+        <di:waypoint x="1188" y="350" />
+        <di:waypoint x="3120" y="350" />
+        <di:waypoint x="3120" y="1050" />
+        <di:waypoint x="3250" y="1050" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StaffQuestionAtQuestion_di" bpmnElement="StaffQuestionAtQuestion">
+        <dc:Bounds x="1665.0" y="537.0" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SQ_Takeover_Question_di" bpmnElement="SQ_Takeover_Question">
+        <di:waypoint x="1683.0" y="573.0" />
+        <di:waypoint x="1683.0" y="1050" />
+        <di:waypoint x="3250" y="1050" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StaffQuestionAtAutoAnswer_di" bpmnElement="StaffQuestionAtAutoAnswer">
+        <dc:Bounds x="2100.0" y="687.0" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SQ_Takeover_AutoAnswer_di" bpmnElement="SQ_Takeover_AutoAnswer">
+        <di:waypoint x="2118.0" y="723.0" />
+        <di:waypoint x="2118.0" y="1050" />
+        <di:waypoint x="3250" y="1050" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StaffQuestionAtClose_di" bpmnElement="StaffQuestionAtClose">
+        <dc:Bounds x="2435.0" y="687.0" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SQ_Takeover_Close_di" bpmnElement="SQ_Takeover_Close">
+        <di:waypoint x="2453.0" y="723.0" />
+        <di:waypoint x="2453.0" y="1050" />
+        <di:waypoint x="3250" y="1050" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

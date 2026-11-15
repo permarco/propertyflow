@@ -1,7 +1,7 @@
 # PropertyFlow-Fallprozess
 
 [propertyflow-fallprozess-entwurf.bpmn](propertyflow-fallprozess-entwurf.bpmn)
-ist der führende BPMN-Entwurf 0.21 zur gemeinsamen Besprechung, Stand 15.11.2026.
+ist der führende BPMN-Entwurf 0.24 zur gemeinsamen Besprechung, Stand 15.11.2026.
 Er enthält BPMN-Diagrammkoordinaten und kann im Camunda Modeler geöffnet werden.
 
 ## Dateien – hier bearbeiten
@@ -648,3 +648,16 @@ Fallprozess; Fallabschluss darf ausstehende Mails nicht abbrechen. Die bestehend
 Mieternachrichten erzeugen Mailpflicht bereits beim Speichern, ohne KI-Abhängigkeit.
 Keine zusätzliche Abschlussmail. Siehe [BEN-03](../../specifications/benachrichtigungen-und-zustellung.md#ben-03-speicherung-und-zuverlässige-übergabe).
 Alle Dateien bleiben Fachentwürfe ohne Backend-Implementierung und Deployment.
+
+## Mitarbeiterrückfrage während Abklärung (0.24)
+
+Im Hauptmodell unter «Aktiven Fall bearbeiten» zeigt der Ereignis-Teilprozess
+**«Mitarbeiterrückfrage während In Abklärung»** den internen Mitarbeitereingang.
+Nach erfolgreicher Veröffentlichung lösen unterbrechende Randereignisse den
+aktuellen automatischen Schritt ab. Die Fortsetzung führt zum vorhandenen
+Mieterwarteprozess, bei zwischenzeitlichem zwingendem Prüfbedarf zur
+Mitarbeiterprüfung. Abgelehnte Aufträge lassen den laufenden Pfad bestehen.
+Massgeblich ist [FALL-06](../../specifications/fallverwaltung.md#mitarbeiterrückfrage-während-in-abklärung)
+mit Übergang 29 und FALL-AK-35. Die bedingten Randereignisse beschreiben das
+fachliche Verhalten; Markerzustellung, atomare Koordination und ausführbare
+Camunda-Realisierung bleiben zu implementieren und zu testen.

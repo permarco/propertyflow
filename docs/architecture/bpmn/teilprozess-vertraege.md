@@ -375,3 +375,21 @@ bereits veröffentlichte Nachricht auch nach Abschluss benachrichtigt werden mus
 Ein neuer Prüfgrund wird nur bei zulässiger aktueller Fallzuordnung wirksam.
 Der Versandprozess muss nicht mit dem Fallprozess als synchroner Call bereitgestellt
 werden; die bisherigen fünf Call-Modelle behalten ihre Deployment-Bindung.
+
+## Mitarbeiterrückfrage in der Abklärung (0.24)
+
+`StaffQuestionSide` bleibt im Hauptprozess. Ein erfolgreicher, idempotenter
+Veröffentlichungsauftrag aus «In Abklärung» entzieht dem bisherigen automatischen
+Abklärungslauf die Schreibfreigabe. Der durchlaufgebundene Marker
+`staffQuestionTakeoverReady` unterbricht genau dessen aktuellen automatischen
+Schritt, einschliesslich eines Übergangs zwischen Jobaktivierungen. Er darf in
+späteren Bearbeitungsphasen nicht weiterwirken. `StaffQuestionContinue` lädt den
+aktuellen gespeicherten Stand, konsumiert den Übergang und setzt entweder
+`replyEntryContextRef` für `Reply` oder bei zwingendem Prüfbedarf
+`staffEntryContextRef` für `Staff`. Keine Rückgaben abgebrochener Jobs verwenden.
+
+Der zentrale Mieternachrichteneingang bleibt aktiv. Bereits gespeicherte
+Rückfrage und Mailpflicht werden nicht wiederholt. Publikationssperre, zuverlässige
+Übergabe nach Commit, Markerlebensdauer und genau eine Fortsetzung sind vor
+Ausführbarkeit technisch nachzuweisen; ein BPMN-Abbruch allein sperrt keinen
+bereits laufenden externen Worker. Fachliche Quelle: FALL-06, Übergang 29.
