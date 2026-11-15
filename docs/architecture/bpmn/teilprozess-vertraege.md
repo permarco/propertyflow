@@ -307,3 +307,27 @@ Systemabschlussvorschlag und wird nicht für diesen Mitarbeiterauftrag verwendet
 Später fachlicher Konflikt: `STAFF_CLOSURE_STALE` → `CloseConflict` → aktuelle
 Mitarbeiterprüfung. Erst erfolgreicher Commit beendet offenen Antwortbedarf und
 den aktiven Ausführungsbaum. Worker und technische Übergaben sind noch offen.
+
+## Unabhängiger Prüfbedarf (0.21)
+
+`ReviewNeedSide` ist ein interner Empfang im aktiven Hauptprozess. Eingangsdaten
+referenzieren Quelle, fachlichen Grund, Erkenntnisversion und Bearbeitungsdurchlauf.
+Nebenaktionsdaten bleiben lokal; keine ungeprüfte globale Statusvariable. Grund
+und Zustellung müssen dauerhaft nachvollziehbar sowie idempotent sein.
+
+Bei offenem Review die aktuelle Mitarbeiter-Kindinstanz und dieselbe Aufgabe
+gezielt ergänzen. Im Mieterwartepfad bindet `reviewNeedReplyCallRef` den geprüften
+Grund an `activeReplyCallRef`; diese Namen sind fachliche Platzhalter. Übertragung,
+Call-Abbruch und Eintritt müssen lückenlos mit Abschluss, Aufhebung und Wechsel
+der aktuellen Aufgabe koordiniert werden. Ein nachträglicher Worker-Check allein
+schützt nicht vor dem Abbruch einer neueren Instanz. `ReviewNeedPrepare` lädt den
+persistierten Prüfentscheid statt Outputs des abgebrochenen Calls und stellt den
+geprüften `staffEntryContextRef` bereit. Gleichzeitige Gründe müssen dieselbe
+logische Prüfung verwenden, niemals parallele Staff-Calls erzeugen.
+
+In anderen aktiven Phasen erfolgt Übergabe an die bestehende Phasensteuerung;
+fehlende Übergabe ist keine erfolgreich verworfene Meldung. Bereits berücksichtigte
+Gründe ohne neue Erkenntnis erhalten keine neue Prüfzuordnung. Nach Fallabschluss
+führt die meldende Funktion nur einen internen Hinweis nach, ohne Korrelation an
+eine beendete Instanz oder neuen Prozessstart. Alte Durchläufe dürfen nach
+Wiedereröffnung keine aktuelle Prüfung auslösen. Technische Umsetzung bleibt offen.

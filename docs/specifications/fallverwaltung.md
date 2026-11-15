@@ -305,6 +305,40 @@ Ein technischer Abbruch oder ein beliebiges BPMN-Endereignis ist nicht ohne fach
 
 **Präzisiert am 13.10.2026 – berücksichtigte Prüfgründe:** Beim bewussten Wechsel auf «In Bearbeitung» wird der bisher offene Prüfgrund dem Statusereignis als interner, berücksichtigter Prüfgrund zugeordnet. Er verschwindet aus der Box «Prüfbedarf», bleibt aber mit Zeitpunkt und Änderungsquelle im internen Verlauf erhalten, unabhängig von einer optionalen Mitarbeiterbegründung. Ohne neue Erkenntnisse löst dieser berücksichtigte Grund keine erneute Prüfung aus. Mieter erhalten weder den Grund noch dessen interne Kennzeichnung. Die Umsetzung der Demo ist im [F01-Nachweis](../ai-usage/block2-oberflaechen-pruefung.md#korrektur-f01--berücksichtigte-prüfgründe) dokumentiert.
 
+### Neuer Prüfbedarf ohne Mieternachricht
+
+**Bestätigt am 15.11.2026:** Ein serverseitig festgestellter neuer fachlicher
+Prüfbedarf erreicht den laufenden Fallprozess unabhängig von Mieternachrichten
+oder einer neuen KI-Auswertung. Beispiel: Eine dauerhaft abgelehnte E-Mail wird
+nach den geltenden Versandregeln als klärungsbedürftig eingestuft. Ein technischer
+Retry, ausstehender Versuch oder Incident allein ist kein neuer fachlicher Grund.
+
+| Aktueller Stand | Fortsetzung |
+|---|---|
+| «Wartet auf Mieterantwort», neuer bestätigter Prüfbedarf | Mieterwarte-Aufruf unterbrechen und «Mitarbeiterprüfung erforderlich» veranlassen; keine Mieterantwort oder KI-Auswertung abwarten. |
+| Mitarbeiterprüfung bereits offen | Grund an derselben aktuellen Prüfaufgabe ergänzen; keine zweite Aufgabe und kein Abschluss der bestehenden. |
+| Derselbe bereits berücksichtigte Grund ohne neue Erkenntnis | Keine erneute Prüfung; interne Historie bleibt erhalten. |
+| Identische Meldung erneut zugestellt | Idempotent behandeln; keine doppelte Aufgabe oder doppelte Wirkung. |
+| Fall bereits abgeschlossen | Hinweis intern nachvollziehbar halten; weder Statuswechsel noch Wiedereröffnung. |
+
+Der offene Mieterantwortbedarf bleibt durch den Wechsel zur Prüfung bestehen.
+Neue Erkenntnisse können einen neuen Prüfbedarf begründen; die Wiederholung einer
+bereits berücksichtigten Erkenntnis genügt nicht. Der Empfang ist intern und
+serverseitig geprüft, kein frei aufrufbarer Statuswechsel durch einen Client.
+
+Quelle, Grund, Erkenntnisstand, führender Bearbeitungsdurchlauf und aktueller
+Prozessaufruf sind zu prüfen. Parallele Meldungen ergänzen dieselbe logische
+Prüfung. Konkurrierende Mitarbeiterentscheidung, Abschluss, Aufhebung des
+Antwortbedarfs und Call-Wechsel dürfen nicht durch alte Meldungen zurückgenommen
+werden. Bereits vor Eintritt in den Wartepfad vorliegende Gründe müssen ebenfalls
+berücksichtigt werden. Andere aktive Phasen behalten ihre bestehenden Prüfregeln;
+der neue Eingang darf neue Gründe dort nicht stillschweigend verwerfen.
+
+Nach Prozessende gibt es keinen aktiven BPMN-Empfänger mehr. Die meldende
+Funktion hält einen nach Abschluss festgestellten Hinweis intern fest und startet
+keine Ersatzinstanz. Die Nachrichtensperre bleibt bestehen. Technische Zustellung,
+Versionskoordination und Wiederholungsschutz sind vor Ausführung zu implementieren.
+
 ### Optionale interne Begründung der Bearbeitungsentscheidung
 
 Bei «Bearbeitung fortsetzen» kann der Mitarbeiter eine optionale interne Begründung eingeben. PropertyFlow hält sie bei der bestätigten Aktion zusammen mit der Mitarbeiteridentität und dem Zeitpunkt im internen Änderungsnachweis fest. Mieteransicht, E-Mail und Kommunikations-LLM erhalten sie gemäss KOM-01/KOM-02 nicht.
@@ -896,6 +930,18 @@ Call-Wechsel, automatischer Abschluss und doppelte identische Abschlussaufträge
 prüfen: keine doppelte Wirkung oder falsche Quellenzuordnung. Technische
 Speicherfehler erzeugen nicht allein einen fachlichen Konflikt. Dies sind geplante
 Integrationsprüfungen, keine ausgeführten Laufzeittests.
+
+### FALL-AK-32: Prüfbedarf ohne Mieternachricht
+
+Während «Wartet auf Mieterantwort» einen bestätigten neuen Prüfgrund ohne neue
+Mieternachricht oder KI-Auswertung melden: genau eine Mitarbeiterprüfung, offener
+Antwortbedarf bleibt erhalten. Bei bereits offener Prüfung dieselbe Aufgabe
+anreichern. Doppelte Meldungen und bereits berücksichtigte Gründe ohne neue
+Erkenntnis erzeugen keine neue Prüfung. Ein technischer Retry allein ändert den
+Status nicht. Gleichzeitig eintreffende Gründe sowie Mitarbeiterabschluss,
+Aufhebung, Call-Wechsel und spätere Wiedereröffnung prüfen: alte Zuordnungen
+bleiben unwirksam. Nach Abschluss nur interner Hinweis, keine neue Prozessinstanz.
+Dies sind geplante Integrationsprüfungen, keine ausgeführten Laufzeittests.
 
 ## Offene Entscheidungen und Weiterentwicklung
 

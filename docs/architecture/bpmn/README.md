@@ -1,7 +1,7 @@
 # PropertyFlow-Fallprozess
 
 [propertyflow-fallprozess-entwurf.bpmn](propertyflow-fallprozess-entwurf.bpmn)
-ist der führende BPMN-Entwurf 0.20 zur gemeinsamen Besprechung, Stand 15.11.2026.
+ist der führende BPMN-Entwurf 0.21 zur gemeinsamen Besprechung, Stand 15.11.2026.
 Er enthält BPMN-Diagrammkoordinaten und kann im Camunda Modeler geöffnet werden.
 
 ## Dateien – hier bearbeiten
@@ -594,3 +594,21 @@ Der neue Eingang liegt unterhalb der Nebenaktion «Antwortbedarf aufheben».
 [FALL-07](../../specifications/fallverwaltung.md#direkter-mitarbeiterabschluss-während-warten-auf-mieterantwort)
 und FALL-AK-31 beschreiben Regeln und geplante Prüfungen. Nur Fachentwurf;
 keine Backend-Implementierung oder Deployment-Freigabe.
+
+## Prüfbedarf ohne Mieternachricht · Entwurf 0.21
+
+Unter «Aktiven Fall bearbeiten» empfängt `ReviewNeedSide` intern festgestellten
+Prüfbedarf. Der Abschnitt liegt unterhalb des Mitarbeitereingangs für direkten
+Abschluss. Der Dienst prüft Grund, Erkenntnisstand und aktuelle Bearbeitung:
+Bestehende Prüfung ergänzen, neuen Mieterwarte-Prüfbedarf bereitstellen oder
+Wiederholungen/bereits berücksichtigte Gründe ohne neue Prüfung beenden. Andere
+aktive Phasen verwenden ihre bestehenden Prüfwege; deren technische Übergabe
+bleibt phasenspezifisch zu konkretisieren.
+
+`ReplyReviewNeeded` unterbricht den aktuellen Mieterwarte-Call und führt über
+`ReviewNeedPrepare` zum bestehenden Mitarbeiterpfad. Keine KI-Neuanalyse und keine
+Aufhebung offenen Antwortbedarfs. Nach abgeschlossenem Prozess hält die meldende
+Funktion den Hinweis intern fest; der beendete Prozess wird nicht neu gestartet.
+[FALL-06](../../specifications/fallverwaltung.md#neuer-prüfbedarf-ohne-mieternachricht)
+und FALL-AK-32 beschreiben die Regeln und geplanten Prüfungen. Nur Fachentwurf,
+keine Backend-Implementierung.

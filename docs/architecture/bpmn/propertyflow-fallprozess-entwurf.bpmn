@@ -1,5 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_PropertyFlow_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+  <bpmn:message id="Message_ReviewRequired" name="Fachlicher Prüfbedarf festgestellt" />
   <bpmn:message id="Message_StaffCloseReply" name="Mitarbeiterabschluss im Mieterwartepfad angefordert" />
   <bpmn:message id="Message_ClearAnswer" name="Antwortbedarf aufheben angefordert" />
   <bpmn:error id="Error_ReopenRejected" name="Wiedereröffnung abgelehnt" errorCode="REOPEN_REJECTED" />
@@ -18,7 +19,7 @@
   <bpmn:error id="Error_AnalysisStale" name="Analysegrundlage überholt" errorCode="ANALYSIS_BASIS_STALE">
     <bpmn:documentation>Fachlicher Platzhalter für Zeilen 1 und 3: Die Auswertung enthält neue relevante gespeicherte Mieternachrichten noch nicht. In Validate führt der Konflikt zur aktuellen Analysegrundlage; in RValidate zur aktuellen Antwortauswertung. Kein technischer Jobfehler und kein Analysefehler. Meldung durch den späteren Prüfdienst, nicht automatisch durch blossen Nachrichteneingang. Keine zweite unabhängige Verarbeitung; aktuelle Mitarbeiterentscheidung und Abschluss schützen. Keine Ausführungsimplementierung.</bpmn:documentation>
   </bpmn:error>
-  <bpmn:process id="PropertyFlow_Case_Draft" name="PropertyFlow · Fallprozess · Fachentwurf 0.20" isExecutable="false">
+  <bpmn:process id="PropertyFlow_Case_Draft" name="PropertyFlow · Fallprozess · Fachentwurf 0.21" isExecutable="false">
     <bpmn:documentation>Fachentwurf 0.13, nicht ausführbar. Individuelle LLM-Nachricht im AutoAnswer-Worker erzeugen, prüfen, speichern und Versand beauftragen; danach Close. Kein Vorlagenkatalog, keine zusätzliche Abschlussmail. Mitarbeiterabschluss ohne Nachricht. Menschliche Priorität, Aktualität, Rückfragen, Wiedervorlage und bisherige Konfliktrückwege bleiben. Technische Fehler: Job-Retries/Incidents. Start-/Kindinstanz-Verträge weiterhin vor Ausführung konkretisieren; keine Backend-Implementierung.
 Fachentwurf 0.15: Wiedereröffnung startet eine neue Instanz für denselben Fall; direkter Mitarbeiterpfad gemäss FALL-07. Keine Backend-Implementierung.</bpmn:documentation>
     <bpmn:subProcess id="ActiveCase" name="Aktiven Fall bearbeiten">
@@ -186,6 +187,7 @@ Ruft mitarbeiterbearbeitung.bpmn auf. Vertrag: teilprozess-vertraege.md. Unterge
         <bpmn:incoming>F_MessageInvalid_Staff</bpmn:incoming>
         <bpmn:incoming>F_Reopen_Staff</bpmn:incoming>
         <bpmn:incoming>CA05</bpmn:incoming>
+        <bpmn:incoming>PN11</bpmn:incoming>
         <bpmn:outgoing>F15</bpmn:outgoing>
       </bpmn:callActivity>
       <bpmn:exclusiveGateway id="StaffRoute" name="Fortsetzung">
@@ -393,8 +395,80 @@ Unterbrechung ausschliesslich für den aktuell gebundenen Reply-Aufruf. Keine no
         </bpmn:conditionalEventDefinition>
       </bpmn:boundaryEvent>
       <bpmn:sequenceFlow id="CR06" name="Direkter Mitarbeiterabschluss" sourceRef="ReplyStaffClose" targetRef="Close" />
+      <bpmn:subProcess id="ReviewNeedSide" name="Neuer Prüfbedarf – unabhängig von Mieternachrichten" triggeredByEvent="true">
+        <bpmn:documentation>
+Nicht unterbrechender interner Eingang für serverseitig festgestellten fachlichen Prüfbedarf. Keine neue öffentliche Schnittstelle und kein LLM-Auftrag. Nach beendetem ActiveCase existiert dieser Empfang nicht; nach Abschluss eintreffende Hinweise werden ausserhalb des beendeten Prozesses intern gespeichert, ohne Neustart.</bpmn:documentation>
+        <bpmn:startEvent id="ReviewNeedStart" name="Prüfbedarf gemeldet" isInterrupting="false">
+          <bpmn:outgoing>PN01</bpmn:outgoing>
+          <bpmn:messageEventDefinition id="ReviewNeedStart_definition" messageRef="Message_ReviewRequired" />
+        </bpmn:startEvent>
+        <bpmn:serviceTask id="ReviewNeedCheck" name="Grund und aktuellen&#10;Bearbeitungsstand prüfen">
+          <bpmn:documentation>
+FALL-06: Vertrauenswürdige Quelle, Fall, führenden Durchlauf, fachlichen Grund und Erkenntnisversion prüfen. Blosser Retry/Incident ist kein fachlicher Grund. Gleicher bereits berücksichtigter Grund ohne neue Erkenntnis erzeugt keine Prüfung. Wiederholungen idempotent verarbeiten. Neue Gründe dauerhaft erfassen, Entscheidung gegen aktuellen Status und Aufruf prüfen. Bereits abgeschlossener Fall: nur interner Hinweis, keine Statusänderung oder Wiedereröffnung. Lokale Nebenaktionsvariablen; aktuelle Mitarbeiterentscheidung nicht zurücknehmen.</bpmn:documentation>
+          <bpmn:incoming>PN01</bpmn:incoming>
+          <bpmn:outgoing>PN02</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:exclusiveGateway id="ReviewNeedRoute" name="Aktuelle&#10;Situation">
+          <bpmn:incoming>PN02</bpmn:incoming>
+          <bpmn:outgoing>PN03</bpmn:outgoing>
+          <bpmn:outgoing>PN04</bpmn:outgoing>
+          <bpmn:outgoing>PN05</bpmn:outgoing>
+          <bpmn:outgoing>PN08</bpmn:outgoing>
+        </bpmn:exclusiveGateway>
+        <bpmn:serviceTask id="ReviewNeedExisting" name="Bestehende Prüfaufgabe&#10;um Grund ergänzen">
+          <bpmn:documentation>
+Aktuelle offene Mitarbeiterprüfung und ihren Kind-/Task-Bezug serverseitig prüfen. Dieselbe Aufgabe ergänzen, nicht abschliessen oder duplizieren. Keine erneute Prüfung aus identischen oder bereits berücksichtigten Erkenntnissen. Bei konkurrierendem Aufgabenwechsel aktuellen Stand neu prüfen, keine alte Aufgabe reaktivieren.</bpmn:documentation>
+          <bpmn:incoming>PN03</bpmn:incoming>
+          <bpmn:outgoing>PN06</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:serviceTask id="ReviewNeedWakeReply" name="Prüfbedarf für aktuellen&#10;Mieterwarte-Aufruf bereitstellen">
+          <bpmn:documentation>
+Nur für aktuellen Reply-Call bei Wartet auf Mieterantwort mit neuem fachlichem Prüfbedarf. Dauerhaften Prüfentscheid und aktuellen Call-Bezug zuverlässig bereitstellen. Markerbereitstellung und Unterbrechung gegen Call-Wechsel, Mitarbeiterabschluss, Aufhebung und neue Erkenntnisse koordinieren. Keine KI-Auswertung abwarten. Keine normalen Outputs vom abgebrochenen Call erwarten. Technische Realisierung bleibt offen.</bpmn:documentation>
+          <bpmn:incoming>PN04</bpmn:incoming>
+          <bpmn:outgoing>PN07</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:endEvent id="ReviewNeedNoAction" name="Keine neue Prüfung&#10;aus dieser Meldung">
+          <bpmn:incoming>PN05</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:endEvent id="ReviewNeedDone" name="Nur Nebenaktion beendet">
+          <bpmn:incoming>PN06</bpmn:incoming>
+          <bpmn:incoming>PN07</bpmn:incoming>
+          <bpmn:incoming>PN09</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="PN01" name="" sourceRef="ReviewNeedStart" targetRef="ReviewNeedCheck" />
+        <bpmn:sequenceFlow id="PN02" name="" sourceRef="ReviewNeedCheck" targetRef="ReviewNeedRoute" />
+        <bpmn:sequenceFlow id="PN03" name="Prüfung bereits offen" sourceRef="ReviewNeedRoute" targetRef="ReviewNeedExisting" />
+        <bpmn:sequenceFlow id="PN04" name="Neuer Grund im Mieterwartepfad" sourceRef="ReviewNeedRoute" targetRef="ReviewNeedWakeReply" />
+        <bpmn:sequenceFlow id="PN05" name="Wiederholung / berücksichtigt / abgeschlossen" sourceRef="ReviewNeedRoute" targetRef="ReviewNeedNoAction" />
+        <bpmn:sequenceFlow id="PN06" name="" sourceRef="ReviewNeedExisting" targetRef="ReviewNeedDone" />
+        <bpmn:sequenceFlow id="PN07" name="" sourceRef="ReviewNeedWakeReply" targetRef="ReviewNeedDone" />
+        <bpmn:serviceTask id="ReviewNeedOther" name="Aktuellen Prüfbedarf an&#10;bestehende Phasensteuerung übergeben">
+          <bpmn:documentation>
+Für andere aktive Phasen neuen Grund erhalten und an deren bestehende Prüf-/Fortsetzungssteuerung übergeben, etwa SExternalReview in externer Wartephase. Kein zusätzlicher paralleler Staff-Call. Fehlende technische Übergabe darf nicht als erfolgreich verworfen gelten; vor Ausführung phasenspezifisch implementieren. Dieser Entwurf konkretisiert den neuen Mieterwarte-Eingang, nicht alle übrigen Phasen.</bpmn:documentation>
+          <bpmn:incoming>PN08</bpmn:incoming>
+          <bpmn:outgoing>PN09</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:sequenceFlow id="PN08" name="Andere aktive Phase" sourceRef="ReviewNeedRoute" targetRef="ReviewNeedOther" />
+        <bpmn:sequenceFlow id="PN09" name="" sourceRef="ReviewNeedOther" targetRef="ReviewNeedDone" />
+      </bpmn:subProcess>
+      <bpmn:boundaryEvent id="ReplyReviewNeeded" name="Neuer fachlicher&#10;Prüfbedarf" attachedToRef="Reply" cancelActivity="true">
+        <bpmn:documentation>
+Unterbrechung nur bei geprüftem neuen Grund zum aktuellen Reply-Call. Bereits bereitgestellte Gründe bei Eintritt erkennen. Alter Marker darf keine neuere Bearbeitung unterbrechen. Kein normaler Reply-Output; ReviewNeedPrepare lädt den persistierten Prüfentscheid.</bpmn:documentation>
+        <bpmn:outgoing>PN10</bpmn:outgoing>
+        <bpmn:conditionalEventDefinition id="ReplyReviewNeeded_definition">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">= reviewNeedReplyCallRef != null and reviewNeedReplyCallRef = activeReplyCallRef</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:serviceTask id="ReviewNeedPrepare" name="Aktuellen Prüfkontext&#10;für Mitarbeiter bereitstellen">
+        <bpmn:documentation>
+Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren. staffEntryContextRef zur regulären Mitarbeiterprüfung bereitstellen. Eine bereits gleichzeitig entstandene Prüfung muss einmalig wiederverwendet werden; keine zweite Mitarbeiteraufgabe. Offenen Antwortbedarf nicht aufheben. Nach Abschluss oder neuerer Mitarbeiterentscheidung keine neue Wirkung. Koordination vor Ausführung implementieren.</bpmn:documentation>
+        <bpmn:incoming>PN10</bpmn:incoming>
+        <bpmn:outgoing>PN11</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="PN10" name="" sourceRef="ReplyReviewNeeded" targetRef="ReviewNeedPrepare" />
+      <bpmn:sequenceFlow id="PN11" name="Aktuelle Mitarbeiterprüfung" sourceRef="ReviewNeedPrepare" targetRef="Staff" />
       <bpmn:textAnnotation id="MainDraft">
-        <bpmn:text>FACHENTWURF 0.20 · 15.11.2026
+        <bpmn:text>FACHENTWURF 0.21 · 15.11.2026
 Nicht ausführbar / kein Deployment.
 Bisheriger Hauptablauf in «Aktiven Fall bearbeiten».
 Nachrichteneingang oben links separat öffnen.</bpmn:text>
@@ -456,7 +530,7 @@ Startart und Auftragsreferenz aus einem serverseitig autorisierten Startauftrag 
     <bpmn:sequenceFlow id="P01" sourceRef="ProcessStart" targetRef="PrepareProcessKey" />
     <bpmn:sequenceFlow id="P02" sourceRef="PrepareProcessKey" targetRef="ActiveCase" />
     <bpmn:textAnnotation id="ProcessScopeNote">
-      <bpmn:text>FACHENTWURF 0.20 · nicht ausführbar
+      <bpmn:text>FACHENTWURF 0.21 · nicht ausführbar
 Im Teilprozess «Aktiven Fall bearbeiten» liegen der bisherige Hauptablauf
 und der durchgängige Mieternachrichteneingang.
 Empfang vor fachlicher Aktivierung; Ende erst nach gespeichertem Abschluss.
@@ -958,6 +1032,101 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
         <di:waypoint x="3100" y="570.0" />
         <di:waypoint x="2415.0" y="570.0" />
         <di:waypoint x="2415.0" y="615.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ReviewNeedSide_di" bpmnElement="ReviewNeedSide" isExpanded="true">
+        <dc:Bounds x="200" y="2000" width="1650" height="470" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReviewNeedStart_di" bpmnElement="ReviewNeedStart">
+        <dc:Bounds x="250" y="2192" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReviewNeedCheck_di" bpmnElement="ReviewNeedCheck">
+        <dc:Bounds x="400" y="2165" width="260" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReviewNeedRoute_di" bpmnElement="ReviewNeedRoute">
+        <dc:Bounds x="750" y="2185" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReviewNeedExisting_di" bpmnElement="ReviewNeedExisting">
+        <dc:Bounds x="980" y="2050" width="310" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReviewNeedWakeReply_di" bpmnElement="ReviewNeedWakeReply">
+        <dc:Bounds x="980" y="2215" width="310" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReviewNeedNoAction_di" bpmnElement="ReviewNeedNoAction">
+        <dc:Bounds x="757" y="2385" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReviewNeedDone_di" bpmnElement="ReviewNeedDone">
+        <dc:Bounds x="1640" y="2192" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="PN01_di" bpmnElement="PN01">
+        <di:waypoint x="286" y="2210" />
+        <di:waypoint x="400" y="2210" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="PN02_di" bpmnElement="PN02">
+        <di:waypoint x="660" y="2210" />
+        <di:waypoint x="750" y="2210" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="PN03_di" bpmnElement="PN03">
+        <di:waypoint x="775" y="2185" />
+        <di:waypoint x="775" y="2095" />
+        <di:waypoint x="980" y="2095" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="PN04_di" bpmnElement="PN04">
+        <di:waypoint x="800" y="2210" />
+        <di:waypoint x="890" y="2210" />
+        <di:waypoint x="890" y="2260" />
+        <di:waypoint x="980" y="2260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="PN05_di" bpmnElement="PN05">
+        <di:waypoint x="775" y="2235" />
+        <di:waypoint x="775" y="2385" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="PN06_di" bpmnElement="PN06">
+        <di:waypoint x="1290" y="2095" />
+        <di:waypoint x="1540" y="2095" />
+        <di:waypoint x="1540" y="2210" />
+        <di:waypoint x="1640" y="2210" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="PN07_di" bpmnElement="PN07">
+        <di:waypoint x="1290" y="2260" />
+        <di:waypoint x="1540" y="2260" />
+        <di:waypoint x="1540" y="2210" />
+        <di:waypoint x="1640" y="2210" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ReviewNeedOther_di" bpmnElement="ReviewNeedOther">
+        <dc:Bounds x="1320" y="2340" width="320" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="PN08_di" bpmnElement="PN08">
+        <di:waypoint x="800" y="2210" />
+        <di:waypoint x="850" y="2210" />
+        <di:waypoint x="850" y="2440" />
+        <di:waypoint x="1480" y="2440" />
+        <di:waypoint x="1480" y="2430" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="PN09_di" bpmnElement="PN09">
+        <di:waypoint x="1640" y="2385" />
+        <di:waypoint x="1740" y="2385" />
+        <di:waypoint x="1740" y="2210" />
+        <di:waypoint x="1676" y="2210" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ReplyReviewNeeded_di" bpmnElement="ReplyReviewNeeded">
+        <dc:Bounds x="1852.0" y="477.0" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReviewNeedPrepare_di" bpmnElement="ReviewNeedPrepare">
+        <dc:Bounds x="-450" y="850" width="300" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="PN10_di" bpmnElement="PN10">
+        <di:waypoint x="1852.0" y="495.0" />
+        <di:waypoint x="1790.0" y="495.0" />
+        <di:waypoint x="1790.0" y="780" />
+        <di:waypoint x="-300" y="780" />
+        <di:waypoint x="-300" y="850" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="PN11_di" bpmnElement="PN11">
+        <di:waypoint x="-150" y="895" />
+        <di:waypoint x="-90" y="895" />
+        <di:waypoint x="-90" y="-150" />
+        <di:waypoint x="1630" y="-150" />
+        <di:waypoint x="1630" y="200" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
