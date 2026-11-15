@@ -59,7 +59,43 @@ Die gespeicherte fachliche Änderung ist die Grundlage der Benachrichtigung. Vor
 
 Ein Versandauftrag referenziert mindestens den Fall, das eindeutige Änderungsereignis, den Benachrichtigungstyp und seinen Bearbeitungszustand. Pro Ereignis und vorgesehenem Empfänger wird nur ein logischer Auftrag erzeugt. Wiederholte HTTP-Anfragen, Worker-Ausführungen oder Ereignisübernahmen erzeugen weder eine zweite fachliche Änderung noch einen zusätzlichen Auftrag für dasselbe Ereignis.
 
-Für die Statusmail aus dem laufenden Fallprozess übernimmt der Camunda-Send-Task die Versandaufgabe. Der Status-Worker meldet die Referenz des gespeicherten Statuswechsels nach dem Datenbank-Commit. Camunda gibt dem wiederverwendbaren Mail-Worker diese Referenz und den Benachrichtigungstyp mit. Der Mail-Worker lädt die erforderlichen Versanddaten beim Ausführen des Jobs. Das Datenbankschema für Ereignisse und Versandnachweise sowie die Übergabe für weitere Auslöser werden im Service- und Persistenzdesign festgelegt. [SS-002](../architecture/schnittstellenentwurf-block-3.md#ss-002--statusmail-aus-dem-fallprozess)
+**Bestätigt am 15.11.2026 – Camunda beauftragt den Mail-Worker:** PropertyFlow
+speichert die fachliche Änderung und die zugehörige Mailpflicht dauerhaft mit
+Ereignisreferenz, Benachrichtigungstyp und eindeutiger Auftragskennung. Ein
+dauerhafter Starter übergibt die Referenz `mailOrderRef` an den eigenständigen
+Camunda-Prozess [Fallbenachrichtigung versenden](../architecture/bpmn/fallbenachrichtigung-versenden.bpmn).
+Dessen Send-Tasks beauftragen denselben wiederverwendbaren Mail-Worker. Nur dieser
+lädt Versanddaten über die zuständigen Anwendungsdienste und sendet über SMTP;
+lokal wird Mailpit verwendet. Der Starter versendet selbst keine E-Mail.
+
+Der Versandprozess gehört fachlich zum Fallereignis, ist aber kein zweiter
+führender Fallprozess und kein synchroner Call im abbrechbaren `ActiveCase`.
+Damit bleibt die Versandpflicht beim Fallabschluss und bei einem SMTP-Ausfall
+erhalten; der fachliche Ablauf wartet nicht auf SMTP. Dies konkretisiert die
+bisherige Formulierung «Send-Task aus dem Fallprozess»: Die Änderung entsteht dort,
+die Versandausführung findet im unabhängigen Camunda-Versandprozess statt.
+
+Das gilt für Status-/Dringlichkeitsänderungen, Annahmebestätigung und weitere
+veröffentlichte externe Nachrichten nach BEN-01. Annahme und weitere
+Mieternachrichten erzeugen ihre Mailpflicht bereits bei dauerhafter Speicherung,
+nicht erst nach einer erfolgreichen KI-Auswertung. Ein Camunda-Ausfall darf die
+Annahme nicht verhindern; der Starter holt gespeicherte Aufträge nach. Keine
+Doppelmail für die Ursprungsmeldung und keine Mail für den Abschlussstatus.
+
+Pro Ereignis und Empfänger bleibt dieselbe Auftragskennung erhalten. Wiederholte
+Starts/Jobs müssen im Versanddienst gegen parallelen Versand abgesichert werden.
+Ein bereits erfolgreich abgewickelter Auftrag wird nicht erneut versendet.
+Ein unbekannter SMTP-Ausgang bleibt gemäss BEN-04 ausdrücklich unklar; eine
+Exactly-once-Zustellung wird nicht versprochen. Adressen, Nachrichtentexte,
+Zugangstokens und SMTP-Geheimnisse werden nicht als Prozessvariablen übertragen.
+
+Klärungsbedürftiger Versand führt über den bestehenden unabhängigen Prüfbedarf-
+Eingang zur Prüfung eines aktiven Falls; bei bereits offenem Review dieselbe
+Aufgabe ergänzen. Nach Abschluss nur interner Hinweis. Technischer Retry allein
+ist kein fachlicher Prüfgrund. Ereignis- und Grund-Deduplizierung verhindern eine
+Schleife aus identischer Statusmail und wiederholtem Prüfbedarf. Retry-Abstände,
+Grenzen und Incident-Behandlung bleiben technische Umsetzungspunkte; Backend und
+Versandprozess sind noch nicht implementiert/deployt.
 
 Der Versand erfolgt nachgelagert. Ein Mailausfall nimmt weder die Fallannahme noch eine gespeicherte Nachricht oder einen Statuswechsel zurück. Die Ansicht liest weiterhin den fachlichen Stand aus PropertyFlow. Ein Mailauftrag startet keinen zweiten führenden Fallprozess.
 
@@ -130,3 +166,15 @@ Die folgenden Kriterien sind Anforderungen an spätere Tests, keine bereits erbr
 - Konkrete Versandvorlagen für die verbleibenden Benachrichtigungsauslöser. Der Abschlussstatus ist kein eigener Versandauslöser; BEN-05 ist entschieden.
 
 Die vereinbarten Benachrichtigungsregeln gelten für Screen 01 und die interne Versandbearbeitung. Screen 02 zeigt bei aktivem Prüfbedarf den fachlichen Status nach FALL-05, aber keine Versandhinweise. Die offenen Punkte betreffen die Konkretisierung beziehungsweise Umsetzung und werden nicht als bereits beschlossen dargestellt. Der [Geltungsbereich von Streaming und Abbruch](fallkommunikation.md#abgleich-mit-bestehenden-dokumenten) ist geklärt: Diese Funktionen gehören zum Mitarbeiterdetail gemäss ADR-003 und UC-004. Die Mieteransicht bleibt eine asynchrone Fallansicht. Gemeinsame JPG-Entwürfe folgen erst nach den drei Screen-Spezifikationen samt technischen Wireframes.
+
+### BEN-AK-CAMUNDA: Geplante Prüfung der Versandbeauftragung
+
+Fachliche Änderung und Mailpflicht gemeinsam dauerhaft speichern; Neustart vor
+Camunda-Start und verlorene Startantwort prüfen. Pro Ereignis bleibt ein logischer
+Auftrag. Alle BEN-01-Auslöser erzeugen den passenden Send-Task; unveränderter Status,
+Memo und Abschlussstatus erzeugen keinen Versand. Vorzeitiger Fallabschluss
+beendet den Versandprozess nicht. Camunda-/SMTP-Ausfall verhindert weder Annahme
+noch fachlichen Commit. Doppelte Jobs/Starts, SMTP-Annahme mit verlorener Antwort,
+Adresskorrektur, ungültigen Link und fachlichen Klärbedarf prüfen. Keine zweite
+Prüfaufgabe und keine Wiedereröffnung nach Abschluss. Dies sind geplante Prüfungen,
+keine ausgeführten Laufzeittests.

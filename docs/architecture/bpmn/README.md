@@ -22,7 +22,7 @@ Der bisherige Hauptdateiname bleibt für bestehende Links erhalten.
 
 Die [Teilprozess-Verträge](teilprozess-vertraege.md) beschreiben Call-Hierarchie,
 explizite Eingaben und Rückgaben, laufende Aktualisierungen, Abbruch und Rechtebindung.
-Alle fünf Dateien bleiben **nicht ausführbare Fachentwürfe**. Die Dateiaufteilung
+Alle sechs Dateien bleiben **nicht ausführbare Fachentwürfe**. Die Dateiaufteilung
 ist umgesetzt; die notwendige Übergabe zwischen den Kindinstanzen und die
 Präzisierung von ADR-002/SS-003 sind noch nicht im Backend implementiert.
 
@@ -454,7 +454,7 @@ Abschlusses fest. Konkrete freigegebene Zuständigkeitsregeln sowie die
 technische Fehler- und Wiederholungskoordination bleiben auszuarbeiten. Wiedereröffnung und externe Wartephase sind in den Abschnitten 0.15 und 0.16
 fachlich ergänzt; die technische Ausführung bleibt offen.
 
-Die fünf BPMN-Dateien sind unter `docs` abgelegt und werden nicht als
+Die sechs BPMN-Dateien sind unter `docs` abgelegt und werden nicht als
 Prozessressourcen der Anwendung ausgeliefert. Dieser Auftrag ergänzt keine Backend-Logik.
 
 Strukturprüfung zur ersten Aufteilung (Stand 0.9) vom 15.11.2026: Alle fünf Dateien bestehen die
@@ -631,3 +631,20 @@ bereits berücksichtigte Gründe ohne neue Erkenntnis lösen keine Unterbrechung
 [FALL-11](../../specifications/fallverwaltung.md#zwingender-prüfbedarf-während-bearbeitung-und-wiedervorlage)
 und FALL-AK-33 beschreiben Regeln und geplante Prüfungen. Technische Koordination
 bleibt offen; keine Backend-Implementierung.
+
+## Camunda-Mailbeauftragung · Entwurf 0.23
+
+[fallbenachrichtigung-versenden.bpmn](fallbenachrichtigung-versenden.bpmn) enthält
+zwei Send-Tasks: Status-/Dringlichkeitsmail und Annahme-/Nachrichtenmail. Beide
+verwenden den Mail-Worker `propertyflow.mail.send`. Zuvor wird der gespeicherte
+Auftrag geprüft; bereits erledigte Aufträge benötigen keinen erneuten Versand.
+Fachlicher Klärbedarf wird dokumentiert und über den bestehenden Prüfbedarfweg
+weitergegeben, technische Fehler bleiben Retry/Incident.
+
+Die eigenständige Versandinstanz wird aus der dauerhaft gespeicherten Mailpflicht
+gestartet und läuft unabhängig von `ActiveCase`. Kein synchroner Call vom
+Fallprozess; Fallabschluss darf ausstehende Mails nicht abbrechen. Die bestehenden
+ändernden Tasks verweisen auf diesen Erzeugungs-/Startvertrag. Annahme und weitere
+Mieternachrichten erzeugen Mailpflicht bereits beim Speichern, ohne KI-Abhängigkeit.
+Keine zusätzliche Abschlussmail. Siehe [BEN-03](../../specifications/benachrichtigungen-und-zustellung.md#ben-03-speicherung-und-zuverlässige-übergabe).
+Alle Dateien bleiben Fachentwürfe ohne Backend-Implementierung und Deployment.

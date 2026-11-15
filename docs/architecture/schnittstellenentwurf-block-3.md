@@ -313,3 +313,14 @@ Ein synchroner Aufruf bis zur fertigen Bewertung würde die Quittung an die Verf
 | Ein nur im Speicher vorgemerkter Prozessstart könnte nach bestätigter Einreichung bei einem Neustart verloren gehen. | FALL-02 verlangt rekonstruierbare Folgeaufträge. Befund übernommen. E1 fordert deren Commit vor der Bestätigung und prüft den Neustart. |
 | Eine stabile Case-ID allein verhindert keinen doppelten Camunda-Prozessstart, wenn die Antwort auf einen erfolgreichen Start verloren geht. | FALL-03 verlangt Schutz vor Mehrfachwirkung. Befund übernommen. E3 enthält diesen Störfall ausdrücklich. Die technische Absicherung muss beim Implementieren belegt werden. |
 | Eine verspätete KI-Antwort könnte eine manuelle Einstufung überschreiben. | DRING-06 schützt den Vorrang der manuellen Einstufung. Befund übernommen. E4 prüft die konkurrierenden Änderungen am Fall. |
+
+## Ergänzung 15.11.2026: SS-002 und Camunda-Mailbeauftragung
+
+Die Send-Task-Vorgabe wird durch `fallbenachrichtigung-versenden.bpmn` konkretisiert:
+fachlicher Commit mit Mailpflicht → dauerhafter Starter → eigenständige Camunda-
+Versandinstanz → Mail-Worker → SMTP (lokal Mailpit). Der Fallprozess wartet nicht
+auf SMTP; sein Ende darf den Versand nicht abbrechen. Die ältere Formulierung
+«Fallprozess beauftragt über Send Task» meint damit die ereignisbezogene Beauftragung,
+nicht einen blockierenden Sendeschritt vor jedem weiteren Fallschritt.
+BEN-03 gilt nun für alle Fallbenachrichtigungen aus BEN-01; technische Java-/HTTP-
+Verträge und Wiederholungsparameter werden hierdurch nicht implementiert.

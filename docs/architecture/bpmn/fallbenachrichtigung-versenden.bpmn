@@ -1,0 +1,168 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_PropertyFlow_Mail_Draft" targetNamespace="https://propertyflow.local/bpmn/draft">
+  <bpmn:error id="Error_MailClarification" name="Versand fachlich klären" errorCode="MAIL_CLARIFICATION_REQUIRED" />
+  <bpmn:process id="PropertyFlow_Mail_Draft" name="Fallbenachrichtigung versenden · Fachentwurf 0.23" isExecutable="false">
+    <bpmn:documentation>BEN-03: Eigenständige Camunda-Versandinstanz je dauerhaftem Mailauftrag, kein führender Fallprozess und kein Call innerhalb des abbrechbaren ActiveCase. Ein dauerhafter Starter übergibt nur mailOrderRef. Noch keine Backend-Implementierung. Erststart, Wiederholungen und parallele Starts anhand dieser Referenz im Versanddienst koordinieren. Wiederholungsgrenzen und Abstände sind vor Ausführung gemäss BEN-04 festzulegen.</bpmn:documentation>
+    <bpmn:startEvent id="MailStart" name="Dauerhafter Auftrag">
+      <bpmn:documentation>Start erst nach Commit von Ereignis und Mailpflicht. Automatische Abschlussnachricht darf anschliessend unabhängig vom Fallabschluss versendet werden.</bpmn:documentation>
+      <bpmn:outgoing>M01</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="MailLoad" name="Mailauftrag prüfen&#10;Versandart bestimmen">
+      <bpmn:documentation>mailOrderRef laden, Ereignis/Empfänger prüfen und exklusiven Versandversuch koordinieren. Keine Abschlussstatusmail, Memo-Mail oder zusätzliche Mail zur Ursprungsmeldung. Bereits erledigter Auftrag liefert SKIP. Neue fachliche Ereignisse liefern CHANGE oder MESSAGE. Ungültiger technischer Vertrag darf keinen Default-Versand auslösen. Keine Adressen, Tokens, Nachrichtentexte oder SMTP-Zugangsdaten in Camunda-Variablen.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="propertyflow.mail.prepare" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>M01</bpmn:incoming>
+      <bpmn:outgoing>M02</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="MailRoute" name="Versandart">
+      <bpmn:documentation>CHANGE: Status oder Dringlichkeit. MESSAGE: Annahme oder veröffentlichte externe Nachricht. SKIP: kein neuer Versand nötig. Andere Werte technischer Vertragsfehler.</bpmn:documentation>
+      <bpmn:incoming>M02</bpmn:incoming>
+      <bpmn:outgoing>M03</bpmn:outgoing>
+      <bpmn:outgoing>M04</bpmn:outgoing>
+      <bpmn:outgoing>M05</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sendTask id="MailSendChange" name="Status-/Dringlichkeitsmail&#10;Mail-Worker beauftragen">
+      <bpmn:documentation>Camunda stellt Job propertyflow.mail.send bereit. Mail-Worker lädt anhand mailOrderRef die Ereignisdaten, bestätigte Kontaktadresse und gültigen Fall-Link über PropertyFlow-Anwendungsdienste; Versand über SMTP, lokal Mailpit. Gleiche logische Auftragskennung bei Wiederholung. Bekannter erfolgreicher Versuch wird nicht erneut gesendet. SMTP-Annahme ist keine Zustell-/Lesegarantie. Unklarer Ausgang nach BEN-04, keine behauptete Exactly-once-SMTP-Garantie. Technischer Fehler: Job-Retry/Incident, keine Rücknahme fachlicher Änderung. Klärungsbedürftiger fachlicher Versandfehler ausdrücklich MAIL_CLARIFICATION_REQUIRED.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="propertyflow.mail.send" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>M03</bpmn:incoming>
+      <bpmn:outgoing>M06</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:boundaryEvent id="MailSendChangeProblem" name="Versand klären" attachedToRef="MailSendChange" cancelActivity="true">
+      <bpmn:documentation>Fachliche Einstufung durch Versanddienst; ein Retry allein löst dies nicht aus. Nach ausgeschöpften technischen Retries bleibt Incident sichtbar; Wiederholungsgrenzen und Überführung in fachlichen Klärbedarf vor Ausführung konkretisieren.</bpmn:documentation>
+      <bpmn:outgoing>M08</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="MailSendChangeProblem_definition" errorRef="Error_MailClarification" />
+    </bpmn:boundaryEvent>
+    <bpmn:sendTask id="MailSendMessage" name="Annahme-/Nachrichtenmail&#10;Mail-Worker beauftragen">
+      <bpmn:documentation>Camunda stellt Job propertyflow.mail.send bereit. Mail-Worker lädt anhand mailOrderRef die Ereignisdaten, bestätigte Kontaktadresse und gültigen Fall-Link über PropertyFlow-Anwendungsdienste; Versand über SMTP, lokal Mailpit. Gleiche logische Auftragskennung bei Wiederholung. Bekannter erfolgreicher Versuch wird nicht erneut gesendet. SMTP-Annahme ist keine Zustell-/Lesegarantie. Unklarer Ausgang nach BEN-04, keine behauptete Exactly-once-SMTP-Garantie. Technischer Fehler: Job-Retry/Incident, keine Rücknahme fachlicher Änderung. Klärungsbedürftiger fachlicher Versandfehler ausdrücklich MAIL_CLARIFICATION_REQUIRED.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="propertyflow.mail.send" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>M04</bpmn:incoming>
+      <bpmn:outgoing>M07</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:boundaryEvent id="MailSendMessageProblem" name="Versand klären" attachedToRef="MailSendMessage" cancelActivity="true">
+      <bpmn:documentation>Fachliche Einstufung durch Versanddienst; ein Retry allein löst dies nicht aus. Nach ausgeschöpften technischen Retries bleibt Incident sichtbar; Wiederholungsgrenzen und Überführung in fachlichen Klärbedarf vor Ausführung konkretisieren.</bpmn:documentation>
+      <bpmn:outgoing>M09</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="MailSendMessageProblem_definition" errorRef="Error_MailClarification" />
+    </bpmn:boundaryEvent>
+    <bpmn:endEvent id="MailEnd" name="Versandauftrag erledigt">
+      <bpmn:documentation>Nach dokumentierter SMTP-Annahme oder bereits erfolgreich erledigtem identischen Auftrag. Kein Fallabschluss und kein Statuswechsel durch dieses Ende.</bpmn:documentation>
+      <bpmn:incoming>M05</bpmn:incoming>
+      <bpmn:incoming>M06</bpmn:incoming>
+      <bpmn:incoming>M07</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="MailProblem" name="Versandproblem speichern&#10;Prüfbedarf bereitstellen">
+      <bpmn:documentation>Auftrag nicht als erfolgreich markieren. Aktiver Fall: neuen fachlichen Grund E-Mail-Versand klären über den unabhängigen Prüfbedarf-Eingang bereitstellen. Bereits offene Prüfung ergänzen, identische oder berücksichtigte Erkenntnis nicht erneut eskalieren. Abgeschlossener Fall: nur interner Hinweis, keine Wiedereröffnung. Keine automatische Neuanlage identischer Statusmail-Aufträge durch Wiederholung.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="propertyflow.mail.record-problem" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>M08</bpmn:incoming>
+      <bpmn:incoming>M09</bpmn:incoming>
+      <bpmn:outgoing>M10</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="MailProblemEnd" name="Klärbedarf dokumentiert">
+      <bpmn:documentation>Versand nicht als erfolgreich deklarieren; gespeicherter Auftrag bleibt nachvollziehbar.</bpmn:documentation>
+      <bpmn:incoming>M10</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="M01" sourceRef="MailStart" targetRef="MailLoad" name="" />
+    <bpmn:sequenceFlow id="M02" sourceRef="MailLoad" targetRef="MailRoute" name="" />
+    <bpmn:sequenceFlow id="M03" sourceRef="MailRoute" targetRef="MailSendChange" name="Status / Dringlichkeit">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= mailRoute = "CHANGE"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="M04" sourceRef="MailRoute" targetRef="MailSendMessage" name="Annahme / Nachricht">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= mailRoute = "MESSAGE"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="M05" sourceRef="MailRoute" targetRef="MailEnd" name="Bereits erledigt / keine neue Mail">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= mailRoute = "SKIP"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="M06" sourceRef="MailSendChange" targetRef="MailEnd" name="" />
+    <bpmn:sequenceFlow id="M07" sourceRef="MailSendMessage" targetRef="MailEnd" name="" />
+    <bpmn:sequenceFlow id="M08" sourceRef="MailSendChangeProblem" targetRef="MailProblem" name="" />
+    <bpmn:sequenceFlow id="M09" sourceRef="MailSendMessageProblem" targetRef="MailProblem" name="" />
+    <bpmn:sequenceFlow id="M10" sourceRef="MailProblem" targetRef="MailProblemEnd" name="" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Mail_diagram">
+    <bpmndi:BPMNPlane id="Mail_plane" bpmnElement="PropertyFlow_Mail_Draft">
+      <bpmndi:BPMNShape id="MailStart_di" bpmnElement="MailStart">
+        <dc:Bounds x="60" y="202" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="MailLoad_di" bpmnElement="MailLoad">
+        <dc:Bounds x="170" y="175" width="220" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="MailRoute_di" bpmnElement="MailRoute">
+        <dc:Bounds x="460" y="195" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="MailSendChange_di" bpmnElement="MailSendChange">
+        <dc:Bounds x="650" y="70" width="220" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="MailSendChangeProblem_di" bpmnElement="MailSendChangeProblem">
+        <dc:Bounds x="830" y="142" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="MailSendMessage_di" bpmnElement="MailSendMessage">
+        <dc:Bounds x="650" y="290" width="220" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="MailSendMessageProblem_di" bpmnElement="MailSendMessageProblem">
+        <dc:Bounds x="830" y="362" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="MailEnd_di" bpmnElement="MailEnd">
+        <dc:Bounds x="1050" y="202" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="MailProblem_di" bpmnElement="MailProblem">
+        <dc:Bounds x="970" y="460" width="300" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="MailProblemEnd_di" bpmnElement="MailProblemEnd">
+        <dc:Bounds x="1390" y="492" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="M01_di" bpmnElement="M01">
+        <di:waypoint x="96" y="220" />
+        <di:waypoint x="170" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="M02_di" bpmnElement="M02">
+        <di:waypoint x="390" y="220" />
+        <di:waypoint x="460" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="M03_di" bpmnElement="M03">
+        <di:waypoint x="485" y="195" />
+        <di:waypoint x="485" y="115" />
+        <di:waypoint x="650" y="115" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="M04_di" bpmnElement="M04">
+        <di:waypoint x="485" y="245" />
+        <di:waypoint x="485" y="335" />
+        <di:waypoint x="650" y="335" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="M05_di" bpmnElement="M05">
+        <di:waypoint x="510" y="220" />
+        <di:waypoint x="1050" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="M06_di" bpmnElement="M06">
+        <di:waypoint x="870" y="115" />
+        <di:waypoint x="1068" y="115" />
+        <di:waypoint x="1068" y="202" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="M07_di" bpmnElement="M07">
+        <di:waypoint x="870" y="335" />
+        <di:waypoint x="1068" y="335" />
+        <di:waypoint x="1068" y="238" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="M08_di" bpmnElement="M08">
+        <di:waypoint x="848" y="178" />
+        <di:waypoint x="920" y="178" />
+        <di:waypoint x="920" y="510" />
+        <di:waypoint x="970" y="510" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="M09_di" bpmnElement="M09">
+        <di:waypoint x="848" y="398" />
+        <di:waypoint x="848" y="510" />
+        <di:waypoint x="970" y="510" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="M10_di" bpmnElement="M10">
+        <di:waypoint x="1270" y="510" />
+        <di:waypoint x="1390" y="510" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

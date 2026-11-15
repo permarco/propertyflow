@@ -807,3 +807,20 @@ mit Prüfbedarf in Mitarbeiterprüfung; keine neue Fallanlage oder Erstklassifik
 Alte Worker-/Timer-/User-Task-Aktionen bleiben durch ihre frühere Zuordnung gesperrt.
 Startschnittstelle, Transaktionsbindung und Engine-Bestätigung sind vor einer
 ausführbaren Fassung zu konkretisieren; diese Ergänzung ändert keine Backend-Logik.
+
+## Ergänzung vom 15.11.2026: Camunda beauftragt den Mail-Worker
+
+Bestätigt: Fallbenachrichtigungen werden durch Camunda-Send-Tasks an den
+wiederverwendbaren Mail-Worker beauftragt. Die Fachfunktion speichert Änderung
+und dauerhafte Mailpflicht mit Ereignisreferenz; ein dauerhafter Starter startet
+den unabhängigen Camunda-Versandprozess mit der Auftragsreferenz. Der Mail-Worker
+lädt die Versanddaten und nutzt SMTP, lokal Mailpit. Der Starter sendet nicht selbst.
+
+Der unabhängige Prozess ist kein zweiter führender Fallprozess. Diese Trennung
+bewahrt die bestehende Vorgabe, dass fachlicher Abschluss nicht auf SMTP wartet
+und ausstehende Benachrichtigung nicht durch das Ende von ActiveCase verloren geht.
+Es entsteht kein zusätzlicher Microservice; Worker und Starter bleiben an den
+bestehenden PropertyFlow-Modulgrenzen. Keine Zusatzmail beim Abschlussstatus.
+Details: [BEN-03](../../specifications/benachrichtigungen-und-zustellung.md#ben-03-speicherung-und-zuverlässige-übergabe)
+und [Versandentwurf](../bpmn/fallbenachrichtigung-versenden.bpmn).
+Technische Umsetzung, Startkoordination und Laufzeitnachweise stehen aus.

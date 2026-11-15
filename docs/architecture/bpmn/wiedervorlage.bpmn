@@ -12,7 +12,7 @@ Dateiaufteilung 0.9: untergeordneter Prozess, nur durch Call Activity starten. K
       <bpmn:outgoing>W01</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:serviceTask id="WSave" name="Termin speichern&#10;Wartet auf Wiedervorlage">
-      <bpmn:documentation>
+      <bpmn:documentation>BEN-03 / 0.23: Bei tatsächlicher benachrichtigungspflichtiger Änderung Ereignis und Mailpflicht dauerhaft zusammen sichern. Der dauerhafte Starter startet fallbenachrichtigung-versenden.bpmn mit mailOrderRef; dort beauftragen Camunda-Send-Tasks den Mail-Worker. Hier kein direkter SMTP-Aufruf und kein Warten auf SMTP. Unveränderte Werte und identische Wiederholungen erzeugen keine neue Mailpflicht.
 Dateiaufteilung 0.9: Beim Eintritt den eigenen Kindinstanz- und Call-Bezug aus Engine-Metadaten zur unveränderten leadingProcessInstanceKey prüfen/registrieren. Aktuellen Stand aus PropertyFlow laden und lokale Steuerstände initialisieren. Registrierung und Nachlieferung müssen ohne Lücke zusammenwirken, auch bei vorher eingegangenen Nachrichten. Diese Instanz wird nicht als neuer führender Fallprozess gespeichert. Umsetzung gemäss teilprozess-vertraege.md noch offen.
 Wiedervorlage-Version in PropertyFlow sichern und im zuständigen Mitarbeiterbereich bereitstellen, bevor dort auf Kontakt reagiert wird. activeFollowUpVersion und pendingTenantContactFollowUpVersion müssen denselben aktuellen Termin/Aufruf bezeichnen. Nicht auf normale Call-Rückgabe warten. Die lückenlose interne Übergabe ist vor Ausführung zu implementieren.
 FALL-11 / FALL-AK-30: Bestätigten Termin als absoluten followUpDueAt mit Offset oder UTC in diesem Scope bereitstellen. Kalendertage ab lokalem Datum der erstmaligen Annahme, 08:00 Uhr Europe/Zurich am Zieldatum, keine Wochenend-/Feiertagsverschiebung. Neue Eingabe serverseitig nur mit Zeitpunkt in der Zukunft annehmen; ungültige Eingabe verändert keine bestehende Wartephase. Wiederholung eines angenommenen Auftrags übernimmt denselben gespeicherten Zeitpunkt und berechnet keine neuen Tage. Bei verzögerter Verarbeitung darf ein inzwischen fälliger gültiger Auftrag nicht als ungültige Neueingabe verworfen werden. Variablenbereitstellung und atomare Versionskoordination sind noch nicht implementiert.</bpmn:documentation>
@@ -69,7 +69,7 @@ Normaler Kindprozessabschluss: outcome=REVIEW und decisionRef zur geprüften Gru
       <bpmn:incoming>W10</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:serviceTask id="WUpdate" name="Neuen Termin speichern&#10;Alten Timer ersetzen">
-      <bpmn:documentation>
+      <bpmn:documentation>BEN-03 / 0.23: Bei tatsächlicher benachrichtigungspflichtiger Änderung Ereignis und Mailpflicht dauerhaft zusammen sichern. Der dauerhafte Starter startet fallbenachrichtigung-versenden.bpmn mit mailOrderRef; dort beauftragen Camunda-Send-Tasks den Mail-Worker. Hier kein direkter SMTP-Aufruf und kein Warten auf SMTP. Unveränderte Werte und identische Wiederholungen erzeugen keine neue Mailpflicht.
 Wiedervorlage-Version in PropertyFlow sichern und im zuständigen Mitarbeiterbereich bereitstellen, bevor dort auf Kontakt reagiert wird. activeFollowUpVersion und pendingTenantContactFollowUpVersion müssen denselben aktuellen Termin/Aufruf bezeichnen. Nicht auf normale Call-Rückgabe warten. Die lückenlose interne Übergabe ist vor Ausführung zu implementieren.
 FALL-11 Zeile 5: Neue bewusste Terminentscheidung gegen aktuellen Fallstand inklusive gespeicherter Nachrichten prüfen. Neue Terminversion konsistent mit Mitarbeiterinstanz und Timer bereitstellen. Alte Kontakt-/Timermarker dürfen neuen Call/Timer nicht beenden; Race zwischen Versionswechsel und Randereignis vor Umsetzung technisch auflösen.
 FALL-11 / FALL-AK-30: Bestätigten Termin als absoluten followUpDueAt mit Offset oder UTC in diesem Scope bereitstellen. Kalendertage ab lokalem Datum der erstmaligen Annahme, 08:00 Uhr Europe/Zurich am Zieldatum, keine Wochenend-/Feiertagsverschiebung. Neue Eingabe serverseitig nur mit Zeitpunkt in der Zukunft annehmen; ungültige Eingabe verändert keine bestehende Wartephase. Wiederholung eines angenommenen Auftrags übernimmt denselben gespeicherten Zeitpunkt und berechnet keine neuen Tage. Bei verzögerter Verarbeitung darf ein inzwischen fälliger gültiger Auftrag nicht als ungültige Neueingabe verworfen werden. Variablenbereitstellung und atomare Versionskoordination sind noch nicht implementiert.</bpmn:documentation>
@@ -77,6 +77,7 @@ FALL-11 / FALL-AK-30: Bestätigten Termin als absoluten followUpDueAt mit Offset
       <bpmn:outgoing>W15</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:serviceTask id="WDeleteTask" name="Timer und Termin entfernen">
+        <bpmn:documentation>BEN-03 / 0.23: Bei tatsächlicher benachrichtigungspflichtiger Änderung Ereignis und Mailpflicht dauerhaft zusammen sichern. Der dauerhafte Starter startet fallbenachrichtigung-versenden.bpmn mit mailOrderRef; dort beauftragen Camunda-Send-Tasks den Mail-Worker. Hier kein direkter SMTP-Aufruf und kein Warten auf SMTP. Unveränderte Werte und identische Wiederholungen erzeugen keine neue Mailpflicht. </bpmn:documentation>
       <bpmn:incoming>W16</bpmn:incoming>
       <bpmn:outgoing>W17</bpmn:outgoing>
     </bpmn:serviceTask>
@@ -117,6 +118,7 @@ Nach Auslagerung Zielinstanz serverseitig über die aktuelle Wiedervorlage-Zuord
         <bpmn:messageEventDefinition id="WQuestionStart_definition" messageRef="Message_StaffQuestion" />
       </bpmn:startEvent>
       <bpmn:serviceTask id="WPublish" name="Rückfrage veröffentlichen&#10;Termin bleibt unverändert">
+        <bpmn:documentation>BEN-03 / 0.23: Bei tatsächlicher benachrichtigungspflichtiger Änderung Ereignis und Mailpflicht dauerhaft zusammen sichern. Der dauerhafte Starter startet fallbenachrichtigung-versenden.bpmn mit mailOrderRef; dort beauftragen Camunda-Send-Tasks den Mail-Worker. Hier kein direkter SMTP-Aufruf und kein Warten auf SMTP. Unveränderte Werte und identische Wiederholungen erzeugen keine neue Mailpflicht. </bpmn:documentation>
         <bpmn:incoming>W20</bpmn:incoming>
         <bpmn:outgoing>W21</bpmn:outgoing>
       </bpmn:serviceTask>

@@ -352,3 +352,26 @@ atomar beziehungsweise zuverlässig zu koordinieren; ein nachträglicher Check
 allein verhindert keinen falschen Abbruch. Alte Meldungen und bereits
 berücksichtigte Gründe ohne neue Erkenntnis dürfen keine neuere Aufgabe stören.
 Bestehende Call-Eingaben und Rückgaben bleiben unverändert.
+
+## Eigenständiger Versandprozess (0.23)
+
+`PropertyFlow_Mail_Draft` in `fallbenachrichtigung-versenden.bpmn` wird je
+persistiertem Versandauftrag unabhängig gestartet. Einziger Eingabebezug ist
+`mailOrderRef`; keine Eltern-Call-Bindung und keine Rückgaben an den Fallprozess.
+Er ersetzt oder registriert niemals dessen führenden Prozessschlüssel.
+`MailLoad` prüft Auftrag und liefert `mailRoute` (CHANGE, MESSAGE oder SKIP).
+Beide Send-Tasks verwenden `propertyflow.mail.send` und laden Versanddaten
+innerhalb des Workers über PropertyFlow. Auftragsprüfung und Fehlerdokumentation
+haben die Entwurfs-Jobtypen `propertyflow.mail.prepare` und
+`propertyflow.mail.record-problem`. Ein fachlicher Fehler
+`MAIL_CLARIFICATION_REQUIRED` führt zur Problemablage; rein technische Fehler
+bleiben Jobfehler. Die Jobs sind modelliert, aber nicht implementiert.
+
+Der Starter koordiniert Startversuche aus der dauerhaften Mailpflicht; parallele
+Starts und verlorene Startantwort dürfen keinen doppelten logischen Versand
+erzeugen. SMTP-Ungewissheit folgt BEN-04. Ereignisgeneration und Empfängerbezug
+bleiben nachvollziehbar; keine pauschale Prüfung auf «Fall noch aktiv», da eine
+bereits veröffentlichte Nachricht auch nach Abschluss benachrichtigt werden muss.
+Ein neuer Prüfgrund wird nur bei zulässiger aktueller Fallzuordnung wirksam.
+Der Versandprozess muss nicht mit dem Fallprozess als synchroner Call bereitgestellt
+werden; die bisherigen fünf Call-Modelle behalten ihre Deployment-Bindung.

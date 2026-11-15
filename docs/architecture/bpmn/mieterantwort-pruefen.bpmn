@@ -10,7 +10,7 @@ Dateiaufteilung 0.9: untergeordneter Prozess, nur durch Call Activity starten. K
       <bpmn:outgoing>R01</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:serviceTask id="RStatus" name="Wartestatus prüfen&#10;Wartet auf Mieterantwort">
-      <bpmn:documentation>Kein vorrangiger Mitarbeiterprüfbedarf und keine laufende Wiedervorlage. Kein erneutes In Abklärung allein durch Nachrichteneingang.
+      <bpmn:documentation>BEN-03 / 0.23: Bei tatsächlicher benachrichtigungspflichtiger Änderung Ereignis und Mailpflicht dauerhaft zusammen sichern. Der dauerhafte Starter startet fallbenachrichtigung-versenden.bpmn mit mailOrderRef; dort beauftragen Camunda-Send-Tasks den Mail-Worker. Hier kein direkter SMTP-Aufruf und kein Warten auf SMTP. Unveränderte Werte und identische Wiederholungen erzeugen keine neue Mailpflicht. Kein vorrangiger Mitarbeiterprüfbedarf und keine laufende Wiedervorlage. Kein erneutes In Abklärung allein durch Nachrichteneingang.
 Dateiaufteilung 0.9: Beim Eintritt den eigenen Kindinstanz- und Call-Bezug aus Engine-Metadaten zur unveränderten leadingProcessInstanceKey prüfen/registrieren. Aktuellen Stand aus PropertyFlow laden und lokale Steuerstände initialisieren. Registrierung und Nachlieferung müssen ohne Lücke zusammenwirken, auch bei vorher eingegangenen Nachrichten. Diese Instanz wird nicht als neuer führender Fallprozess gespeichert. Umsetzung gemäss teilprozess-vertraege.md noch offen.</bpmn:documentation>
       <bpmn:incoming>R01</bpmn:incoming>
       <bpmn:outgoing>R02</bpmn:outgoing>
