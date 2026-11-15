@@ -19,7 +19,10 @@ im Zustandsdiagramm und im Hauptmodell 0.24 ergänzt. Auch Übergang 30
 (direkter Mitarbeiterabschluss aus In Abklärung) ist nun in FALL-06,
 im Zustandsdiagramm und im Hauptmodell 0.25 ergänzt, einschliesslich
 Konfliktpfad und Beendigung der aktiven Bearbeitung nach Speicherung.
-Geplante Prüffälle: FALL-AK-36; Laufzeitnachweis offen. Weitere markierte
+Geplante Prüffälle: FALL-AK-36; Laufzeitnachweis offen. Übergang 31
+(In Abklärung direkt zur Wiedervorlage) ist ebenfalls fachlich bestätigt und
+in FALL-11, Zustandsdiagramm und den beteiligten Modellen 0.26 ergänzt.
+Geplante Prüffälle: FALL-AK-37; technische Übergabe und Laufzeitnachweis offen. Weitere markierte
 Mitarbeiterübergänge sowie technische Synchronisierung bleiben offen.
 B01, B04/B05 und B07–B10 bleiben offen. Die folgenden Befunde und Zählwerte dokumentieren
 den Stand der Erstprüfung mit fünf Modellen; nun existiert zusätzlich das sechste

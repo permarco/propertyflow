@@ -414,3 +414,28 @@ Keine Rückgaben abgebrochener Kindprozesse verwenden. Wiederholungen müssen de
 bereits gespeicherten Erfolg erkennen und die Prozessbeendigung zuverlässig
 nachholen; alte Aufträge dürfen nach Wiedereröffnung keinen neuen Durchlauf
 beenden. Diese Garantien sind noch nicht implementiert oder zur Laufzeit getestet.
+
+## Direkte Wiedervorlage aus Abklärung (0.26)
+
+`StaffFollowSide` prüft und speichert den Auftrag aus «In Abklärung» am aktuellen
+Fallstand. Termin, Terminversion, berücksichtigte Prüfgründe und Status werden
+konsistent gesichert; alte automatische Schreibfreigaben erlöschen.
+`staffFollowTakeoverReady` ist an den übernommenen Abklärungslauf gebunden und
+muss auch Aktivitätswechsel abdecken. `StaffFollowContinue` konsumiert den Marker
+und setzt `staffEntryContextRef` mit Bezug auf den gespeicherten Terminauftrag.
+
+`SEntryCheck` prüft diesen Kontext erneut. Ohne inzwischen eingegangenen Kontakt
+oder neuen zwingenden Prüfbedarf folgt `S_EntryFollowUp` direkt zu `FollowUp`;
+`followUpEntryContextRef` verweist auf denselben Auftrag. Andernfalls wird die
+betroffene Wiedervorlage aufgehoben und zur Mitarbeiterprüfung verzweigt.
+Die bestehende Call-Hierarchie bleibt erhalten: Hauptprozess → Mitarbeiterprozess
+→ Wiedervorlage. Kein zusätzlicher führender Fallprozess und kein zweiter Timer.
+
+`WSave` übernimmt beim Direkteinstieg den bereits gespeicherten Termin und seine
+Version idempotent. Keine Neuberechnung und keine neue Mailpflicht. Vor Aktivierung
+des Calls eingetroffene Kontakte und neue Prüfgründe müssen zuverlässig nachgeliefert
+werden; bestehende Randereignisse reagieren auch auf bereits bereitstehende Marker.
+Ein inzwischen aufgehobener Termin darf nicht wiederhergestellt werden. Ein während
+der Übergabe fällig gewordener, ursprünglich gültiger Termin folgt sofort dem
+Timerpfad. Die lückenlose Übergabe und Synchronisierung mit konkurrierenden Aktionen
+sind Implementierungsanforderungen, noch kein ausgeführter Laufzeitnachweis.

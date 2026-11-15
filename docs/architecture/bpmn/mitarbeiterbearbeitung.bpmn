@@ -1,7 +1,7 @@
-<?xml version='1.0' encoding='UTF-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_PropertyFlow_Staff_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
   <bpmn:message id="Message_StaffReviewSend" name="Mitarbeiternachricht während Prüfung senden" />
-  <bpmn:process id="PropertyFlow_Staff_Draft" name="Mitarbeiterprüfung und weitere Bearbeitung · Fachentwurf 0.22" isExecutable="false">
+  <bpmn:process id="PropertyFlow_Staff_Draft" name="Mitarbeiterbearbeitung · Fachentwurf 0.26" isExecutable="false">
     <bpmn:documentation>
 Dateiaufteilung 0.9: untergeordneter Prozess, nur durch Call Activity starten. Keine eigene führende Fallzuordnung. Eingaben caseId, leadingProcessInstanceKey und entryContextRef; Rückgaben outcome und decisionRef. Explizite instanzübergreifende Aktualisierung gemäss teilprozess-vertraege.md erforderlich; keine live gemeinsam genutzten Elternvariablen. Nicht ausführbar, kein Backend implementiert.
 Fachentwurf 0.15: Wiedereröffnung ohne Prüfbedarf steigt nach geprüfter Registrierung direkt in SWork ein, ohne eine frühere Prüfung oder Entscheidung zu reaktivieren. Wiedereröffnung mit Prüfbedarf verwendet SReviewStatus und SReview.
@@ -58,7 +58,7 @@ Bei Call-Aufteilung gehört diese User Task zur Mitarbeiter-Kindinstanz. Autoris
       <bpmn:outgoing>SX01</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:serviceTask id="SQuestion" name="Mitarbeiterrückfrage&#10;veröffentlichen">
-        <bpmn:documentation>BEN-03 / 0.23: Bei tatsächlicher benachrichtigungspflichtiger Änderung Ereignis und Mailpflicht dauerhaft zusammen sichern. Der dauerhafte Starter startet fallbenachrichtigung-versenden.bpmn mit mailOrderRef; dort beauftragen Camunda-Send-Tasks den Mail-Worker. Hier kein direkter SMTP-Aufruf und kein Warten auf SMTP. Unveränderte Werte und identische Wiederholungen erzeugen keine neue Mailpflicht. </bpmn:documentation>
+      <bpmn:documentation>BEN-03 / 0.23: Bei tatsächlicher benachrichtigungspflichtiger Änderung Ereignis und Mailpflicht dauerhaft zusammen sichern. Der dauerhafte Starter startet fallbenachrichtigung-versenden.bpmn mit mailOrderRef; dort beauftragen Camunda-Send-Tasks den Mail-Worker. Hier kein direkter SMTP-Aufruf und kein Warten auf SMTP. Unveränderte Werte und identische Wiederholungen erzeugen keine neue Mailpflicht. </bpmn:documentation>
       <bpmn:incoming>S09</bpmn:incoming>
       <bpmn:outgoing>S10</bpmn:outgoing>
     </bpmn:serviceTask>
@@ -91,6 +91,7 @@ Ruft wiedervorlage.bpmn auf. Vertrag: teilprozess-vertraege.md. Untergeordnete I
       <bpmn:incoming>S07</bpmn:incoming>
       <bpmn:incoming>S12</bpmn:incoming>
       <bpmn:incoming>SX05</bpmn:incoming>
+      <bpmn:incoming>S_EntryFollowUp</bpmn:incoming>
       <bpmn:outgoing>S14</bpmn:outgoing>
     </bpmn:callActivity>
     <bpmn:exclusiveGateway id="SFollowResult" name="Ergebnis der Wartezeit">
@@ -156,14 +157,16 @@ FALL-11 Zeile 5: Dieselbe Erledigungs- und Prüfzuordnung wie Timerweg WClearTim
     </bpmn:subProcess>
     <bpmn:serviceTask id="SEntryCheck" name="Eintritt prüfen&#10;Fallstand laden">
       <bpmn:documentation>
-Kindinstanz und Call-Bezug aus Engine-Metadaten zur aktuellen führenden Instanz prüfen/registrieren und aktuellen Fallstand laden. Nur geprüfter entryContextRef eines erfolgreichen Wiedereröffnungsauftrags oder der bewussten Aufhebung des letzten Antwortbedarfs ohne offenen Prüfbedarf erlaubt direkten Eintritt in SWork. Sonst reguläre Mitarbeiterprüfung; neue Prüfgründe haben Vorrang. Ungültige oder überholte Generation nicht weiterbearbeiten. Keine führende Zuordnung durch diesen Kindprozess. Technische Umsetzung bleibt offen.</bpmn:documentation>
+Kindinstanz und Call-Bezug aus Engine-Metadaten zur aktuellen führenden Instanz prüfen/registrieren und aktuellen Fallstand laden. Nur geprüfter entryContextRef eines erfolgreichen Wiedereröffnungsauftrags oder der bewussten Aufhebung des letzten Antwortbedarfs ohne offenen Prüfbedarf erlaubt direkten Eintritt in SWork. Sonst reguläre Mitarbeiterprüfung; neue Prüfgründe haben Vorrang. Ungültige oder überholte Generation nicht weiterbearbeiten. Keine führende Zuordnung durch diesen Kindprozess. Technische Umsetzung bleibt offen.
+0.26 / FALL-11 Übergang 31: Aktueller gespeicherter Terminsetzungsauftrag aus In Abklärung erlaubt direkten Eintritt in FollowUp ohne SReview oder SWork. Terminversion und Durchlauf prüfen, followUpEntryContextRef setzen. Seit Terminsetzung neue Mieternachricht oder neuer zwingender Prüfbedarf: betroffenen Termin aufheben und reguläre Mitarbeiterprüfung wählen. Bekannte bewusst berücksichtigte Prüfgründe allein lösen keine Prüfung aus. Übergabe bis Aktivierung des FollowUp-Calls lückenlos koordinieren; dessen bestehende Kontakt-/Prüfbedarf-Randereignisse müssen vorher eingetroffene Marker erkennen. Keine Wiederherstellung aufgehobener Termine, keine Umleitung eines inzwischen anderweitig bearbeiteten Falls.</bpmn:documentation>
       <bpmn:incoming>S01</bpmn:incoming>
       <bpmn:outgoing>S_EntryChecked</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:exclusiveGateway id="SEntryRoute" name="Offene Prüfung&#10;erforderlich?">
+    <bpmn:exclusiveGateway id="SEntryRoute" name="Geprüfte&#10;Fortsetzung">
       <bpmn:incoming>S_EntryChecked</bpmn:incoming>
       <bpmn:outgoing>S_EntryReview</bpmn:outgoing>
       <bpmn:outgoing>S_EntryWork</bpmn:outgoing>
+      <bpmn:outgoing>S_EntryFollowUp</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:sequenceFlow id="S_EntryChecked" name="" sourceRef="SEntryCheck" targetRef="SEntryRoute" />
     <bpmn:sequenceFlow id="S_EntryReview" name="Ja / regulärer Eintritt" sourceRef="SEntryRoute" targetRef="SReviewStatus" />
@@ -219,6 +222,7 @@ FALL-06/11: Nur serverseitig bestätigter neuer zwingender Prüfbedarf für die 
     </bpmn:boundaryEvent>
     <bpmn:sequenceFlow id="SR01" sourceRef="SWorkReviewNeeded" targetRef="SReviewStatus" />
     <bpmn:sequenceFlow id="SR02" sourceRef="SFollowUpReviewNeeded" targetRef="SStopFollowUp" />
+    <bpmn:sequenceFlow id="S_EntryFollowUp" name="Bestätigte direkte Wiedervorlage" sourceRef="SEntryRoute" targetRef="FollowUp" />
     <bpmn:textAnnotation id="SQuestionNote">
       <bpmn:text>Nachrichten während offener Mitarbeiterprüfung:
 Senden als nicht unterbrechende Nebenaktion (unten).
@@ -549,6 +553,12 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
         <di:waypoint x="780" y="475" />
         <di:waypoint x="780" y="470.0" />
         <di:waypoint x="610.0" y="470.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="S_EntryFollowUp_di" bpmnElement="S_EntryFollowUp">
+        <di:waypoint x="-175" y="155" />
+        <di:waypoint x="-175" y="-100" />
+        <di:waypoint x="935" y="-100" />
+        <di:waypoint x="935" y="445" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

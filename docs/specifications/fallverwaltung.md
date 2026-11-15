@@ -130,6 +130,7 @@ flowchart LR
     W -->|"15"| W
     W -->|"16"| P
     A -->|"18 / 30"| Z
+    A -->|"31"| W
     M -->|"19"| Z
     P -->|"20"| Z
     B -->|"21"| Z
@@ -189,6 +190,7 @@ Die Pfeilnummern verweisen auf die Übergänge in der Tabelle. Die Anmerkungen i
 | 28 | Wartet auf Mieterantwort | Abgeschlossen | Direkter Mitarbeiterabschluss [3] |
 | 29 | In Abklärung | Wartet auf Mieterantwort | Mitarbeiterrückfrage mit «Mieterantwort erforderlich» veröffentlicht [1]; kontrollierte Ablösung der automatischen Abklärung gemäss FALL-06 |
 | 30 | In Abklärung | Abgeschlossen | Direkter Mitarbeiterabschluss am aktuellen Fallstand [3]; siehe FALL-06 |
+| 31 | In Abklärung | Wartet auf Wiedervorlage | Mitarbeiter setzt direkt einen zukünftigen Termin; automatische Abklärung ablösen, siehe FALL-11 |
 
 - **[1]** Keine laufende Wiedervorlage und kein vorrangiger Mitarbeiterprüfbedarf; automatische Rückfragen benötigen die serverseitig geprüften Ausführungsbedingungen nach [KOM-05](fallkommunikation.md#kom-05-automatische-rueckfragen). Für zulässige Katalogrückfragen ist keine zusätzliche menschliche Einzelfreigabe vorgesehen.
 - **[2]** Kein zulässiger automatischer Abschluss und keine laufende Wiedervorlage.
@@ -750,6 +752,46 @@ Die Wiedervorlage dokumentiert die bewusste Mitarbeiterentscheidung, den aktuell
 
 Terminsetzung, Terminänderung, Terminlöschung und automatische Aufhebung bleiben mit Zeitpunkt, Quelle und auslösender Grundlage nachvollziehbar. Treffen eine während der Wartezeit gespeicherte Mieternachricht und der Timerablauf zusammen, endet die Wiedervorlage. Camunda legt den Fall dafür nur einmal zur Mitarbeiterprüfung vor. Wird der Timer zuerst verarbeitet, gehört die Nachricht zur bereits ausgelösten Prüfung. PropertyFlow prüft dazu den aktuellen Fallstand. Wiederholte Nachrichtenereignisse oder überholte Timer dürfen weder eine zweite Mitarbeiteraufgabe auslösen noch eine später bewusst gesetzte Wiedervorlage aufheben. Bei konkurrierender Terminänderung, Löschung oder Abschluss bleiben die Regeln für den aktuellen Fallstand massgeblich.
 
+### Direkte Wiedervorlage während «In Abklärung»
+
+**Bestätigt am 15.11.2026 – Übergang 31:** Berechtigte Mitarbeitende können
+am aktuellen Fallstand direkt einen zukünftigen Wiedervorlagetermin setzen.
+Sie müssen weder das Ende der automatischen Abklärung abwarten noch zuvor
+«In Bearbeitung» oder «Mitarbeiterprüfung erforderlich» durchlaufen.
+
+- Camunda beauftragt die Prüfung und Speicherung. Berechtigung, führender
+  Prozessdurchlauf, Status «In Abklärung», bestätigter Fallstand und Termin
+  werden serverseitig geprüft. Für die Terminberechnung gelten Kalendertage
+  und 08:00 Uhr Europe/Zurich; bei erstmaliger Annahme muss der Zeitpunkt
+  strikt in der Zukunft liegen. Eine interne Begründung bleibt optional.
+- Erfolgreiche Terminsetzung speichert Termin, Wiedervorlage-Version und Status
+  «Wartet auf Wiedervorlage» konsistent. Die zu diesem Zeitpunkt bewusst
+  berücksichtigten Prüfgründe werden wie bei den übrigen Wiedervorlageaktionen
+  dokumentiert. Das erledigt keine Mieterfrage und erteilt keine Freigabe für
+  Kosten, Aufträge oder einen Systemabschluss.
+- Die automatische Abklärung wird kontrolliert abgelöst. Alte KI-Ergebnisse
+  und automatische Freigaben dürfen danach keine Nachricht veröffentlichen,
+  den Status verändern oder den Fall schliessen. Dieser Schutz gilt bereits
+  ab Speicherung, auch bevor Camunda den bisherigen Schritt unterbrochen hat.
+- Camunda führt die bestehende Wiedervorlage mit genau einem wirksamen Timer
+  für den gespeicherten Termin weiter. Es entsteht kein neuer führender
+  Fallprozess. Wiederholungen übernehmen dieselbe Version und denselben Termin;
+  sie setzen weder die Wartezeit zurück noch erzeugen sie eine weitere Mailpflicht.
+- Neue Mieternachrichten oder neue Erkenntnisse mit zwingendem Prüfbedarf nach
+  Terminsetzung beenden die betroffene Wiedervorlage und führen zur
+  Mitarbeiterprüfung. Das gilt auch während der Übergabe an den Warteprozess:
+  Ein inzwischen aufgehobener Termin darf dort nicht wiederhergestellt werden.
+  Bereits bewusst berücksichtigte Erkenntnisse allein lösen keine erneute Prüfung aus.
+- Ist der bestätigte Fallstand vor Speicherung überholt oder die Eingabe ungültig,
+  wird die Aktion ohne Status- oder Terminänderung abgelehnt. Der aktuelle Pfad
+  bleibt bestehen; der Mitarbeiter muss den aktuellen Stand erneut prüfen.
+  Technische Fehler folgen Retry/Incident. Nach erfolgreicher Speicherung wird
+  die Prozessfortsetzung zuverlässig nachgeholt; ein inzwischen erreichter,
+  ursprünglich gültiger Termin wird sofort fällig und nicht neu berechnet.
+
+Terminablauf, Ändern, Löschen und Abschluss folgen unverändert den bestehenden
+Wiedervorlageregeln. Die technische Umsetzung dieser Koordination steht noch aus.
+
 ### Terminberechnung: Kalendertage und Schweizer Zeit
 
 **Bestätigt am 15.11.2026:** «In N Tagen» bedeutet: zum aktuellen lokalen Datum
@@ -1176,3 +1218,22 @@ Geplante Prüfungen, noch keine ausgeführten Backend-Tests:
   Abschluss; Prozessbeendigung zuverlässig nachholen, keine Nachricht hinzufügen.
 - Fehlende Berechtigung, falscher Prozessbezug oder alter Auftrag nach Wiedereröffnung:
   keine Änderung des aktuellen Falls; bestehende Nachrichten und Mailpflichten erhalten.
+
+### FALL-AK-37: Direkte Wiedervorlage aus «In Abklärung»
+
+Geplante Prüfungen, noch keine ausgeführten Backend-Tests:
+
+- Während laufender KI einen gültigen Termin setzen: direkt «Wartet auf
+  Wiedervorlage», genau eine Terminversion und ein wirksamer Camunda-Timer.
+- Bekannte Prüfgründe bewusst berücksichtigen, offene Mieterfragen erhalten;
+  daraus keine pauschale Handlungs- oder Abschlussfreigabe ableiten.
+- Verspätete KI- und Veröffentlichungsjobs nach Terminsetzung: keine Wirkung.
+- Ungültiger Termin, fehlende Berechtigung, falscher Durchlauf oder veralteter
+  Fallstand: aktuelle Bearbeitung und Daten unverändert lassen.
+- Neue Mieternachricht beziehungsweise neuer zwingender Prüfbedarf nach
+  Termincommit, auch vor Aktivierung des Warteaufrufs: Termin aufheben und
+  genau eine Mitarbeiterprüfung; keine Wiederherstellung beim Einstieg.
+- Retry und verzögerte Übergabe: ursprünglichen Termin und Version übernehmen,
+  keine doppelte Benachrichtigung; inzwischen fälligen Termin sofort behandeln.
+- Timerablauf, Terminänderung, Löschen und Abschluss verwenden weiterhin die
+  bestehenden Fortsetzungen; alte Marker wirken nicht auf spätere Wiedervorlagen.

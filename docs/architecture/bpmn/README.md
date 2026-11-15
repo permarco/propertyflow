@@ -1,7 +1,7 @@
 # PropertyFlow-Fallprozess
 
 [propertyflow-fallprozess-entwurf.bpmn](propertyflow-fallprozess-entwurf.bpmn)
-ist der führende BPMN-Entwurf 0.25 zur gemeinsamen Besprechung, Stand 15.11.2026.
+ist der führende BPMN-Entwurf 0.26 zur gemeinsamen Besprechung, Stand 15.11.2026.
 Er enthält BPMN-Diagrammkoordinaten und kann im Camunda Modeler geöffnet werden.
 
 ## Dateien – hier bearbeiten
@@ -677,3 +677,19 @@ Fachliche Quelle: [FALL-06, Übergang 30](../../specifications/fallverwaltung.md
 geplante Prüfungen: FALL-AK-36. Der Entwurf ist weiterhin nicht ausführbar;
 Abschlusscommit, zuverlässige Prozessbeendigung und Sperre verspäteter Worker
 sind noch technisch umzusetzen.
+
+## Direkte Wiedervorlage aus Abklärung (0.26)
+
+Unter «Aktiven Fall bearbeiten» nimmt **«Direkte Wiedervorlage während In Abklärung»**
+den Mitarbeiterauftrag entgegen. Nach geprüfter Speicherung lösen die Randereignisse
+mit Bezug auf `staffFollowTakeoverReady` die automatische Abklärung ab.
+«Aktuellen Wiedervorlage-Eintritt bereitstellen» führt über den Mitarbeiterprozess
+direkt zu dessen bestehendem **«Wiedervorlage verwalten»**-Aufruf. Eine vorgeschaltete
+Mitarbeiterprüfung oder «In Bearbeitung» ist dafür nicht erforderlich.
+
+Neue Mieternachrichten oder neue zwingende Prüfgründe seit Terminsetzung führen
+zur Mitarbeiterprüfung; ein inzwischen aufgehobener Termin wird nicht erneut
+angelegt. Die bestehenden Timer-, Änderungs-, Lösch- und Abschlusswege bleiben
+massgeblich. Quelle: [FALL-11, Übergang 31](../../specifications/fallverwaltung.md#direkte-wiedervorlage-während-in-abklärung),
+geplante Prüfungen FALL-AK-37. Alle betroffenen Modelle bleiben nicht ausführbare
+Fachentwürfe; die technische Übergabe und Synchronisierung sind noch umzusetzen.
