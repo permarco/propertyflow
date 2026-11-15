@@ -482,6 +482,42 @@ Terminsetzung, Terminänderung, Terminlöschung und automatische Aufhebung bleib
 
 Die genaue Tagesberechnung, Uhrzeit bei einer Datumsangabe, Zeitzonenbehandlung und technische Umsetzung der parallelen Verarbeitung werden noch konkretisiert. Die Timerentscheidung ändert die Verantwortung aus FALL-06 nicht: PropertyFlow hält die fachlichen Falldaten; Camunda führt den technischen Wartezustand.
 
+### Nachricht, Timer und neuere Terminentscheidung
+
+**Bestätigt am 15.11.2026 – Fortsetzungstabelle, Zeile 5:**
+
+| Situation | Verbindliche Fortsetzung |
+|---|---|
+| Nachricht während Wiedervorlage gespeichert | Betroffene Wiedervorlage samt Timer beenden, aktuellen Termin entfernen und sofort Mitarbeiterprüfung veranlassen; nicht auf KI warten. |
+| KI-Auswertung später fertig | Aktuelle Grundlage an derselben Mitarbeiteraufgabe ergänzen. Kein automatischer Abschluss und keine Aufhebung der Prüfung. |
+| Timer und Nachricht gleichzeitig | Genau eine logische Mitarbeiterprüfung für die betroffene Wiedervorlage; Wiederholungen erzeugen keine zusätzliche Aufgabe. |
+| Mitarbeiter setzt inzwischen bewusst einen neuen Termin | Verspäteter Kontakt oder Timer zur alten Wiedervorlage darf weder den neuen Termin aufheben noch dessen Wartevorgang abbrechen. |
+| Fall inzwischen abgeschlossen | Keine neue Aufgabe, Statusänderung oder Wiederaufnahme; alte Ergebnisse bleiben auch nach späterer Wiedereröffnung unwirksam. |
+
+Kontakt und Timer sind an Fall, führende Bearbeitung, konkreten Wiedervorlage-Aufruf
+und Terminversion zu binden. Die bei Nachrichtenspeicherung betroffene Version
+muss nachvollziehbar bleiben; sie darf bei verzögerter Verarbeitung nicht einfach
+auf den inzwischen aktuellen Termin umgebogen werden. Eine bewusste neuere
+Terminentscheidung muss den aktuellen Fallstand einschliesslich bereits
+vorliegender Nachrichten berücksichtigen. Ein tatsächlich erst danach gespeicherter
+neuer Kontakt kann dagegen die neue Wiedervorlage aufheben.
+
+Die Dienste hinter `NWake`, `SStopFollowUp`, `WClearTimer`, `WUpdate` und
+`SReviewStatus` müssen konkurrierende Änderungen versionsgeprüft koordinieren.
+Die Kontaktbereitstellung an die aktuelle Mitarbeiterinstanz erfolgt vor dem
+LLM-Aufruf. Timer- und Kontaktweg verwenden dieselbe nachvollziehbare Erledigung
+und Prüfzuordnung der betroffenen Wiedervorlage. Bestehende Prüfung wird ergänzt,
+keine zweite Aufgabe erzeugt. Manuelle Dringlichkeit bleibt erhalten.
+
+Die Schutzprüfung muss bereits vor dem unterbrechenden Randereignis gelten:
+Eine Prüfung erst nach Abbruch des Calls reicht nicht zum Schutz eines neuen
+Timers. Terminänderung und Kontaktzustellung sind deshalb auch über die
+Instanzgrenze konsistent zu koordinieren. Bereits erfolgreiche Wiederholung
+bleibt ohne zusätzliche Wirkung; technische Zustellfehler benötigen nachholbare
+Bereitstellung. Konkretes Synchronisations- und Engine-Verfahren bleibt vor
+Ausführung zu implementieren. Die fachliche Regel ist damit festgelegt, der
+BPMN-Entwurf allein ist kein Nachweis dieser Nebenläufigkeitsgarantien.
+
 ## Prüfkriterien
 
 Diese Kriterien dienen der späteren Umsetzung und sind keine bereits ausgeführten Testnachweise. Die Prüfung fachlicher Services muss gemäss Projekt-Kontext ohne reale externe Systeme möglich sein.
@@ -620,6 +656,21 @@ Eine ausdrücklich für Systemabschluss freigegebene Testregel mit Kennung, Vers
 ### FALL-AK-26: Aktualität, Nachweis und wiederholte Ausführung
 
 Zwischen Empfehlung, automatischer Veröffentlichung und Abschlussspeicherung jeweils eine neue Mieternachricht, eine Mitarbeiterentscheidung oder eine Änderung der gültigen Regelgrundlage einspielen. Kein veralteter Vorschlag darf dadurch wirksam werden. Eine noch nicht ausgewertete neue Nachricht blockiert den Systemabschluss auf alter Grundlage; im Gegensatz dazu gelten für bewusste Mitarbeiterabschlüsse FALL-AK-22 und die dortige Aktualitätsprüfung. Doppelte und bereits erfolgreich verarbeitete Ergebnisse erzeugen weder zusätzlichen Abschluss noch Mailauftrag oder einen künstlichen Prüfgrund. Fremde, unbekannte oder unpassende Belegreferenzen und ein hoher Modell-Sicherheitswert ohne Beleg ersetzen keine gültige Grundlage. Nach erfolgreichem Abschluss gespeicherter Grund, Belege und gegebenenfalls Regelversion sind nachvollziehbar. Laufzeit- und Evaluationsergebnisse sind bei Umsetzung gesondert nachzuweisen; diese Prüfkriterien sind noch keine ausgeführten Tests.
+
+### FALL-AK-27: Versionsgebundene Wiedervorlage bei Mieterkontakt
+
+Nachricht bei blockiertem LLM speichern: Termin und Timer enden, genau eine
+Mitarbeiterprüfung beginnt vor dem KI-Ergebnis. Späteres Ergebnis ergänzt
+höchstens dieselbe Aufgabe. Timer und Kontakt in beiden Reihenfolgen sowie
+wiederholt zustellen: eine logische Prüfung, keine doppelte Aufgabe.
+
+Terminversion A durch eine bewusste Entscheidung am aktuellen Fallstand durch B
+ersetzen; verzögerten Kontakt/Timer für A zustellen: B und sein Timer bleiben
+bestehen. Kontaktzustellung und Terminänderung auch unmittelbar am Call-Abbruch
+konkurrieren lassen; kein Abbruch von B durch A. Ein neuer Kontakt nach B hebt B
+hingegen nach derselben Regel auf. Abschluss vor und während der Verarbeitung
+sowie späteres Eintreffen nach Wiedereröffnung prüfen: keine Reaktivierung.
+Dies sind künftige Integrationsprüfungen, keine bereits ausgeführten Laufzeittests.
 
 ## Offene Entscheidungen und Weiterentwicklung
 

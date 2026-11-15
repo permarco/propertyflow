@@ -4,7 +4,7 @@
   <bpmn:error id="Error_TriageFailure" name="KI-Analyse fehlgeschlagen" errorCode="TRIAGE_ANALYSIS_FAILED">
     <bpmn:documentation>Fachliche Fehlerreaktion des Entwurfs. Der spätere Worker meldet eine festgestellte fehlgeschlagene Analyse oder ungültige Modellausgabe ausdrücklich als diesen BPMN-Fehler. Ein technischer Jobfehler allein aktiviert den Fehlerpfad nicht. Die Mitarbeiterprüfung wartet nicht auf das Ausschöpfen automatischer Wiederholungen.</bpmn:documentation>
   </bpmn:error>
-  <bpmn:process id="PropertyFlow_TenantMessage_Draft" name="Mieternachricht verarbeiten · Fachentwurf 0.11" isExecutable="false">
+  <bpmn:process id="PropertyFlow_TenantMessage_Draft" name="Mieternachricht verarbeiten · Fachentwurf 0.12" isExecutable="false">
     <bpmn:documentation>Nur per Call Activity aus dem zentralen Nachrichteneingang starten. Eingaben caseId, leadingProcessInstanceKey und tenantMessageId; keine Rückgabe von Variablen. Pro Nachricht eigener Aufruf. NIdentify prüft Fall, führende Instanz, Aufrufzuordnung und gespeicherte Nachricht. NApply/NWake liefern aktuelle Steuerinformationen ausdrücklich an den richtigen fremden Instanzbereich; keine impliziten gemeinsamen Variablen. Kein eigener Mieterempfang, keine führende Fallzuordnung. teilprozess-vertraege.md; keine Backend-Implementierung.</bpmn:documentation>
     <bpmn:startEvent id="NProcessingStart" name="Nachrichtenverarbeitung aufgerufen">
       <bpmn:outgoing>N01</bpmn:outgoing>
@@ -35,9 +35,10 @@ Unmittelbar vor Wirkung aktuelle Aufgabe prüfen. Bei inzwischen erledigter Aufg
       <bpmn:incoming>N05</bpmn:incoming>
       <bpmn:outgoing>N08</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:serviceTask id="NWake" name="Kontakt für aktuelle&#10;Wiedervorlage bereitstellen">
+    <bpmn:serviceTask id="NWake" name="Kontakt versionsgebunden&#10;vor KI bereitstellen">
       <bpmn:documentation>Vor jedem LLM-Aufruf den neuen Kontakt mit der betroffenen Wiedervorlage-Version ausdrücklich im zuständigen Bereich der aktuellen Mitarbeiterinstanz bereitstellen. Das unterbrechende bedingte Randereignis an FollowUp hebt den Wartevorgang auf und führt sofort zur Mitarbeiterprüfung. Ändert ein Mitarbeiter inzwischen bewusst den Termin, darf ein verspäteter Kontaktmarker keine neue Wiedervorlage aufheben. Eingang, Wiedervorlage-Version und Verbrauch müssen dauerhaft nachvollziehbar sein; keine unversionierte Reset-Flag.
-Dateiaufteilung: Der Kontaktmarker muss ausdrücklich in der aktuellen Mitarbeiter-Kindinstanz ankommen, die den Call FollowUp und sein Randereignis besitzt. Vor dem LLM-Aufruf. Versionen und aktueller Aufruf werden serverseitig geprüft; nur im Hauptprozess gespeicherte Marker wecken das Kind nicht.</bpmn:documentation>
+Dateiaufteilung: Der Kontaktmarker muss ausdrücklich in der aktuellen Mitarbeiter-Kindinstanz ankommen, die den Call FollowUp und sein Randereignis besitzt. Vor dem LLM-Aufruf. Versionen und aktueller Aufruf werden serverseitig geprüft; nur im Hauptprozess gespeicherte Marker wecken das Kind nicht.
+FALL-11 Zeile 5 / FALL-AK-27: Nachricht an die bei Speicherung betroffene Wiedervorlage-Version und den geprüften Aufruf binden. Alten Kontakt nicht auf neuen Termin umdeuten. Vor unterbrechender Zustellung gegen Terminänderung und Abschluss koordinieren; nur aktuelle Mitarbeiterinstanz adressieren. Timer/Kontakt teilen dieselbe logische Erledigung; keine zweite Aufgabe. Erst danach LLM auswerten. Technische Synchronisierung noch offen.</bpmn:documentation>
       <bpmn:incoming>N06</bpmn:incoming>
       <bpmn:outgoing>N09</bpmn:outgoing>
     </bpmn:serviceTask>

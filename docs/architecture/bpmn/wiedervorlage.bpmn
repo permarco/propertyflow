@@ -4,7 +4,7 @@
   <bpmn:message id="Message_StaffClose" name="Mitarbeiterabschluss bestätigt" />
   <bpmn:message id="Message_FollowUpDelete" name="Wiedervorlage löschen" />
   <bpmn:message id="Message_FollowUpChange" name="Wiedervorlage ändern" />
-  <bpmn:process id="PropertyFlow_FollowUp_Draft" name="Wiedervorlage&#10;verwalten · Fachentwurf 0.9" isExecutable="false">
+  <bpmn:process id="PropertyFlow_FollowUp_Draft" name="Wiedervorlage&#10;verwalten · Fachentwurf 0.12" isExecutable="false">
     <bpmn:documentation>
 Dateiaufteilung 0.9: untergeordneter Prozess, nur durch Call Activity starten. Keine eigene führende Fallzuordnung. Eingaben caseId, leadingProcessInstanceKey und entryContextRef; Rückgaben outcome und decisionRef. Explizite instanzübergreifende Aktualisierung gemäss teilprozess-vertraege.md erforderlich; keine live gemeinsam genutzten Elternvariablen. Nicht ausführbar, kein Backend implementiert.</bpmn:documentation>
     <bpmn:startEvent id="WStart" name="Wiedervorlage gewählt">
@@ -51,7 +51,9 @@ Nach Auslagerung Zielinstanz serverseitig über die aktuelle Wiedervorlage-Zuord
       <bpmn:outgoing>W18</bpmn:outgoing>
       <bpmn:messageEventDefinition id="WClose_definition" messageRef="Message_StaffClose" />
     </bpmn:intermediateCatchEvent>
-    <bpmn:serviceTask id="WClearTimer" name="Termin als fällig erledigen&#10;Mitarbeiterprüfung veranlassen">
+    <bpmn:serviceTask id="WClearTimer" name="Termin versionsgeprüft erledigen&#10;Prüfung einmalig veranlassen">
+      <bpmn:documentation>
+FALL-11 Zeile 5 / FALL-AK-27: Fall, führende Bearbeitung, Aufruf und Terminversion unmittelbar vor Wirkung prüfen. Dieselbe logische Erledigung/Prüfzuordnung wie Kontaktweg SStopFollowUp verwenden. Kein zweiter Prüfauftrag bei gleichzeitigem Kontakt. Alte/gelöschte Termine und abgeschlossene Fälle bleiben ohne neue Wirkung; keine veraltete REVIEW-Freigabe zurückgeben. Konkrete technische Konfliktfortsetzung vor Ausführung festlegen.</bpmn:documentation>
       <bpmn:incoming>W09</bpmn:incoming>
       <bpmn:outgoing>W10</bpmn:outgoing>
     </bpmn:serviceTask>
@@ -62,7 +64,8 @@ Normaler Kindprozessabschluss: outcome=REVIEW und decisionRef zur geprüften Gru
     </bpmn:endEvent>
     <bpmn:serviceTask id="WUpdate" name="Neuen Termin speichern&#10;Alten Timer ersetzen">
       <bpmn:documentation>
-Wiedervorlage-Version in PropertyFlow sichern und im zuständigen Mitarbeiterbereich bereitstellen, bevor dort auf Kontakt reagiert wird. activeFollowUpVersion und pendingTenantContactFollowUpVersion müssen denselben aktuellen Termin/Aufruf bezeichnen. Nicht auf normale Call-Rückgabe warten. Die lückenlose interne Übergabe ist vor Ausführung zu implementieren.</bpmn:documentation>
+Wiedervorlage-Version in PropertyFlow sichern und im zuständigen Mitarbeiterbereich bereitstellen, bevor dort auf Kontakt reagiert wird. activeFollowUpVersion und pendingTenantContactFollowUpVersion müssen denselben aktuellen Termin/Aufruf bezeichnen. Nicht auf normale Call-Rückgabe warten. Die lückenlose interne Übergabe ist vor Ausführung zu implementieren.
+FALL-11 Zeile 5: Neue bewusste Terminentscheidung gegen aktuellen Fallstand inklusive gespeicherter Nachrichten prüfen. Neue Terminversion konsistent mit Mitarbeiterinstanz und Timer bereitstellen. Alte Kontakt-/Timermarker dürfen neuen Call/Timer nicht beenden; Race zwischen Versionswechsel und Randereignis vor Umsetzung technisch auflösen.</bpmn:documentation>
       <bpmn:incoming>W14</bpmn:incoming>
       <bpmn:outgoing>W15</bpmn:outgoing>
     </bpmn:serviceTask>
@@ -117,11 +120,12 @@ Nach Auslagerung Zielinstanz serverseitig über die aktuelle Wiedervorlage-Zuord
       <bpmn:sequenceFlow id="W21" sourceRef="WPublish" targetRef="WQuestionEnd" />
     </bpmn:subProcess>
     <bpmn:textAnnotation id="WRule">
-      <bpmn:text>Mieternachrichten werden im zentralen Ereignis-Teilprozess empfangen.
-Das Randereignis am Aufruf «Wiedervorlage» im Mitarbeiterprozess beendet diesen Wartevorgang
-und führt im übergeordneten Mitarbeiterpfad sofort zur Prüfung, ohne auf KI zu warten.
-Timer und Kontakt dürfen keine doppelte Aufgabe erzeugen; alte Ereignisse keine neue Wartephase aufheben.
-Timerdatum und Mitarbeiter-Nachrichten sind weiterhin fachliche Platzhalter.</bpmn:text>
+      <bpmn:text>Mieterkontakt wird zentral empfangen und versionsgebunden bereitgestellt.
+Das Randereignis im Mitarbeiterprozess beendet diesen Call samt Timer vor KI-Ende.
+Timer und Kontakt teilen eine Prüfzuordnung: genau eine Mitarbeiterprüfung.
+Alter Kontakt/Timer hebt keinen neueren bewussten Termin auf.
+Nach Abschluss keine neue Wirkung; spätere KI ergänzt nur die aktuelle Aufgabe.
+Atomare Koordination vor Ausführung implementieren (FALL-11 / FALL-AK-27).</bpmn:text>
     </bpmn:textAnnotation>
   </bpmn:process>
   <bpmndi:BPMNDiagram id="FollowUp_diagram" name="05 · Wiedervorlage">

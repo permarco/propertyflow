@@ -95,6 +95,23 @@ schützen bestehende Aufgaben und Mitarbeiterentscheidungen; KOM-AK-25 nennt
 die späteren Prüffälle. Der Fehler ist vom technischen Retry und von einem
 Analysefehler getrennt. Die BPMN-Datei bleibt nicht ausführbar; keine Worker implementiert.
 
+## Wiedervorlage: Kontakt, Timer und neuer Termin (Stand 0.12)
+
+Die bestätigte Zeile 5 steht in [FALL-11](../../specifications/fallverwaltung.md#nachricht-timer-und-neuere-terminentscheidung).
+Im Nachrichtenmodell stellt `NWake` den versionsgebundenen Kontakt **vor KI** bereit.
+Im Mitarbeitermodell unterbricht `SContactDuringFollowUp` den betroffenen
+Wiedervorlage-Aufruf; `SStopFollowUp` führt zu `SReviewStatus`.
+Der Timerweg in `wiedervorlage.bpmn` führt über `WClearTimer`, Rückgabe `REVIEW`
+und `SFollowResult` zur gleichen Prüfung. Die bestehenden Wege bleiben erhalten;
+Beschriftungen, sichtbare Hinweise und Worker-Dokumentation präzisieren jetzt
+Einmaligkeit, Versionsschutz und den Vorrang einer neueren Terminentscheidung.
+
+Timer und Kontakt benötigen dieselbe logische Prüfzuordnung. Die Bedingung am
+Randereignis allein garantiert keinen Schutz vor gleichzeitiger Terminänderung:
+Versionswechsel und unterbrechende Zustellung sind vor dem Call-Abbruch zu
+koordinieren. FALL-AK-27 definiert dafür die späteren Integrationstests. Diese
+technische Koordination ist weiterhin nicht implementiert; keine Laufzeitfreigabe.
+
 ## Mieternachrichten und Vorrang der Mitarbeiterprüfung
 
 **Bestätigt am 14.11.2026:** Mieter können in jedem aktiven Bearbeitungsstatus

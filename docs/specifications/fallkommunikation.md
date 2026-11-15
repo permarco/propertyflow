@@ -84,6 +84,16 @@ An den Mieter werden als Kommunikationsnachrichten ausschliesslich vollständige
 
 Die konkrete Aktualisierung der Darstellung beschreibt [Screen 01](../frontend/ansicht-01-mieter-fallansicht.md). Für die in [Vision](../vision.md) optional vorgesehenen KI-Rückfragen sind die Veröffentlichungsregeln in [KOM-05](#kom-05-automatische-rueckfragen) festgelegt. Die technische Umsetzung steht aus; die Einordnung als optionale Erweiterung bleibt bestehen.
 
+### Mieternachricht während Wiedervorlage
+
+**Bestätigt am 15.11.2026 – Fortsetzungstabelle, Zeile 5:** Kontakt hebt die
+betroffene Wiedervorlage vor der KI-Auswertung auf. Spätere Auswertung ergänzt
+dieselbe Mitarbeiterprüfung. Gleichzeitiger Timer erzeugt keine zweite Aufgabe;
+ein alter Kontakt hebt keine bewusst neu gesetzte Wiedervorlage auf. Nach
+Abschluss keine Wiederaufnahme. Versionsbindung und Konkurrenzregeln sind
+zentral in [FALL-11](fallverwaltung.md#nachricht-timer-und-neuere-terminentscheidung)
+festgelegt; spätere Prüffälle stehen in FALL-AK-27.
+
 ### Worker-Regeln bei Mitarbeiterprüfung und veralteter Auswertung
 
 **Bestätigt am 15.11.2026 – Fortsetzungstabelle, Zeile 4:** Die drei Ausgänge
