@@ -1,7 +1,7 @@
 # PropertyFlow-Fallprozess
 
 [propertyflow-fallprozess-entwurf.bpmn](propertyflow-fallprozess-entwurf.bpmn)
-ist der führende BPMN-Entwurf 0.26 zur gemeinsamen Besprechung, Stand 15.11.2026.
+ist der führende BPMN-Entwurf 0.27 zur gemeinsamen Besprechung, Stand 15.11.2026.
 Er enthält BPMN-Diagrammkoordinaten und kann im Camunda Modeler geöffnet werden.
 
 ## Dateien – hier bearbeiten
@@ -693,3 +693,20 @@ angelegt. Die bestehenden Timer-, Änderungs-, Lösch- und Abschlusswege bleiben
 massgeblich. Quelle: [FALL-11, Übergang 31](../../specifications/fallverwaltung.md#direkte-wiedervorlage-während-in-abklärung),
 geplante Prüfungen FALL-AK-37. Alle betroffenen Modelle bleiben nicht ausführbare
 Fachentwürfe; die technische Übergabe und Synchronisierung sind noch umzusetzen.
+
+## Direkte Wiedervorlage aus Mieterwartephase (0.27)
+
+FALL-11, Übergang 32: Der bestehende Eingang `StaffFollowSide` nimmt auch
+Terminaufträge aus «Wartet auf Mieterantwort» entgegen. Nach geprüfter Speicherung
+unterbricht `StaffFollowAtReply` den Call «Mieterantwort abwarten und Fortsetzung
+prüfen». `StaffFollowContinue` führt über `SEntryCheck` direkt zu `FollowUp`.
+Die Übergabegarantien aus 0.26 gelten unverändert; Marker sind an den abgelösten
+Aufruf gebunden und müssen auch Aktivitätswechsel abdecken. Ab Commit dürfen
+alte Auswertungen nicht mehr wirken; keine Outputs abgebrochener Calls übernehmen.
+
+Offene Rückfragen bleiben erhalten. Nachrichteneingang oder Timer führen nach
+FALL-11 zur Mitarbeiterprüfung. Bei gültiger Terminlöschung führt `WDeleteTask`
+über die bestehende Rückgabe und `SFollowResult` zu «In Bearbeitung», auch bei
+offenen Fragen. Kein automatischer Rücksprung in den alten Mieterwartepfad.
+Geplante Prüfungen: FALL-AK-38. Die Modelle bleiben nicht ausführbare Fachentwürfe;
+zuverlässige Übergabe und Konfliktbehandlung sind noch zur Laufzeit nachzuweisen.

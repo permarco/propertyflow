@@ -131,6 +131,7 @@ flowchart LR
     W -->|"16"| P
     A -->|"18 / 30"| Z
     A -->|"31"| W
+    M -->|"32"| W
     M -->|"19"| Z
     P -->|"20"| Z
     B -->|"21"| Z
@@ -176,7 +177,7 @@ Die Pfeilnummern verweisen auf die Übergänge in der Tabelle. Die Anmerkungen i
 | 14 | In Bearbeitung | Wartet auf Wiedervorlage | Termin setzen |
 | 15 | Wartet auf Wiedervorlage | Wartet auf Wiedervorlage | Termin ändern oder Rückfrage veröffentlichen |
 | 16 | Wartet auf Wiedervorlage | Mitarbeiterprüfung erforderlich | Termin erreicht oder Mieternachricht gespeichert |
-| 17 | Wartet auf Wiedervorlage | In Bearbeitung | Termin löschen |
+| 17 | Wartet auf Wiedervorlage | In Bearbeitung | Termin löschen; auch bei weiterhin offenen Mieterfragen |
 | 18 | In Abklärung | Abgeschlossen | Geprüfter Systemabschluss [3] |
 | 19 | Wartet auf Mieterantwort | Abgeschlossen | Geprüfter Systemabschluss [3] |
 | 20 | Mitarbeiterprüfung erforderlich | Abgeschlossen | Mitarbeiter bestätigt Abschluss [3] |
@@ -191,6 +192,7 @@ Die Pfeilnummern verweisen auf die Übergänge in der Tabelle. Die Anmerkungen i
 | 29 | In Abklärung | Wartet auf Mieterantwort | Mitarbeiterrückfrage mit «Mieterantwort erforderlich» veröffentlicht [1]; kontrollierte Ablösung der automatischen Abklärung gemäss FALL-06 |
 | 30 | In Abklärung | Abgeschlossen | Direkter Mitarbeiterabschluss am aktuellen Fallstand [3]; siehe FALL-06 |
 | 31 | In Abklärung | Wartet auf Wiedervorlage | Mitarbeiter setzt direkt einen zukünftigen Termin; automatische Abklärung ablösen, siehe FALL-11 |
+| 32 | Wartet auf Mieterantwort | Wartet auf Wiedervorlage | Mitarbeiter setzt direkt einen zukünftigen Termin; offene Rückfragen bleiben erhalten, siehe FALL-11 |
 
 - **[1]** Keine laufende Wiedervorlage und kein vorrangiger Mitarbeiterprüfbedarf; automatische Rückfragen benötigen die serverseitig geprüften Ausführungsbedingungen nach [KOM-05](fallkommunikation.md#kom-05-automatische-rueckfragen). Für zulässige Katalogrückfragen ist keine zusätzliche menschliche Einzelfreigabe vorgesehen.
 - **[2]** Kein zulässiger automatischer Abschluss und keine laufende Wiedervorlage.
@@ -792,6 +794,36 @@ Sie müssen weder das Ende der automatischen Abklärung abwarten noch zuvor
 Terminablauf, Ändern, Löschen und Abschluss folgen unverändert den bestehenden
 Wiedervorlageregeln. Die technische Umsetzung dieser Koordination steht noch aus.
 
+### Direkte Wiedervorlage während «Wartet auf Mieterantwort»
+
+**Bestätigt am 15.11.2026 – Übergang 32:** Ein berechtigter Mitarbeiter kann
+am bestätigten aktuellen Fallstand direkt einen zukünftigen Wiedervorlagetermin
+setzen. Camunda löst den bisherigen Mieterwartepfad ab und führt den Fall als
+«Wartet auf Wiedervorlage» weiter. Offene Rückfragen und Antwortbedarfe bleiben
+unverändert sichtbar; die Terminsetzung beantwortet oder erledigt sie nicht.
+
+Es gelten dieselben Prüfungen, die konsistente Speicherung und die zuverlässige
+Übergabe wie bei Übergang 31. Bereits laufende Antwortauswertungen verlieren ab
+Speicherung ihre bisherige Wirkungsfreigabe. Verspätete Ergebnisse dürfen keine
+Nachricht veröffentlichen, keinen Statuswechsel und keinen Abschluss auslösen.
+Abgelehnte oder veraltete Aufträge lassen den aktuellen Prozesspfad unverändert.
+Wiederholungen erzeugen weder einen zweiten Timer noch eine neue Terminversion.
+
+Eine nach Terminsetzung gespeicherte Mieternachricht beendet die Wiedervorlage
+und führt sofort zur Mitarbeiterprüfung, auch bei nur teilweiser Beantwortung.
+Ohne Nachricht führt der wirksame Termin zur Mitarbeiterprüfung. Neuer zwingender
+Prüfbedarf hat ebenfalls Vorrang; Kontakte und Prüfgründe während der Übergabe
+werden zuverlässig berücksichtigt, ein aufgehobener Termin nicht wiederhergestellt.
+
+**Termin löschen – Übergang 17:** Löscht der Mitarbeiter den Termin am aktuellen
+Fallstand, entfernt Camunda Termin und Timer und führt zu «In Bearbeitung».
+Das gilt ausdrücklich auch nach Einstieg aus «Wartet auf Mieterantwort» und bei
+weiterhin offenen Rückfragen. Diese bleiben offen und sichtbar; sie bewirken
+allein keinen automatischen Rückwechsel zu «Wartet auf Mieterantwort».
+Neuer zwingender Prüfbedarf und konkurrierende Änderungen unterliegen weiterhin
+den bestehenden Vorrang- und Fallstandsregeln. Der abgelöste Mieterwartepfad
+wird durch die Terminlöschung nicht wieder aufgenommen.
+
 ### Terminberechnung: Kalendertage und Schweizer Zeit
 
 **Bestätigt am 15.11.2026:** «In N Tagen» bedeutet: zum aktuellen lokalen Datum
@@ -1237,3 +1269,21 @@ Geplante Prüfungen, noch keine ausgeführten Backend-Tests:
   keine doppelte Benachrichtigung; inzwischen fälligen Termin sofort behandeln.
 - Timerablauf, Terminänderung, Löschen und Abschluss verwenden weiterhin die
   bestehenden Fortsetzungen; alte Marker wirken nicht auf spätere Wiedervorlagen.
+
+### FALL-AK-38: Wiedervorlage aus Mieterwartephase und Terminlöschung
+
+Geplante Prüffälle; noch kein ausgeführter Laufzeitnachweis:
+
+- Bei offenen Rückfragen einen gültigen zukünftigen Termin setzen: Status
+  «Wartet auf Wiedervorlage», ein Timer, unveränderte Antwortbedarfe.
+- Termin löschen: «In Bearbeitung», kein Termin/Timer, Rückfragen weiterhin offen;
+  kein automatischer Rückwechsel und keine Wiederaufnahme des alten Wartepfads.
+- Mieternachricht nach Terminsetzung (auch während der Übergabe): Termin aufheben,
+  genau eine Mitarbeiterprüfung; nicht auf vollständige Antwort oder KI warten.
+- Terminablauf ohne Nachricht und neuer zwingender Prüfbedarf führen gemäss FALL-11
+  zur Mitarbeiterprüfung. Alte Timer dürfen nach Löschung nicht mehr wirken.
+- Veralteten Auftrag vor Speicherung ablehnen, bisherigen Pfad erhalten.
+  Erfolgreiche Wiederholung ohne doppelte Wirkung; technische Fehler Retry/Incident.
+- Auswertung vor Terminsetzung starten und erst danach beenden: keine alte
+  Publikation, kein Statuswechsel und kein Abschluss. Ereignisse zwischen Commit
+  und Ablösung des Reply-Calls dürfen weder verloren gehen noch den Termin erneuern.

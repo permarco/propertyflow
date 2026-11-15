@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_PropertyFlow_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
-  <bpmn:message id="Message_StaffFollowClarification" name="Wiedervorlage während Abklärung angefordert" />
+  <bpmn:message id="Message_StaffFollowClarification" name="Direkte Wiedervorlage angefordert" />
   <bpmn:message id="Message_StaffCloseClarification" name="Mitarbeiterabschluss während Abklärung angefordert" />
   <bpmn:escalation id="Escalation_StaffCloseCommitted" name="Mitarbeiterabschluss aus Abklärung gespeichert" escalationCode="STAFF_CLARIFICATION_CLOSURE_COMMITTED" />
   <bpmn:message id="Message_StaffQuestionClarification" name="Mitarbeiterrückfrage während Abklärung angefordert" />
@@ -23,7 +23,7 @@
   <bpmn:error id="Error_AnalysisStale" name="Analysegrundlage überholt" errorCode="ANALYSIS_BASIS_STALE">
     <bpmn:documentation>Fachlicher Platzhalter für Zeilen 1 und 3: Die Auswertung enthält neue relevante gespeicherte Mieternachrichten noch nicht. In Validate führt der Konflikt zur aktuellen Analysegrundlage; in RValidate zur aktuellen Antwortauswertung. Kein technischer Jobfehler und kein Analysefehler. Meldung durch den späteren Prüfdienst, nicht automatisch durch blossen Nachrichteneingang. Keine zweite unabhängige Verarbeitung; aktuelle Mitarbeiterentscheidung und Abschluss schützen. Keine Ausführungsimplementierung.</bpmn:documentation>
   </bpmn:error>
-  <bpmn:process id="PropertyFlow_Case_Draft" name="PropertyFlow · Fallprozess · Fachentwurf 0.26" isExecutable="false">
+  <bpmn:process id="PropertyFlow_Case_Draft" name="PropertyFlow · Fallprozess · Fachentwurf 0.27" isExecutable="false">
     <bpmn:documentation>Fachentwurf 0.13, nicht ausführbar. Individuelle LLM-Nachricht im AutoAnswer-Worker erzeugen, prüfen, speichern und Versand beauftragen; danach Close. Kein Vorlagenkatalog, keine zusätzliche Abschlussmail. Mitarbeiterabschluss ohne Nachricht. Menschliche Priorität, Aktualität, Rückfragen, Wiedervorlage und bisherige Konfliktrückwege bleiben. Technische Fehler: Job-Retries/Incidents. Start-/Kindinstanz-Verträge weiterhin vor Ausführung konkretisieren; keine Backend-Implementierung.
 Fachentwurf 0.15: Wiedereröffnung startet eine neue Instanz für denselben Fall; direkter Mitarbeiterpfad gemäss FALL-07. Keine Backend-Implementierung.</bpmn:documentation>
     <bpmn:subProcess id="ActiveCase" name="Aktiven Fall bearbeiten">
@@ -125,7 +125,8 @@ FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklär
       </bpmn:boundaryEvent>
       <bpmn:callActivity id="Reply" name="Mieterantwort abwarten&#10;und Fortsetzung prüfen">
         <bpmn:documentation>
-Ruft mieterantwort-pruefen.bpmn auf. Vertrag: teilprozess-vertraege.md. Untergeordnete Instanz mit eigenem Scope; führende Fallzuordnung bleibt im Hauptprozess. Eingangsreferenz vor Aktivierung bereitstellen. Nur explizite Outputs übernehmen; aktueller Fallstand bleibt vor Wirkung zu prüfen.</bpmn:documentation>
+Ruft mieterantwort-pruefen.bpmn auf. Vertrag: teilprozess-vertraege.md. Untergeordnete Instanz mit eigenem Scope; führende Fallzuordnung bleibt im Hauptprozess. Eingangsreferenz vor Aktivierung bereitstellen. Nur explizite Outputs übernehmen; aktueller Fallstand bleibt vor Wirkung zu prüfen.
+0.27: StaffFollowAtReply unterbricht den gesamten Call erst nach bestätigter Terminsetzung. Laufende Auswertungen verlieren bereits ab Commit die Wirkungsfreigabe; offene Fragen bleiben erhalten. Marker gilt nur für den betroffenen Aufruf und muss auch den Übergang zu Folgeschritten zuverlässig abdecken.</bpmn:documentation>
         <bpmn:extensionElements>
           <zeebe:calledElement processId="PropertyFlow_TenantReply_Draft" bindingType="deployment" propagateAllParentVariables="false" propagateAllChildVariables="true" />
           <zeebe:ioMapping>
@@ -642,14 +643,15 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
         <bpmn:sequenceFlow id="SC03" sourceRef="StaffCloseClarificationResult" targetRef="StaffCloseClarificationCommitted" name="Ja / identischer Erfolg" />
         <bpmn:sequenceFlow id="SC04" sourceRef="StaffCloseClarificationResult" targetRef="StaffCloseClarificationRejected" name="Nein: Konflikt / nicht zulässig" />
       </bpmn:subProcess>
-      <bpmn:subProcess id="StaffFollowSide" triggeredByEvent="true" name="Direkte Wiedervorlage während In Abklärung">
-        <bpmn:documentation>FALL-11 Übergang 31 / FALL-AK-37. Nicht unterbrechender interner Mitarbeiterauftrag. Ungültige oder veraltete Aufträge verändern den laufenden Pfad nicht. Lokale Auftragsvariablen, kein zusätzlicher Mieternachrichtenempfänger.</bpmn:documentation>
+      <bpmn:subProcess id="StaffFollowSide" triggeredByEvent="true" name="Direkte Wiedervorlage aus Abklärung oder Mieterwartephase">
+        <bpmn:documentation>FALL-11 Übergang 31 / FALL-AK-37. Nicht unterbrechender interner Mitarbeiterauftrag. Ungültige oder veraltete Aufträge verändern den laufenden Pfad nicht. Lokale Auftragsvariablen, kein zusätzlicher Mieternachrichtenempfänger.
+0.27: Zusätzlich FALL-11 Übergang 32 / FALL-AK-38. Derselbe geprüfte Auftragseingang gilt aus Wartet auf Mieterantwort; keine zweite Terminsetzungslogik.</bpmn:documentation>
         <bpmn:startEvent id="StaffFollowStart" isInterrupting="false" name="Wiedervorlage angefordert">
           <bpmn:outgoing>SF01</bpmn:outgoing>
           <bpmn:messageEventDefinition id="StaffFollowStart_definition" messageRef="Message_StaffFollowClarification" />
         </bpmn:startEvent>
         <bpmn:serviceTask id="StaffFollowPublish" name="Auftrag prüfen: Termin und&#10;Wartet auf Wiedervorlage speichern">
-          <bpmn:documentation>Berechtigung, aktuellen führenden Durchlauf, Status In Abklärung, bestätigten Fallstand und zukünftigen Termin prüfen. FALL-11: Kalendertage, 08:00 Europe/Zurich, optionale interne Begründung. Termin, Version, Status, bewusste Berücksichtigung bekannter Prüfgründe und erforderliche Mailpflicht konsistent sichern. Offene Mieterfragen erhalten. Keine pauschale Kosten- oder Abschlussfreigabe. Alte automatische Schreibfreigaben entziehen. Konkurrierende Änderungen machen den Auftrag ungültig, keine stillschweigende Übernahme neuer Erkenntnisse. Erfolgreiche Wiederholung liefert denselben Termin und dieselbe Version ohne neue Mailpflicht. Technischer Fehler bleibt Retry/Incident. BEN-03: zuverlässige Übergabe an Mailprozess, kein Warten auf SMTP.</bpmn:documentation>
+          <bpmn:documentation>Berechtigung, aktuellen führenden Durchlauf, Status In Abklärung oder Wartet auf Mieterantwort, bestätigten Fallstand und zukünftigen Termin prüfen. FALL-11: Kalendertage, 08:00 Europe/Zurich, optionale interne Begründung. Termin, Version, Status, bewusste Berücksichtigung bekannter Prüfgründe und erforderliche Mailpflicht konsistent sichern. Offene Mieterfragen erhalten. Keine pauschale Kosten- oder Abschlussfreigabe. Alte automatische Schreibfreigaben entziehen. Konkurrierende Änderungen machen den Auftrag ungültig, keine stillschweigende Übernahme neuer Erkenntnisse. Erfolgreiche Wiederholung liefert denselben Termin und dieselbe Version ohne neue Mailpflicht. Technischer Fehler bleibt Retry/Incident. BEN-03: zuverlässige Übergabe an Mailprozess, kein Warten auf SMTP.</bpmn:documentation>
           <bpmn:incoming>SF01</bpmn:incoming>
           <bpmn:outgoing>SF02</bpmn:outgoing>
         </bpmn:serviceTask>
@@ -658,8 +660,8 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
           <bpmn:outgoing>SF03</bpmn:outgoing>
           <bpmn:outgoing>SF05</bpmn:outgoing>
         </bpmn:exclusiveGateway>
-        <bpmn:serviceTask id="StaffFollowSignal" name="Übernahme für aktuellen&#10;Automatikschritt bereitstellen">
-          <bpmn:documentation>Dauerhaften Terminsetzungsbezug zuverlässig an den aktuellen automatischen Schritt vermitteln. staffFollowTakeoverReady gilt ausschliesslich für den abgelösten Abklärungslauf. Aktivitätswechsel und verzögerte Jobs absichern; Marker bis Verbrauch erhalten, auch neu aktivierte Schritte dürfen ihn nicht überlaufen. Keine Outputs abgebrochener Jobs verwenden. Neue Kontakte und zwingende Prüfgründe seit Terminsetzung versionsgebunden sichern, auch vor Aufruf des Warteprozesses.</bpmn:documentation>
+        <bpmn:serviceTask id="StaffFollowSignal" name="Übernahme für aktuellen&#10;Bearbeitungspfad bereitstellen">
+          <bpmn:documentation>Dauerhaften Terminsetzungsbezug zuverlässig an den aktuellen Bearbeitungspfad vermitteln. staffFollowTakeoverReady gilt ausschliesslich für den abgelösten Abklärungs- oder Mieterwartelauf. Aktivitätswechsel und verzögerte Jobs absichern; Marker bis Verbrauch erhalten, auch neu aktivierte Schritte dürfen ihn nicht überlaufen. Keine Outputs abgebrochener Jobs verwenden. Neue Kontakte und zwingende Prüfgründe seit Terminsetzung versionsgebunden sichern, auch vor Aufruf des Warteprozesses.</bpmn:documentation>
           <bpmn:incoming>SF03</bpmn:incoming>
           <bpmn:outgoing>SF04</bpmn:outgoing>
         </bpmn:serviceTask>
@@ -684,16 +686,18 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
         <bpmn:incoming>SF_Takeover_Question</bpmn:incoming>
         <bpmn:incoming>SF_Takeover_AutoAnswer</bpmn:incoming>
         <bpmn:incoming>SF_Takeover_Close</bpmn:incoming>
+        <bpmn:incoming>SF_Takeover_Reply</bpmn:incoming>
         <bpmn:outgoing>SF06</bpmn:outgoing>
       </bpmn:exclusiveGateway>
       <bpmn:serviceTask id="StaffFollowContinue" name="Aktuellen Wiedervorlage-&#10;Eintritt bereitstellen">
-        <bpmn:documentation>FALL-11 Übergang 31. Gespeicherten Terminsetzungsauftrag und aktuelle Terminversion laden, nicht neu berechnen oder erneut speichern. staffEntryContextRef für direkten Eintritt in FollowUp vorbereiten; Marker konsumieren. Neue Mieternachricht oder neuer zwingender Prüfgrund nach Terminsetzung: betroffenen Termin idempotent aufheben und Mitarbeiterprüfung vorbereiten, genau eine Prüfung auch bei gleichzeitigem Timer. Keine Wiederherstellung eines aufgehobenen Termins. Alte automatische Ergebnisse bleiben gesperrt. Übergabekontext und Ereignisse zuverlässig an SEntryCheck übergeben; keine live gemeinsam genutzten Kindvariablen.</bpmn:documentation>
+        <bpmn:documentation>FALL-11 Übergang 31. Gespeicherten Terminsetzungsauftrag und aktuelle Terminversion laden, nicht neu berechnen oder erneut speichern. staffEntryContextRef für direkten Eintritt in FollowUp vorbereiten; Marker konsumieren. Neue Mieternachricht oder neuer zwingender Prüfgrund nach Terminsetzung: betroffenen Termin idempotent aufheben und Mitarbeiterprüfung vorbereiten, genau eine Prüfung auch bei gleichzeitigem Timer. Keine Wiederherstellung eines aufgehobenen Termins. Alte automatische Ergebnisse bleiben gesperrt. Übergabekontext und Ereignisse zuverlässig an SEntryCheck übergeben; keine live gemeinsam genutzten Kindvariablen.
+0.27: Auch Übergang 32. Keine Rückgaben des abgebrochenen Reply-Calls verwenden; offene Antwortbedarfe unverändert erhalten. Derselbe geprüfte FollowUp-Eintritt wie bei Übergang 31.</bpmn:documentation>
         <bpmn:incoming>SF06</bpmn:incoming>
         <bpmn:outgoing>SF07</bpmn:outgoing>
       </bpmn:serviceTask>
       <bpmn:sequenceFlow id="SF06" sourceRef="StaffFollowJoin" targetRef="StaffFollowContinue" />
       <bpmn:boundaryEvent id="StaffFollowAtClarification" attachedToRef="Clarification" cancelActivity="true">
-        <bpmn:documentation>FALL-11 Übergang 31: Unterbrechung nur für bestätigte Terminsetzung aus In Abklärung im aktuellen Durchlauf. Marker und Zustellverfahren sind Fachentwurf. Nach Speicherung keine automatische Wirkung des abgelösten Laufs; technische Umsetzung offen.</bpmn:documentation>
+        <bpmn:documentation>FALL-11 Übergänge 31/32: Unterbrechung nur für bestätigte Terminsetzung aus In Abklärung oder Wartet auf Mieterantwort im aktuellen Durchlauf. Marker und Zustellverfahren sind Fachentwurf. Nach Speicherung keine automatische Wirkung des abgelösten Laufs; technische Umsetzung offen.</bpmn:documentation>
         <bpmn:outgoing>SF_Takeover_Clarification</bpmn:outgoing>
         <bpmn:conditionalEventDefinition id="StaffFollowAtClarification_definition">
           <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffFollowTakeoverReady = true</bpmn:condition>
@@ -701,7 +705,7 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
       </bpmn:boundaryEvent>
       <bpmn:sequenceFlow id="SF_Takeover_Clarification" sourceRef="StaffFollowAtClarification" targetRef="StaffFollowJoin" />
       <bpmn:boundaryEvent id="StaffFollowAtTriage" attachedToRef="Triage" cancelActivity="true">
-        <bpmn:documentation>FALL-11 Übergang 31: Unterbrechung nur für bestätigte Terminsetzung aus In Abklärung im aktuellen Durchlauf. Marker und Zustellverfahren sind Fachentwurf. Nach Speicherung keine automatische Wirkung des abgelösten Laufs; technische Umsetzung offen.</bpmn:documentation>
+        <bpmn:documentation>FALL-11 Übergänge 31/32: Unterbrechung nur für bestätigte Terminsetzung aus In Abklärung oder Wartet auf Mieterantwort im aktuellen Durchlauf. Marker und Zustellverfahren sind Fachentwurf. Nach Speicherung keine automatische Wirkung des abgelösten Laufs; technische Umsetzung offen.</bpmn:documentation>
         <bpmn:outgoing>SF_Takeover_Triage</bpmn:outgoing>
         <bpmn:conditionalEventDefinition id="StaffFollowAtTriage_definition">
           <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffFollowTakeoverReady = true</bpmn:condition>
@@ -709,7 +713,7 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
       </bpmn:boundaryEvent>
       <bpmn:sequenceFlow id="SF_Takeover_Triage" sourceRef="StaffFollowAtTriage" targetRef="StaffFollowJoin" />
       <bpmn:boundaryEvent id="StaffFollowAtRecommend" attachedToRef="Recommend" cancelActivity="true">
-        <bpmn:documentation>FALL-11 Übergang 31: Unterbrechung nur für bestätigte Terminsetzung aus In Abklärung im aktuellen Durchlauf. Marker und Zustellverfahren sind Fachentwurf. Nach Speicherung keine automatische Wirkung des abgelösten Laufs; technische Umsetzung offen.</bpmn:documentation>
+        <bpmn:documentation>FALL-11 Übergänge 31/32: Unterbrechung nur für bestätigte Terminsetzung aus In Abklärung oder Wartet auf Mieterantwort im aktuellen Durchlauf. Marker und Zustellverfahren sind Fachentwurf. Nach Speicherung keine automatische Wirkung des abgelösten Laufs; technische Umsetzung offen.</bpmn:documentation>
         <bpmn:outgoing>SF_Takeover_Recommend</bpmn:outgoing>
         <bpmn:conditionalEventDefinition id="StaffFollowAtRecommend_definition">
           <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffFollowTakeoverReady = true</bpmn:condition>
@@ -717,7 +721,7 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
       </bpmn:boundaryEvent>
       <bpmn:sequenceFlow id="SF_Takeover_Recommend" sourceRef="StaffFollowAtRecommend" targetRef="StaffFollowJoin" />
       <bpmn:boundaryEvent id="StaffFollowAtValidate" attachedToRef="Validate" cancelActivity="true">
-        <bpmn:documentation>FALL-11 Übergang 31: Unterbrechung nur für bestätigte Terminsetzung aus In Abklärung im aktuellen Durchlauf. Marker und Zustellverfahren sind Fachentwurf. Nach Speicherung keine automatische Wirkung des abgelösten Laufs; technische Umsetzung offen.</bpmn:documentation>
+        <bpmn:documentation>FALL-11 Übergänge 31/32: Unterbrechung nur für bestätigte Terminsetzung aus In Abklärung oder Wartet auf Mieterantwort im aktuellen Durchlauf. Marker und Zustellverfahren sind Fachentwurf. Nach Speicherung keine automatische Wirkung des abgelösten Laufs; technische Umsetzung offen.</bpmn:documentation>
         <bpmn:outgoing>SF_Takeover_Validate</bpmn:outgoing>
         <bpmn:conditionalEventDefinition id="StaffFollowAtValidate_definition">
           <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffFollowTakeoverReady = true</bpmn:condition>
@@ -725,7 +729,7 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
       </bpmn:boundaryEvent>
       <bpmn:sequenceFlow id="SF_Takeover_Validate" sourceRef="StaffFollowAtValidate" targetRef="StaffFollowJoin" />
       <bpmn:boundaryEvent id="StaffFollowAtCurrentAnalysis" attachedToRef="CurrentAnalysis" cancelActivity="true">
-        <bpmn:documentation>FALL-11 Übergang 31: Unterbrechung nur für bestätigte Terminsetzung aus In Abklärung im aktuellen Durchlauf. Marker und Zustellverfahren sind Fachentwurf. Nach Speicherung keine automatische Wirkung des abgelösten Laufs; technische Umsetzung offen.</bpmn:documentation>
+        <bpmn:documentation>FALL-11 Übergänge 31/32: Unterbrechung nur für bestätigte Terminsetzung aus In Abklärung oder Wartet auf Mieterantwort im aktuellen Durchlauf. Marker und Zustellverfahren sind Fachentwurf. Nach Speicherung keine automatische Wirkung des abgelösten Laufs; technische Umsetzung offen.</bpmn:documentation>
         <bpmn:outgoing>SF_Takeover_CurrentAnalysis</bpmn:outgoing>
         <bpmn:conditionalEventDefinition id="StaffFollowAtCurrentAnalysis_definition">
           <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffFollowTakeoverReady = true</bpmn:condition>
@@ -733,7 +737,7 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
       </bpmn:boundaryEvent>
       <bpmn:sequenceFlow id="SF_Takeover_CurrentAnalysis" sourceRef="StaffFollowAtCurrentAnalysis" targetRef="StaffFollowJoin" />
       <bpmn:boundaryEvent id="StaffFollowAtQuestion" attachedToRef="Question" cancelActivity="true">
-        <bpmn:documentation>FALL-11 Übergang 31: Unterbrechung nur für bestätigte Terminsetzung aus In Abklärung im aktuellen Durchlauf. Marker und Zustellverfahren sind Fachentwurf. Nach Speicherung keine automatische Wirkung des abgelösten Laufs; technische Umsetzung offen.</bpmn:documentation>
+        <bpmn:documentation>FALL-11 Übergänge 31/32: Unterbrechung nur für bestätigte Terminsetzung aus In Abklärung oder Wartet auf Mieterantwort im aktuellen Durchlauf. Marker und Zustellverfahren sind Fachentwurf. Nach Speicherung keine automatische Wirkung des abgelösten Laufs; technische Umsetzung offen.</bpmn:documentation>
         <bpmn:outgoing>SF_Takeover_Question</bpmn:outgoing>
         <bpmn:conditionalEventDefinition id="StaffFollowAtQuestion_definition">
           <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffFollowTakeoverReady = true</bpmn:condition>
@@ -741,7 +745,7 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
       </bpmn:boundaryEvent>
       <bpmn:sequenceFlow id="SF_Takeover_Question" sourceRef="StaffFollowAtQuestion" targetRef="StaffFollowJoin" />
       <bpmn:boundaryEvent id="StaffFollowAtAutoAnswer" attachedToRef="AutoAnswer" cancelActivity="true">
-        <bpmn:documentation>FALL-11 Übergang 31: Unterbrechung nur für bestätigte Terminsetzung aus In Abklärung im aktuellen Durchlauf. Marker und Zustellverfahren sind Fachentwurf. Nach Speicherung keine automatische Wirkung des abgelösten Laufs; technische Umsetzung offen.</bpmn:documentation>
+        <bpmn:documentation>FALL-11 Übergänge 31/32: Unterbrechung nur für bestätigte Terminsetzung aus In Abklärung oder Wartet auf Mieterantwort im aktuellen Durchlauf. Marker und Zustellverfahren sind Fachentwurf. Nach Speicherung keine automatische Wirkung des abgelösten Laufs; technische Umsetzung offen.</bpmn:documentation>
         <bpmn:outgoing>SF_Takeover_AutoAnswer</bpmn:outgoing>
         <bpmn:conditionalEventDefinition id="StaffFollowAtAutoAnswer_definition">
           <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffFollowTakeoverReady = true</bpmn:condition>
@@ -749,7 +753,7 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
       </bpmn:boundaryEvent>
       <bpmn:sequenceFlow id="SF_Takeover_AutoAnswer" sourceRef="StaffFollowAtAutoAnswer" targetRef="StaffFollowJoin" />
       <bpmn:boundaryEvent id="StaffFollowAtClose" attachedToRef="Close" cancelActivity="true">
-        <bpmn:documentation>FALL-11 Übergang 31: Unterbrechung nur für bestätigte Terminsetzung aus In Abklärung im aktuellen Durchlauf. Marker und Zustellverfahren sind Fachentwurf. Nach Speicherung keine automatische Wirkung des abgelösten Laufs; technische Umsetzung offen.</bpmn:documentation>
+        <bpmn:documentation>FALL-11 Übergänge 31/32: Unterbrechung nur für bestätigte Terminsetzung aus In Abklärung oder Wartet auf Mieterantwort im aktuellen Durchlauf. Marker und Zustellverfahren sind Fachentwurf. Nach Speicherung keine automatische Wirkung des abgelösten Laufs; technische Umsetzung offen.</bpmn:documentation>
         <bpmn:outgoing>SF_Takeover_Close</bpmn:outgoing>
         <bpmn:conditionalEventDefinition id="StaffFollowAtClose_definition">
           <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffFollowTakeoverReady = true</bpmn:condition>
@@ -757,6 +761,14 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
       </bpmn:boundaryEvent>
       <bpmn:sequenceFlow id="SF_Takeover_Close" sourceRef="StaffFollowAtClose" targetRef="StaffFollowJoin" />
       <bpmn:sequenceFlow id="SF07" sourceRef="StaffFollowContinue" targetRef="Staff" name="Geprüfter Eintritt: Wiedervorlage / neuer Prüfbedarf" />
+      <bpmn:boundaryEvent id="StaffFollowAtReply" attachedToRef="Reply" cancelActivity="true" name="Wiedervorlage&#10;übernommen">
+        <bpmn:documentation>FALL-11 Übergänge 31/32: Unterbrechung nur für bestätigte Terminsetzung aus In Abklärung oder Wartet auf Mieterantwort im aktuellen Durchlauf. Marker und Zustellverfahren sind Fachentwurf. Nach Speicherung keine automatische Wirkung des abgelösten Laufs; technische Umsetzung offen.</bpmn:documentation>
+        <bpmn:outgoing>SF_Takeover_Reply</bpmn:outgoing>
+        <bpmn:conditionalEventDefinition id="StaffFollowAtReply_definition">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffFollowTakeoverReady = true</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:sequenceFlow id="SF_Takeover_Reply" sourceRef="StaffFollowAtReply" targetRef="StaffFollowJoin" />
       <bpmn:textAnnotation id="MainDraft">
         <bpmn:text>FACHENTWURF 0.26 · 15.11.2026
 Nicht ausführbar / kein Deployment.
@@ -1729,6 +1741,16 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
         <di:waypoint x="3515" y="-480" />
         <di:waypoint x="1550" y="-480" />
         <di:waypoint x="1550" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StaffFollowAtReply_di" bpmnElement="StaffFollowAtReply">
+        <dc:Bounds x="1980" y="447" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_Takeover_Reply_di" bpmnElement="SF_Takeover_Reply">
+        <di:waypoint x="1998" y="447" />
+        <di:waypoint x="1998" y="380" />
+        <di:waypoint x="3210" y="380" />
+        <di:waypoint x="3210" y="1150" />
+        <di:waypoint x="3250" y="1150" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

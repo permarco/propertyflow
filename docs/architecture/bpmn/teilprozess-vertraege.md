@@ -439,3 +439,20 @@ Ein inzwischen aufgehobener Termin darf nicht wiederhergestellt werden. Ein wäh
 der Übergabe fällig gewordener, ursprünglich gültiger Termin folgt sofort dem
 Timerpfad. Die lückenlose Übergabe und Synchronisierung mit konkurrierenden Aktionen
 sind Implementierungsanforderungen, noch kein ausgeführter Laufzeitnachweis.
+
+## Direkte Wiedervorlage aus Mieterwartephase (0.27)
+
+FALL-11, Übergang 32: Der bestehende Eingang `StaffFollowSide` nimmt auch
+Terminaufträge aus «Wartet auf Mieterantwort» entgegen. Nach geprüfter Speicherung
+unterbricht `StaffFollowAtReply` den Call «Mieterantwort abwarten und Fortsetzung
+prüfen». `StaffFollowContinue` führt über `SEntryCheck` direkt zu `FollowUp`.
+Die Übergabegarantien aus 0.26 gelten unverändert; Marker sind an den abgelösten
+Aufruf gebunden und müssen auch Aktivitätswechsel abdecken. Ab Commit dürfen
+alte Auswertungen nicht mehr wirken; keine Outputs abgebrochener Calls übernehmen.
+
+Offene Rückfragen bleiben erhalten. Nachrichteneingang oder Timer führen nach
+FALL-11 zur Mitarbeiterprüfung. Bei gültiger Terminlöschung führt `WDeleteTask`
+über die bestehende Rückgabe und `SFollowResult` zu «In Bearbeitung», auch bei
+offenen Fragen. Kein automatischer Rücksprung in den alten Mieterwartepfad.
+Geplante Prüfungen: FALL-AK-38. Die Modelle bleiben nicht ausführbare Fachentwürfe;
+zuverlässige Übergabe und Konfliktbehandlung sind noch zur Laufzeit nachzuweisen.
