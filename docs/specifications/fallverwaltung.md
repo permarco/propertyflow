@@ -207,7 +207,7 @@ Mit **Entwurf** bezeichnete Übergänge sind noch zu konkretisieren. Insbesonder
 | Mitarbeiterprüfung erforderlich | Menschliche Prüfung ist nötig, etwa nach einem Analysefehler, bei klärungsbedürftigem E-Mail-Versand, bei verbleibender Unklarheit oder wegen einer verpflichtenden menschlichen Entscheidung nach FALL-10. |
 | In Bearbeitung | Das weitere Vorgehen wurde festgelegt; die Umsetzung läuft. |
 | Wartet auf externe Rückmeldung | Informationen oder eine Rückmeldung beispielsweise von Hauswart oder Fachstelle stehen aus. |
-| Wartet auf Wiedervorlage | Ein Mitarbeiter hat die erneute Prüfung terminiert. Camunda wartet bis zum Termin oder bis zur nächsten gespeicherten Mieternachricht gemäss FALL-11. |
+| Wartet auf Wiedervorlage | Ein Mitarbeiter hat die erneute Prüfung terminiert. Camunda wartet bis zum Termin, zur nächsten gespeicherten Mieternachricht oder bis zu neuem zwingendem Prüfbedarf gemäss FALL-11. |
 | Abgeschlossen | Der fachliche Abschluss wurde bestätigt; neue Nachrichten sind gemäss KOM-04 gesperrt. |
 
 **Vereinbarte Konkretisierung am 09.10.2026:** Bei einem aktiven Fall führen **offene Objektzuordnung**, **fehlgeschlagene KI-Analyse** und **klärungsbedürftiger E-Mail-Versand** einheitlich zum Bearbeitungsstatus **«Mitarbeiterprüfung erforderlich»**. Der jeweilige Grund bleibt zusätzlich intern am Fall gespeichert und für die Bearbeitung nachvollziehbar: «Zuordnung offen», «KI-Analyse fehlgeschlagen» bzw. «E-Mail-Versand klären». Screen 02 zeigt den Bearbeitungsstatus, aber keine Problemhinweise. Die konkrete interne Darstellung der Gründe wird bei Screen 03 festgelegt. Mehrere Gründe können gleichzeitig vorliegen. Ein automatischer Wiederholungsversuch hebt diese Zuordnung nicht auf. Diese Vereinbarung ersetzt die frühere Ausnahme für Analysefehler während automatischer Wiederholungen. Der Übergang wird im vorgesehenen Camunda-/PropertyFlow-Ablauf vorgenommen, nicht allein aus einem Browserfehler abgeleitet.
@@ -315,6 +315,8 @@ Retry, ausstehender Versuch oder Incident allein ist kein neuer fachlicher Grund
 
 | Aktueller Stand | Fortsetzung |
 |---|---|
+| «In Bearbeitung», neuer zwingender Prüfbedarf | Aktuelle Bearbeitungsaufgabe unterbrechen und unmittelbar Mitarbeiterprüfung veranlassen. |
+| «Wartet auf Wiedervorlage», neuer zwingender Prüfbedarf | Betroffene Wiedervorlage samt Timer beenden, aktuellen Termin entfernen und unmittelbar Mitarbeiterprüfung veranlassen. |
 | «Wartet auf Mieterantwort», neuer bestätigter Prüfbedarf | Mieterwarte-Aufruf unterbrechen und «Mitarbeiterprüfung erforderlich» veranlassen; keine Mieterantwort oder KI-Auswertung abwarten. |
 | Mitarbeiterprüfung bereits offen | Grund an derselben aktuellen Prüfaufgabe ergänzen; keine zweite Aufgabe und kein Abschluss der bestehenden. |
 | Derselbe bereits berücksichtigte Grund ohne neue Erkenntnis | Keine erneute Prüfung; interne Historie bleibt erhalten. |
@@ -649,6 +651,32 @@ der parallelen Verarbeitung bleibt offen.
 
  Die Timerentscheidung ändert die Verantwortung aus FALL-06 nicht: PropertyFlow hält die fachlichen Falldaten; Camunda führt den technischen Wartezustand.
 
+### Zwingender Prüfbedarf während Bearbeitung und Wiedervorlage
+
+**Bestätigt am 15.11.2026:** Neuer serverseitig festgestellter zwingender Prüfbedarf
+beendet die aktuelle Bearbeitungsaufgabe beziehungsweise die laufende Wiedervorlage
+samt Timer und führt zu «Mitarbeiterprüfung erforderlich». Es wird weder auf den
+Termin noch auf eine Mieternachricht oder weitere KI-Auswertung gewartet.
+
+Bei «In Bearbeitung» wird die bisherige Aufgabe abgelöst; Aktionen gegen ihren
+alten Aufgabenschlüssel dürfen die neue Prüfung nicht erledigen. Bei Wiedervorlage
+wird der betroffene Prozessaufruf samt Timer unterbrochen und der aktuelle
+fachliche Termin entfernt. Termin- und Entscheidungshistorie bleiben erhalten.
+Der neue Prüfgrund wird nachvollziehbar übernommen, nicht als Mieterkontakt
+umgedeutet. Offener Mieterantwortbedarf bleibt bestehen.
+
+Timerablauf, Mieterkontakt und neuer Prüfbedarf verwenden dieselbe logische
+Prüfzuordnung: genau eine aktuelle Mitarbeiterprüfung. Eine bereits offene
+Prüfung wird ergänzt. Derselbe bereits berücksichtigte Grund ohne neue Erkenntnis
+beendet weder Bearbeitung noch Wiedervorlage erneut. Alte Meldungen dürfen keine
+neuere bewusste Mitarbeiterentscheidung, Terminversion oder Wiedereröffnung
+überschreiben. Nach Abschluss keine Reaktivierung.
+
+Nach späterer Mitarbeiterentscheidung wird der aufgehobene Termin nicht
+stillschweigend wiederhergestellt; eine erneute Wiedervorlage erfordert die
+bestehende bewusste Terminaktion. Sichere Markerübergabe, Abbruch und Speicherung
+sind vor ausführbarer Umsetzung zu koordinieren.
+
 ### Nachricht, Timer und neuere Terminentscheidung
 
 **Bestätigt am 15.11.2026 – Fortsetzungstabelle, Zeile 5:**
@@ -942,6 +970,19 @@ Status nicht. Gleichzeitig eintreffende Gründe sowie Mitarbeiterabschluss,
 Aufhebung, Call-Wechsel und spätere Wiedereröffnung prüfen: alte Zuordnungen
 bleiben unwirksam. Nach Abschluss nur interner Hinweis, keine neue Prozessinstanz.
 Dies sind geplante Integrationsprüfungen, keine ausgeführten Laufzeittests.
+
+### FALL-AK-33: Prüfbedarf unterbricht Bearbeitung und Wiedervorlage
+
+Neuen zwingenden Prüfbedarf in beiden Phasen ohne Mieternachricht melden:
+Bearbeitungsaufgabe wird abgelöst beziehungsweise Wiedervorlage samt Timer beendet,
+Termin entfernt und genau eine Mitarbeiterprüfung bereitgestellt. Antwortbedarf
+und Historie bleiben erhalten. Alte Aufgabenaktionen und späterer Timerablauf
+bleiben unwirksam. Gleichzeitigen Timer, Kontakt und Prüfbedarf sowie doppelte
+Meldungen prüfen: dieselbe Prüfung ergänzen, keine zweite Aufgabe. Bereits
+berücksichtigte Gründe ohne neue Erkenntnis ändern nichts. Neuere Terminversion,
+Mitarbeiterentscheidung und abgeschlossener/wiedereröffneter Fall bleiben vor alten
+Meldungen geschützt. Dies sind geplante Integrationsprüfungen, keine ausgeführten
+Laufzeittests.
 
 ## Offene Entscheidungen und Weiterentwicklung
 

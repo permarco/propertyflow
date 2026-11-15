@@ -612,3 +612,22 @@ Funktion den Hinweis intern fest; der beendete Prozess wird nicht neu gestartet.
 [FALL-06](../../specifications/fallverwaltung.md#neuer-prüfbedarf-ohne-mieternachricht)
 und FALL-AK-32 beschreiben die Regeln und geplanten Prüfungen. Nur Fachentwurf,
 keine Backend-Implementierung.
+
+## Prüfbedarf während Bearbeitung und Wiedervorlage · Entwurf 0.22
+
+In [mitarbeiterbearbeitung.bpmn](mitarbeiterbearbeitung.bpmn) sind zwei
+unterbrechende Randereignisse ergänzt:
+
+- `SWorkReviewNeeded` an «Weiteres Vorgehen umsetzen» führt unmittelbar zu
+  `SReviewStatus` und löst die bisherige Bearbeitungsaufgabe ab.
+- `SFollowUpReviewNeeded` an «Wiedervorlage verwalten» beendet den gesamten
+  Wiedervorlage-Call samt Timer. `SStopFollowUp` entfernt anschliessend den
+  betroffenen Termin und verwendet die gemeinsame Prüfzuordnung von Kontakt-
+  und Timerweg. Keine normale Rückgabe des abgebrochenen Calls.
+
+Der unabhängige Prüfbedarf-Eingang im Hauptmodell übergibt neue Gründe gezielt
+an diese aktuellen Mitarbeiter-Aufrufe. Bereits offene Prüfungen werden ergänzt;
+bereits berücksichtigte Gründe ohne neue Erkenntnis lösen keine Unterbrechung aus.
+[FALL-11](../../specifications/fallverwaltung.md#zwingender-prüfbedarf-während-bearbeitung-und-wiedervorlage)
+und FALL-AK-33 beschreiben Regeln und geplante Prüfungen. Technische Koordination
+bleibt offen; keine Backend-Implementierung.

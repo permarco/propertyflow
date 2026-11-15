@@ -6,6 +6,7 @@
   <bpmn:message id="Message_FollowUpChange" name="Wiedervorlage ändern" />
   <bpmn:process id="PropertyFlow_FollowUp_Draft" name="Wiedervorlage&#10;verwalten · Fachentwurf 0.17" isExecutable="false">
     <bpmn:documentation>
+0.22: Neuer zwingender Prüfbedarf unterbricht diesen gesamten Call über SFollowUpReviewNeeded im Mitarbeiterprozess, einschliesslich Timer und Nebenaktionen. SStopFollowUp entfernt den betroffenen fachlichen Termin und veranlasst genau eine Prüfung. Keine normale Rückgabe bei Abbruch, kein automatisches Wiederherstellen des Termins.
 Dateiaufteilung 0.9: untergeordneter Prozess, nur durch Call Activity starten. Keine eigene führende Fallzuordnung. Eingaben caseId, leadingProcessInstanceKey und entryContextRef; Rückgaben outcome und decisionRef. Explizite instanzübergreifende Aktualisierung gemäss teilprozess-vertraege.md erforderlich; keine live gemeinsam genutzten Elternvariablen. Nicht ausführbar, kein Backend implementiert.</bpmn:documentation>
     <bpmn:startEvent id="WStart" name="Wiedervorlage gewählt">
       <bpmn:outgoing>W01</bpmn:outgoing>

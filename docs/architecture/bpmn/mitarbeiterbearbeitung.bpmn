@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_PropertyFlow_Staff_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
   <bpmn:message id="Message_StaffReviewSend" name="Mitarbeiternachricht während Prüfung senden" />
-  <bpmn:process id="PropertyFlow_Staff_Draft" name="Mitarbeiterprüfung und weitere Bearbeitung · Fachentwurf 0.16" isExecutable="false">
+  <bpmn:process id="PropertyFlow_Staff_Draft" name="Mitarbeiterprüfung und weitere Bearbeitung · Fachentwurf 0.22" isExecutable="false">
     <bpmn:documentation>
 Dateiaufteilung 0.9: untergeordneter Prozess, nur durch Call Activity starten. Keine eigene führende Fallzuordnung. Eingaben caseId, leadingProcessInstanceKey und entryContextRef; Rückgaben outcome und decisionRef. Explizite instanzübergreifende Aktualisierung gemäss teilprozess-vertraege.md erforderlich; keine live gemeinsam genutzten Elternvariablen. Nicht ausführbar, kein Backend implementiert.
 Fachentwurf 0.15: Wiedereröffnung ohne Prüfbedarf steigt nach geprüfter Registrierung direkt in SWork ein, ohne eine frühere Prüfung oder Entscheidung zu reaktivieren. Wiedereröffnung mit Prüfbedarf verwendet SReviewStatus und SReview.
@@ -12,12 +12,14 @@ Fachentwurf 0.16: Externe Wartephase gemäss FALL-12. Fachliche Übergänge best
     <bpmn:serviceTask id="SReviewStatus" name="Prüfgrund festhalten&#10;Mitarbeiterprüfung erforderlich">
       <bpmn:documentation>Aktuellen Prüfbedarf und Quelle nachvollziehbar speichern. Beim Eintritt über TriageFailure den internen Grund KI-Analyse fehlgeschlagen ergänzen; andere Eintrittsgründe und bereits gespeicherte Prüfgründe bleiben erhalten. Danach Status Mitarbeiterprüfung erforderlich speichern und die Mitarbeiteraufgabe bereitstellen. Beim Rückweg über CloseConflict lautet der interne Grund Fallstand seit Abschlussbestätigung geändert. Alte Abschlussfreigabe verwerfen und aktuellen Fallstand bereitstellen. Die vorherige User Task ist bereits erledigt; genau eine neue Aufgabe mit neuem Schlüssel für die bewusste Entscheidung bereitstellen. Alte Browseraktionen und wiederholte Konfliktmeldungen dürfen weder diese Aufgabe abschliessen noch weitere Aufgaben erzeugen. Bleibt eine Aufgabe wegen früher Ablehnung der Aktion bereits offen, wird dieser Rückweg nicht zusätzlich gestartet.
 Dateiaufteilung 0.9: Beim Eintritt den eigenen Kindinstanz- und Call-Bezug aus Engine-Metadaten zur unveränderten leadingProcessInstanceKey prüfen/registrieren. Aktuellen Stand aus PropertyFlow laden und lokale Steuerstände initialisieren. Registrierung und Nachlieferung müssen ohne Lücke zusammenwirken, auch bei vorher eingegangenen Nachrichten. Diese Instanz wird nicht als neuer führender Fallprozess gespeichert. Umsetzung gemäss teilprozess-vertraege.md noch offen.
-FALL-AK-27: Beim Einstieg aus Kontakt- oder Timerweg dieselbe versionsgebundene Prüfzuordnung verwenden. Eine bereits offene zugehörige Prüfung ergänzen, keine weitere User Task anlegen. Keine neue Prüfung nach Abschluss oder aus einem alten Bearbeitungszyklus. Eine zwischenzeitliche Mitarbeiterentscheidung nicht durch verspätete Wiederholung zurücknehmen.</bpmn:documentation>
+FALL-AK-27: Beim Einstieg aus Kontakt- oder Timerweg dieselbe versionsgebundene Prüfzuordnung verwenden. Eine bereits offene zugehörige Prüfung ergänzen, keine weitere User Task anlegen. Keine neue Prüfung nach Abschluss oder aus einem alten Bearbeitungszyklus. Eine zwischenzeitliche Mitarbeiterentscheidung nicht durch verspätete Wiederholung zurücknehmen.
+0.22: Eingang SR01 unterbricht SWork bei neuem zwingendem Prüfbedarf, ohne eine Mitarbeiterentscheidung zu erfinden. Alte Aktionen zur abgelösten Aufgabe sind ungültig. Derselbe neue Prüfbedarf wird genau einer aktuellen Prüfung zugeordnet; bereits offene Prüfung ergänzen, nicht duplizieren. Offener Mieterantwortbedarf und bisherige Historie bleiben erhalten.</bpmn:documentation>
       <bpmn:incoming>S13</bpmn:incoming>
       <bpmn:incoming>S15</bpmn:incoming>
       <bpmn:incoming>S21</bpmn:incoming>
       <bpmn:incoming>S_EntryReview</bpmn:incoming>
       <bpmn:incoming>SX07</bpmn:incoming>
+      <bpmn:incoming>SR01</bpmn:incoming>
       <bpmn:outgoing>S02</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:userTask id="SReview" name="Fall prüfen und&#10;Vorgehen entscheiden">
@@ -126,8 +128,10 @@ FALL-11 Zeile 5: Die Beispielbedingung allein garantiert keine atomare Abstimmun
     </bpmn:boundaryEvent>
     <bpmn:serviceTask id="SStopFollowUp" name="Betroffenen Termin aufheben&#10;Prüfung einmalig veranlassen">
       <bpmn:documentation>FALL-11: sofort nach dem neuen Kontakt, ohne auf KI-Auswertung zu warten. Aktuelle Wiedervorlage-Version prüfen, Termin idempotent erledigen und Prüfgrund festhalten. Timer wurde durch das unterbrechende Ereignis beendet. Gleichzeitig fälliger Timer, Kontakt oder Mitarbeiterentscheidung darf weder doppelte Aufgabe noch Rücknahme einer neueren Entscheidung erzeugen. Konkrete technische Konfliktbehandlung bleibt vor Ausführung festzulegen.
-FALL-11 Zeile 5: Dieselbe Erledigungs- und Prüfzuordnung wie Timerweg WClearTimer verwenden. Aktuelle Fall-, Aufruf- und Terminversion prüfen; keinen neueren Termin entfernen. SReviewStatus stellt nur die zugehörige aktuelle Prüfung bereit. Vorheriger Call-Abbruch muss bereits gegen neuere Terminentscheidungen geschützt sein; nachträgliche Prüfung allein reicht nicht. Nach Abschluss keine neue Wirkung. Technische Konkurrenzbehandlung bleibt umzusetzen.</bpmn:documentation>
+FALL-11 Zeile 5: Dieselbe Erledigungs- und Prüfzuordnung wie Timerweg WClearTimer verwenden. Aktuelle Fall-, Aufruf- und Terminversion prüfen; keinen neueren Termin entfernen. SReviewStatus stellt nur die zugehörige aktuelle Prüfung bereit. Vorheriger Call-Abbruch muss bereits gegen neuere Terminentscheidungen geschützt sein; nachträgliche Prüfung allein reicht nicht. Nach Abschluss keine neue Wirkung. Technische Konkurrenzbehandlung bleibt umzusetzen.
+0.22: Auch SR02 (neuer zwingender Prüfbedarf) verwendet diesen Erledigungsweg. Der unterbrechende Randpfad beendet den FollowUp-Call samt Timer und Nebenaktionen; keine normale Call-Rückgabe verwenden. Betroffenen fachlichen Termin idempotent entfernen, ursprünglichen neuen Prüfgrund erhalten und dieselbe Prüfzuordnung wie Timer-/Kontaktweg verwenden. Keine künstliche Mieternachricht oder Beantwortung. Bei gleichzeitigem Kontakt, Timer und Prüfgrund genau eine Mitarbeiterprüfung. Keine Wiederherstellung des Termins nach späterer Prüfung; neuer Termin nur durch bewusste Mitarbeiteraktion.</bpmn:documentation>
       <bpmn:incoming>S20</bpmn:incoming>
+      <bpmn:incoming>SR02</bpmn:incoming>
       <bpmn:outgoing>S21</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:sequenceFlow id="S20" sourceRef="SContactDuringFollowUp" targetRef="SStopFollowUp" />
@@ -196,6 +200,24 @@ Nur serverseitig festgestellter neuer zwingender Prüfbedarf zur aktuellen Warte
     <bpmn:sequenceFlow id="SX05" name="Wiedervorlage setzen" sourceRef="SExternalDecision" targetRef="FollowUp" />
     <bpmn:sequenceFlow id="SX06" name="Abschliessen" sourceRef="SExternalDecision" targetRef="SCloseEnd" />
     <bpmn:sequenceFlow id="SX07" name="Prüfung erforderlich" sourceRef="SExternalReview" targetRef="SReviewStatus" />
+    <bpmn:boundaryEvent id="SWorkReviewNeeded" name="Neuer zwingender&#10;Prüfbedarf" attachedToRef="SWork" cancelActivity="true">
+      <bpmn:documentation>
+FALL-06/11: Nur serverseitig bestätigter neuer zwingender Prüfbedarf für die aktuelle Aufgabe beziehungsweise Wiedervorlage-Version. Keine Mieternachricht oder KI-Auswertung abwarten. Bereits berücksichtigte Gründe ohne neue Erkenntnis lösen nichts aus. Marker ausdrücklich in die Mitarbeiterinstanz übertragen. Unterbrechung gegen Mitarbeiterentscheidung, Terminänderung, Abschluss und Wiedereröffnung koordinieren; alte Marker dürfen keine neuere Bearbeitung abbrechen. Bereits beim Eintritt vorhandene Gründe erkennen. Technische Umsetzung bleibt offen.</bpmn:documentation>
+      <bpmn:outgoing>SR01</bpmn:outgoing>
+      <bpmn:conditionalEventDefinition id="SWorkReviewNeeded_definition">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">= pendingWorkReviewRef != null and pendingWorkReviewRef = activeWorkTaskRef</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="SFollowUpReviewNeeded" name="Neuer zwingender&#10;Prüfbedarf" attachedToRef="FollowUp" cancelActivity="true">
+      <bpmn:documentation>
+FALL-06/11: Nur serverseitig bestätigter neuer zwingender Prüfbedarf für die aktuelle Aufgabe beziehungsweise Wiedervorlage-Version. Keine Mieternachricht oder KI-Auswertung abwarten. Bereits berücksichtigte Gründe ohne neue Erkenntnis lösen nichts aus. Marker ausdrücklich in die Mitarbeiterinstanz übertragen. Unterbrechung gegen Mitarbeiterentscheidung, Terminänderung, Abschluss und Wiedereröffnung koordinieren; alte Marker dürfen keine neuere Bearbeitung abbrechen. Bereits beim Eintritt vorhandene Gründe erkennen. Technische Umsetzung bleibt offen.</bpmn:documentation>
+      <bpmn:outgoing>SR02</bpmn:outgoing>
+      <bpmn:conditionalEventDefinition id="SFollowUpReviewNeeded_definition">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">= pendingReviewFollowUpVersion != null and pendingReviewFollowUpVersion = activeFollowUpVersion</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="SR01" sourceRef="SWorkReviewNeeded" targetRef="SReviewStatus" />
+    <bpmn:sequenceFlow id="SR02" sourceRef="SFollowUpReviewNeeded" targetRef="SStopFollowUp" />
     <bpmn:textAnnotation id="SQuestionNote">
       <bpmn:text>Nachrichten während offener Mitarbeiterprüfung:
 Senden als nicht unterbrechende Nebenaktion (unten).
@@ -507,6 +529,25 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
         <di:waypoint x="775" y="-250" />
         <di:waypoint x="255" y="-250" />
         <di:waypoint x="255" y="135" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="SWorkReviewNeeded_di" bpmnElement="SWorkReviewNeeded">
+        <dc:Bounds x="1095" y="207" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SFollowUpReviewNeeded_di" bpmnElement="SFollowUpReviewNeeded">
+        <dc:Bounds x="832" y="457" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SR01_di" bpmnElement="SR01">
+        <di:waypoint x="1113" y="243" />
+        <di:waypoint x="1113" y="355" />
+        <di:waypoint x="120" y="355" />
+        <di:waypoint x="120" y="180" />
+        <di:waypoint x="170" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SR02_di" bpmnElement="SR02">
+        <di:waypoint x="832" y="475" />
+        <di:waypoint x="780" y="475" />
+        <di:waypoint x="780" y="470.0" />
+        <di:waypoint x="610.0" y="470.0" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

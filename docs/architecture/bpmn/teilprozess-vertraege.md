@@ -331,3 +331,24 @@ Gründe ohne neue Erkenntnis erhalten keine neue Prüfzuordnung. Nach Fallabschl
 führt die meldende Funktion nur einen internen Hinweis nach, ohne Korrelation an
 eine beendete Instanz oder neuen Prozessstart. Alte Durchläufe dürfen nach
 Wiedereröffnung keine aktuelle Prüfung auslösen. Technische Umsetzung bleibt offen.
+
+## Prüfbedarf in Bearbeitung und Wiedervorlage (0.22)
+
+`ReviewNeedOther` im Hauptprozess liefert den geprüften Grund ausdrücklich in
+die aktuelle Mitarbeiter-Kindinstanz. `pendingWorkReviewRef` ist an
+`activeWorkTaskRef` gebunden; `pendingReviewFollowUpVersion` an
+`activeFollowUpVersion`. Diese Bedingungen sind fachliche Platzhalter, keine
+implementierten Variablenverträge. Quelle, Erkenntnisversion und aktueller
+Aufgaben-/Call-Bezug sind serverseitig zu prüfen; keine live gemeinsam genutzten
+Elternvariablen und keine Korrelation anhand beliebiger Client-Schlüssel.
+
+`SWorkReviewNeeded` beendet nur die aktuelle Bearbeitungsaufgabe.
+`SFollowUpReviewNeeded` beendet den aktuellen Wiedervorlage-Call samt Timer und
+Nebenaktionen. `SStopFollowUp` lädt den persistierten Prüfentscheid und entfernt
+den betroffenen Termin ohne normale Call-Outputs. Timer-, Kontakt- und Prüfweg
+müssen dieselbe logische Prüfzuordnung verwenden. Vor Ausführung sind Marker,
+Aufgaben-/Terminversion, Abbruch und Speicherung gegen neuere Entscheidungen
+atomar beziehungsweise zuverlässig zu koordinieren; ein nachträglicher Check
+allein verhindert keinen falschen Abbruch. Alte Meldungen und bereits
+berücksichtigte Gründe ohne neue Erkenntnis dürfen keine neuere Aufgabe stören.
+Bestehende Call-Eingaben und Rückgaben bleiben unverändert.

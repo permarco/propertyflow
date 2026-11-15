@@ -444,7 +444,7 @@ Nur für aktuellen Reply-Call bei Wartet auf Mieterantwort mit neuem fachlichem 
         <bpmn:sequenceFlow id="PN07" name="" sourceRef="ReviewNeedWakeReply" targetRef="ReviewNeedDone" />
         <bpmn:serviceTask id="ReviewNeedOther" name="Aktuellen Prüfbedarf an&#10;bestehende Phasensteuerung übergeben">
           <bpmn:documentation>
-Für andere aktive Phasen neuen Grund erhalten und an deren bestehende Prüf-/Fortsetzungssteuerung übergeben, etwa SExternalReview in externer Wartephase. Kein zusätzlicher paralleler Staff-Call. Fehlende technische Übergabe darf nicht als erfolgreich verworfen gelten; vor Ausführung phasenspezifisch implementieren. Dieser Entwurf konkretisiert den neuen Mieterwarte-Eingang, nicht alle übrigen Phasen.</bpmn:documentation>
+Für andere aktive Phasen neuen Grund erhalten und gezielt in die aktuelle Mitarbeiterinstanz übertragen: SWorkReviewNeeded bei In Bearbeitung, SFollowUpReviewNeeded bei Wiedervorlage, SExternalReview bei externer Wartephase. Aktuellen Aufgaben-/Call-Bezug und Terminversion serverseitig prüfen. Kein zusätzlicher paralleler Staff-Call. Fehlende technische Übergabe darf nicht als erfolgreich verworfen gelten; vor Ausführung phasenspezifisch implementieren. Dieser Entwurf konkretisiert den neuen Mieterwarte-Eingang, nicht alle übrigen Phasen.</bpmn:documentation>
           <bpmn:incoming>PN08</bpmn:incoming>
           <bpmn:outgoing>PN09</bpmn:outgoing>
         </bpmn:serviceTask>
