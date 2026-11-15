@@ -132,6 +132,7 @@ flowchart LR
     A -->|"18 / 30"| Z
     A -->|"31"| W
     M -->|"32"| W
+    A -->|"33"| B
     M -->|"19"| Z
     P -->|"20"| Z
     B -->|"21"| Z
@@ -193,6 +194,7 @@ Die Pfeilnummern verweisen auf die Übergänge in der Tabelle. Die Anmerkungen i
 | 30 | In Abklärung | Abgeschlossen | Direkter Mitarbeiterabschluss am aktuellen Fallstand [3]; siehe FALL-06 |
 | 31 | In Abklärung | Wartet auf Wiedervorlage | Mitarbeiter setzt direkt einen zukünftigen Termin; automatische Abklärung ablösen, siehe FALL-11 |
 | 32 | Wartet auf Mieterantwort | Wartet auf Wiedervorlage | Mitarbeiter setzt direkt einen zukünftigen Termin; offene Rückfragen bleiben erhalten, siehe FALL-11 |
+| 33 | In Abklärung | In Bearbeitung | Mitarbeiter übernimmt am aktuellen Fallstand; zwingender Prüfbedarf führt stattdessen über Übergang 3 zur Mitarbeiterprüfung |
 
 - **[1]** Keine laufende Wiedervorlage und kein vorrangiger Mitarbeiterprüfbedarf; automatische Rückfragen benötigen die serverseitig geprüften Ausführungsbedingungen nach [KOM-05](fallkommunikation.md#kom-05-automatische-rueckfragen). Für zulässige Katalogrückfragen ist keine zusätzliche menschliche Einzelfreigabe vorgesehen.
 - **[2]** Kein zulässiger automatischer Abschluss und keine laufende Wiedervorlage.
@@ -292,6 +294,35 @@ Vor dem Prozessstart und bei nicht verfügbarem Camunda bleiben Fälle für bere
 Ergänzungen zu bestehenden Fällen setzen einen laufenden Fallprozess und erreichbares Camunda voraus. Bis dahin bleibt der ungesendete Text im Mieterformular. Die Fallannahme startet Camunda weiterhin asynchron. [UC-009](../use_cases/UC-009-mieteranliegen-ergaenzen.md) · [SS-003](../architecture/schnittstellenentwurf-block-3.md#ss-003--camunda-integrationsvertrag)
 
 Der Prozess gibt die jeweilige Mitarbeiteraktion an der dafür vorgesehenen Stelle frei. Eine Aktion darf keinen Fallstand aus einer bereits abgeschlossenen Aufgabe überschreiben. Während der Mitarbeiterprüfung wartet Camunda auf die fachliche Entscheidung. Verspätete automatische Ergebnisse aus einem früheren Prozessschritt dürfen den Fall in dieser Phase nicht ändern. Beim Fortsetzen prüft PropertyFlow den aktuellen Fallstand und die Zuordnung zur passenden Prozessaufgabe. Bei einem Konflikt wird die Aktion nicht als erfolgreich angezeigt. Eingaben und laufende Formulierung bleiben erhalten.
+
+### Direkte Mitarbeiterübernahme während «In Abklärung»
+
+**Bestätigt am 15.11.2026 – Übergang 33:** Ein berechtigter Mitarbeiter kann
+«Bearbeitung übernehmen» am aktuellen Fallstand bestätigen, ohne das Ende der
+automatischen Abklärung abzuwarten. Camunda prüft den Auftrag und veranlasst
+«In Bearbeitung», sofern kein zwingender aktueller Prüfbedarf besteht.
+Besteht solcher Prüfbedarf, führt der Weg stattdessen über Übergang 3 zu
+«Mitarbeiterprüfung erforderlich». Die Übernahme erledigt keine Prüfgründe und
+erteilt keine Kosten-, Auftrags- oder Abschlussfreigabe.
+
+Der Dienst prüft Berechtigung, Status «In Abklärung», führenden Durchlauf und
+bestätigte Fallversion. Zielstatus, Übernahmenachweis und erforderliche Mailpflicht
+werden konsistent gespeichert. Ab diesem Zeitpunkt verlieren alte automatische
+Auswertungen und Freigaben ihre Wirkung: keine Veröffentlichung, kein Statuswechsel
+und kein Abschluss aus dem abgelösten Lauf, auch vor dessen BPMN-Unterbrechung.
+Offene Rückfragen und manuell gesetzte Dringlichkeit bleiben erhalten.
+
+Camunda löst die automatische Abklärung ab und führt im bestehenden Fallprozess
+über den geprüften Mitarbeitereintritt direkt zur Bearbeitungsaufgabe oder zur
+Mitarbeiterprüfung. Neuer zwingender Prüfbedarf während der Übergabe hat ebenfalls
+Vorrang und darf nicht verloren gehen. Ein inzwischen weiterbearbeiteter Fall darf
+nicht auf einen alten Zielstatus zurückgesetzt werden.
+
+Ungültige oder vor Speicherung veraltete Aufträge werden ohne Wirkung abgelehnt;
+der aktuelle Pfad bleibt bestehen. Wiederholungen eines erfolgreichen Auftrags
+erzeugen weder eine zweite Aufgabe noch einen weiteren Übernahmenachweis oder
+eine neue Mailpflicht. Technische Fehler folgen Retry/Incident; die Fortsetzung
+nach erfolgreicher Speicherung wird zuverlässig nachgeholt.
 
 ### Direkter Mitarbeiterabschluss während «In Abklärung»
 
@@ -1324,3 +1355,20 @@ Geplante Prüffälle; noch kein ausgeführter Laufzeitnachweis:
 - Konkurrierende Fortsetzung oder Abschluss: alten unveröffentlichten Auftrag
   ablehnen; eine zuvor gespeicherte Nachricht erhalten. Wiederholung ohne Duplikat
   oder zusätzliche Mailpflicht. Kein Abschluss der Warteaufgabe durch Senden.
+
+### FALL-AK-40: Direkte Mitarbeiterübernahme aus Abklärung
+
+Geplante Prüffälle; noch kein ausgeführter Laufzeitnachweis:
+
+- Ohne zwingenden Prüfbedarf übernehmen: «In Bearbeitung», genau eine aktuelle
+  Bearbeitungsaufgabe, automatische Abklärung abgelöst.
+- Mit zwingendem Prüfbedarf übernehmen: «Mitarbeiterprüfung erforderlich»;
+  Gründe bleiben offen, keine direkte Bearbeitungsfreigabe.
+- Neuer zwingender Prüfbedarf zwischen Speicherung und Mitarbeitereintritt:
+  Mitarbeiterprüfung statt Bearbeitung, keine verlorene Meldung/doppelte Aufgabe.
+- Alte KI-Auswertung nach Übernahme abschliessen lassen: keine Nachricht,
+  kein Statuswechsel und kein Abschluss; Schutz bereits ab Speicherung.
+- Veralteten/unberechtigten Auftrag ablehnen, laufenden Pfad erhalten.
+  Erfolgreichen Auftrag wiederholen: keine doppelte Wirkung und keine neue Mailpflicht.
+- Offene Rückfragen und manuelle Dringlichkeit erhalten; späteren Fallstand nicht
+  mit einem alten Übernahmeauftrag überschreiben.

@@ -29,6 +29,9 @@ Mitarbeiterübergänge sowie technische Synchronisierung bleiben offen.
 B02/B03: Die Mitarbeiterrückfrage während externer Wartephase ist in FALL-12
 und Mitarbeiterprozess 0.28 geklärt: Status und offene Aufgabe bleiben bestehen,
 auch mit Antwortbedarf. SMessageSide ist erweitert; FALL-AK-39 bleibt ein Prüfplan.
+B03: Direkte Mitarbeiterübernahme aus In Abklärung ist in 0.29 modelliert
+(Übergang 33); zwingender Prüfbedarf führt vorrangig zur Mitarbeiterprüfung.
+FALL-AK-40 ist ein Prüfplan, kein Laufzeitnachweis.
 B01, B04/B05 und B07–B10 bleiben offen. Die folgenden Befunde und Zählwerte dokumentieren
 den Stand der Erstprüfung mit fünf Modellen; nun existiert zusätzlich das sechste
 Versandmodell mit Jobtypen und Routingbedingungen. B10 bleibt für die

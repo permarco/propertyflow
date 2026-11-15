@@ -1,5 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_PropertyFlow_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+  <bpmn:message id="Message_StaffTakeover" name="Bearbeitung während Abklärung übernehmen" />
   <bpmn:message id="Message_StaffFollowClarification" name="Direkte Wiedervorlage angefordert" />
   <bpmn:message id="Message_StaffCloseClarification" name="Mitarbeiterabschluss während Abklärung angefordert" />
   <bpmn:escalation id="Escalation_StaffCloseCommitted" name="Mitarbeiterabschluss aus Abklärung gespeichert" escalationCode="STAFF_CLARIFICATION_CLOSURE_COMMITTED" />
@@ -23,7 +24,7 @@
   <bpmn:error id="Error_AnalysisStale" name="Analysegrundlage überholt" errorCode="ANALYSIS_BASIS_STALE">
     <bpmn:documentation>Fachlicher Platzhalter für Zeilen 1 und 3: Die Auswertung enthält neue relevante gespeicherte Mieternachrichten noch nicht. In Validate führt der Konflikt zur aktuellen Analysegrundlage; in RValidate zur aktuellen Antwortauswertung. Kein technischer Jobfehler und kein Analysefehler. Meldung durch den späteren Prüfdienst, nicht automatisch durch blossen Nachrichteneingang. Keine zweite unabhängige Verarbeitung; aktuelle Mitarbeiterentscheidung und Abschluss schützen. Keine Ausführungsimplementierung.</bpmn:documentation>
   </bpmn:error>
-  <bpmn:process id="PropertyFlow_Case_Draft" name="PropertyFlow · Fallprozess · Fachentwurf 0.27" isExecutable="false">
+  <bpmn:process id="PropertyFlow_Case_Draft" name="PropertyFlow · Fallprozess · Fachentwurf 0.29" isExecutable="false">
     <bpmn:documentation>Fachentwurf 0.13, nicht ausführbar. Individuelle LLM-Nachricht im AutoAnswer-Worker erzeugen, prüfen, speichern und Versand beauftragen; danach Close. Kein Vorlagenkatalog, keine zusätzliche Abschlussmail. Mitarbeiterabschluss ohne Nachricht. Menschliche Priorität, Aktualität, Rückfragen, Wiedervorlage und bisherige Konfliktrückwege bleiben. Technische Fehler: Job-Retries/Incidents. Start-/Kindinstanz-Verträge weiterhin vor Ausführung konkretisieren; keine Backend-Implementierung.
 Fachentwurf 0.15: Wiedereröffnung startet eine neue Instanz für denselben Fall; direkter Mitarbeiterpfad gemäss FALL-07. Keine Backend-Implementierung.</bpmn:documentation>
     <bpmn:subProcess id="ActiveCase" name="Aktiven Fall bearbeiten">
@@ -213,6 +214,7 @@ Ruft mitarbeiterbearbeitung.bpmn auf. Vertrag: teilprozess-vertraege.md. Unterge
         <bpmn:incoming>PN11</bpmn:incoming>
         <bpmn:incoming>SQ09</bpmn:incoming>
         <bpmn:incoming>SF07</bpmn:incoming>
+        <bpmn:incoming>ST07</bpmn:incoming>
         <bpmn:outgoing>F15</bpmn:outgoing>
       </bpmn:callActivity>
       <bpmn:exclusiveGateway id="StaffRoute" name="Fortsetzung">
@@ -769,6 +771,121 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
         </bpmn:conditionalEventDefinition>
       </bpmn:boundaryEvent>
       <bpmn:sequenceFlow id="SF_Takeover_Reply" sourceRef="StaffFollowAtReply" targetRef="StaffFollowJoin" />
+      <bpmn:subProcess id="StaffTakeoverSide" triggeredByEvent="true" name="Bearbeitung während In Abklärung übernehmen">
+        <bpmn:documentation>FALL-06 Übergang 33 / FALL-AK-40. Nicht unterbrechender interner Auftrag zur direkten Übernahme aus In Abklärung. Ungültige Aufträge lassen den aktuellen Pfad bestehen. Lokale Auftragsreferenz, keine zusätzliche Mieter-Subscription.</bpmn:documentation>
+        <bpmn:startEvent id="StaffTakeoverStart" isInterrupting="false" name="Übernahme angefordert">
+          <bpmn:outgoing>ST01</bpmn:outgoing>
+          <bpmn:messageEventDefinition id="StaffTakeoverStart_definition" messageRef="Message_StaffTakeover" />
+        </bpmn:startEvent>
+        <bpmn:serviceTask id="StaffTakeoverPublish" name="Auftrag und Prüfbedarf prüfen&#10;Übernahme speichern">
+          <bpmn:documentation>Berechtigung, führenden Durchlauf, Status In Abklärung und bestätigte Fallversion prüfen. Ohne zwingenden Prüfbedarf In Bearbeitung, andernfalls Mitarbeiterprüfung erforderlich speichern. Übernahme, Zielstatus und erforderliche Mailpflicht konsistent sichern; bestehender unabhängiger Camunda-Mailprozess beauftragt den Mail-Worker. Prüfgründe nicht als erledigt behandeln. Offene Fragen und manuelle Dringlichkeit erhalten. Ab Commit alte automatische Wirkungsfreigaben entziehen. Veraltete Aufträge ohne Wirkung ablehnen. Erfolgreiche Wiederholung ohne zweite Aufgabe, Nachweis oder Mailpflicht; technische Fehler Retry/Incident.</bpmn:documentation>
+          <bpmn:incoming>ST01</bpmn:incoming>
+          <bpmn:outgoing>ST02</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:exclusiveGateway id="StaffTakeoverResult" name="Übernahme&#10;gespeichert?">
+          <bpmn:incoming>ST02</bpmn:incoming>
+          <bpmn:outgoing>ST03</bpmn:outgoing>
+          <bpmn:outgoing>ST05</bpmn:outgoing>
+        </bpmn:exclusiveGateway>
+        <bpmn:serviceTask id="StaffTakeoverSignal" name="Übernahme für aktuellen&#10;Bearbeitungspfad bereitstellen">
+          <bpmn:documentation>Gespeicherten Übernahmeauftrag zuverlässig an den abgelösten Abklärungslauf vermitteln. staffTakeoverReady ist an führenden Durchlauf und Übernahme gebunden; Aktivitätswechsel abdecken, nach Verbrauch nicht weiterwirken lassen. Neuer zwingender Prüfbedarf während Übergabe zuverlässig nachliefern. Keine Outputs abgebrochener Jobs verwenden.</bpmn:documentation>
+          <bpmn:incoming>ST03</bpmn:incoming>
+          <bpmn:outgoing>ST04</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:endEvent id="StaffTakeoverDone" name="Übernahme bereitgestellt">
+          <bpmn:incoming>ST04</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:endEvent id="StaffTakeoverRejected" name="Abgelehnt: aktuellen Stand anzeigen&#10;Laufender Pfad bleibt">
+          <bpmn:incoming>ST05</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="ST01" sourceRef="StaffTakeoverStart" targetRef="StaffTakeoverPublish" />
+        <bpmn:sequenceFlow id="ST02" sourceRef="StaffTakeoverPublish" targetRef="StaffTakeoverResult" />
+        <bpmn:sequenceFlow id="ST03" sourceRef="StaffTakeoverResult" targetRef="StaffTakeoverSignal" name="Ja / bereits übernommen" />
+        <bpmn:sequenceFlow id="ST04" sourceRef="StaffTakeoverSignal" targetRef="StaffTakeoverDone" />
+        <bpmn:sequenceFlow id="ST05" sourceRef="StaffTakeoverResult" targetRef="StaffTakeoverRejected" name="Nein" />
+      </bpmn:subProcess>
+      <bpmn:exclusiveGateway id="StaffTakeoverJoin" name="Übernahme&#10;bestätigt">
+        <bpmn:incoming>ST_Takeover_Clarification</bpmn:incoming>
+        <bpmn:incoming>ST_Takeover_Triage</bpmn:incoming>
+        <bpmn:incoming>ST_Takeover_Recommend</bpmn:incoming>
+        <bpmn:incoming>ST_Takeover_Validate</bpmn:incoming>
+        <bpmn:incoming>ST_Takeover_CurrentAnalysis</bpmn:incoming>
+        <bpmn:incoming>ST_Takeover_Question</bpmn:incoming>
+        <bpmn:incoming>ST_Takeover_AutoAnswer</bpmn:incoming>
+        <bpmn:incoming>ST_Takeover_Close</bpmn:incoming>
+        <bpmn:outgoing>ST06</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+      <bpmn:serviceTask id="StaffTakeoverContinue" name="Aktuellen Mitarbeitereintritt&#10;mit Prüfvorrang bereitstellen">
+        <bpmn:documentation>Aktuellen Stand und gespeicherten Übernahmeauftrag prüfen; staffEntryContextRef bereitstellen, Marker konsumieren. Ohne zwingenden Prüfbedarf direkter Eintritt in SWork, andernfalls SReviewStatus. Neuen Prüfbedarf bis Eintritt zuverlässig übergeben. Keine alten Jobrückgaben; keinen inzwischen weiterbearbeiteten Fall zurücksetzen. Nach Speicherung zuverlässige Fortsetzung ohne doppelte Aufgabe. Technische Synchronisierung noch nicht implementiert.</bpmn:documentation>
+        <bpmn:incoming>ST06</bpmn:incoming>
+        <bpmn:outgoing>ST07</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="ST06" sourceRef="StaffTakeoverJoin" targetRef="StaffTakeoverContinue" />
+      <bpmn:boundaryEvent id="StaffTakeoverAtClarification" attachedToRef="Clarification" cancelActivity="true">
+        <bpmn:documentation>FALL-06 Übergang 33: Unterbrechung nur nach bestätigter Übernahme aus In Abklärung im aktuellen Durchlauf. Alte Worker ab Speicherung gesperrt. Durchlaufgebundener Marker und lückenlose Zustellung noch technisch umzusetzen.</bpmn:documentation>
+        <bpmn:outgoing>ST_Takeover_Clarification</bpmn:outgoing>
+        <bpmn:conditionalEventDefinition id="StaffTakeoverAtClarification_definition">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffTakeoverReady = true</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:sequenceFlow id="ST_Takeover_Clarification" sourceRef="StaffTakeoverAtClarification" targetRef="StaffTakeoverJoin" />
+      <bpmn:boundaryEvent id="StaffTakeoverAtTriage" attachedToRef="Triage" cancelActivity="true">
+        <bpmn:documentation>FALL-06 Übergang 33: Unterbrechung nur nach bestätigter Übernahme aus In Abklärung im aktuellen Durchlauf. Alte Worker ab Speicherung gesperrt. Durchlaufgebundener Marker und lückenlose Zustellung noch technisch umzusetzen.</bpmn:documentation>
+        <bpmn:outgoing>ST_Takeover_Triage</bpmn:outgoing>
+        <bpmn:conditionalEventDefinition id="StaffTakeoverAtTriage_definition">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffTakeoverReady = true</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:sequenceFlow id="ST_Takeover_Triage" sourceRef="StaffTakeoverAtTriage" targetRef="StaffTakeoverJoin" />
+      <bpmn:boundaryEvent id="StaffTakeoverAtRecommend" attachedToRef="Recommend" cancelActivity="true">
+        <bpmn:documentation>FALL-06 Übergang 33: Unterbrechung nur nach bestätigter Übernahme aus In Abklärung im aktuellen Durchlauf. Alte Worker ab Speicherung gesperrt. Durchlaufgebundener Marker und lückenlose Zustellung noch technisch umzusetzen.</bpmn:documentation>
+        <bpmn:outgoing>ST_Takeover_Recommend</bpmn:outgoing>
+        <bpmn:conditionalEventDefinition id="StaffTakeoverAtRecommend_definition">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffTakeoverReady = true</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:sequenceFlow id="ST_Takeover_Recommend" sourceRef="StaffTakeoverAtRecommend" targetRef="StaffTakeoverJoin" />
+      <bpmn:boundaryEvent id="StaffTakeoverAtValidate" attachedToRef="Validate" cancelActivity="true">
+        <bpmn:documentation>FALL-06 Übergang 33: Unterbrechung nur nach bestätigter Übernahme aus In Abklärung im aktuellen Durchlauf. Alte Worker ab Speicherung gesperrt. Durchlaufgebundener Marker und lückenlose Zustellung noch technisch umzusetzen.</bpmn:documentation>
+        <bpmn:outgoing>ST_Takeover_Validate</bpmn:outgoing>
+        <bpmn:conditionalEventDefinition id="StaffTakeoverAtValidate_definition">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffTakeoverReady = true</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:sequenceFlow id="ST_Takeover_Validate" sourceRef="StaffTakeoverAtValidate" targetRef="StaffTakeoverJoin" />
+      <bpmn:boundaryEvent id="StaffTakeoverAtCurrentAnalysis" attachedToRef="CurrentAnalysis" cancelActivity="true">
+        <bpmn:documentation>FALL-06 Übergang 33: Unterbrechung nur nach bestätigter Übernahme aus In Abklärung im aktuellen Durchlauf. Alte Worker ab Speicherung gesperrt. Durchlaufgebundener Marker und lückenlose Zustellung noch technisch umzusetzen.</bpmn:documentation>
+        <bpmn:outgoing>ST_Takeover_CurrentAnalysis</bpmn:outgoing>
+        <bpmn:conditionalEventDefinition id="StaffTakeoverAtCurrentAnalysis_definition">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffTakeoverReady = true</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:sequenceFlow id="ST_Takeover_CurrentAnalysis" sourceRef="StaffTakeoverAtCurrentAnalysis" targetRef="StaffTakeoverJoin" />
+      <bpmn:boundaryEvent id="StaffTakeoverAtQuestion" attachedToRef="Question" cancelActivity="true">
+        <bpmn:documentation>FALL-06 Übergang 33: Unterbrechung nur nach bestätigter Übernahme aus In Abklärung im aktuellen Durchlauf. Alte Worker ab Speicherung gesperrt. Durchlaufgebundener Marker und lückenlose Zustellung noch technisch umzusetzen.</bpmn:documentation>
+        <bpmn:outgoing>ST_Takeover_Question</bpmn:outgoing>
+        <bpmn:conditionalEventDefinition id="StaffTakeoverAtQuestion_definition">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffTakeoverReady = true</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:sequenceFlow id="ST_Takeover_Question" sourceRef="StaffTakeoverAtQuestion" targetRef="StaffTakeoverJoin" />
+      <bpmn:boundaryEvent id="StaffTakeoverAtAutoAnswer" attachedToRef="AutoAnswer" cancelActivity="true">
+        <bpmn:documentation>FALL-06 Übergang 33: Unterbrechung nur nach bestätigter Übernahme aus In Abklärung im aktuellen Durchlauf. Alte Worker ab Speicherung gesperrt. Durchlaufgebundener Marker und lückenlose Zustellung noch technisch umzusetzen.</bpmn:documentation>
+        <bpmn:outgoing>ST_Takeover_AutoAnswer</bpmn:outgoing>
+        <bpmn:conditionalEventDefinition id="StaffTakeoverAtAutoAnswer_definition">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffTakeoverReady = true</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:sequenceFlow id="ST_Takeover_AutoAnswer" sourceRef="StaffTakeoverAtAutoAnswer" targetRef="StaffTakeoverJoin" />
+      <bpmn:boundaryEvent id="StaffTakeoverAtClose" attachedToRef="Close" cancelActivity="true">
+        <bpmn:documentation>FALL-06 Übergang 33: Unterbrechung nur nach bestätigter Übernahme aus In Abklärung im aktuellen Durchlauf. Alte Worker ab Speicherung gesperrt. Durchlaufgebundener Marker und lückenlose Zustellung noch technisch umzusetzen.</bpmn:documentation>
+        <bpmn:outgoing>ST_Takeover_Close</bpmn:outgoing>
+        <bpmn:conditionalEventDefinition id="StaffTakeoverAtClose_definition">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffTakeoverReady = true</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:sequenceFlow id="ST_Takeover_Close" sourceRef="StaffTakeoverAtClose" targetRef="StaffTakeoverJoin" />
+      <bpmn:sequenceFlow id="ST07" sourceRef="StaffTakeoverContinue" targetRef="Staff" name="Bearbeitung / zwingender Prüfbedarf" />
       <bpmn:textAnnotation id="MainDraft">
         <bpmn:text>FACHENTWURF 0.26 · 15.11.2026
 Nicht ausführbar / kein Deployment.
@@ -1751,6 +1868,130 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
         <di:waypoint x="3210" y="380" />
         <di:waypoint x="3210" y="1150" />
         <di:waypoint x="3250" y="1150" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StaffTakeoverSide_di" bpmnElement="StaffTakeoverSide" isExpanded="true">
+        <dc:Bounds x="200" y="3920.0" width="1650" height="340" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffTakeoverStart_di" bpmnElement="StaffTakeoverStart">
+        <dc:Bounds x="250" y="4050.0" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffTakeoverPublish_di" bpmnElement="StaffTakeoverPublish">
+        <dc:Bounds x="350" y="4020.0" width="300" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffTakeoverResult_di" bpmnElement="StaffTakeoverResult">
+        <dc:Bounds x="740" y="4045.0" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffTakeoverSignal_di" bpmnElement="StaffTakeoverSignal">
+        <dc:Bounds x="880" y="4020.0" width="290" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffTakeoverDone_di" bpmnElement="StaffTakeoverDone">
+        <dc:Bounds x="1300" y="4050.0" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffTakeoverRejected_di" bpmnElement="StaffTakeoverRejected">
+        <dc:Bounds x="750" y="4180.0" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="ST01_di" bpmnElement="ST01">
+        <di:waypoint x="286" y="4068.0" />
+        <di:waypoint x="350" y="4068.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="ST02_di" bpmnElement="ST02">
+        <di:waypoint x="650" y="4068.0" />
+        <di:waypoint x="740" y="4070.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="ST03_di" bpmnElement="ST03">
+        <di:waypoint x="790" y="4070.0" />
+        <di:waypoint x="880" y="4070.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="ST04_di" bpmnElement="ST04">
+        <di:waypoint x="1170" y="4070.0" />
+        <di:waypoint x="1300" y="4068.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="ST05_di" bpmnElement="ST05">
+        <di:waypoint x="765" y="4095.0" />
+        <di:waypoint x="768" y="4180.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StaffTakeoverJoin_di" bpmnElement="StaffTakeoverJoin">
+        <dc:Bounds x="3250" y="1325.0" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffTakeoverContinue_di" bpmnElement="StaffTakeoverContinue">
+        <dc:Bounds x="3380" y="1300.0" width="270" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="ST06_di" bpmnElement="ST06">
+        <di:waypoint x="3300" y="1350.0" />
+        <di:waypoint x="3380" y="1350.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StaffTakeoverAtClarification_di" bpmnElement="StaffTakeoverAtClarification">
+        <dc:Bounds x="585.0" y="687.0" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="ST_Takeover_Clarification_di" bpmnElement="ST_Takeover_Clarification">
+        <di:waypoint x="603.0" y="723.0" />
+        <di:waypoint x="603.0" y="1350.0" />
+        <di:waypoint x="3250" y="1350.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StaffTakeoverAtTriage_di" bpmnElement="StaffTakeoverAtTriage">
+        <dc:Bounds x="815.0" y="687.0" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="ST_Takeover_Triage_di" bpmnElement="ST_Takeover_Triage">
+        <di:waypoint x="833.0" y="723.0" />
+        <di:waypoint x="833.0" y="1350.0" />
+        <di:waypoint x="3250" y="1350.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StaffTakeoverAtRecommend_di" bpmnElement="StaffTakeoverAtRecommend">
+        <dc:Bounds x="1045.0" y="687.0" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="ST_Takeover_Recommend_di" bpmnElement="ST_Takeover_Recommend">
+        <di:waypoint x="1063.0" y="723.0" />
+        <di:waypoint x="1063.0" y="1350.0" />
+        <di:waypoint x="3250" y="1350.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StaffTakeoverAtValidate_di" bpmnElement="StaffTakeoverAtValidate">
+        <dc:Bounds x="1275.0" y="687.0" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="ST_Takeover_Validate_di" bpmnElement="ST_Takeover_Validate">
+        <di:waypoint x="1293.0" y="723.0" />
+        <di:waypoint x="1293.0" y="1350.0" />
+        <di:waypoint x="3250" y="1350.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StaffTakeoverAtCurrentAnalysis_di" bpmnElement="StaffTakeoverAtCurrentAnalysis">
+        <dc:Bounds x="1175.0" y="412" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="ST_Takeover_CurrentAnalysis_di" bpmnElement="ST_Takeover_CurrentAnalysis">
+        <di:waypoint x="1193.0" y="412" />
+        <di:waypoint x="1193.0" y="350" />
+        <di:waypoint x="3120" y="350" />
+        <di:waypoint x="3120" y="1350.0" />
+        <di:waypoint x="3250" y="1350.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StaffTakeoverAtQuestion_di" bpmnElement="StaffTakeoverAtQuestion">
+        <dc:Bounds x="1670.0" y="537.0" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="ST_Takeover_Question_di" bpmnElement="ST_Takeover_Question">
+        <di:waypoint x="1688.0" y="573.0" />
+        <di:waypoint x="1688.0" y="1350.0" />
+        <di:waypoint x="3250" y="1350.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StaffTakeoverAtAutoAnswer_di" bpmnElement="StaffTakeoverAtAutoAnswer">
+        <dc:Bounds x="2105.0" y="687.0" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="ST_Takeover_AutoAnswer_di" bpmnElement="ST_Takeover_AutoAnswer">
+        <di:waypoint x="2123.0" y="723.0" />
+        <di:waypoint x="2123.0" y="1350.0" />
+        <di:waypoint x="3250" y="1350.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StaffTakeoverAtClose_di" bpmnElement="StaffTakeoverAtClose">
+        <dc:Bounds x="2440.0" y="687.0" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="ST_Takeover_Close_di" bpmnElement="ST_Takeover_Close">
+        <di:waypoint x="2458.0" y="723.0" />
+        <di:waypoint x="2458.0" y="1350.0" />
+        <di:waypoint x="3250" y="1350.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="ST07_di" bpmnElement="ST07">
+        <di:waypoint x="3515" y="1300" />
+        <di:waypoint x="3700" y="1300" />
+        <di:waypoint x="3700" y="-560" />
+        <di:waypoint x="1530" y="-560" />
+        <di:waypoint x="1530" y="200" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

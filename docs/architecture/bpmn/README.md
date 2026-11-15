@@ -1,7 +1,7 @@
 # PropertyFlow-Fallprozess
 
 [propertyflow-fallprozess-entwurf.bpmn](propertyflow-fallprozess-entwurf.bpmn)
-ist der führende BPMN-Entwurf 0.27 zur gemeinsamen Besprechung, Stand 15.11.2026.
+ist der führende BPMN-Entwurf 0.29 zur gemeinsamen Besprechung, Stand 15.11.2026.
 Er enthält BPMN-Diagrammkoordinaten und kann im Camunda Modeler geöffnet werden.
 
 ## Dateien – hier bearbeiten
@@ -722,3 +722,18 @@ Rückfrage aus «In Bearbeitung» veröffentlichen. Neuer zwingender Prüfbedarf
 verwendet weiterhin `SExternalReview`. Fachregeln: FALL-12, Prüfplan FALL-AK-39.
 Kein neuer Statusübergang durch die Nebenaktion; das Zustandsdiagramm bleibt
 unverändert. Fachentwurf, noch kein ausgeführter Laufzeitnachweis.
+
+## Direkte Mitarbeiterübernahme aus Abklärung (0.29)
+
+`StaffTakeoverSide` empfängt «Bearbeitung übernehmen». Nach serverseitig geprüfter,
+gespeicherter Übernahme unterbrechen `StaffTakeoverAt…` den aktuellen automatischen
+Schritt. `StaffTakeoverContinue` stellt den geprüften `staffEntryContextRef` bereit.
+`SEntryCheck` führt ohne zwingenden Prüfbedarf über `S_EntryWork` zur Bearbeitung,
+sonst über den bestehenden Prüfpfad zur Mitarbeiterprüfung. Prüfgründe werden
+durch die Übernahme nicht erledigt; neue Gründe während der Übergabe haben Vorrang.
+
+Der Marker `staffTakeoverReady` ist nur für den abgelösten Lauf gültig,
+muss Aktivitätswechsel abdecken und wird beim Eintritt konsumiert. Ab Commit
+sind alte automatische Wirkungen gesperrt; keine Rückgaben abgebrochener Jobs.
+Keine zweite führende Instanz. Zuverlässige Übergabe, Konflikte und Idempotenz
+sind noch technisch umzusetzen. Quelle: FALL-06, Übergang 33; Prüfplan FALL-AK-40.
