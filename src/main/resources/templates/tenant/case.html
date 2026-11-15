@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="de-CH" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{tenant/fragments :: head('Fallansicht')}"></head>
+<body class="detail-page tenant-page">
+<header th:replace="~{tenant/fragments :: header}"></header>
+<main id="case-page">
+    <section id="case-head" class="case-head" aria-labelledby="case-title">
+        <div class="case-heading">
+            <div class="case-title-row">
+                <span class="eyebrow" th:text="${caseId}"></span>
+                <h1 id="case-title" th:text="${title}"></h1>
+            </div>
+            <p class="muted">
+                <span th:text="${originalUnit}"></span> · <span th:text="${maskedContact}"></span>
+            </p>
+            <p class="muted" th:if="${assignedUnit != null}">
+                Zugeordnet: <span th:text="${assignedUnit}"></span>
+            </p>
+        </div>
+        <div class="case-values">
+            <div>
+                <span class="field-caption">Status</span>
+                <span id="case-status" class="badge" th:text="${status}"></span>
+            </div>
+            <div>
+                <span class="field-caption">Dringlichkeit</span>
+                <span id="case-urgency" class="badge" th:classappend="${urgencyCss}" th:text="${urgency}"></span>
+            </div>
+        </div>
+    </section>
+    <div class="workspace">
+        <div class="conversation">
+            <section id="history" class="card history" tabindex="0" aria-labelledby="history-title">
+                <h2 id="history-title">Verlauf</h2>
+                <div class="messages">
+                    <article class="message" th:each="entry : ${history}"
+                             th:classappend="${entry.role() == 'Mieter' ? 'push-right' : (entry.role() == 'System' ? 'system' : '')}">
+                        <div class="message-role"><strong th:text="${entry.role()}"></strong></div>
+                        <span class="muted" th:text="${entry.timestamp()}"></span>
+                        <p th:text="${entry.text()}"></p>
+                    </article>
+                </div>
+            </section>
+        </div>
+    </div>
+</main>
+</body>
+</html>

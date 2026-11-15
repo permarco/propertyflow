@@ -37,6 +37,7 @@ style PF fill:#1e293b,stroke:#006fbb,stroke-width:2px,color:#ffffff
 
 - Der Fall ist aktiv. Die Person besitzt einen gültigen persönlichen Fall-Link oder ein berechtigtes Mieterkonto gemäss [UC-008](UC-008-eigenen-fall-einsehen.md).
 - Beim Absenden läuft der zugeordnete Fallprozess und Camunda ist erreichbar.
+- Jeder aktive Bearbeitungsstatus erlaubt den Nachrichteneingang, auch «Mitarbeiterprüfung erforderlich». Es muss keine offene Rückfrage bestehen; der Prozess stellt durchgängigen Nachrichtenempfang gemäss KOM-03 bereit.
 
 ## Main Success Scenario
 
@@ -44,7 +45,7 @@ style PF fill:#1e293b,stroke:#006fbb,stroke-width:2px,color:#ffffff
 2. PropertyFlow prüft die Berechtigung, die Eingabe, die Absende-ID und den Fallzustand. Der Dienst nimmt die Nachricht erst an, wenn der zugeordnete Fallprozess läuft und Camunda erreichbar ist. Er speichert sie als externe Mieternachricht beim bestehenden Fall.
 3. Nach dem Commit übergibt PropertyFlow den Eingang der gespeicherten Nachricht an den bestehenden Camunda-Fallprozess und wartet synchron auf die Bestätigung der Korrelation mit der zugeordneten Instanz. Erst danach meldet PropertyFlow dem Browser Erfolg.
 4. Bei laufender Wiedervorlage hebt Camunda sie nach der Korrelation auf und veranlasst sofort die Mitarbeiterprüfung. Die Browserantwort kann bereits erfolgen, während PropertyFlow den neuen Fallstand noch speichert. Die Bestätigungs-E-Mail folgt nachgelagert. [UC-013](UC-013-wiedervorlage-verwalten.md) · [BEN-01/03](../specifications/benachrichtigungen-und-zustellung.md#ben-01-auslöser-und-ausschlüsse)
-5. Die Dringlichkeitsneubewertung und die Einzelprüfung offener Rückfragen folgen den Regeln des aktuellen Fallprozesses. Nur eindeutig beantwortete Fragen gelten als erledigt. Eine bereits laufende Mitarbeiterprüfung hat Vorrang gemäss FALL-06. [UC-016](UC-016-dringlichkeit-automatisch-bewerten.md) · [UC-017](UC-017-mieterantwort-auswerten.md)
+5. Die Dringlichkeitsneubewertung und die Einzelprüfung offener Rückfragen folgen den Regeln des aktuellen Fallprozesses. Nur eindeutig beantwortete Fragen gelten als erledigt. Bei «Mitarbeiterprüfung erforderlich» ergänzen Nachricht und zulässige Auswertung dieselbe Aufgabe; der Status bleibt bis zur bewussten Mitarbeiterentscheidung erhalten. Auch eine Behebungsbestätigung erlaubt keinen Systemabschluss, unabhängig von der Herkunft des Prüfbedarfs. [FALL-06](../specifications/fallverwaltung.md#vorrang-einer-laufenden-mitarbeiterprüfung) · [UC-016](UC-016-dringlichkeit-automatisch-bewerten.md) · [UC-017](UC-017-mieterantwort-auswerten.md)
 
 ## Sequenzdiagramm · Speichern und Verarbeitung auslösen
 
@@ -115,3 +116,4 @@ sequenceDiagram
 - **UC-009-AK-03:** Eine Ergänzung vor dem Prozessstart absenden. In einem separaten Durchlauf mit laufendem Fallprozess Camunda bereits vor dem Absenden abschalten und `500` prüfen. Bei beiden Versuchen bleibt der Verlauf unverändert und der Text im Formular. Sobald der Fallprozess läuft und Camunda erreichbar ist, sendet der Mieter denselben Text erneut. Nach bestätigter Korrelation enthält der Verlauf genau einen neuen Eintrag.
 - **UC-009-AK-04:** Bei einem laufenden Fallprozess eine Ergänzung mit 2’001 UTF-16-Codeeinheiten absenden. Das Formular zeigt den vollständigen Text und einen Längenhinweis. Der Verlauf bleibt unverändert. Auf 2’000 Codeeinheiten kürzen und erneut senden. Der Verlauf enthält genau einen neuen Eintrag. [KOM-AK-12](../specifications/fallkommunikation.md#kom-ak-12--längengrenze-für-mieternachrichten)
 - **UC-009-AK-05:** Die Bestätigung der Camunda-Korrelation nach dem Commit zurückhalten. Der Browser erhält erst nach der Bestätigung eine Erfolgsmeldung. In separaten Durchläufen einen technischen Fehler und einen Timeout auslösen. Beide führen zu `500`, der vollständige Text bleibt im Formular und der bereits gespeicherte Verlaufseintrag bleibt erhalten.
+- **UC-009-AK-06:** Den Nachrichtenempfang in jedem aktiven Status und beim Wechsel zwischen Prozessschritten gemäss KOM-AK-17 prüfen. Bei laufender Mitarbeiterprüfung bleiben nach «alles erledigt» dieselbe Aufgabe und derselbe Bearbeitungsstatus bestehen; eine aktuelle Neubewertung ist nach DRING-05/06 weiterhin möglich. Systemseitiger und menschlicher Ursprung des Prüfbedarfs werden gleich behandelt.

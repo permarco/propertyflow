@@ -94,6 +94,10 @@ public class DemoCases {
         public String maskedEmail() { return email.charAt(0) + "***" + email.substring(email.indexOf('@')); }
     }
     public record Page(List<View> items, int total, int page, int pages) {}
+
+    public record CaseStatus(String caseId, String status, String urgency) {
+    }
+
     private record MessageRequest(String text, boolean internal, boolean answer, boolean tenant) {}
     private static class CaseData {
         String id, title, description, originalUnit, unit, email, urgency, source = "System", status, review = "";
@@ -161,6 +165,11 @@ public class DemoCases {
 
     public synchronized View tenantCase(String id, String verifiedEmail) {
         return ownedCase(id, verifiedEmail).view(true);
+    }
+
+    public synchronized CaseStatus tenantCaseStatus(String id, String verifiedEmail) {
+        CaseData item = ownedCase(id, verifiedEmail);
+        return new CaseStatus(item.id, item.status, item.urgency);
     }
 
     public synchronized void tenantMessage(String id, String verifiedEmail, String text, String operation) {

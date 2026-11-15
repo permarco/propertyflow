@@ -37,6 +37,45 @@ Das entfernt deren aufgefangene Mails. Ein bereits separat betriebenes Mailpit
 wird damit weder übernommen noch gestoppt. Die Tests nutzen das eigene
 Compose-Projekt `propertyflow-test` mit Ports 1026/8026.
 
+## Regulärer Mitarbeiter-Login
+
+Die reguläre Anwendung verwendet das Profil `propertyflow-backend` und speichert
+Mitarbeiterkonten und Fälle in PostgreSQL. Für die lokale Entwicklung PostgreSQL
+und Mailpit starten und die Anwendung konfigurieren.
+
+```powershell
+$env:PROPERTYFLOW_DATABASE_PASSWORD = Read-Host 'Passwort für die lokale PostgreSQL-Datenbank'
+docker compose -f dev/compose.backend.yaml up -d --wait
+docker compose -f dev/compose.yaml up -d --wait
+.\mvnw.cmd -DskipTests package
+```
+
+In `.propertyflow-local/backend.properties` die Datenbankverbindung
+(`spring.datasource.url`, `spring.datasource.username`, `spring.datasource.password`)
+und einen stabilen 32-Byte-Base64-Schlüssel
+(`propertyflow.links.encryption-key`) hinterlegen. Die Compose-Instanz für die
+Entwicklung verwendet Port 5433. Die Standardwerte für SMTP verweisen auf das
+lokale Mailpit auf Port 1025.
+
+Das erste Verwaltungskonto mit dem Serverbefehl einrichten. Für lokale
+Versuche ist eine Adresse unter `.test` geeignet.
+
+```powershell
+$env:PROPERTYFLOW_STAFF_BOOTSTRAP_NAME = 'Testverwaltung'
+$env:PROPERTYFLOW_STAFF_BOOTSTRAP_EMAIL = 'verwaltung@example.test'
+java -jar target/propertyflow-0.0.1-SNAPSHOT.jar `
+    --spring.profiles.active=propertyflow-backend,staff-bootstrap `
+    --spring.main.web-application-type=none
+```
+
+Die Einrichtung ist einmalig pro Datenbank und kann gefahrlos wiederholt
+werden. Danach das Backend mit
+`java -jar target/propertyflow-0.0.1-SNAPSHOT.jar --spring.profiles.active=propertyflow-backend`
+starten. Unter [Anmelden](http://127.0.0.1:8081/anmelden) den Einmalcode anfordern
+und in [Mailpit](http://127.0.0.1:8025) lesen. Die Fallübersicht zeigt in
+PostgreSQL gespeicherte Fälle. Für einen Testfall das öffentliche
+[Mieterformular](http://127.0.0.1:8081/mieter/fall) verwenden.
+
 ## Mitarbeiterkonto konfigurieren und Mieterkonto eröffnen
 
 Hinterlege deine Anmeldeadresse in der lokalen UTF-8-Datei
@@ -118,7 +157,38 @@ Der Mitarbeiterbereich prüft die Anmeldung und die Rolle auch bei direkten
 Aufrufen. Das öffentliche Mieterformular und die persönlichen Demo-Fall-Links
 sind ohne Anmeldung nutzbar. Formular-CSRF, sichere Textausgabe, getrennte
 Mieterdaten und Schreibsperren sind berücksichtigt. Produktive Falldatenhaltung,
-Fallbenachrichtigungen, Camunda, produktive Mieterkontoverwaltung und MCP-Anbindung sind noch offen.
+Fallbenachrichtigungen, Camunda und produktive Mieterkontoverwaltung sind noch offen.
+
+## MCP-Werkzeug lokal ausprobieren
+
+Starte Mailpit und die Frontend-Demo mit aktivierter MCP-Freigabe. In IntelliJ
+kannst du `PROPERTYFLOW_MCP_ENABLED=true` in der Run-Konfiguration setzen.
+
+```powershell
+$env:PROPERTYFLOW_MCP_ENABLED = 'true'
+.\mvnw.cmd spring-boot:run '-Dspring-boot.run.profiles=frontend-demo'
+```
+
+1. Melde dich per E-Mail-Einmalcode mit einem verifizierten Mieterkonto an.
+2. Öffne [MCP-Zugriff](http://127.0.0.1:8081/mcp-zugriff) und erteile die Lesefreigabe.
+3. Verbinde einen lokalen MCP-Client per Streamable HTTP mit `http://127.0.0.1:8081/mcp`.
+   Setze den Freigabetoken im `Authorization: Bearer …`-Header der Clientverbindung.
+   Die Freigabe gilt 30 Minuten. Du kannst sie auf derselben Seite widerrufen.
+4. Rufe `fallstand_abrufen` mit `{"caseId":"<eigene Case-ID>"}` auf. Die Case-ID
+   findest du unter «Meine Fälle». Eine fremde oder fehlende ID ergibt dieselbe
+   Meldung «Der Fall ist nicht verfügbar.».
+
+Die Demo nutzt Spring Boot 4.1.1, Spring AI 2.0.1, MCP Java SDK 2.0.0 und die
+geprüfte MCP-Revision `2025-11-25` im sitzungslosen Streamable-HTTP-Betrieb.
+Freigaben und Testdaten liegen im Arbeitsspeicher. Für entfernte Clients ist
+der OAuth-Ablauf aus UC-023 vorgesehen.
+
+Der [HTTP-Integrationstest](../src/test/java/com/pertegato/propertyflow/caseprocessing/mcp/FallstandMcpHttpTest.java)
+prüft Anmeldung, Freigabe, Tool-Aufrufe und Widerruf mit einem lokalen Testserver.
+
+```powershell
+.\mvnw.cmd '-Dtest=FallstandMcpHttpTest' test
+```
 
 ## Optional: eigenes SMTP-Postfach
 

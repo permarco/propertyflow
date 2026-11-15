@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="de-CH" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{tenant/fragments :: head(${title})}"></head>
+<body class="detail-page staff-page" th:attr="data-login-url=@{/anmelden}">
+<header th:replace="~{staff/fragments :: header(${returnTo}, ${csrf})}"></header>
+<main id="case-page">
+    <section id="case-head" class="case-head" aria-labelledby="case-title" th:attr="data-version=${version}">
+        <div class="case-heading">
+            <div class="case-title-row">
+                        <span class="eyebrow" th:text="${caseId}"></span>
+                <h1 id="case-title" th:text="${title}"></h1>
+            </div>
+        </div>
+        <div class="case-values">
+            <div>
+                <span class="field-caption">Status</span>
+                <span id="case-status" class="badge" th:text="${status}"></span>
+            </div>
+            <div>
+                <span class="field-caption">Dringlichkeit</span>
+                <span id="case-urgency" class="badge" th:classappend="${urgencyCss}"
+                      th:text="${#strings.isEmpty(urgencySource) ? urgency : urgency + ' · ' + urgencySource}"></span>
+            </div>
+            <div>
+                <span class="field-caption">Wiedervorlage</span>
+                <span id="case-followup" class="badge" th:text="${#strings.isEmpty(followUp) ? 'Keine Wiedervorlage' : followUp}"></span>
+            </div>
+        </div>
+    </section>
+    <p id="save-state" role="status" aria-live="polite"></p>
+    <div class="workspace">
+        <aside id="case-sidebar" aria-labelledby="case-data-title">
+            <section class="card">
+                <h2 id="case-data-title">Falldaten</h2>
+                <dl>
+                    <dt>Ursprüngliche Objektangabe</dt><dd th:text="${originalUnit}"></dd>
+                    <dt>Bestätigte Zuordnung</dt><dd th:text="${#strings.isEmpty(assignedUnit) ? 'Noch nicht zugeordnet' : assignedUnit}"></dd>
+                    <dt>Kontakt</dt><dd th:text="${contactEmail}"></dd>
+                    <dt>Eingang</dt><dd th:text="${received}"></dd>
+                    <dt>Letzte Aktion des Mieters</dt><dd th:text="${lastContact}"></dd>
+                </dl>
+            </section>
+            <section th:unless="${reviewReasons.isEmpty()}" class="card notice" aria-labelledby="case-review-title">
+                <h2 id="case-review-title">Prüfbedarf</h2>
+                <ul><li th:each="reason : ${reviewReasons}" th:text="${reason}"></li></ul>
+            </section>
+        </aside>
+        <div class="conversation">
+            <section id="history" class="card history" tabindex="0" aria-labelledby="history-title">
+                <h2 id="history-title">Verlauf</h2>
+                <div class="messages">
+                    <article th:each="entry : ${history}" class="message"
+                             th:classappend="${(entry.role() == 'Mieter' ? 'tenant' : 'management') + (entry.internal() ? ' event' : (entry.role() == 'System' ? ' system' : ''))}">
+                        <div class="message-role">
+                            <strong th:text="${entry.role()}"></strong>
+                            <small th:if="${entry.internal()}">Internes Memo</small>
+                        </div>
+                        <p class="muted" th:text="${entry.timestamp()}"></p>
+                        <p th:text="${entry.text()}"></p>
+                    </article>
+                </div>
+            </section>
+        </div>
+    </div>
+</main>
+<script th:src="@{/js/staff-case-read.js}" defer></script>
+</body>
+</html>

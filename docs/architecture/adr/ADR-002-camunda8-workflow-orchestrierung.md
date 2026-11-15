@@ -433,6 +433,8 @@ Bei fachlichen Übergaben, die das BPMN-Modell als Nachrichtenempfang vorsieht, 
 
 **Mieterergänzung.** Nach dem Speichern der Nachricht wartet PropertyFlow im selben Browseraufruf synchron auf die bestätigte Korrelation mit der zugeordneten Fallprozessinstanz. Erst danach meldet es dem Browser Erfolg. Ist Camunda nicht erreichbar oder scheitert die Korrelation technisch, einschliesslich Timeout, antwortet PropertyFlow mit HTTP `500`. Der Text bleibt im Formular. Eine bereits gespeicherte Nachricht bleibt im Fallverlauf erhalten. Bei einem Timeout kann Camunda die Nachricht bereits korreliert haben. Eine Wiederholung im Browser verwendet dieselbe Absende-ID. [SS-003](../schnittstellenentwurf-block-3.md#ss-003--camunda-integrationsvertrag) · [UC-009](../../use_cases/UC-009-mieteranliegen-ergaenzen.md)
 
+**Fachlich präzisiert am 14.11.2026:** Für Mieternachrichten ist der Empfang in jedem aktiven Bearbeitungsstatus erforderlich, auch während Analyse und Mitarbeiterprüfung. Das ausführbare BPMN muss die durchgängige Empfangsbereitschaft und eine eindeutige Verarbeitung beim Wechsel zwischen Schritten sicherstellen; ein einzelner Empfang nur im Rückfrage-Warteschritt genügt nicht. Die technische Modellierung wird im Integrationsentwurf konkretisiert. Der bestehende synchrone HTTP-/Korrelationsvertrag und die Nachrichtensperre nach Abschluss bleiben bestehen. [KOM-03](../../specifications/fallkommunikation.md#kom-03-asynchrone-fallkommunikation)
+
 ### Synchroner Abschluss von User Tasks
 
 Für jeden Prozesszustand mit einer nativen Camunda User Task gilt dieselbe Regel. Wenn eine Aktion die Aufgabe abschliesst, bezieht sich die Entscheidung auf die konkrete Aufgabe (`userTaskKey`) und den geprüften Fallstand. PropertyFlow prüft serverseitig Berechtigung, Fallstand, zulässige Aktion und ob die Aufgabe offen ist und zum Fallprozess (`processInstanceKey`) gehört. Es schliesst genau diese Aufgabe synchron ab und meldet Erfolg erst nach der Bestätigung durch Camunda. Ein veralteter Aufruf wird abgewiesen. Eine neu geöffnete Aufgabe hat einen eigenen Schlüssel und bleibt davon unberührt. Für zugelassene Aktionen über Web und MCP gilt dieselbe serverseitige Prüfung.
@@ -498,11 +500,15 @@ PropertyFlow übernimmt die vorgeschlagene Aktion automatisch, wenn sie sich
 aus den vorliegenden Fallangaben und einer freigegebenen Fachregel eindeutig
 ergibt, für die automatische Ausführung zugelassen ist und keine menschliche
 Entscheidung aussteht. PropertyFlow prüft diese Voraussetzungen serverseitig
-am aktuellen Fallstand. Bei fehlenden, unklaren oder widersprüchlichen
-Angaben oder bei vorgeschriebener menschlicher Entscheidung prüft die
+am aktuellen Fallstand. Fehlende notwendige Sachangaben darf PropertyFlow mit
+den am 14.11.2026 bestätigten Katalogrückfragen nach
+[KOM-05](../../specifications/fallkommunikation.md#kom-05-automatische-rueckfragen)
+klären. Bleibt die Grundlage unklar oder widersprüchlich, reicht der Katalog
+nicht aus oder steht eine menschliche Entscheidung aus, prüft die
 Immobilienbewirtschaftung den Fall und entscheidet über das weitere Vorgehen.
-Der Fall bleibt bis dahin aktiv. Der Auslösepunkt und der Zuschnitt der Jobs
-bleiben im BPMN- und Integrationsentwurf offen.
+Der Fall bleibt bis dahin aktiv. Der fachliche Auslösepunkt ist im
+[BPMN-Entwurf](../bpmn/README.md) beschrieben; der ausführbare Zuschnitt der Jobs
+bleibt im Integrationsentwurf offen.
 [UC-018](../../use_cases/UC-018-zustaendigkeit-und-vorgehen-empfehlen.md)
 
 **Beispiel für eine direkte Antwort mit Systemabschluss.** Ein Mieter meldet
@@ -516,19 +522,22 @@ im Fallverlauf vor dem Systemabschluss wegen fehlenden Bearbeitungsbedarfs
 der Verwaltung. Die konkreten Regeln für die automatische Veröffentlichung
 sind im Kommunikationsvertrag zu präzisieren.
 
-**Beispiel für eine Rückfrage bei offenem Fall.** Ein Mieter meldet
-«Der Lüftungsfilter im Badezimmer muss ausgetauscht werden.» Liegt der
-Filterwechsel im konkreten Fall gemäss hinterlegter Fachregel in seiner
-Verantwortung, kann der Ablauf folgende Rückfrage vorsehen.
+**Beispiel für eine Rückfrage bei offenem Fall, präzisiert am 14.11.2026.**
+Ein Mieter meldet «Die Lüftung im Badezimmer funktioniert nicht richtig.»
+Das Objekt ist zugeordnet; es besteht kein offener Prüfgrund. Für die weitere
+Abklärung fehlt der Beginn der Störung. Das LLM schlägt RQ-001 vor.
 
-> Sollen wir für Sie einen Ersatzfilter organisieren? Die Kosten für den Filter
-> würden Sie tragen.
+> Seit wann besteht die Störung?
 
-Wenn die Voraussetzungen für die automatische Veröffentlichung erfüllt sind,
-veröffentlicht PropertyFlow die Rückfrage mit Antwortbedarf. Der Fall bleibt
-aktiv und erhält im Beispiel den Status «Wartet auf Mieterantwort». Bei einer
-Zusage klärt die Immobilienbewirtschaftung die Kosten und entscheidet über eine
-allfällige Bestellung, die sie ausserhalb von PropertyFlow organisiert.
+Wenn sämtliche Ausführungsbedingungen nach KOM-05 erfüllt sind, veröffentlicht
+PropertyFlow den hinterlegten Katalogtext mit Antwortbedarf. Das bereits bekannte
+Badezimmer wird nicht nochmals erfragt. Der Fall bleibt aktiv und erhält im
+Beispiel den Status «Wartet auf Mieterantwort».
+
+Eine Frage wie «Sollen wir für Sie einen Ersatzfilter organisieren? Die Kosten
+würden Sie tragen.» ist dagegen nicht vom Sachfragenkatalog freigegeben.
+Sie benötigt Mitarbeiterprüfung. Die Verwaltung klärt eine allfällige
+Kostenübernahme und organisiert eine Bestellung ausserhalb von PropertyFlow.
 [FALL-05](../../specifications/fallverwaltung.md#fall-05-fachlicher-lebenszyklus) ·
 [UC-021](../../use_cases/UC-021-ki-rueckfrage-vorschlagen.md)
 
@@ -537,7 +546,8 @@ Freigaberegeln.
 [FALL-07](../../specifications/fallverwaltung.md#fall-07-abschluss-und-zeit-danach) ·
 [FALL-10](../../specifications/fallverwaltung.md#fall-10-automatisierung-und-menschliche-freigabe) ·
 [KOM-02](../../specifications/fallkommunikation.md#kom-02-llm-kommunikation-ohne-interne-memos) ·
-[KOM-04](../../specifications/fallkommunikation.md#kom-04-nachrichtensperre-nach-fallabschluss)
+[KOM-04](../../specifications/fallkommunikation.md#kom-04-nachrichtensperre-nach-fallabschluss) ·
+[KOM-05](../../specifications/fallkommunikation.md#kom-05-automatische-rueckfragen)
 
 ```mermaid
 ---
@@ -563,7 +573,7 @@ sequenceDiagram
     W->>R: Empfehlung für den Fall erstellen
     R->>R: Freigegebene Wissensquellen<br/>durchsuchen (RAG)
     R->>L: Vorschlag mit relevanten<br/>Fall- und Wissensdaten anfragen
-    L-->>R: Empfehlung, Antwort oder Rückfrage
+    L-->>R: Empfehlung, Antwort oder Frage-IDs
     R->>R: Ausgabe prüfen und Quellen festhalten
     R-->>W: Vorschlag und Quellenbezug
     W->>F: Vorschlag anhand von Fachregel<br/>und Fallstand einordnen
@@ -579,12 +589,12 @@ sequenceDiagram
         F->>F: Fall fachlich abschliessen<br/>und Abschlussgrund festhalten
         F-->>W: Systemabschluss gespeichert
         W->>C: Folgeauftrag abschliessen
-    else Eindeutig und zulässig · Rückfrage mit offenem Fall
+    else KOM-05 erfüllt · Katalogrückfrage mit offenem Fall
         C->>C: Folgeauftrag bereitstellen
         W->>C: Jobs abrufen
         C-->>W: Auftrag für Rückfrage
-        W->>F: Aktuellen Fallstand und Zulässigkeit prüfen
-        F->>F: Rückfrage mit Antwortbedarf<br/>im Fallverlauf veröffentlichen
+        W->>F: Katalog, aktuellen Fallstand<br/>und Ausführungsbedingungen prüfen
+        F->>F: Katalogtext mit Antwortbedarf<br/>idempotent veröffentlichen
         F-->>W: Aktiv · Wartet auf Mieterantwort
         W->>C: Folgeauftrag abschliessen
     else Unklarer Fall oder menschliche Entscheidung erforderlich
@@ -639,6 +649,13 @@ Der BPMN-Prozess enthält deshalb explizite menschliche Prüf- und
 Freigabeschritte. In einer Mitarbeiterprüfung wartet er auf die fachliche
 Entscheidung. Der Worker prüft beim Schreiben die Zuordnung zum aktuellen
 Prozessschritt, damit verspätete Aufträge keine spätere Entscheidung verändern.
+
+**Präzisiert am 14.11.2026:** «Mitarbeiterprüfung erforderlich» darf das System
+unabhängig vom Ursprung des Prüfbedarfs nicht selbstständig verlassen.
+Neue Mieternachrichten und ihre zulässige Neubewertung ergänzen dieselbe Aufgabe.
+Auch eine Behebungsbestätigung erlaubt keinen automatischen Abschluss.
+Nur eine bewusste Mitarbeiterentscheidung veranlasst den weiteren Prozessweg.
+[FALL-06](../../specifications/fallverwaltung.md#vorrang-einer-laufenden-mitarbeiterprüfung)
 
 Beispiel:
 

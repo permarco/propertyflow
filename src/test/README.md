@@ -16,6 +16,78 @@ Maven löst den Pfad der verwendeten `mockito-core`-JAR auf und übergibt sie al
 Java-Agent an Surefire. Ein lokaler absoluter Pfad und dynamisches Self-Attach
 sind dadurch nicht nötig.
 
+## Stufe 1 · Gastanlage und persönlicher Fall-Link
+
+Der Adaptertest verwendet die echten MVC-Controller und Thymeleaf-Templates
+mit kontrollierten Testimplementierungen von `CaseSubmission` und `CaseReading`.
+
+```powershell
+.\mvnw.cmd '-Dtest=Stage1GuestWebTest' test
+```
+
+Die PostgreSQL-Abnahme verwendet die wegwerfbare Datenbank
+`propertyflow_test`. Der Servicetest leert ihre Falltabellen. Danach prüft der
+Neustarttest zwei aufeinanderfolgende Starts mit echtem HTTP, derselben
+Datenbank und demselben Link-Schlüssel. Er bestätigt den Gast-Retry in der
+ursprünglichen Sitzung, denselben Fall-Link nach Neustart und genau einen
+Fall mit genau einem offenen Startauftrag. Der alte Browser-POST erhält nach
+Verlust der Sitzung 403. Der Fachservice erkennt den ursprünglichen
+Wiederholungsschlüssel auch nach Neustart.
+
+```powershell
+docker compose -f dev/compose.backend-test.yaml up -d --wait
+$env:PROPERTYFLOW_TEST_DATABASE_URL = 'jdbc:postgresql://127.0.0.1:5434/propertyflow_test'
+.\mvnw.cmd '-Dtest=GuestCasePostgresTest,GuestCaseRestartPostgresTest,Stage1GuestWebTest' package
+```
+
+Für den Browsertest die Browser-Werkzeuge unten installieren und die URL einer
+isolierten Anwendung mit `propertyflow-backend`, PostgreSQL und ohne Camunda
+setzen. Der Test legt künstliche Fälle an. Die vorhandenen Demo-Browserläufe
+sind separat.
+
+```powershell
+$env:PROPERTYFLOW_STAGE1_URL = 'http://127.0.0.1:8084'
+node --test src/test/browser/stage1/guest-intake.test.mjs
+```
+
+Dieser Lauf prüft den Browserweg und die HTTP-Wiederholung. Die Datenbanktests
+prüfen zusätzlich, dass genau ein Fall und ein Startauftrag entstehen.
+Für die 429-Abnahme können
+`propertyflow.web.guest.submissions-per-minute` und
+`propertyflow.web.guest.link-reads-per-minute` je Clientadresse konfiguriert
+werden. Der Wert `0` deaktiviert das jeweilige Limit. Die Grenzwerte für
+den regulären Einsatz sind noch offen.
+
+## Stufe 2 · Mitarbeiter-Login, Fallübersicht und Falldetail
+
+Die Tests prüfen den Einmalcode-Dienst, die regulären Web-Adapter, die
+HTML-Ansichten sowie die einmalige Einrichtung und aktuelle Rollenprüfung
+mit PostgreSQL.
+
+```powershell
+docker compose -f dev/compose.backend-test.yaml up -d --wait
+$env:PROPERTYFLOW_TEST_DATABASE_URL = 'jdbc:postgresql://127.0.0.1:5434/propertyflow_test'
+.\mvnw.cmd '-Dtest=StaffOtpServiceTest,StaffAccountPostgresTest,RegularStaffLoginWebTest,StaffLoginViewTest,StaffCaseWebTest' package
+```
+
+Der [Zugriffsvertrag](../../docs/architecture/zugriffsvertrag-mitarbeiter-login.md)
+führt die HTTP- und Fachprüfungen auf. Der separate Browsertest setzt die
+reguläre Anwendung voraus. Für den Lauf die unten beschriebenen
+Browser-Werkzeuge installieren und das Test-Mailpit starten. Die isolierte
+Anwendung mit `propertyflow-backend` auf Port 8084 und SMTP-Port 1026 starten.
+Den [Serverbefehl zur Ersteinrichtung](../../dev/README.md#regulärer-mitarbeiter-login)
+für ein Konto mit einer `.test`-Adresse ausführen. Über das Mieterformular einen
+Testfall anlegen und `TEST_CASE_ID` durch dessen Case-ID ersetzen.
+
+```powershell
+docker compose -f dev/compose.yaml -f dev/compose.test.yaml up -d --wait
+$env:PROPERTYFLOW_STAGE2_URL = 'http://127.0.0.1:8084'
+$env:PROPERTYFLOW_STAGE2_STAFF_EMAIL = 'staff-stage2@example.test'
+$env:PROPERTYFLOW_STAGE2_CASE_ID = 'TEST_CASE_ID'
+$env:MAILPIT_URL = 'http://127.0.0.1:8026'
+node --test src/test/browser/stage2/staff-login.test.mjs
+```
+
 ## CI und zusätzliche Browser
 
 [`.github/workflows/tests.yml`](../../.github/workflows/tests.yml) führt bei Push,

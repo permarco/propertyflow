@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="de-CH" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{tenant/fragments :: head('Anmelden')}"></head>
+<body>
+<header class="app-header">
+    <a th:href="@{/mieter/fall}" class="brand"><span class="brand-mark" aria-hidden="true">▰▥</span> PropertyFlow</a>
+    <span class="area">Anmeldung</span>
+</header>
+<main class="login-page">
+    <section th:replace="~{access/login-form :: card(false, '/anmelden', false)}"></section>
+</main>
+</body>
+</html>

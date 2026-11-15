@@ -17,7 +17,7 @@ daran beteiligt sind. Die Abschnitte 1 bis 4 vertiefen den Entwurf für Block 3.
 | **SS-001** | Browser ↔ PropertyFlow-Web | Anliegen einreichen und ergänzen, Fälle ansehen und bearbeiten, Anmeldung und Kontozugriff. | Der [OpenAPI-Vertrag](openapi/fallannahme.yaml) erfasst die vorhandenen Browserrouten. Er kennzeichnet die Demo-Verträge für Mitarbeiterschreibzugriffe. |
 | **SS-002** | PropertyFlow → E-Mail-Dienst | Einmalcodes und Benachrichtigungen zu gespeicherten Falländerungen senden. | Einmalcodes per SMTP in der Demo. [Statusmail aus dem Fallprozess](#ss-002--statusmail-aus-dem-fallprozess) spezifiziert. Die Umsetzung steht aus. |
 | **SS-003** | PropertyFlow ↔ Camunda | Asynchroner Prozessstart nach Intake, synchrone User-Task-Abschlüsse und Nachrichtenkorrelationen im Fallprozess sowie Ausführung der Camunda-Jobs durch PropertyFlow-Worker. | [ADR-002](adr/ADR-002-camunda8-workflow-orchestrierung.md#integrationsprinzipien) hält die Orchestrierung und die Integrationsprinzipien fest. Der [Integrationsvertrag SS-003](#ss-003--camunda-integrationsvertrag) beschreibt die technischen Details. Die Umsetzung steht aus. |
-| **SS-004** | MCP-Client → PropertyFlow | Mit delegiertem Zugriff freigegebene Fallfunktionen ausführen. | [«Fallstand abrufen»](#ss-004--mcp-werkzeug-fallstand-abrufen) ist als erstes Werkzeug für Mieter spezifiziert. Die Umsetzung steht aus. |
+| **SS-004** | MCP-Client → PropertyFlow | Mit delegiertem Zugriff freigegebene Fallfunktionen ausführen. | [«Fallstand abrufen»](#ss-004--mcp-werkzeug-fallstand-abrufen) läuft in der lokalen Demo. Die produktive OAuth-Delegation steht aus. |
 | **SS-005** | PropertyFlow → LLM-Anbieter | Modell für Dringlichkeit, Empfehlung, Nachrichtenformulierung und optional KI-Rückfragen aufrufen. | [Triage-Port](../ai-usage/ki-service-vertrag.md#aufruf-und-vertrag) als isolierter Prototyp. Die weiteren Modellaufrufe sind in den [Use Cases](../use_cases/README.md#llm-aufrufe-durch-propertyflow) beschrieben. Ihre technischen Verträge sind offen. |
 | **SS-006** | PropertyFlow → Immobilienverwaltungssystem | Erforderliche Stammdaten für die Fallzuordnung beziehen. | [Fachliche Zuordnung](../specifications/fallverwaltung.md#fall-04-ursprungsdaten-und-zuordnung) beschrieben. Anbindung und Vertrag offen. |
 
@@ -255,6 +255,17 @@ Die erfolgreiche Antwort enthält genau drei Angaben aus dem gespeicherten Falls
 Der Abruf ist rein lesend und benötigt nach erteilter Delegation keine menschliche Einzelfreigabe. PropertyFlow protokolliert Erfolg und Ablehnung ohne Zugangstokens oder Fallinhalte. Für eine fremde oder nicht vorhandene Case-ID liefert das Werkzeug dieselbe neutrale Fehlerrückmeldung ohne Falldaten.
 
 **Prüffall UC-023-AK-04 · Fremde Case-ID.** Ein Mieterkonto mit gültiger Delegation ruft zuerst einen eigenen Fall ab und erhält genau die drei vereinbarten Angaben. Derselbe Client verwendet anschliessend die Case-ID eines existierenden Falls mit anderer Kontaktadresse. Der Dienst verweigert den Zugriff. Die Rückmeldung enthält keine Falldaten und ist von der Rückmeldung für eine gültig formatierte, nicht vorhandene Case-ID nicht unterscheidbar.
+
+Die aktivierbare Frontend-Demo verwendet Streamable HTTP mit MCP-Revision
+`2025-11-25` unter `/mcp`. `fallstand_abrufen` nimmt `caseId` entgegen und
+liefert `caseId`, `status` und `urgency`. Jede Anfrage wird anhand des lokal
+freigegebenen Bearer-Tokens autorisiert. Das Fallmodul nutzt dieselbe
+Adressprüfung wie die Web-Fallansicht. Die Freigabe wird nach der
+E-Mail-Code-Anmeldung ausdrücklich erteilt, gilt 30 Minuten und ist
+widerrufbar. Der HTTP-Integrationstest deckt UC-023-AK-04 ab. Die produktive
+OAuth-Delegation und die dauerhafte Datenhaltung stehen aus.
+[Demo-Anleitung](../../dev/README.md#mcp-werkzeug-lokal-ausprobieren) ·
+[HTTP-Integrationstest](../../src/test/java/com/pertegato/propertyflow/caseprocessing/mcp/FallstandMcpHttpTest.java)
 
 ## 4. Architekturentscheid für Artefakt 5
 

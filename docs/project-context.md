@@ -35,6 +35,11 @@ Die fachliche Verantwortung verbleibt bei der Immobilienbewirtschaftung.
 Fälle können durch Mitarbeitende und in den vereinbarten eindeutigen Fällen
 durch das System nach [FALL-07](specifications/fallverwaltung.md#fall-07-abschluss-und-zeit-danach)
 abgeschlossen werden. Verpflichtende menschliche Prüfungen bleiben bestehen.
+Für Systemabschlüsse gelten die [bestätigten Abschlussregeln](specifications/fallverwaltung.md#regeln-für-den-automatischen-fallabschluss):
+nur «In Abklärung» oder «Wartet auf Mieterantwort», aktuelle Belege für die
+vollständige Behebung oder eine ausdrücklich freigegebene und vollständig
+anwendbare Fachregel, ohne offene Prüfgründe. Ein LLM-Vorschlag allein erteilt
+weder eine Abschluss- noch eine Veröffentlichungsfreigabe.
 
 Details:
 
@@ -282,6 +287,24 @@ erzeugten Zusammenfassungen und Fakten. Bewusst eingegebene kurze Sachanweisunge
 des Mitarbeiters sind nach KOM-02 zulässig, auch wenn dieselbe Information in
 einem Memo steht. Der Mitarbeiter prüft den Vorschlag vor dem Senden.
 
+Für automatische Rückfragen gilt [KOM-05](specifications/fallkommunikation.md#kom-05-automatische-rueckfragen):
+Das LLM wählt Frage-IDs aus einem freigegebenen Sachfragenkatalog; der Dienst
+prüft Prozessfreigabe, aktuellen Fallstand und offene Prüfgründe und übernimmt
+den Katalogtext mit Antwortbedarf. Freie LLM-Zusätze werden nicht automatisch
+veröffentlicht. Mitarbeiterbearbeitung und Wiedervorlage bleiben geschützt;
+doppelte oder veraltete Ergebnisse allein erzeugen keinen neuen Prüfbedarf.
+Die Regeln sind bestätigt, die technische Umsetzung steht aus.
+
+Mieternachrichten sind in jedem aktiven Bearbeitungsstatus zulässig, auch ohne
+offene Rückfrage. Der Fallprozess muss während der aktiven Bearbeitung
+durchgängigen Nachrichtenempfang bereitstellen. Bei **«Mitarbeiterprüfung erforderlich»**
+ergänzt eine neue Nachricht mit ihrer zulässigen Auswertung dieselbe Aufgabe.
+Das System darf diesen Status nicht selbstständig verlassen, auch nicht nach
+einer Behebungsbestätigung und unabhängig vom Ursprung des Prüfbedarfs.
+Nur eine bewusste Mitarbeiterentscheidung veranlasst die Fortsetzung.
+[FALL-06](specifications/fallverwaltung.md#vorrang-einer-laufenden-mitarbeiterprüfung) ·
+[KOM-03](specifications/fallkommunikation.md#kom-03-asynchrone-fallkommunikation)
+
 ### 6.8 Fallanlage und Lebenszyklus
 
 Die [zentrale Spezifikation der Fallverwaltung](specifications/fallverwaltung.md)
@@ -292,7 +315,8 @@ Die acht Bearbeitungsstatus, die Zuordnung klärungsbedürftiger Fälle zu
 «Mitarbeiterprüfung erforderlich» und das Zeitmodell des letzten Mieterkontakts
 sind dort vereinbart. Mitarbeitende dürfen den Abschluss bestätigen; das
 System darf bei eindeutig bestätigter Behebung ohne weiteren Hilfebedarf oder
-eindeutig fehlendem Verwaltungsbedarf nach hinterlegter Fachregel abschliessen.
+eindeutig fehlendem Verwaltungsbedarf nach hinterlegter Fachregel abschliessen,
+sofern keine Mitarbeiterprüfung läuft und keine menschliche Entscheidung aussteht.
 Konkrete Prozessübergänge und die technische Umsetzung der Abschlussregeln
 bleiben zu konkretisieren. Use-Cases und Screens verweisen auf diese Quelle.
 

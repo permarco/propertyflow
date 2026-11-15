@@ -1,7 +1,7 @@
 # Fallkommunikation – fachliche und sicherheitsrelevante Regeln
 
 **Status:** Zentrale Spezifikation der im Projekt festgelegten Kommunikationsregeln; technische Umsetzung noch offen.
-**Stand:** 10.10.2026
+**Stand:** 14.11.2026
 **Geltungsbereich:** Mieteransicht, Backoffice, Backend-Services, Persistenz, Camunda-Worker, E-Mail und LLM-/RAG-Integration, soweit sie Fallkommunikation verarbeiten.
 
 ## Zweck und Verbindlichkeit
@@ -72,13 +72,17 @@ Eine reine Informationsnachricht hebt keinen bereits offenen Antwortbedarf auf. 
 
 KI-gestützte Verarbeitungsschritte der Fallkommunikation werden durch Camunda 8 orchestriert und über PropertyFlow-Worker/Services ausgeführt. Der Mieter übermittelt Informationen zum Fall; das Backend speichert sie und führt sie gemäss dem aktuellen BPMN-Schritt der weiteren Verarbeitung zu. Jede dauerhaft gespeicherte Mieter-Nachricht veranlasst die Dringlichkeitsbewertung nach DRING-05 unter Wahrung manueller Einstufungen nach DRING-06. Sie eröffnet weder einen neuen Fall noch einen zweiten führenden Prozess. Der blosse Nachrichteneingang erledigt keine Rückfrage; dafür ist die nachfolgend definierte inhaltliche Prüfung erforderlich. Die konkrete BPMN-Korrelation bleibt im Integrationsvertrag festzulegen.
 
+**Bestätigt am 14.11.2026 – Nachrichtenempfang in allen aktiven Status:** Ein berechtigter Mieter kann jederzeit während der aktiven Bearbeitung eine Nachricht schicken, auch ohne offene Rückfrage und während automatischer Analyse, Mitarbeiterprüfung, Umsetzung oder Wartephasen. Der laufende Camunda-Fallprozess muss einen durchgängigen Eingang für Mieternachrichten bereitstellen. Der Empfang darf keine Lücke allein durch einen Wechsel zwischen diesen Prozessschritten haben. Die technische Modellierung und eindeutige Zuordnung der Ereignisse werden vor Ausführung konkretisiert; mehrere Empfangspfade oder technische Wiederholungen dürfen keine doppelte fachliche Wirkung desselben Ereignisses erzeugen. Die bestehenden Voraussetzungen zu Zugriff, laufendem Prozess, Camunda-Erreichbarkeit und Nachrichtensperre nach Abschluss bleiben gültig.
+
+**Während «Mitarbeiterprüfung erforderlich»:** Eine neue Nachricht ergänzt dieselbe Prüfung. Die aktuelle Analyse, Dringlichkeitsbewertung und Prüfung offener Rückfragen dürfen nach ihren Fachregeln weiterlaufen und ihre zulässigen Ergebnisse speichern. Der Bearbeitungsstatus bleibt jedoch unverändert, bis ein Mitarbeiter bewusst entscheidet. Auch «alles erledigt» hebt die Prüfung nicht auf; weder eine neue noch eine verspätete automatische Auswertung darf die Aufgabe beenden oder den Fall abschliessen. Die Herkunft des Prüfbedarfs (System oder Mensch) ändert daran nichts. [FALL-06 · Vorrang einer laufenden Mitarbeiterprüfung](fallverwaltung.md#vorrang-einer-laufenden-mitarbeiterprüfung)
+
 Bei laufender Wiedervorlage hebt eine neu gespeicherte Mieternachricht den Termin auf. Camunda legt den Fall sofort zur Mitarbeiterprüfung vor. Die automatische Auswertung entscheidet über die inhaltliche Beantwortung offener Rückfragen. Für die Vorlage genügt der gespeicherte Nachrichteneingang. [FALL-11](fallverwaltung.md#fall-11-wiedervorlage)
 
 Der Mieter hat keine direkte LLM-Chatsitzung, keinen Chat-Stream und kein Recht, KI-Schritte oder den Camunda-Prozess abzubrechen. Diese Grenze gilt auch bei direkten Backend-Aufrufen mit Mieterberechtigung. Neuladen oder Schliessen der Seite beeinflusst die Hintergrundverarbeitung nicht.
 
 An den Mieter werden als Kommunikationsnachrichten ausschliesslich vollständige, gespeicherte und veröffentlichte externe Nachrichten ausgegeben. KI-Teilantworten und interne Zwischenergebnisse gehören nicht zur externen Historie. Wiederholungen und KI-Fehler werden durch die Camunda-/Backend-Integration behandelt; gespeicherte Nachrichten bleiben erhalten. Vor Kommunikationsgenerierung gilt KOM-02, vor Ausgabe KOM-01.
 
-Die konkrete Aktualisierung der Darstellung beschreibt [Screen 01](../frontend/ansicht-01-mieter-fallansicht.md). Die in [Vision](../vision.md) optional vorgesehenen KI-Rückfragen bleiben hinsichtlich ihres produktiven Umfangs separat zu entscheiden. Sobald sie eingesetzt werden, gelten diese Regeln ebenfalls.
+Die konkrete Aktualisierung der Darstellung beschreibt [Screen 01](../frontend/ansicht-01-mieter-fallansicht.md). Für die in [Vision](../vision.md) optional vorgesehenen KI-Rückfragen sind die Veröffentlichungsregeln in [KOM-05](#kom-05-automatische-rueckfragen) festgelegt. Die technische Umsetzung steht aus; die Einordnung als optionale Erweiterung bleibt bestehen.
 
 ### Längengrenze für Mieternachrichten
 
@@ -119,6 +123,61 @@ Nach einer Wiedereröffnung dürfen verspätete automatische Ergebnisse aus der 
 Die fachliche und technische Statusverantwortung sowie ihre Synchronisierung sind zentral in [FALL-06](fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow) beschrieben.
 
 E-Mail-Auslöser, kurzer Mailinhalt und zuverlässige Zustellung werden zentral in [Benachrichtigungen und Zustellung](benachrichtigungen-und-zustellung.md) geregelt. Auch eigene gespeicherte Mieter-Nachrichten und der fachliche Abschluss werden per E-Mail bestätigt; interne Memos und Entwürfe bleiben ausgeschlossen.
+
+<a id="kom-05-automatische-rueckfragen"></a>
+
+## KOM-05: Automatische Rückfragen
+
+**Bestätigt am 14.11.2026:** PropertyFlow darf im laufenden Camunda-Fallprozess fehlende, für die weitere Beurteilung notwendige Sachangaben automatisch erfragen. Dafür gilt der folgende begrenzte Fragenkatalog. Diese Freigabe erlaubt weder individuelle Handlungsempfehlungen noch Kostenentscheidungen, externe Beauftragungen oder einen Fallabschluss. Die Regeln sind fachlich vereinbart, aber noch nicht implementiert.
+
+### Freigegebener Fragenkatalog
+
+| ID | Veröffentlichbarer Text | Zweck |
+|---|---|---|
+| RQ-001 | Seit wann besteht die Störung? | Fehlenden Beginn der gemeldeten Störung klären. |
+| RQ-002 | In welchem Raum tritt sie auf? | Fehlenden Ort innerhalb des bereits zugeordneten Objekts klären. |
+| RQ-003 | Tritt die Störung ständig oder zeitweise auf? | Fehlende Angaben zum zeitlichen Auftreten klären. |
+| RQ-004 | Welche Fehlermeldung wird angezeigt? | Eine für die Beurteilung relevante, noch unbekannte angezeigte Fehlermeldung erfragen. |
+
+Das LLM schlägt passende Frage-IDs vor. Der Dienst übernimmt ausschliesslich den zur freigegebenen Katalogfassung gehörenden Text und setzt den Antwortbedarf. Freie LLM-Ergänzungen werden nicht automatisch veröffentlicht. Eine notwendige Frage ausserhalb dieses Katalogs benötigt Mitarbeiterprüfung. RQ-002 ersetzt insbesondere keine offene Objektzuordnung.
+
+### Voraussetzungen für automatische Veröffentlichung
+
+Alle folgenden Bedingungen müssen unmittelbar vor dem Speichern der Nachricht erfüllt sein:
+
+1. **Zulässiger Prozessschritt:** Der Fall ist aktiv; eine automatische Abklärung oder Antwortauswertung ist freigegeben. Während Mitarbeiterbearbeitung oder Wiedervorlage erfolgt keine parallele automatische Veröffentlichung. Zulässige manuelle Kommunikation bleibt davon unberührt.
+2. **Kein offener Prüfgrund:** Es steht keine menschliche Entscheidung nach FALL-10 aus. Offene Objektzuordnung, festgestellter Analysefehler oder klärungsbedürftiger E-Mail-Versand führen nach FALL-05 zur Mitarbeiterprüfung. Bereits berücksichtigte Gründe lösen ohne neue Erkenntnisse keine erneute Prüfung aus; sie erlauben aber keine pauschalen Folgehandlungen. Ein noch ausstehender Versand allein gilt nicht als Versandfehler.
+3. **Notwendige fehlende Angabe:** Die Frage passt zum konkreten Anliegen. Bekannte Angaben und bisherige Antworten werden berücksichtigt. Es werden nicht vorsorglich alle Katalogfragen gestellt.
+4. **Begrenzter Inhalt:** Die Frage-ID und Katalogfassung sind freigegeben. Die veröffentlichte Nachricht enthält ausschliesslich die ausgewählten Katalogtexte, keine Diagnose, Kostenzusage, Beauftragung oder Handlungsanweisung.
+5. **Kein wiederholter Antwortbedarf:** Bereits offene, beantwortete oder durch bekannte Angaben erledigte Fragen werden nicht erneut gestellt. Bewusst aufgehobener Antwortbedarf wird nicht durch eine erneute oder sinngleiche Frage reaktiviert.
+6. **Aktueller Fallstand und Idempotenz:** Dienst und Persistenz prüfen aktuelle Fallversion, Prozessfreigabe und Antwortbedarf konsistent mit der Veröffentlichung. Eine inzwischen gespeicherte Antwort, Mitarbeiterentscheidung oder ein Abschluss darf nicht übergangen werden. Wiederholungen desselben Auftrags erzeugen keine zweite Nachricht und keinen zusätzlichen Antwortbedarf.
+
+Erst die erfolgreiche Veröffentlichung erzeugt Antwortbedarf. Die Nachricht besitzt Systemherkunft und externe Sichtbarkeit. Camunda veranlasst den zulässigen Folgestatus nach FALL-05/FALL-06. Die E-Mail-Benachrichtigung folgt [BEN-01](benachrichtigungen-und-zustellung.md#ben-01-auslöser-und-ausschlüsse); die Veröffentlichung wartet nicht auf SMTP-Zustellung.
+
+### Mitarbeiterprüfung oder Verarbeitung ohne neue Nachricht
+
+Die Unterscheidung verhindert, dass jede unterdrückte Veröffentlichung eine neue Mitarbeiteraufgabe erzeugt:
+
+| Situation | Folge |
+|---|---|
+| Offene menschliche Entscheidung zu Kosten oder verbindlichem Auftrag, sehr dringlicher/schwerwiegender Fall oder starke/eskalierte Beschwerde | Mitarbeiterprüfung gemäss FALL-10; keine automatische Rückfrage. |
+| Offene Objektzuordnung, festgestellter Analysefehler oder klärungsbedürftiger Versand | Mitarbeiterprüfung gemäss FALL-05; keine automatische Rückfrage. |
+| Widersprüche oder fehlende verlässliche Grundlage verhindern eine zuverlässige Fragewahl | Mitarbeiterprüfung. |
+| Notwendige Frage ausserhalb des Katalogs, unbekannte Frage-ID oder individuell zu formulierende Anweisung | Mitarbeiterprüfung; kein Ersatz durch ungeprüften freien LLM-Text. |
+| Ergebnis bezieht sich auf einen überholten Fallstand | Nicht veröffentlichen; bei weiter bestehendem Bedarf am aktuellen Fallstand neu beurteilen. Der Versionskonflikt allein ist kein fachlicher Prüfgrund. |
+| Dieselbe Frage ist bereits offen | Keine Wiederholung; weiter auf die bestehende Rückfrage warten, sofern kein vorrangiger Prozessschritt greift. |
+| Angabe ist bereits bekannt/beantwortet oder Antwortbedarf wurde bewusst aufgehoben | Keine neue Rückfrage und keine Reaktivierung; gemäss aktuellem Fall- und Prozessstand fortfahren. |
+| Fall inzwischen abgeschlossen oder Ergebnis stammt aus einer Bearbeitung vor dem letzten Abschluss | Verwerfen; keine Nachricht und keine Wiedereröffnung durch dieses Ergebnis (KOM-04). |
+
+Teilantworten erledigen nach KOM-03 nur die jeweils eindeutig beantworteten Fragen; andere bleiben offen. Blosser Antwortausstand oder eine Teilantwort erzeugt für sich keinen neuen Prüfgrund. Eine starre Höchstzahl automatischer Fragerunden ist nicht vereinbart. Sind **alle zuvor offenen Rückfragen beantwortet**, greift jedoch der vereinbarte Übergang zur Mitarbeiterprüfung, sofern kein zulässiger Systemabschluss erfolgt und keine laufende Wiedervorlage vorrangig ist. Diese Regel darf nicht durch das Stellen neuer Fragen umgangen werden. [FALL-05](fallverwaltung.md#status-nach-beantwortung-aller-rückfragen)
+
+### Prüfung, Kontext und Nachvollziehbarkeit
+
+Der Service Task **«Vorgehen bestimmen»** liefert die Empfehlung. **«Ausführungsbedingungen prüfen»** setzt die festen Regeln zu Prozessfreigabe, aktuellem Fallstand, Katalog, Prüfbedarf und Wiederholung durch. Ob eine Angabe in freiem Mietertext bereits enthalten ist, eine Frage fachlich relevant ist oder ein Widerspruch vorliegt, bleibt eine inhaltliche Beurteilung. Ein gültiges Ausgabeformat oder eine hohe Selbsteinschätzung des LLM beweist deren Richtigkeit nicht. Die Serviceprüfung garantiert deshalb keine vollständige semantische Korrektheit. Ein zweiter LLM-Aufruf ist hierfür nicht vorgeschrieben; Grenzfälle sind mit einem versionierten Evaluationsbestand zu prüfen, unzuverlässige Ergebnisse führen zur Mitarbeiterprüfung.
+
+Für die Frageauswahl gilt KOM-02 vollständig: keine internen Memos, internen Änderungsbegründungen oder daraus abgeleiteten Inhalte im Kommunikations-LLM. Auch eine anschliessende menschliche Prüfung erlaubt keine Ausnahme. Serverseitige Freigabeprüfungen dürfen den internen Prüfbedarf berücksichtigen, ohne ihn als Kommunikationskontext an das LLM zu übergeben.
+
+Der interne Entscheidungsnachweis hält Fall- und Verarbeitungsbezug, geprüften Fallstand, Frage-IDs und Katalogfassung, angewandte Regeln, Zeitpunkt und Ergebnis fest: veröffentlicht, zur Mitarbeiterprüfung gegeben oder ohne neue Nachricht verworfen/zurückgestellt. Bei Veröffentlichung besteht ein Bezug zur gespeicherten Nachricht. Modell-/Prompt-Fassung und zulässige Quellen bleiben für die Empfehlung nachvollziehbar. Dies erlaubt weder das Speichern externer Entwürfe noch eine pauschale Protokollierung interner Inhalte oder vollständiger Prompts. Konkrete Verträge und Synchronisierung werden bei der Umsetzung festgelegt.
 
 ## Verantwortlichkeiten und Umsetzung
 
@@ -177,7 +236,7 @@ Ein ausschliesslich in einem gespeicherten internen Memo vorhandener Suchbegriff
 
 Eine neue Mieternachricht wird inhaltlich gegen jede offene Rückfrage geprüft. Eine eindeutig beantwortete Frage wird erledigt; eine unvollständig, unklar oder themenfremd beantwortete Frage bleibt offen. Bei zwei offenen Fragen erledigt die Antwort auf nur eine davon ausschliesslich diese Frage; eine Nachricht darf beide erledigen, wenn sie beide eindeutig beantwortet. Antwortbedarf und Erledigungsstand bleiben in UI1 und UI3 konsistent; der veröffentlichte Nachrichtentext bleibt erhalten. Fehlgeschlagene Auswertungen und Wiederholungen erzeugen keine falsche oder doppelte Erledigung. Bei laufender Wiedervorlage erhält der Mitarbeiter den Fall bereits beim Nachrichteneingang nach FALL-11 zur Prüfung.
 
-Sind alle zuvor offenen Rückfragen beantwortet und ist die automatische Verarbeitung abgeschlossen, erhält der aktive Fall ohne laufende Wiedervorlage «Mitarbeiterprüfung erforderlich». Ein zulässiger automatischer Abschluss nach FALL-07/FALL-10 führt stattdessen zu «Abgeschlossen». Eine während der Wiedervorlage neu gespeicherte Nachricht führt nach FALL-11 unabhängig vom Ergebnis der Auswertung zur Mitarbeiterprüfung. Eine Teilantwort oder eine reine Informationsnachricht ohne zuvor offene Rückfragen löst den Übergang wegen vollständiger Beantwortung nicht aus. Wiederholte Auswertungen bereits berücksichtigter Antworten nehmen eine anschliessende bewusste Mitarbeiterentscheidung nicht zurück. Die angezeigten Fallstatus in UI1–UI3 entsprechen dem gespeicherten Ergebnis.
+Sind alle zuvor offenen Rückfragen beantwortet und ist die automatische Verarbeitung abgeschlossen, erhält der aktive Fall ohne laufende Wiedervorlage «Mitarbeiterprüfung erforderlich». Ein zulässiger automatischer Abschluss nach FALL-07/FALL-10 führt stattdessen zu «Abgeschlossen», sofern noch keine Mitarbeiterprüfung läuft. Eine bereits bestehende Mitarbeiterprüfung bleibt nach FALL-06 bis zur bewussten Mitarbeiterentscheidung erhalten, unabhängig von ihrer Herkunft. Eine während der Wiedervorlage neu gespeicherte Nachricht führt nach FALL-11 unabhängig vom Ergebnis der Auswertung zur Mitarbeiterprüfung. Eine Teilantwort oder eine reine Informationsnachricht ohne zuvor offene Rückfragen löst den Übergang wegen vollständiger Beantwortung nicht aus. Wiederholte Auswertungen bereits berücksichtigter Antworten nehmen eine anschliessende bewusste Mitarbeiterentscheidung nicht zurück. Die angezeigten Fallstatus in UI1–UI3 entsprechen dem gespeicherten Ergebnis.
 
 ### KOM-AK-10
 
@@ -190,6 +249,26 @@ Ein ausschliesslich in einer internen Begründung vorhandener Marker wird bei «
 ### KOM-AK-12 · Längengrenze für Mieternachrichten
 
 Eine Mieternachricht mit genau 2’000 UTF-16-Codeeinheiten nach der Zeilenumbruchnormalisierung wird bei gültigem Fallzugriff und verfügbarem Fallprozess angenommen. Eine Nachricht mit 2’001 Codeeinheiten wird auch bei direkter Übermittlung an das Backend ohne neuen Verlaufseintrag abgewiesen. Im Formular bleibt der vollständige Text editierbar und der Hinweis nennt die Grenze.
+
+### KOM-AK-13: Katalog und Veröffentlichungsfreigabe
+
+Bei einem zugeordneten Fall in automatischer Abklärung fehlen Beginn und betroffener Raum der Störung. Liegt kein Prüfgrund vor, werden nur die passenden RQ-001/RQ-002-Texte mit Systemherkunft, externer Sichtbarkeit und Antwortbedarf veröffentlicht. Bereits bekannte Angaben werden nicht erneut erfragt. Unbekannte IDs, nicht freigegebene Katalogfassungen und freie LLM-Zusätze werden nicht veröffentlicht. Eine notwendige Frage ausserhalb des Katalogs wird zur Mitarbeiterprüfung gegeben. Die fachliche Auswahl wird zusätzlich an positiven, negativen und widersprüchlichen Beispielen evaluiert; ein Schema-Test allein genügt nicht.
+
+### KOM-AK-14: Vorrang menschlicher Entscheidungen
+
+Offene Objektzuordnung, festgestellter Analysefehler, klärungsbedürftiger Versand sowie jeder FALL-10-Prüfgrund verhindern automatische Veröffentlichung und führen zur Mitarbeiterprüfung. Ein noch ausstehender Versand allein löst diesen Fehlerpfad nicht aus. Laufende Mitarbeiterbearbeitung und Wiedervorlage werden nicht durch automatische Rückfragen verdrängt; zulässige manuelle Rückfragen bleiben möglich. Eine bekannte niedrige Dringlichkeit hebt andere Prüfgründe nicht auf. RQ-002 darf eine fehlende Objektzuordnung nicht ersetzen.
+
+### KOM-AK-15: Wiederholungen und konkurrierende Änderungen
+
+Ein wiederholter oder parallel ausgeführter Veröffentlichungsauftrag erzeugt höchstens eine Nachricht mit einmaligem Antwortbedarf. Eine zwischen Auswahl und Veröffentlichung gespeicherte Antwort, Mitarbeiterentscheidung oder ein Abschluss wird berücksichtigt. Ein überholtes Ergebnis erzeugt weder eine Nachricht noch allein deshalb Mitarbeiterprüfung. Bereits offene, beantwortete oder bewusst aufgehobene Fragen werden nicht wiederholt bzw. reaktiviert. Nach Wiedereröffnung bleibt ein Ergebnis aus der vorherigen Bearbeitung unwirksam. Bei gescheiterter Speicherung entsteht kein Antwortbedarf.
+
+### KOM-AK-16: Antwortauswertung und Kontextgrenze
+
+Eine Teilantwort erledigt nur die beantwortete Frage; andere bleiben offen, ohne allein dadurch Mitarbeiterprüfung auszulösen. Nach Beantwortung aller zuvor offenen Rückfragen führt der Fall ohne zulässigen Systemabschluss und ohne laufende Wiedervorlage zur Mitarbeiterprüfung; neue Katalogfragen umgehen diesen Übergang nicht. KOM-AK-04/05 prüfen auch bei der Auswahl von Frage-IDs den Ausschluss interner Inhalte und Ableitungen. Ein interner Prüfgrund kann die serverseitige Veröffentlichung sperren, ohne in den Kommunikations-LLM-Request zu gelangen. Der Entscheidungsnachweis unterscheidet Veröffentlichung, Prüfbedarf und Verarbeitung ohne neue Nachricht.
+
+### KOM-AK-17: Durchgängiger Mieternachrichteneingang
+
+In jedem der sechs aktiven Bearbeitungsstatus eine neue Mieternachricht mit gültigem Zugriff, laufendem Prozess und erreichbarem Camunda übermitteln, jeweils auch ohne offene Rückfrage. Die Nachricht wird genau einmal gespeichert und an den bestehenden Fallprozess übergeben. Auch während eines Wechsels zwischen Analyse, Mitarbeiteraufgabe und Wartephase darf keine fehlende Empfangsbereitschaft allein wegen der Prozessposition entstehen. Wiederholungen erzeugen weder doppelte fachliche Wirkung derselben Nachricht noch eine zusätzliche Mitarbeiteraufgabe. Bei «Mitarbeiterprüfung erforderlich» ergänzen Nachricht und zulässige Auswertung dieselbe Aufgabe; der Status bleibt auch bei einer Behebungsbestätigung unverändert (FALL-AK-21). Bei Wiedervorlage gilt weiterhin die sofortige Aufhebung und Vorlage nach FALL-11. Fehlender Zugriff, noch nicht gestarteter Prozess, nicht erreichbares Camunda und abgeschlossener Fall behalten ihre bisherigen Fehler- beziehungsweise Sperrregeln.
 
 ## Abgleich mit bestehenden Dokumenten
 

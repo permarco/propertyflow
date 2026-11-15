@@ -2,7 +2,7 @@
 
 **Status:** Zentrale Spezifikation der vereinbarten fachlichen Regeln und Bearbeitungsstatus; Prozessübergänge und technische Verträge noch zu konkretisieren.
 
-**Stand:** 13.11.2026
+**Stand:** 14.11.2026
 
 **Geltungsbereich:** Erfassung, Backoffice, fachliche Services, Persistenz und Camunda-Integration von PropertyFlow.
 
@@ -149,7 +149,7 @@ flowchart LR
 
 Das Diagramm zeigt alle acht Bearbeitungsstatus. «Eingegangen» steht ausserhalb der aktiven Phase am Eingang links, «Abgeschlossen» ausserhalb am Ausgang rechts; die genaue vertikale Platzierung steuert der Mermaid-Renderer. «Prozessstart» ist ein Verbindungspunkt und kein zusätzlicher Bearbeitungsstatus.
 
-- **[1]** Keine laufende Wiedervorlage und kein vorrangiger Mitarbeiterprüfbedarf; bei automatischen Rückfragen ist zusätzlich die fachliche Veröffentlichungsfreigabe erforderlich.
+- **[1]** Keine laufende Wiedervorlage und kein vorrangiger Mitarbeiterprüfbedarf; automatische Rückfragen benötigen die serverseitig geprüften Ausführungsbedingungen nach [KOM-05](fallkommunikation.md#kom-05-automatische-rueckfragen). Für zulässige Katalogrückfragen ist keine zusätzliche menschliche Einzelfreigabe vorgesehen.
 - **[2]** Kein zulässiger automatischer Abschluss und keine laufende Wiedervorlage.
 - **[3]** Abschluss gemäss FALL-07/FALL-10 unter Beachtung verpflichtender menschlicher Entscheidungen.
 
@@ -180,6 +180,8 @@ Eine veröffentlichte Rückfrage mit ausstehender Mieterantwort ist fachliches W
 
 «Eingegangen» liegt vor der aktiven Phase. Die sechs Bearbeitungsstatus von «In Abklärung» bis «Wartet auf Wiedervorlage» gehören zur aktiven Phase; «Abgeschlossen» gehört zur abgeschlossenen Phase. Eine zusätzliche Nachricht ist während eines aktiven Falls zulässig, auch wenn der Workflow gerade nicht auf eine Mieterantwort wartet. Jede gespeicherte Mieter-Nachricht veranlasst die Neubewertung gemäss DRING-05. Welche fachliche Fortsetzung sie auslöst, bestimmt der modellierte Prozess. Der blosse Eingang einer Nachricht beantwortet nicht automatisch jede offene fachliche Rückfrage.
 
+**Bestätigt am 14.11.2026:** Mieternachrichten sind in jedem der sechs aktiven Bearbeitungsstatus zulässig, insbesondere während «Mitarbeiterprüfung erforderlich». Eine offene Rückfrage ist keine Voraussetzung. Der laufende Fallprozess muss dafür während der gesamten aktiven Bearbeitung einen Nachrichtenempfang bereitstellen; der Empfang darf nicht auf den sichtbaren Warteschritt «Wartet auf Mieterantwort» beschränkt sein. Zugriff, laufender Prozess, Erreichbarkeit von Camunda und die Nachrichtensperre nach Abschluss gelten weiterhin gemäss FALL-06/KOM-04. Für neue Nachrichten während einer Mitarbeiterprüfung gilt der nachfolgend festgelegte [Vorrang der Mitarbeiterprüfung](#vorrang-einer-laufenden-mitarbeiterprüfung).
+
 Die Zuordnung ist keine feste lineare Reihenfolge. Der Workflow kann Abklärungen und Rückfragen wiederholen. Solche Schleifen behalten die Case-ID bei und öffnen keine neue Fallanlage.
 
 **Mitarbeiter-Rückfragen:** Beim Veröffentlichen einer externen Nachricht mit ausdrücklich gesetztem Mieterantwortbedarf veranlasst Camunda «Wartet auf Mieterantwort», sofern keine Wiedervorlage läuft und kein vorrangiger Prüfbedarf nach FALL-05/FALL-10 «Mitarbeiterprüfung erforderlich» verlangt. Die veröffentlichte Rückfrage bleibt auch in diesen Fällen als offen nachvollziehbar. Der Wartestatus wird nicht allein durch die Auswahl im Browser oder die KI-Formulierung gesetzt.
@@ -191,6 +193,8 @@ Eine reine Informationsnachricht setzt keinen neuen Mieter-Wartestatus, entfernt
 ### Status nach Beantwortung aller Rückfragen
 
 **Bestätigt am 10.10.2026:** Ergibt die inhaltliche Prüfung, dass alle zuvor offenen Rückfragen beantwortet sind, verarbeitet Camunda die Antworten im vorgesehenen Fallprozess weiter. Erfolgt dabei kein zulässiger automatischer Abschluss nach FALL-07/FALL-10 und läuft keine Wiedervorlage, erhält der weiterhin aktive Fall nach der automatischen Verarbeitung den Status «Mitarbeiterprüfung erforderlich». Der Mitarbeiter entscheidet anschliessend über das weitere Vorgehen.
+
+Eine bereits laufende Mitarbeiterprüfung bleibt dabei bis zur bewussten Mitarbeiterentscheidung bestehen; aus diesem Status ist kein Systemabschluss zulässig. [FALL-06](#vorrang-einer-laufenden-mitarbeiterprüfung)
 
 Bei laufender Wiedervorlage löst bereits die gespeicherte Mieternachricht die sofortige Vorlage zur Mitarbeiterprüfung nach FALL-11 aus. Ein erfolgreich abgeschlossener Fall bleibt «Abgeschlossen». Sind noch Rückfragen offen oder wurden sie nicht zuverlässig als beantwortet erkannt, greift der Übergang wegen vollständiger Beantwortung nicht; andere Prüfgründe und Statusregeln bleiben wirksam. Eine reine Informationsnachricht ohne zuvor offene Rückfragen löst diesen Übergang ebenfalls nicht aus.
 
@@ -220,6 +224,18 @@ Vor dem Prozessstart und bei nicht verfügbarem Camunda bleiben Fälle für bere
 Ergänzungen zu bestehenden Fällen setzen einen laufenden Fallprozess und erreichbares Camunda voraus. Bis dahin bleibt der ungesendete Text im Mieterformular. Die Fallannahme startet Camunda weiterhin asynchron. [UC-009](../use_cases/UC-009-mieteranliegen-ergaenzen.md) · [SS-003](../architecture/schnittstellenentwurf-block-3.md#ss-003--camunda-integrationsvertrag)
 
 Der Prozess gibt die jeweilige Mitarbeiteraktion an der dafür vorgesehenen Stelle frei. Eine Aktion darf keinen Fallstand aus einer bereits abgeschlossenen Aufgabe überschreiben. Während der Mitarbeiterprüfung wartet Camunda auf die fachliche Entscheidung. Verspätete automatische Ergebnisse aus einem früheren Prozessschritt dürfen den Fall in dieser Phase nicht ändern. Beim Fortsetzen prüft PropertyFlow den aktuellen Fallstand und die Zuordnung zur passenden Prozessaufgabe. Bei einem Konflikt wird die Aktion nicht als erfolgreich angezeigt. Eingaben und laufende Formulierung bleiben erhalten.
+
+### Vorrang einer laufenden Mitarbeiterprüfung
+
+**Bestätigt am 14.11.2026:** Sobald ein Fall **«Mitarbeiterprüfung erforderlich»** erreicht hat, darf das System diesen Bearbeitungsstatus nicht selbstständig verlassen. Nur eine bewusste, berechtigte Mitarbeiterentscheidung zur passenden aktuellen Aufgabe kann die Fortsetzung, eine Wiedervorlage oder den Abschluss veranlassen. Camunda und der PropertyFlow-Dienst führen diese Entscheidung nach Prüfung aus. Das gilt unabhängig davon, ob der Prüfbedarf ursprünglich durch das System oder durch eine menschliche Entscheidung entstanden ist. Eine automatische Ausnahme anhand dieser Herkunft ist für den aktuellen Umfang ausdrücklich nicht vorgesehen.
+
+- Neue Mieternachrichten werden weiterhin angenommen, gespeichert und derselben laufenden Prüfung zugeordnet. Sie erzeugen keine zweite Mitarbeiteraufgabe und keinen neuen Fallprozess.
+- Die aktuelle Nachricht darf nach den bestehenden Regeln die Neubewertung der Dringlichkeit, die Einzelprüfung offener Rückfragen und eine aktualisierte Empfehlung auslösen. Zulässige aktuelle Ergebnisse dürfen gespeichert werden; manuelle Dringlichkeit und bewusste Mitarbeiterentscheidungen bleiben geschützt. Die Auswertung ergänzt die Entscheidungsgrundlage, schliesst aber weder die Mitarbeiteraufgabe noch den Fall.
+- **«Alles klar, der Fall ist abgeschlossen»** beziehungsweise eine eindeutige Behebungsbestätigung des Mieters ändert diesen Status nicht. Das gilt auch dann, wenn die neue Analyse keinen weiteren Verwaltungsbedarf erkennt, alle Rückfragen beantwortet sind oder der ursprüngliche systemseitige Prüfgrund inzwischen entfallen scheint. Der Mitarbeiter kann noch eigene Abklärungen oder Kontrollen offen haben.
+- Die Sperre gilt für jeden automatischen Weg: Statusfortsetzung, Systemabschluss, Timer, Retry und verspätetes Ergebnis. Auch ein bereits vorbereiteter automatischer Abschluss darf eine inzwischen begonnene Mitarbeiterprüfung nicht übergehen. Die Prüfung erfolgt am aktuellen Fall- und Aufgabenstand unmittelbar vor einer wirksamen Änderung.
+- Nach einer bestätigten Mitarbeiterentscheidung folgt der freigegebene Prozessweg. Alte Auswertungen dürfen diese Entscheidung nicht zurücknehmen. Eine spätere automatische Aktion benötigt erneut die aktuellen Ausführungsbedingungen; «Bearbeitung fortsetzen» ist keine pauschale Abschlussfreigabe.
+
+Die folgenden Fehler-, Freigabe- und Abschlussregeln gelten ergänzend; sie erlauben keine automatische Ausnahme von diesem Statusschutz. Der Nachrichteneingang und seine Auswertung werden in [KOM-03](fallkommunikation.md#kom-03-asynchrone-fallkommunikation) beschrieben.
 
 Bei verfügbarer Prozesssteuerung führen die Fehlerfälle nach FALL-05 über Camunda zu «Mitarbeiterprüfung erforderlich». Das betrifft offene Objektzuordnungen, fehlgeschlagene KI-Analysen und klärungsbedürftigen E-Mail-Versand. Die fachlichen Abschluss-, Wiedereröffnungs- und Freigaberegeln nach FALL-07 und FALL-10 gelten dabei weiterhin.
 
@@ -253,9 +269,11 @@ Ein Fall wechselt erst nach dem fachlich vorgesehenen Abschluss im Camunda-Ablau
 | **System – Behebung bestätigt** | Eine gespeicherte Mieter-Nachricht bestätigt eindeutig, dass das Problem behoben ist und keine weitere Hilfe benötigt wird, z. B. «Fehler behoben, keine weitere Hilfe nötig». Das System prüft diese Aussage im Zusammenhang des aktuellen Falls. |
 | **System – kein Bearbeitungsbedarf der Verwaltung** | Die fachliche Prüfung ergibt eindeutig, dass das Anliegen gemäss den hinterlegten Fachregeln vom Mieter selbst zu erledigen ist. Beispiel: ein Glühbirnenwechsel, soweit der konkrete Austausch nach diesen Regeln in die Eigenverantwortung des Mieters fällt. |
 
-Für die beiden beschriebenen Systemabschlüsse ist keine zusätzliche Einzelfreigabe durch einen Mitarbeiter vorgesehen, sofern keine bestehende verpflichtende menschliche Prüfung greift. Das System führt den Abschluss im vorgesehenen Camunda-/PropertyFlow-Ablauf aus. Die Einordnung wird vor der Übernahme serverseitig validiert; ein isoliertes Stichwort wie «behoben» oder «Glühbirne» genügt nicht. Die fachliche Regel und der aktuelle Fallinhalt sind massgeblich. Bei unklarer oder widersprüchlicher Einordnung wird nicht automatisch abgeschlossen; nötige menschliche Prüfung wird als «Mitarbeiterprüfung erforderlich» geführt.
+Für die beiden beschriebenen Systemabschlüsse ist keine zusätzliche Einzelfreigabe durch einen Mitarbeiter vorgesehen, sofern weder eine bestehende verpflichtende menschliche Prüfung noch der Status «Mitarbeiterprüfung erforderlich» greift. Eine bereits laufende Mitarbeiterprüfung kann ausschliesslich durch eine bewusste Mitarbeiterentscheidung verlassen werden, auch bei ursprünglich systemseitig ausgelöstem Prüfbedarf. [FALL-06](#vorrang-einer-laufenden-mitarbeiterprüfung)
 
-Die Beispiele sind bestätigte Abschlussgründe, kein abschliessender Katalog aller künftig möglichen Automatisierungsregeln. Weitere automatische Gründe sind gesondert fachlich festzulegen. Die Einstufung «kein konkreter Fall» bezeichnet hier fehlenden weiteren Bearbeitungsbedarf der Verwaltung: Ein bereits angenommenes Anliegen behält Case-ID, Ursprungsdaten und Historie und erhält den Status «Abgeschlossen». Es wird weder verworfen noch gelöscht.
+Das System führt einen zulässigen Abschluss im vorgesehenen Camunda-/PropertyFlow-Ablauf aus. Die Einordnung und der Statusschutz werden unmittelbar vor der Übernahme serverseitig validiert; ein isoliertes Stichwort wie «behoben» oder «Glühbirne» genügt nicht. Die fachliche Regel und der aktuelle Fallinhalt sind massgeblich. Bei unklarer oder widersprüchlicher Einordnung wird nicht automatisch abgeschlossen; nötige menschliche Prüfung wird als «Mitarbeiterprüfung erforderlich» geführt.
+
+Für den aktuellen automatischen Umfang sind ausschliesslich die beiden beschriebenen Abschlussgründe freigegeben, sofern die folgenden Voraussetzungen erfüllt sind. Weitere automatische Gründe sind gesondert fachlich festzulegen. Die Einstufung «kein konkreter Fall» bezeichnet hier fehlenden weiteren Bearbeitungsbedarf der Verwaltung: Ein bereits angenommenes Anliegen behält Case-ID, Ursprungsdaten und Historie und erhält den Status «Abgeschlossen». Es wird weder verworfen noch gelöscht.
 
 Die verpflichtenden menschlichen Entscheidungen sind in [FALL-10](#fall-10-automatisierung-und-menschliche-freigabe) konkretisiert: Kosten bzw. verbindliche externe Beauftragung, sehr dringliche oder schwerwiegende Fälle sowie starke oder eskalierte Mieterbeschwerden. Sie entsprechen den Prüfgrenzen aus [ADR-002](../architecture/adr/ADR-002-camunda8-workflow-orchestrierung.md) und der [Sicherheitsbasis](../evaluation/evaluationsgrundlage.md). Ein offener menschlicher Entscheidungsbedarf darf nicht durch einen Systemabschluss umgangen werden. Ein Analysefehler, eine offene Zuordnung oder ein Versandproblem ist für sich kein Abschlussgrund. Die Dringlichkeitsstufe allein begründet ebenfalls keinen Abschluss.
 
@@ -278,6 +296,75 @@ Der abgeschlossene Fall bleibt mit gültiger Berechtigung lesbar. Screen 01 biet
 **Mieteransicht nach Wiedereröffnung, bestätigt am 10.10.2026:** Die sichtbare Mieteransicht liest auch bei abgeschlossenem Fall alle 20 Sekunden den gespeicherten Stand. Erkennt sie die bestätigte Wiedereröffnung, zeigt sie ohne manuelles Neuladen den aktuellen aktiven Status und die Nachrichteneingabe wieder an. Darstellung, Pausen, Fehlerbehandlung und Prüfkriterien stehen in [UI1, Abschnitt 4.5.1](../frontend/ansicht-01-mieter-fallansicht.md#451-automatische-aktualisierung-von-nachrichten-status-und-dringlichkeit). Diese Leseabrufe sind keine Wiedereröffnungsaktion; die serverseitige Nachrichtensperre gilt bis zur bestätigten Wiedereröffnung.
 
 Bei abgeschlossenem Fall ist die wirksame Dringlichkeit nur lesbar gemäss DRING-08. Eine Änderung setzt die bestätigte mitarbeiterseitige Wiedereröffnung voraus. Abschluss ist weder Löschung noch Widerruf einer Zugriffsberechtigung; der persönliche Fall-Link bleibt ohne zeitliche Ablauffrist nutzbar. Archivierung, Aufbewahrung und besondere Löschprozesse benötigen eigene Festlegungen.
+
+### Regeln für den automatischen Fallabschluss
+
+**Bestätigt am 15.11.2026:** Ein Systemabschluss benötigt einen konkret belegten Abschlussgrund und die Freigabe am aktuellen Fallstand. Das LLM schlägt den Grund mit Belegstellen vor. Der Dienst prüft die zulässige Ausführung, den Bezug der Belege zum Fall und gegebenenfalls die Fachregel. Eine Empfehlung oder ein hoher vom Modell genannter Sicherheitswert ist für sich keine Abschlussfreigabe. Die folgenden Beschränkungen betreffen Systemabschlüsse; für Mitarbeiterabschlüsse gelten die eigenen Regeln dieses Abschnitts.
+
+#### Gemeinsame Voraussetzungen
+
+Alle Voraussetzungen müssen gleichzeitig erfüllt sein:
+
+1. **Zulässiger Bearbeitungsstatus:** Der führende Fallprozess gibt den Systemabschluss frei, und der gespeicherte Status ist **«In Abklärung»** oder **«Wartet auf Mieterantwort»**. In allen anderen Status ist ein automatischer Abschluss ausgeschlossen. Insbesondere werden laufende Mitarbeiterprüfung, Mitarbeiterbearbeitung, Wiedervorlage und externe Wartephase nicht automatisch beendet. Eine frühere Entscheidung «Bearbeitung fortsetzen» ist keine pauschale Abschlussfreigabe.
+2. **Kein offener menschlicher Entscheidungsbedarf:** Die Grenzen aus FALL-06/FALL-10 bleiben wirksam, insbesondere bei Kosten oder verbindlicher Beauftragung, schwerwiegenden beziehungsweise sehr dringlichen Fällen und starken oder eskalierten Beschwerden. Eine Behebungsbestätigung hebt einen solchen Prüfbedarf nicht auf.
+3. **Keine ungeklärte Grundlage:** Offene Objektzuordnung, fehlgeschlagene Analyse und klärungsbedürftiger Versand schliessen den Systemabschluss aus. Eine niedrige Dringlichkeit, ein technischer Fehler oder das Ausbleiben einer Mieterantwort ist kein Abschlussgrund.
+4. **Aktueller Nachrichten- und Auswertungsstand:** Alle für die Entscheidung relevanten gespeicherten Mieternachrichten sind berücksichtigt. Eine neu eingegangene, noch nicht ausgewertete Nachricht verhindert den automatischen Abschluss auf alter Grundlage. Ein veraltetes Ergebnis wird verworfen beziehungsweise auf aktueller Grundlage neu beurteilt; sein Alter oder eine Wiederholung allein erzeugt keinen neuen Mitarbeiterprüfgrund.
+
+Status, Prozessfreigabe, offene Prüfgründe und Entscheidungsgrundlage werden unmittelbar vor einer automatischen Veröffentlichung und nochmals bei der Abschlussspeicherung gegen den aktuellen Fallstand geprüft. Prüfung und Speicherung müssen konkurrierende Änderungen gemeinsam absichern. Wird die vorgeschlagene Aktion inzwischen von einer Mitarbeiterentscheidung oder einem anderen Prozessschritt überholt, darf sie diesen nicht verdrängen. Ein bereits erfolgreich gespeicherter identischer Abschluss bleibt bei Wiederholung idempotent.
+
+#### Abschlussgrund «Problem behoben»
+
+Alle folgenden Bedingungen müssen belegt sein:
+
+1. **Tatsächlich eingetretene Behebung:** Eine gespeicherte Mieternachricht bestätigt im Zusammenhang des aktuellen Falls eindeutig, dass das gemeldete Problem nicht mehr besteht. Vermutungen, vorläufige Besserung, eine angekündigte Reparatur oder eine erst geplante Handlung genügen nicht.
+2. **Kein weiterer Hilfebedarf:** Aus der Nachricht ergibt sich ausdrücklich oder im Fallzusammenhang eindeutig, dass keine weitere Hilfe benötigt wird. Eine bestimmte Formulierung ist nicht vorgeschrieben. «Danke», Schweigen oder die blosse Aufforderung «Bitte schliessen» belegen für sich keine Behebung.
+3. **Gesamter offener Sachverhalt erledigt:** Bei mehreren Teilproblemen muss die Bestätigung alle noch offenen Anliegen abdecken. Verbleibende Störungen, Folgeschäden, zusätzliche Forderungen oder sonstiger Bearbeitungsbedarf verhindern den automatischen Abschluss.
+4. **Kein aktueller Widerspruch:** Die Einordnung berücksichtigt den Nachrichtenverlauf. Eine positive Einzelaussage darf keine gleichzeitig oder später gemeldete Einschränkung überdecken.
+
+| Mieternachricht | Einordnung des Abschlussgrundes |
+|---|---|
+| «Die Heizung funktioniert wieder. Sie müssen nichts mehr unternehmen.» | Behebung und fehlender Hilfebedarf sind belegt, sofern dies den gesamten offenen Sachverhalt betrifft. Die gemeinsamen Voraussetzungen bleiben zu prüfen. |
+| «Im Moment funktioniert sie wieder. Ich beobachte es noch.» | Keine eindeutige Behebung bestätigt; kein automatischer Abschluss. |
+| «Das Tropfen hat aufgehört, aber die Decke ist noch beschädigt.» | Weiterer Bearbeitungsbedarf; kein automatischer Abschluss. |
+| «Der Techniker kommt morgen.» | Massnahme angekündigt, Behebung nicht bestätigt; kein automatischer Abschluss. |
+
+Ist das ganze Anliegen eindeutig erledigt, müssen dadurch gegenstandslos gewordene Rückfragen nicht künstlich beantwortet werden. Ihr offener Antwortbedarf endet erst mit dem erfolgreichen Abschluss gemäss KOM-04; die Fragen werden ohne passende Antwort nicht als beantwortet ausgegeben. Eine weiterhin relevante offene Frage darf dagegen nicht durch den Abschluss übergangen werden.
+
+#### Abschlussgrund «Kein Bearbeitungsbedarf der Verwaltung»
+
+Alle folgenden Bedingungen müssen belegt sein:
+
+1. **Ausdrücklich freigegebene Fachregel:** Eine hinterlegte Regel mit Kennung, Version und festgelegtem Geltungsbereich erlaubt für diesen Sachverhalt einen automatischen Abschluss. Allgemeines Modellwissen, ein beliebiger gefundener Text oder lediglich eine thematisch ähnliche Quelle genügt nicht. Die Regel muss für den konkreten Fall gültig und anwendbar sein.
+2. **Voraussetzungen durch Fallangaben belegt:** Alle von der Regel verlangten Angaben sind vorhanden und nachvollziehbar belegt, beispielsweise Gegenstand, Ort und Art der Störung. Fehlende Angaben dürfen weder als erfüllt noch als Beleg für das Fehlen einer Ausnahme behandelt werden.
+3. **Keine Ausnahme und kein Widerspruch:** Abweichende Umstände, zusätzliche Schäden, widersprüchliche Regeln oder ein begründeter Einwand des Mieters gegen die Zuordnung verhindern die automatische Anwendung und führen zur Mitarbeiterprüfung. Ungeklärte Ausschlussumstände gelten nicht als ausgeräumt.
+4. **Gesamtes Anliegen abgedeckt:** Die Regel deckt den vollständigen noch offenen Sachverhalt ab. Bleibt ein Teilproblem in der Verantwortung der Verwaltung oder ungeklärt, darf der Fall nicht automatisch abgeschlossen werden.
+
+Beispiel zur Regelanwendung: Falls eine ausdrücklich freigegebene Fachregel einen bestimmten Leuchtmittelwechsel der Eigenverantwortung zuordnet, müssen die Angaben genau zu dieser Regel passen. «Licht defekt» allein reicht nicht. Eine beschädigte Fassung oder ein anderer Defekt darf nicht ohne passende Regel gleichgesetzt werden. Dieses Beispiel gibt selbst keine Zuständigkeitsregel frei. Solange keine geeignete freigegebene Regel vorliegt, ist dieser Systemabschlussgrund nicht anwendbar. Der Abschluss dokumentiert fehlenden Verwaltungsbedarf und behauptet keine ausgeführte Reparatur.
+
+#### Prüfung, Nachweis und Fortsetzung
+
+Das LLM liefert den vorgeschlagenen Grund, zugehörige Nachrichten beziehungsweise Belegstellen und bei regelbasiertem Abschluss die Regelreferenz. Der Dienst prüft vorhandene und zum Fall gehörende Quellen, Regelkennung und -version, Geltungsbereich, notwendige Voraussetzungen sowie die aktuellen Ausführungsbedingungen. Eine formal gültige Ausgabe beweist keine semantische Richtigkeit. Die inhaltliche Erkennung und Regelzuordnung benötigen eine Evaluation mit positiven, negativen und mehrdeutigen Fällen, bevor sie automatisch wirksam werden. Für die Generierung von Kommunikation gilt weiterhin KOM-02.
+
+Beim erfolgreichen Systemabschluss bleiben Grund, Belegbezug, geprüfter Fallstand, Prozessreferenz und gegebenenfalls Regelkennung/-version nachvollziehbar. Bereits bekannte Belege oder erfolgreiche Wiederholungen erzeugen keine zweite fachliche Wirkung und keinen zusätzlichen logischen Abschlussmailauftrag.
+
+Ohne belegten Grund erfolgt kein automatischer Abschluss. Unklare oder widersprüchliche fachliche Einordnung benötigt Mitarbeiterprüfung. Für gezielt erfragbare fehlende Sachangaben bleiben die bestehenden Katalogrückfrageregeln aus KOM-05 anwendbar; die vollständige Beantwortung früherer Rückfragen folgt weiterhin FALL-05. Ein anderer aktueller Status, eine doppelte Verarbeitung oder ein bloss veraltetes Ergebnis darf nicht pauschal eine zusätzliche Mitarbeiteraufgabe erzeugen. Die technische Koordination der Fortsetzung bleibt vor der ausführbaren Umsetzung festzulegen.
+
+Die Freigabe eines Abschlussgrundes ist noch keine Freigabe beliebiger automatisch erzeugter Antworttexte. Konkrete Veröffentlichungsregeln und die Behandlung eines Fehlers zwischen gespeicherter Antwort und fachlichem Abschluss werden gesondert ausgearbeitet.
+
+### Mitarbeiterabschluss während laufender KI-Auswertung
+
+**Bestätigt am 15.11.2026:** Eine laufende KI-Auswertung allein blockiert keinen bewussten Mitarbeiterabschluss. Der Mitarbeiter beurteilt den aktuellen Fallstand einschliesslich bereits gespeicherter neuer Mieternachrichten und bestätigt, dass keine weitere Bearbeitung nötig ist. Ein veralteter Entscheidungsstand blockiert den Abschluss hingegen. Die Entscheidung bleibt an die konkrete aktuelle Mitarbeiteraufgabe und die geprüfte fachliche Grundlage gebunden; ein bloss ausstehender Modellaufruf ist kein neuer Prüfgrund.
+
+PropertyFlow prüft diese Grundlage bei der Annahme der Mitarbeiteraktion und nochmals unmittelbar bei der fachlichen Abschlussspeicherung. Prüfung und Speicherung müssen konkurrierende fachliche Änderungen gemeinsam absichern. Eine neue Nachricht oder eine inzwischen wirksam gespeicherte, relevante Auswertung darf nicht unbemerkt durch eine ältere Abschlussentscheidung übergangen werden. Rein technische Job- oder Retry-Zustände gelten für sich nicht als geänderte fachliche Entscheidungsgrundlage.
+
+- **Konflikt vor Abschluss der Mitarbeiteraufgabe:** Die veraltete Aktion wird abgewiesen. Die bestehende Aufgabe bleibt offen; der Mitarbeiter muss den aktualisierten Fallstand prüfen und bewusst erneut entscheiden.
+- **Konflikt nach Abschluss der Mitarbeiteraufgabe, aber vor Speicherung von «Abgeschlossen»:** Camunda unterbricht den Abschlussweg und führt zurück zu «Mitarbeiterprüfung erforderlich». Die alte Abschlussfreigabe gilt nicht weiter. Für den aktuellen Fallstand wird genau eine neue Mitarbeiteraufgabe mit neuem Aufgabenschlüssel bereitgestellt; die bereits erledigte Aufgabe wird nicht reaktiviert. Wiederholte Konfliktmeldungen dürfen keine zusätzlichen Aufgaben erzeugen. Interner Hinweis: «Fallstand seit Abschlussbestätigung geändert».
+- **Folgen des Konflikts:** Der Fall bleibt aktiv. Es entstehen weder ein erfolgreicher Abschlussnachweis noch ein Abschlussmailauftrag. Der durchgängige Mieternachrichtenempfang bleibt bestehen. Bereits gespeicherte Nachrichten und eine zuvor veröffentlichte Abschlussmitteilung bleiben erhalten. Dieser Konflikt ist keine Wiedereröffnung, weil der fachliche Abschluss noch nicht stattgefunden hat.
+- **Technischer Speicherfehler:** Er ist von einem festgestellten fachlichen Konflikt zu unterscheiden. Ein technischer Retry verwendet dieselbe Entscheidung und prüft deren Gültigkeit erneut; er bestätigt keinen Abschluss und erzeugt nicht allein eine neue Mitarbeiterprüfung. Ein bereits erfolgreich gespeicherter identischer Abschluss wird bei Wiederholung idempotent bestätigt und darf nicht als Konflikt zurück in die aktive Bearbeitung führen.
+
+Nach erfolgreicher Abschlussspeicherung endet der aktive Prozessbereich samt laufenden Nachrichtenauswertungen und Empfang; anschliessend wird die Abschlussbenachrichtigung veranlasst. Ein bereits gestarteter externer Modellaufruf kann trotzdem verspätet antworten. Vor einer Ergebnisübernahme prüft der Dienst deshalb erneut den aktuellen Status und den Bezug zur Bearbeitung. Das alte Ergebnis darf weder Status, Dringlichkeit, Antwortbedarf oder Kommunikation ändern noch eine Mitarbeiterprüfung oder Wiedereröffnung auslösen. Diese Wirkung muss auch bei gleichzeitigem Abschluss und Ergebniszugriff abgesichert sein.
+
+Der fachliche Rückweg ist im [BPMN-Entwurf](../architecture/bpmn/propertyflow-fallprozess-entwurf.bpmn) vorgesehen. Technische Versionsbindung, Transaktionsschutz und Wiederholungskoordination sind vor der ausführbaren Umsetzung zu konkretisieren.
 
 ### Verspätete automatische Ergebnisse nach Wiedereröffnung
 
@@ -328,6 +415,8 @@ Für wirksame Dringlichkeitsänderungen gilt die bereits vereinbarte dauerhafte 
 Solange die notwendige menschliche Entscheidung aussteht, erhält ein aktiver Fall **«Mitarbeiterprüfung erforderlich»**. Der konkrete Prüfgrund bleibt intern nachvollziehbar und wird im Mitarbeiterdetail dargestellt. Screen 02 zeigt weiterhin ausschliesslich den Bearbeitungsstatus und keine Problemhinweise. Die Mieteransicht erhält keine internen Prüfgründe oder Freigaben.
 
 Das System darf Daten erfassen, analysieren und Vorschläge vorbereiten. Es darf die erforderliche menschliche Entscheidung nicht selbst freigeben. Eine spätere Nachricht wie «behoben, keine weitere Hilfe nötig» hebt einen noch offenen Prüfbedarf nicht automatisch auf. Die Systemabschlussregeln aus FALL-07 gelten nur, wenn keine verpflichtende menschliche Entscheidung mehr aussteht.
+
+Unabhängig von den vorstehenden FALL-10-Gründen schützt [FALL-06](#vorrang-einer-laufenden-mitarbeiterprüfung) jeden Fall im Status «Mitarbeiterprüfung erforderlich». Die Herkunft des Prüfbedarfs gibt dem System kein Recht, diesen Status selbstständig zu verlassen.
 
 Eine Freigabe bezieht sich auf die konkret geprüfte Handlung. Sie ist keine pauschale Erlaubnis für weitere Kosten, weitere Aufträge oder einen späteren Fallabschluss. Entscheid, handelnder Mitarbeiter, Zeitpunkt, Bezug zur Handlung und fachlicher Grund bleiben intern nachvollziehbar. Die konkrete Bedienung wird in [Screen 03](../frontend/ansicht-03-mitarbeiter-falldetail.md) ausgearbeitet.
 
@@ -463,12 +552,50 @@ Bei der passenden Mitarbeiteraufgabe bestätigt der Mitarbeiter «Bearbeitung fo
 
 «Bearbeitung fortsetzen» sowie Setzen, Ändern und Löschen der Wiedervorlage sind jeweils mit und ohne interne Begründung möglich. Eine eingegebene Begründung wird nur zusammen mit der erfolgreich bestätigten Aktion gespeichert und bleibt mit Änderung, Mitarbeiter und Zeitpunkt intern nachvollziehbar. Nach Terminlöschung bleibt die zugehörige Begründung erhalten. Abbrechen, Fehler und Konflikte speichern weder Aktion noch Begründung; wiederholte Aufrufe erzeugen keinen doppelten Nachweis. Die Begründung erzeugt keine separate Kommunikationsnachricht oder Memo-Speicherung und fehlt in sämtlichen Mieterausgaben, E-Mails und im Kommunikations-LLM-Kontext gemäss KOM-AK-11. Bestehende Status-, Timer- und menschliche Entscheidungsregeln gelten auch bei leerer Begründung.
 
+### FALL-AK-21: Mitarbeiterprüfung bleibt unter menschlicher Kontrolle
+
+Die folgenden Fälle werden jeweils mit ursprünglich systemseitigem Prüfbedarf und mit Prüfbedarf aus einer menschlichen Entscheidung geprüft:
+
+1. Bei «Mitarbeiterprüfung erforderlich» eine neue Mieternachricht speichern. Neubewertung und gegebenenfalls Einzelprüfung offener Fragen finden statt; dieselbe Mitarbeiteraufgabe und der Status bleiben bestehen.
+2. Der Mieter schreibt «Alles klar, der Fall ist abgeschlossen». Auch bei eindeutig erkannter Behebung oder fehlendem Verwaltungsbedarf bleiben Fall und Mitarbeiteraufgabe offen. Dasselbe gilt nach Beantwortung aller Rückfragen oder scheinbarem Wegfall des bisherigen Prüfgrundes.
+3. Einen automatischen Abschluss vorbereiten, dann den Fall vor dessen Speicherung zur Mitarbeiterprüfung übergeben. Das verspätete Ergebnis darf weder den Status ändern noch die Aufgabe beenden. Wiederholungen und alte Timer umgehen den Schutz ebenfalls nicht.
+4. Ein berechtigter Mitarbeiter bestätigt am aktuellen Fallstand Fortsetzung, Wiedervorlage oder Abschluss. Nur die bestätigte Aktion veranlasst den jeweiligen Übergang; Abbruch, veraltete Aufgabe oder Konflikt lassen die aktuelle Prüfung bestehen. Ein späteres Ergebnis darf die bestätigte Entscheidung nicht zurücknehmen.
+
+KOM-AK-17 prüft den durchgängigen Nachrichtenempfang in allen aktiven Status. DRING-AK-09 und DRING-AK-10 prüfen die zulässige Neubewertung bei geschützter Mitarbeiterentscheidung.
+
+### FALL-AK-22: Mitarbeiterabschluss bei laufender Auswertung und veraltetem Fallstand
+
+1. Neue Mieternachricht speichern und deren KI-Auswertung anhalten. Ein Mitarbeiter bestätigt den Abschluss am aktuellen Fallstand einschliesslich dieser Nachricht. Der Abschluss gelingt ohne Warten auf das Modell; Nachricht und Verlauf bleiben erhalten, genau ein logischer Abschlussmailauftrag entsteht.
+2. Dieselbe Abschlussaktion aus einem Stand vor der neuen Nachricht senden. Ablehnung vor dem User-Task-Abschluss: dieselbe Aufgabe bleibt offen, kein erfolgreicher Abschlussnachweis und kein Abschlussmailauftrag.
+3. Nach bestätigtem User-Task-Abschluss, aber vor fachlichem Abschluss eine weitere Nachricht oder relevante Auswertung speichern. Der Abschluss wird nicht gespeichert; der Prozess erreicht erneut Mitarbeiterprüfung mit genau einer neuen Aufgabe und neuem Aufgabenschlüssel. Die alte Abschlussfreigabe und alte Browseraktionen dürfen sie nicht abschliessen. Die neue Aufgabe verlangt eine bewusste Entscheidung am aktualisierten Stand.
+4. Konfliktmeldung beziehungsweise deren Verarbeitung wiederholen. Keine weitere Mitarbeiteraufgabe, kein zweiter Konfliktnachweis für denselben Vorgang, kein Abschlussmailauftrag. Empfang neuer Mieternachrichten bleibt möglich.
+5. Abschluss und KI-Ergebnis gleichzeitig speichern lassen: Wird zuerst eine relevante Auswertung wirksam, muss die ältere Mitarbeiterentscheidung erneut geprüft werden; wird zuerst der Abschluss wirksam, darf das alte Ergebnis nichts mehr am Fall ändern. Dasselbe gilt für verspätete Ergebnisse nach Wiedereröffnung gemäss FALL-AK-16.
+6. Vorübergehenden Speicherfehler und verlorene Job-Abschlussbestätigung getrennt prüfen. Der technische Fehler allein löst keinen fachlichen Konfliktpfad aus. Ein bereits gespeicherter identischer Abschluss wird beim Retry bestätigt, ohne erneute Mitarbeiterprüfung, Wiedereröffnung oder zusätzlichen logischen Mailauftrag.
+
+Diese Prüffälle beschreiben Anforderungen an die spätere Backend-/Camunda-Integration, keine bereits ausgeführten Laufzeittests.
+
+### FALL-AK-23: Gemeinsame Voraussetzungen des Systemabschlusses
+
+Beide Gründe jeweils in «In Abklärung» und «Wartet auf Mieterantwort» mit vollständigen Belegen prüfen. Dieselben Vorschläge in jedem anderen Bearbeitungsstatus dürfen keinen automatischen Abschluss auslösen. Zusätzlich offene Mitarbeiterentscheidung nach FALL-10, offene Objektzuordnung, Analysefehler und klärungsbedürftigen Versand jeweils einzeln prüfen: keine Freigabe. Eine frühere Bearbeitungsentscheidung oder niedrige manuelle Dringlichkeit umgeht diese Grenzen nicht. Bestehende Mitarbeiteraufgaben und Wartephasen werden nicht dupliziert oder verdrängt.
+
+### FALL-AK-24: Belegte Behebung des gesamten Anliegens
+
+Die vier Beispiele zum Abschlussgrund «Problem behoben» sowie «Danke», Schweigen, «Bitte schliessen» und eine mehrdeutige Bestätigung gegen einen versionierten Evaluationsbestand prüfen. Nur eine eindeutige Behebung des gesamten offenen Sachverhalts ohne weiteren Hilfebedarf kann den Grund erfüllen. Bei zwei Teilproblemen genügt die Behebung eines Problems nicht. Spätere widersprechende Nachrichten verhindern den Abschluss auf alter Grundlage. Bei eindeutig erledigtem Gesamtanliegen dürfen gegenstandslos gewordene Rückfragen den erlaubten Abschluss nicht allein blockieren; ihr Antwortbedarf endet durch Abschluss, ohne eine inhaltliche Beantwortung zu erfinden.
+
+### FALL-AK-25: Freigegebene und vollständig anwendbare Zuständigkeitsregel
+
+Eine ausdrücklich für Systemabschluss freigegebene Testregel mit Kennung, Version und Geltungsbereich gegen passende sowie abweichende Fälle prüfen. Fehlende Voraussetzungen, unbekannte oder nicht mehr gültige Regelreferenz, anderer Geltungsbereich, widersprüchliche Quellen, eine Ausnahme, ein begründeter Mietereinwand und ein nicht abgedecktes Teilproblem erlauben keinen automatischen Abschluss. «Licht defekt» ohne weitere Angaben und eine beschädigte Fassung dürfen nicht allein wegen des Stichworts einer Leuchtmittelregel zugeordnet werden. Ohne geeignete freigegebene Regel ist der Grund nicht anwendbar. Erfolgreiche Anwendung hält Regel und Belege fest und behauptet keine Reparatur.
+
+### FALL-AK-26: Aktualität, Nachweis und wiederholte Ausführung
+
+Zwischen Empfehlung, automatischer Veröffentlichung und Abschlussspeicherung jeweils eine neue Mieternachricht, eine Mitarbeiterentscheidung oder eine Änderung der gültigen Regelgrundlage einspielen. Kein veralteter Vorschlag darf dadurch wirksam werden. Eine noch nicht ausgewertete neue Nachricht blockiert den Systemabschluss auf alter Grundlage; im Gegensatz dazu gelten für bewusste Mitarbeiterabschlüsse FALL-AK-22 und die dortige Aktualitätsprüfung. Doppelte und bereits erfolgreich verarbeitete Ergebnisse erzeugen weder zusätzlichen Abschluss noch Mailauftrag oder einen künstlichen Prüfgrund. Fremde, unbekannte oder unpassende Belegreferenzen und ein hoher Modell-Sicherheitswert ohne Beleg ersetzen keine gültige Grundlage. Nach erfolgreichem Abschluss gespeicherter Grund, Belege und gegebenenfalls Regelversion sind nachvollziehbar. Laufzeit- und Evaluationsergebnisse sind bei Umsetzung gesondert nachzuweisen; diese Prüfkriterien sind noch keine ausgeführten Tests.
+
 ## Offene Entscheidungen und Weiterentwicklung
 
 - Konkrete Case-ID-Darstellung und Beziehung zur technischen Prozessreferenz.
 - Tagesberechnung und Uhrzeit der Wiedervorlage, Zeitzonenbehandlung, technische Zuordnung der bewussten Warteentscheidung zum geprüften Fallstand sowie Koordination von Timer, Nachrichteneingang, Terminänderung, Löschung und Abschluss nach FALL-11.
 - Konkrete Übergangsbedingungen, technische Statuswerte und Mapping der vereinbarten Bearbeitungsstatus aus FALL-05 zum BPMN-Modell; Erkennungsregeln, Grenzfallbeispiele und technische Durchsetzung der menschlichen Entscheidungsgrenzen aus FALL-10.
-- Technische Nachweise und Validierung der vereinbarten Abschlussgründe aus FALL-07, konkrete Fachregeln für mieterseitige Eigenverantwortung, gegebenenfalls weitere automatische Abschlussgründe und Reihenfolge einer Abschlussmitteilung. Die Berechtigung von Mitarbeitern und System sowie die beiden beschriebenen Systemgründe sind bereits vereinbart.
+- Technische Durchsetzung und Evaluation der bestätigten Systemabschlussregeln aus FALL-07, konkreter freigegebener Katalog für mieterseitige Eigenverantwortung sowie Veröffentlichungsregeln und Fehlerbehandlung bei automatischer Antwort vor Abschluss. Die beiden Gründe, ihre Nachweise und die Beschränkung auf «In Abklärung» beziehungsweise «Wartet auf Mieterantwort» sind bestätigt. Weitere automatische Gründe benötigen eine gesonderte fachliche Entscheidung.
 - Technische Koordination von Annahme, Prozessstart, Übergabe der Mitarbeiterentscheidung, Statusübernahme und Nachrichtensperre. Dazu gehören Aufgabenzuordnung, Verhalten bei unklarer Camunda-Antwort, Wiederholungsschutz und Aufbewahrungsdauer.
 - Technische Umsetzung der bestätigten UI3-Zuordnungsänderung nach FALL-04, einschliesslich Auswahlvorschlägen und Freitext, Berechtigungsprüfung, Konflikten und nachvollziehbarer Speicherung; weitere Backoffice-Korrekturen sind gesondert festzulegen.
 - E-Mail-Eingangsvertrag sowie spätere Regelungen für Archivierung, Löschung oder Zusammenführung; technische Fortsetzung der ausschliesslich mitarbeiterseitigen Wiedereröffnung; Bedienung, Zielstatus und optionale Begründung als Memo sind unter FALL-07 vereinbart.

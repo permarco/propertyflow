@@ -163,7 +163,10 @@ paths:
         '409':
           description: >
             Dieselbe Absende-ID wurde im gleichen Einreichungskontext bereits
-            mit anderem Inhalt gespeichert. Das Formular zeigt den Konflikt.
+            mit anderem Inhalt gespeichert, oder der ursprünglich ausgegebene
+            Fall-Link ist für diese Wiederholung nicht mehr verfügbar. Das
+            Formular zeigt einen neutralen Hinweis und behält die Eingaben.
+            Die Antwort gibt keinen Ersatzlink aus und legt keinen Fall an.
           content:
             text/html:
               schema:
@@ -199,7 +202,9 @@ paths:
           berechtigte Browser dieselbe Case-ID und bei weiterhin gültigem
           Fall-Link dieselbe Weiterleitung. Ein zweiter Fall oder
           Startauftrag entsteht nicht. Geänderter Inhalt im selben Kontext
-          ergibt 409. Für den Vergleich gelten Betreff, Objekt- oder
+          ergibt 409. Ist der ursprünglich ausgegebene Zugang nicht mehr
+          verfügbar, ergibt auch die identische Wiederholung 409 und gibt
+          keinen Ersatzlink aus. Für den Vergleich gelten Betreff, Objekt- oder
           Wohnungsreferenz, die vom Server bestimmte Kontaktadresse und die
           Beschreibung nach Zeilenumbruchnormalisierung.
         persistence: >
@@ -432,6 +437,10 @@ paths:
             text/html:
               schema:
                 $ref: '#/components/schemas/Html'
+        '500':
+          $ref: '#/components/responses/StaffTechnicalFailure'
+        '503':
+          $ref: '#/components/responses/StaffServiceUnavailable'
   /anmelden/pruefen:
     post:
       operationId: anmeldecodePruefen
@@ -491,6 +500,10 @@ paths:
                 $ref: '#/components/schemas/Html'
         '403':
           $ref: '#/components/responses/InvalidCsrf'
+        '500':
+          $ref: '#/components/responses/StaffTechnicalFailure'
+        '503':
+          $ref: '#/components/responses/StaffServiceUnavailable'
   /registrieren:
     get:
       operationId: registrierungsformularOeffnen
@@ -982,6 +995,10 @@ paths:
           $ref: '#/components/responses/StaffReadNeedsLogin'
         '403':
           $ref: '#/components/responses/StaffReadDenied'
+        '500':
+          $ref: '#/components/responses/StaffTechnicalFailure'
+        '503':
+          $ref: '#/components/responses/StaffServiceUnavailable'
   /mitarbeiter/faelle/{id}:
     parameters:
       - $ref: '#/components/parameters/StaffCaseId'
@@ -1031,6 +1048,10 @@ paths:
           $ref: '#/components/responses/StaffReadDenied'
         '404':
           $ref: '#/components/responses/FallNichtVerfuegbar'
+        '500':
+          $ref: '#/components/responses/StaffTechnicalFailure'
+        '503':
+          $ref: '#/components/responses/StaffServiceUnavailable'
   /mitarbeiter/faelle/{id}/nachrichten:
     parameters:
       - $ref: '#/components/parameters/StaffCaseId'
@@ -3092,6 +3113,28 @@ components:
           $ref: '#/components/headers/NoStore'
         Referrer-Policy:
           $ref: '#/components/headers/NoReferrer'
+    StaffTechnicalFailure:
+      description: Unerwarteter Fehler beim synchronen Anmelde- oder Fallzugriff. Die HTML-Antwort zeigt einen neutralen Hinweis.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+        Referrer-Policy:
+          $ref: '#/components/headers/NoReferrer'
+      content:
+        text/html:
+          schema:
+            $ref: '#/components/schemas/Html'
+    StaffServiceUnavailable:
+      description: Der Konto- oder Falldienst ist vorübergehend nicht verfügbar. Die HTML-Antwort zeigt einen neutralen Hinweis.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+        Referrer-Policy:
+          $ref: '#/components/headers/NoReferrer'
+      content:
+        text/html:
+          schema:
+            $ref: '#/components/schemas/Html'
     HtmlAnsicht:
       description: HTML-Ansicht erfolgreich geladen.
       headers:

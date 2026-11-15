@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="de-CH" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{tenant/fragments :: head('Falldaten nicht verfügbar')}"></head>
+<body>
+<main class="narrow card">
+    <h1>Falldaten nicht verfügbar</h1>
+    <p role="alert" th:text="${error}"></p>
+    <a th:href="@{/mitarbeiter/faelle}">Zur Fallübersicht</a>
+</main>
+</body>
+</html>
