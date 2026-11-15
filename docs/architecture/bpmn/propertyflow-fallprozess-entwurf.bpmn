@@ -1,5 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_PropertyFlow_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+  <bpmn:message id="Message_StaffCloseReply" name="Mitarbeiterabschluss im Mieterwartepfad angefordert" />
   <bpmn:message id="Message_ClearAnswer" name="Antwortbedarf aufheben angefordert" />
   <bpmn:error id="Error_ReopenRejected" name="Wiedereröffnung abgelehnt" errorCode="REOPEN_REJECTED" />
   <bpmn:error id="Error_ClosureMessageInvalid" name="LLM-Nachricht inhaltlich unzulässig" errorCode="CLOSURE_MESSAGE_INVALID" />
@@ -17,7 +18,7 @@
   <bpmn:error id="Error_AnalysisStale" name="Analysegrundlage überholt" errorCode="ANALYSIS_BASIS_STALE">
     <bpmn:documentation>Fachlicher Platzhalter für Zeilen 1 und 3: Die Auswertung enthält neue relevante gespeicherte Mieternachrichten noch nicht. In Validate führt der Konflikt zur aktuellen Analysegrundlage; in RValidate zur aktuellen Antwortauswertung. Kein technischer Jobfehler und kein Analysefehler. Meldung durch den späteren Prüfdienst, nicht automatisch durch blossen Nachrichteneingang. Keine zweite unabhängige Verarbeitung; aktuelle Mitarbeiterentscheidung und Abschluss schützen. Keine Ausführungsimplementierung.</bpmn:documentation>
   </bpmn:error>
-  <bpmn:process id="PropertyFlow_Case_Draft" name="PropertyFlow · Fallprozess · Fachentwurf 0.19" isExecutable="false">
+  <bpmn:process id="PropertyFlow_Case_Draft" name="PropertyFlow · Fallprozess · Fachentwurf 0.20" isExecutable="false">
     <bpmn:documentation>Fachentwurf 0.13, nicht ausführbar. Individuelle LLM-Nachricht im AutoAnswer-Worker erzeugen, prüfen, speichern und Versand beauftragen; danach Close. Kein Vorlagenkatalog, keine zusätzliche Abschlussmail. Mitarbeiterabschluss ohne Nachricht. Menschliche Priorität, Aktualität, Rückfragen, Wiedervorlage und bisherige Konfliktrückwege bleiben. Technische Fehler: Job-Retries/Incidents. Start-/Kindinstanz-Verträge weiterhin vor Ausführung konkretisieren; keine Backend-Implementierung.
 Fachentwurf 0.15: Wiedereröffnung startet eine neue Instanz für denselben Fall; direkter Mitarbeiterpfad gemäss FALL-07. Keine Backend-Implementierung.</bpmn:documentation>
     <bpmn:subProcess id="ActiveCase" name="Aktiven Fall bearbeiten">
@@ -151,13 +152,16 @@ Vor Veröffentlichung veraltete Grundlage: PUBLICATION_BASIS_STALE, keine alte N
         <bpmn:documentation>FALL-06/07/10: erlaubten Systemgrund oder aktuelle Mitarbeiterentscheidung prüfen und auditieren. Bei Mitarbeiterprüfung erforderlich ist ausschliesslich der durch eine bewusste Mitarbeiterentscheidung bestätigte Abschluss zulässig, unabhängig von der Herkunft des Prüfbedarfs. Den Statusschutz unmittelbar vor Speicherung erneut prüfen; vorbereiteter Systemabschluss darf keine inzwischen laufende Prüfung übergehen. Offenen Antwortbedarf und Wiedervorlage beenden. Bereits gespeicherte Nachrichten bleiben. Keine Wiedereröffnung durch verspätete Ergebnisse. Vor Abschluss auch neue Eingänge und den aktuellen Auswertungsstand prüfen; keine überholte automatische Abschlussentscheidung. Abschluss und Nachrichtenspeicherung müssen konkurrierende Änderungen synchronisieren. Nach erfolgreichem Commit beendet ActiveEnd die laufenden Nebenpfade; abgebrochene externe Aufrufe dürfen keine späten Ergebnisse mehr wirksam speichern. Bestätigt am 15.11.2026: Eine laufende KI-Auswertung allein blockiert den bewussten Mitarbeiterabschluss am aktuellen Fallstand einschliesslich neuer gespeicherter Nachrichten nicht. Eine fachlich veraltete Mitarbeiterentscheidung verhindert die Speicherung. Dann ausdrücklich STAFF_CLOSURE_STALE melden und über CloseConflict zur erneuten Mitarbeiterprüfung führen. Prüfung und Speicherung gegen konkurrierende Änderungen gemeinsam absichern. Ein technischer Speicherfehler allein bleibt ein technischer Jobfehler; beim Retry die Gültigkeit erneut prüfen. Ein bereits erfolgreich gespeicherter identischer Abschluss wird idempotent bestätigt, nicht als Konflikt behandelt. Für Quelle System unmittelbar bei Speicherung zusätzlich die vollständigen bestätigten FALL-07-Systemabschlussregeln erneut prüfen: nur In Abklärung oder Wartet auf Mieterantwort, aktuelle Freigabe und sämtliche relevanten Nachrichten berücksichtigt, keine offenen Prüfgründe, vollständige Behebung ohne Hilfebedarf und Widerspruch oder ausdrücklich freigegebene, gültige und vollständig anwendbare Fachregel. Belegreferenzen und gegebenenfalls Regelversion nachvollziehbar speichern; keine Reparatur behaupten, wenn nur fehlender Verwaltungsbedarf belegt ist. Die Statusbeschränkung betrifft ausschliesslich Systemabschlüsse, nicht den berechtigten Mitarbeiterweg F16. Ein überholter automatischer Vorschlag löst nicht STAFF_CLOSURE_STALE aus; er wird nicht wirksam und folgt bei veralteter Grundlage nach veröffentlichter Antwort AUTO_CLOSURE_STALE über CurrentAnalysis zurück zu Validate. Gegenstandslos gewordener Antwortbedarf endet erst bei erfolgreichem Abschluss, ohne unbeantwortete Fragen als beantwortet auszugeben.
 KOM-06 für den automatischen Antwortweg F11: Eine veröffentlichte Antwort ersetzt keine erneute Prüfung der aktuellen Abschlussgrundlage. Scheitert die Speicherung oder ist der Abschluss inzwischen unzulässig, bleibt die Antwort einmalig und unverändert im Verlauf. Ohne erfolgreichen Abschluss bleiben der Fall aktiv und noch offene Rückfragen bestehen; kein erfolgreicher Abschlussnachweis und kein Abschlussmailauftrag. Die schon bestehende Benachrichtigungspflicht zur Antwort entfällt nicht. Kein erfolgreicher Übergang zu ActiveEnd bei gescheitertem Abschluss. Beim Retry Antwort nicht erneut veröffentlichen, aktuellen Stand prüfen; bereits erfolgreich gespeicherten identischen Abschluss idempotent bestätigen. Kein pauschaler STAFF_CLOSURE_STALE-Fehler für einen veralteten Systemvorschlag. Technische Koordination der jeweils aktuellen Fortsetzung noch festzulegen.
 Bei veralteter noch nicht gespeicherter Systemabschlussgrundlage nach Antwort ausdrücklich AUTO_CLOSURE_STALE melden. CurrentAnalysis -&gt; Validate; vorhandene Antwort und Veröffentlichungsbezug erhalten. Technischer Fehler bleibt Retry, erfolgreicher identischer Abschluss bleibt Erfolg. KOM-AK-26.
-Vereinfachter Stand: Der Abschluss erzeugt keine Nachricht und keinen Versandauftrag, auch keine generische Statusmail. Beim Systemweg ist Nachricht samt Versandauftrag bereits in AutoAnswer gespeichert. Mitarbeiterweg darf ohne Nachricht abschliessen. Technischer Jobfehler: Retries/Incident; keine doppelte Nachricht. Aktuelle Grundlage erneut prüfen; AUTO_CLOSURE_STALE und STAFF_CLOSURE_STALE bleiben getrennt.</bpmn:documentation>
+Vereinfachter Stand: Der Abschluss erzeugt keine Nachricht und keinen Versandauftrag, auch keine generische Statusmail. Beim Systemweg ist Nachricht samt Versandauftrag bereits in AutoAnswer gespeichert. Mitarbeiterweg darf ohne Nachricht abschliessen. Technischer Jobfehler: Retries/Incident; keine doppelte Nachricht. Aktuelle Grundlage erneut prüfen; AUTO_CLOSURE_STALE und STAFF_CLOSURE_STALE bleiben getrennt.
+0.20: Eingang CR06 verwendet den persistierten Mitarbeiterauftrag zum abgebrochenen Reply-Call, nicht dessen Outputs und keine Systemabschlussfreigabe. Keine AutoAnswer-Stufe. Fachlich veraltete übernommene Entscheidung meldet STAFF_CLOSURE_STALE. Keine neue Analyse oder Nachricht als Voraussetzung. Antwortbedarf endet erst mit erfolgreichem Abschlusscommit.</bpmn:documentation>
         <bpmn:incoming>F11</bpmn:incoming>
         <bpmn:incoming>F16</bpmn:incoming>
+        <bpmn:incoming>CR06</bpmn:incoming>
         <bpmn:outgoing>FActiveClose</bpmn:outgoing>
       </bpmn:serviceTask>
       <bpmn:boundaryEvent id="CloseConflict" name="Mitarbeiterentscheidung&#10;veraltet" attachedToRef="Close" cancelActivity="true">
-        <bpmn:documentation>Unterbricht nur den Abschlussversuch vor erfolgreicher fachlicher Speicherung. FActiveClose und damit das terminierende Ende werden nicht erreicht. Die erledigte Mitarbeiteraufgabe wird nicht reaktiviert: Rückkehr in Staff stellt genau eine neue Aufgabe für den aktuellen Fallstand bereit. Alte Abschlussfreigabe verwerfen; internen Grund Fallstand seit Abschlussbestätigung geändert übernehmen. Kein Abschlussnachweis, kein Abschlussmailauftrag und keine Wiedereröffnung. ActiveCase und der zentrale Mieternachrichtenempfang bleiben aktiv. Wiederholungen dürfen die neue Aufgabe nicht duplizieren. Vor User-Task-Abschluss abgewiesene veraltete Aktionen lassen die bisherige Aufgabe offen und laufen nicht über dieses Ereignis.</bpmn:documentation>
+        <bpmn:documentation>Unterbricht nur den Abschlussversuch vor erfolgreicher fachlicher Speicherung. FActiveClose und damit das terminierende Ende werden nicht erreicht. Die erledigte Mitarbeiteraufgabe wird nicht reaktiviert: Rückkehr in Staff stellt genau eine neue Aufgabe für den aktuellen Fallstand bereit. Alte Abschlussfreigabe verwerfen; internen Grund Fallstand seit Abschlussbestätigung geändert übernehmen. Kein Abschlussnachweis, kein Abschlussmailauftrag und keine Wiedereröffnung. ActiveCase und der zentrale Mieternachrichtenempfang bleiben aktiv. Wiederholungen dürfen die neue Aufgabe nicht duplizieren. Vor User-Task-Abschluss abgewiesene veraltete Aktionen lassen die bisherige Aufgabe offen und laufen nicht über dieses Ereignis.
+0.20: Gilt auch für direkten Mitarbeiterabschluss aus Wartet auf Mieterantwort. Nach übernommener Entscheidung festgestellter Konflikt führt genau einmal zu Mitarbeiterprüfung am aktuellen Fallstand; offener Antwortbedarf bleibt bis zur zulässigen Erledigung bestehen. Vor Übernahme abgelehnte Aufträge erreichen diesen Pfad nicht.</bpmn:documentation>
         <bpmn:outgoing>F_CloseConflict_Staff</bpmn:outgoing>
         <bpmn:errorEventDefinition id="CloseConflict_definition" errorRef="Error_StaffClosureStale" />
       </bpmn:boundaryEvent>
@@ -344,8 +348,53 @@ Dauerhaften Aufhebungsentscheid und aktuellen Fall-/Call-Stand laden, nicht auf 
       <bpmn:sequenceFlow id="CA04" name="" sourceRef="ClearAnswerContinue" targetRef="ClearAnswerRoute" />
       <bpmn:sequenceFlow id="CA05" name="In Bearbeitung / vorrangige Prüfung" sourceRef="ClearAnswerRoute" targetRef="Staff" />
       <bpmn:sequenceFlow id="CA06" name="Neue offene Fragen; weiter warten" sourceRef="ClearAnswerRoute" targetRef="Reply" />
+      <bpmn:subProcess id="StaffCloseReplySide" name="Mitarbeiterabschluss während Warten auf Mieterantwort" triggeredByEvent="true">
+        <bpmn:documentation>
+Nicht unterbrechender Auftragseingang. Keine vorgängige Aufhebung des Antwortbedarfs nötig. Dieser Eingang gilt ausschliesslich für den aktuellen Reply-Call bei Wartet auf Mieterantwort; bestehende Abschlussaktionen anderer Phasen bleiben unverändert. Auftragsdaten lokal halten.</bpmn:documentation>
+        <bpmn:startEvent id="StaffCloseReplyStart" name="Mitarbeiter bestätigt Abschluss" isInterrupting="false">
+          <bpmn:outgoing>CR01</bpmn:outgoing>
+          <bpmn:messageEventDefinition id="StaffCloseReplyStart_definition" messageRef="Message_StaffCloseReply" />
+        </bpmn:startEvent>
+        <bpmn:serviceTask id="StaffCloseReplyCheck" name="Abschlussauftrag und&#10;aktuellen Fallstand prüfen">
+          <bpmn:documentation>
+Berechtigte Mitarbeiteridentität, bestätigten fachlichen Fallstand, Status Wartet auf Mieterantwort, führende Instanz und aktuellen Reply-Call serverseitig prüfen. Keine offene Mitarbeiter-User-Task erfinden: Autorisierung bindet hier an den aktuellen Warteaufruf. Unberechtigter, veralteter oder inzwischen anders zugeordneter Auftrag wird ohne Unterbrechung abgelehnt. Gültige Entscheidung mit Quelle Mitarbeiter, Auftragsschlüssel und Call-Bezug dauerhaft nachweisen. Keine neue KI-Auswertung, keine Nachricht und kein Kommentar erforderlich. Technischer Fehler bleibt Retry/Incident. Wiederholung eines bereits gespeicherten identischen Abschlusses als Erfolg ohne neue Wirkung behandeln, nicht als neuen Auftrag übernehmen.</bpmn:documentation>
+          <bpmn:incoming>CR01</bpmn:incoming>
+          <bpmn:outgoing>CR02</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:exclusiveGateway id="StaffCloseReplyAccepted" name="Auftrag&#10;übernommen?">
+          <bpmn:incoming>CR02</bpmn:incoming>
+          <bpmn:outgoing>CR03</bpmn:outgoing>
+          <bpmn:outgoing>CR04</bpmn:outgoing>
+        </bpmn:exclusiveGateway>
+        <bpmn:serviceTask id="StaffCloseReplySignal" name="Geprüften Abschluss&#10;für aktuellen Warteaufruf bereitstellen">
+          <bpmn:documentation>
+Persistierten Entscheidungsbezug samt Quelle Mitarbeiter und aktuellem Call-Bezug zuverlässig bereitstellen. Marker und Unterbrechung atomar gegen Call-Wechsel, manuelles Aufheben, neue Fragen, automatische Veröffentlichung und Fallabschluss abstimmen. Nach Übernahme geänderte fachliche Grundlage führt über Close zur Mitarbeiterprüfung, niemals stillschweigend die alte Bestätigung aktualisieren. Eine andere bereits aktive Bearbeitung nicht abbrechen. Technische Koordination bleibt offen.</bpmn:documentation>
+          <bpmn:incoming>CR03</bpmn:incoming>
+          <bpmn:outgoing>CR05</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:endEvent id="StaffCloseReplyRejected" name="Abgelehnt&#10;Aktueller Pfad bleibt">
+          <bpmn:incoming>CR04</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:endEvent id="StaffCloseReplyReady" name="Nur Auftrag bereitgestellt">
+          <bpmn:incoming>CR05</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="CR01" name="" sourceRef="StaffCloseReplyStart" targetRef="StaffCloseReplyCheck" />
+        <bpmn:sequenceFlow id="CR02" name="" sourceRef="StaffCloseReplyCheck" targetRef="StaffCloseReplyAccepted" />
+        <bpmn:sequenceFlow id="CR03" name="Ja" sourceRef="StaffCloseReplyAccepted" targetRef="StaffCloseReplySignal" />
+        <bpmn:sequenceFlow id="CR04" name="Nein: Konflikt / nicht zulässig" sourceRef="StaffCloseReplyAccepted" targetRef="StaffCloseReplyRejected" />
+        <bpmn:sequenceFlow id="CR05" name="" sourceRef="StaffCloseReplySignal" targetRef="StaffCloseReplyReady" />
+      </bpmn:subProcess>
+      <bpmn:boundaryEvent id="ReplyStaffClose" name="Mitarbeiterabschluss&#10;übernommen" attachedToRef="Reply" cancelActivity="true">
+        <bpmn:documentation>
+Unterbrechung ausschliesslich für den aktuell gebundenen Reply-Aufruf. Keine normale Call-Rückgabe übernehmen. Close lädt den dauerhaft gespeicherten Mitarbeiterentscheid; Quelle niemals System. Erst nach erfolgreicher Abschlussspeicherung endet Antwortbedarf. Bei früher Ablehnung bleibt der aktuelle Pfad bestehen. Später fachlicher Konflikt nutzt STAFF_CLOSURE_STALE und CloseConflict.</bpmn:documentation>
+        <bpmn:outgoing>CR06</bpmn:outgoing>
+        <bpmn:conditionalEventDefinition id="ReplyStaffClose_definition">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffCloseReplyCallRef != null and staffCloseReplyCallRef = activeReplyCallRef</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:sequenceFlow id="CR06" name="Direkter Mitarbeiterabschluss" sourceRef="ReplyStaffClose" targetRef="Close" />
       <bpmn:textAnnotation id="MainDraft">
-        <bpmn:text>FACHENTWURF 0.19 · 15.11.2026
+        <bpmn:text>FACHENTWURF 0.20 · 15.11.2026
 Nicht ausführbar / kein Deployment.
 Bisheriger Hauptablauf in «Aktiven Fall bearbeiten».
 Nachrichteneingang oben links separat öffnen.</bpmn:text>
@@ -407,7 +456,7 @@ Startart und Auftragsreferenz aus einem serverseitig autorisierten Startauftrag 
     <bpmn:sequenceFlow id="P01" sourceRef="ProcessStart" targetRef="PrepareProcessKey" />
     <bpmn:sequenceFlow id="P02" sourceRef="PrepareProcessKey" targetRef="ActiveCase" />
     <bpmn:textAnnotation id="ProcessScopeNote">
-      <bpmn:text>FACHENTWURF 0.19 · nicht ausführbar
+      <bpmn:text>FACHENTWURF 0.20 · nicht ausführbar
 Im Teilprozess «Aktiven Fall bearbeiten» liegen der bisherige Hauptablauf
 und der durchgängige Mieternachrichteneingang.
 Empfang vor fachlicher Aktivierung; Ende erst nach gespeichertem Abschluss.
@@ -858,6 +907,57 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
         <di:waypoint x="2860" y="415.0" />
         <di:waypoint x="2020.0" y="415.0" />
         <di:waypoint x="2020.0" y="465.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StaffCloseReplySide_di" bpmnElement="StaffCloseReplySide" isExpanded="true">
+        <dc:Bounds x="200" y="1580" width="1450" height="330" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffCloseReplyStart_di" bpmnElement="StaffCloseReplyStart">
+        <dc:Bounds x="250" y="1662" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffCloseReplyCheck_di" bpmnElement="StaffCloseReplyCheck">
+        <dc:Bounds x="400" y="1635" width="260" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffCloseReplyAccepted_di" bpmnElement="StaffCloseReplyAccepted">
+        <dc:Bounds x="750" y="1655" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffCloseReplySignal_di" bpmnElement="StaffCloseReplySignal">
+        <dc:Bounds x="930" y="1635" width="310" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffCloseReplyRejected_di" bpmnElement="StaffCloseReplyRejected">
+        <dc:Bounds x="757" y="1810" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffCloseReplyReady_di" bpmnElement="StaffCloseReplyReady">
+        <dc:Bounds x="1450" y="1662" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="CR01_di" bpmnElement="CR01">
+        <di:waypoint x="286" y="1680" />
+        <di:waypoint x="400" y="1680" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="CR02_di" bpmnElement="CR02">
+        <di:waypoint x="660" y="1680" />
+        <di:waypoint x="750" y="1680" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="CR03_di" bpmnElement="CR03">
+        <di:waypoint x="800" y="1680" />
+        <di:waypoint x="930" y="1680" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="CR04_di" bpmnElement="CR04">
+        <di:waypoint x="775" y="1705" />
+        <di:waypoint x="775" y="1810" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="CR05_di" bpmnElement="CR05">
+        <di:waypoint x="1240" y="1680" />
+        <di:waypoint x="1450" y="1680" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ReplyStaffClose_di" bpmnElement="ReplyStaffClose">
+        <dc:Bounds x="2022.0" y="477.0" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="CR06_di" bpmnElement="CR06">
+        <di:waypoint x="2058.0" y="495.0" />
+        <di:waypoint x="3100" y="495.0" />
+        <di:waypoint x="3100" y="570.0" />
+        <di:waypoint x="2415.0" y="570.0" />
+        <di:waypoint x="2415.0" y="615.0" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

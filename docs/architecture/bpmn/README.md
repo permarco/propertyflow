@@ -1,7 +1,7 @@
 # PropertyFlow-Fallprozess
 
 [propertyflow-fallprozess-entwurf.bpmn](propertyflow-fallprozess-entwurf.bpmn)
-ist der führende BPMN-Entwurf 0.19 zur gemeinsamen Besprechung, Stand 15.11.2026.
+ist der führende BPMN-Entwurf 0.20 zur gemeinsamen Besprechung, Stand 15.11.2026.
 Er enthält BPMN-Diagrammkoordinaten und kann im Camunda Modeler geöffnet werden.
 
 ## Dateien – hier bearbeiten
@@ -579,3 +579,18 @@ Keine Änderung der ursprünglichen Nachricht, keine erfundene Antwort und kein
 Fallabschluss. Die Diagramme zeigen die Fachfortsetzung; sichere Markerübergabe,
 Versionsbindung, Autorisierung und Worker bleiben zu implementieren. Quelle:
 [KOM-03](../../specifications/fallkommunikation.md#prozesseingang-für-antwortbedarf-aufheben).
+
+## Direkter Mitarbeiterabschluss im Mieterwartepfad · Entwurf 0.20
+
+Im Hauptmodell unter «Aktiven Fall bearbeiten» nimmt `StaffCloseReplySide`
+den Abschlussauftrag unabhängig von Mieternachricht und KI-Auswertung entgegen.
+Frühe Ablehnung lässt den aktuellen Pfad bestehen. Nur der geprüfte Auftrag wird
+für den aktuellen `Reply`-Call bereitgestellt. Dessen Randereignis `ReplyStaffClose`
+führt direkt zu `Close`, ohne `AutoAnswer`. Bei inzwischen veralteter Grundlage
+führt der bestehende Fehlerpfad `CloseConflict` zur Mitarbeiterprüfung.
+Offener Antwortbedarf endet erst mit erfolgreicher Abschlussspeicherung.
+
+Der neue Eingang liegt unterhalb der Nebenaktion «Antwortbedarf aufheben».
+[FALL-07](../../specifications/fallverwaltung.md#direkter-mitarbeiterabschluss-während-warten-auf-mieterantwort)
+und FALL-AK-31 beschreiben Regeln und geplante Prüfungen. Nur Fachentwurf;
+keine Backend-Implementierung oder Deployment-Freigabe.

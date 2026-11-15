@@ -124,6 +124,7 @@ flowchart LR
     X -->|"25"| W
     X -->|"26"| Z
     X -->|"27"| P
+    M -->|"28"| Z
     P -->|"13"| W
     B -->|"14"| W
     W -->|"15"| W
@@ -185,6 +186,7 @@ Die Pfeilnummern verweisen auf die Übergänge in der Tabelle. Die Anmerkungen i
 | 25 | Wartet auf externe Rückmeldung | Wartet auf Wiedervorlage | Mitarbeiter setzt Termin [4] |
 | 26 | Wartet auf externe Rückmeldung | Abgeschlossen | Mitarbeiter bestätigt Abschluss [3][4] |
 | 27 | Wartet auf externe Rückmeldung | Mitarbeiterprüfung erforderlich | Neuer zwingender Prüfbedarf [4] |
+| 28 | Wartet auf Mieterantwort | Abgeschlossen | Direkter Mitarbeiterabschluss [3] |
 
 - **[1]** Keine laufende Wiedervorlage und kein vorrangiger Mitarbeiterprüfbedarf; automatische Rückfragen benötigen die serverseitig geprüften Ausführungsbedingungen nach [KOM-05](fallkommunikation.md#kom-05-automatische-rueckfragen). Für zulässige Katalogrückfragen ist keine zusätzliche menschliche Einzelfreigabe vorgesehen.
 - **[2]** Kein zulässiger automatischer Abschluss und keine laufende Wiedervorlage.
@@ -425,6 +427,32 @@ PropertyFlow prüft diese Grundlage bei der Annahme der Mitarbeiteraktion und no
 Nach erfolgreicher Abschlussspeicherung endet der aktive Prozessbereich samt laufenden Nachrichtenauswertungen und Empfang; es wird keine zusätzliche Abschlussbenachrichtigung veranlasst. Ein bereits gestarteter externer Modellaufruf kann trotzdem verspätet antworten. Vor einer Ergebnisübernahme prüft der Dienst deshalb erneut den aktuellen Status und den Bezug zur Bearbeitung. Das alte Ergebnis darf weder Status, Dringlichkeit, Antwortbedarf oder Kommunikation ändern noch eine Mitarbeiterprüfung oder Wiedereröffnung auslösen. Diese Wirkung muss auch bei gleichzeitigem Abschluss und Ergebniszugriff abgesichert sein.
 
 Der fachliche Rückweg ist im [BPMN-Entwurf](../architecture/bpmn/propertyflow-fallprozess-entwurf.bpmn) vorgesehen. Technische Versionsbindung, Transaktionsschutz und Wiederholungskoordination sind vor der ausführbaren Umsetzung zu konkretisieren.
+
+### Direkter Mitarbeiterabschluss während Warten auf Mieterantwort
+
+**Bestätigt am 15.11.2026:** Der Mitarbeiter kann aus «Wartet auf Mieterantwort»
+«Fall abschliessen» bestätigen, ohne vorher Antwortbedarf aufheben zu müssen.
+Keine Nachricht, kein Kommentar und keine erneute KI-Analyse sind Voraussetzung.
+Der Dienst prüft Berechtigung, den bewusst bestätigten aktuellen Fallstand und die
+Zuordnung zum aktuellen Mieterwarte-Aufruf der führenden Prozessinstanz. Dieser
+Wartepfad hat keine Mitarbeiter-User-Task; die Freigabe wird an seinen aktuellen
+Prozessaufruf gebunden, nicht an eine erfundene oder erledigte Aufgabe.
+
+| Prüfung | Verbindlicher Ablauf |
+|---|---|
+| Auftrag vor Übernahme unberechtigt, veraltet oder falscher Prozessbezug | Ablehnen, aktuellen Prozesspfad unverändert lassen. Keine Unterbrechung, kein Abschluss. Mitarbeiter muss den aktuellen Stand prüfen und gegebenenfalls erneut bestätigen. |
+| Auftrag gültig übernommen | Mitarbeiterentscheidung nachweisen, passenden Mieterwarte-Aufruf unterbrechen und direkt zur bestehenden Abschlussprüfung gehen. Keine automatische Antwort davor. |
+| Entscheidungsgrundlage nach Übernahme, vor Speicherung überholt | Kein Abschluss; bestehender Konfliktpfad führt genau einmal zur Mitarbeiterprüfung am aktuellen Fallstand. Alte Bestätigung ist keine Freigabe für die neue Prüfung. |
+| Abschluss erfolgreich gespeichert | «Abgeschlossen», offenen Antwortbedarf beenden und aktive Verarbeitung beenden; bestehende Nachrichten bleiben erhalten. |
+
+Während der Prüfung und bei Ablehnung bleibt offener Antwortbedarf bestehen.
+Eine laufende KI allein sperrt den bewussten Abschluss nicht; verspätete Ergebnisse
+dürfen ihn nicht zurücknehmen. Technische Fehler folgen den bestehenden
+Retry-/Incident-Regeln, nicht automatisch dem fachlichen Konfliktpfad.
+Wiederholung eines bereits erfolgreich gespeicherten identischen Abschlusses ist
+idempotenter Erfolg ohne neue Nachricht, zweite Aufgabe oder Konflikt.
+Konkurrierende manuelle Aufhebung, neue Nachrichten, automatische Veröffentlichung
+und Wechsel des Warteaufrufs müssen anhand der aktuellen Zuordnung geschützt sein.
 
 ### Neuer Prozessdurchlauf bei Wiedereröffnung
 
@@ -854,6 +882,20 @@ Verzögerte Aktivierung eines gültig angenommenen, inzwischen fälligen Termins
 führt ohne neuen Aufschub zur versionsgeprüften Mitarbeiterprüfung; gelöschte,
 ersetzte oder nach Fallabschluss verspätete Timer bleiben wirkungslos.
 Dies sind geplante Integrationsprüfungen, keine ausgeführten Laufzeittests.
+
+### FALL-AK-31: Direkter Mitarbeiterabschluss aus dem Mieterwartepfad
+
+Mit offenem Antwortbedarf ohne vorherige Aufhebung, Nachricht oder Kommentar
+abschliessen: aktueller Mitarbeiterentscheid führt ohne KI-Neuanalyse zur
+Abschlussspeicherung. Erst dann endet Antwortbedarf. Unberechtigter, veralteter
+oder falsch zugeordneter Auftrag vor Übernahme lässt den aktuellen Pfad bestehen.
+Neue relevante Nachricht nach Übernahme vor Commit: kein Abschluss, genau eine
+Mitarbeiterprüfung mit aktueller Grundlage. Laufende KI allein blockiert nicht;
+späte Ergebnisse nach Commit bleiben unwirksam. Gleichzeitige Aufhebung,
+Call-Wechsel, automatischer Abschluss und doppelte identische Abschlussaufträge
+prüfen: keine doppelte Wirkung oder falsche Quellenzuordnung. Technische
+Speicherfehler erzeugen nicht allein einen fachlichen Konflikt. Dies sind geplante
+Integrationsprüfungen, keine ausgeführten Laufzeittests.
 
 ## Offene Entscheidungen und Weiterentwicklung
 

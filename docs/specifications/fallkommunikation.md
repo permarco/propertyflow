@@ -417,6 +417,13 @@ Wiederholungsschutz müssen vor Ausführung technisch umgesetzt werden.
 
 ### Mitarbeiterabschluss und Nachvollziehbarkeit
 
+Der direkte Mitarbeiterabschluss ist auch während «Wartet auf Mieterantwort»
+möglich, ohne vorher den Antwortbedarf aufzuheben. Erst die erfolgreiche
+Abschlussspeicherung beendet den offenen Bedarf; ein abgelehnter Auftrag oder
+Konflikt tut dies nicht. Mitarbeitereingang und Konfliktpfade stehen in
+[FALL-07](fallverwaltung.md#direkter-mitarbeiterabschluss-während-warten-auf-mieterantwort).
+
+
 Mitarbeiter dürfen ohne Nachricht abschliessen. Bei Bedarf senden sie vorher
 über das bestehende UI eine Nachricht, optional mit der bestehenden KI-
 Formulierungshilfe. Kein zusätzliches Kommentarfeld und keine automatische

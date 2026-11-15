@@ -284,3 +284,26 @@ Auftrag darf keine andere aktive Bearbeitung verdrängen.
 weiteren Direkteintritt zu `SWork`, neben der Wiedereröffnung. Kein durch den
 Client wählbarer Direkteintritt; neuer Prüfbedarf bleibt vorrangig. Vorhandene
 Call-Rückgabewerte bleiben unverändert. Technische Realisierung noch offen.
+
+## Direkter Mitarbeiterabschluss aus `Reply` (0.20)
+
+`StaffCloseReplySide` empfängt einen serverseitig autorisierten Mitarbeiterauftrag
+zur aktuellen führenden Instanz. `StaffCloseReplyCheck` prüft Fallstand, Status,
+Identität und den aktuellen `Reply`-Call. Keine Mitarbeiter-User-Task voraussetzen,
+wo das Modell auf eine Mieterantwort wartet. Frühe Ablehnung liefert keinen
+Unterbrechungsmarker. Technische Fehler bleiben Jobfehler.
+
+Der persistierte Entscheid trägt Quelle Mitarbeiter, Auftragsschlüssel und
+Fall-/Call-Bezug. `StaffCloseReplySignal` stellt dessen Referenz zuverlässig bereit.
+`staffCloseReplyCallRef` und `activeReplyCallRef` sind fachliche Platzhalter;
+Markerbereitstellung und Call-Abbruch müssen vor Ausführung gegen konkurrierende
+Aufhebung, neue Fragen, automatische Veröffentlichung und Call-Wechsel abgesichert
+werden. Ein nachträglicher Worker-Check allein genügt nicht. Keine neue Wirkung
+für alte Generationen oder bereits erfolgreich abgeschlossene identische Aufträge.
+
+Nach Unterbrechung lädt `Close` den dauerhaften Mitarbeiterentscheid, keine Outputs
+des abgebrochenen `Reply`. Der normale Reply-Ausgang `CLOSE` bleibt unverändert ein
+Systemabschlussvorschlag und wird nicht für diesen Mitarbeiterauftrag verwendet.
+Später fachlicher Konflikt: `STAFF_CLOSURE_STALE` → `CloseConflict` → aktuelle
+Mitarbeiterprüfung. Erst erfolgreicher Commit beendet offenen Antwortbedarf und
+den aktiven Ausführungsbaum. Worker und technische Übergaben sind noch offen.
