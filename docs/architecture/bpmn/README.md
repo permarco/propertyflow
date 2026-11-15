@@ -16,7 +16,17 @@ ausführbare Anbindung und Laufzeitnachweise unter B10 stehen noch aus.
 
 ### Erlaubte Layoutänderungen
 
+- Hauptabläufe möglichst von links nach rechts führen; unnötige nach links
+  gerichtete Vorwärtspfade vermeiden. Alternative Zweige untereinander anordnen.
+  Echte Rückschleifen ausserhalb des Hauptablaufs führen, möglichst mit Eintritt
+  von links ins Ziel. Die Prozesslogik hat Vorrang vor einer erzwungenen Leserichtung.
 - Elemente verschieben, ausrichten und ihre dargestellte Grösse anpassen.
+- Verbindungen möglichst gerade führen und unnötige Knicke vermeiden. Elemente
+  entsprechend ausrichten; notwendige Umwege mit wenigen rechtwinkligen Knicken
+  führen, ohne Aufgaben oder Beschriftungen zu durchqueren.
+- Rückflüsse nach links bevorzugt oberhalb des Hauptablaufs führen.
+  Fehlerpfade von Error-Boundary-Events beginnen nach unten und verlaufen
+  unterhalb des Hauptablaufs; dies gilt auch bei einem Fehler-Rücksprung.
 - Abstände, Linienführung und Knickpunkte verbessern, ohne Quelle oder Ziel
   einer Verbindung zu ändern.
 - Beschriftungen verschieben und ihre Darstellungsbreite anpassen; reine
@@ -56,6 +66,13 @@ Modeler-Import und -Export geprüft und die Darstellung auf Lesbarkeit kontrolli
 Diese Prüfung ersetzt weder ein Camunda-Deployment noch Backend-Laufzeittests.
 
 ## Farben im Camunda Modeler
+
+**Darstellungsnachführung vom 15.11.2026:** Alle sieben Modelle sind nach der
+Leserichtung links nach rechts ausgerichtet. Normale Rückschleifen liegen
+bevorzugt oben, Error-Boundary-Pfade beginnen unten. 22 explizite
+XOR-Zusammenführungen wurden in sechs Dateien ergänzt; die Wiedervorlage besass
+ihre Zusammenführung bereits. Die bestehenden fachlichen Pfade bleiben erhalten.
+Die Änderungen machen die Fachentwürfe nicht ausführbar.
 
 Alle sieben BPMN-Dateien verwenden dieselbe Task-Farbgebung. Die Farben dienen
 der Orientierung; sie ändern keine Prozesslogik und bezeichnen weder Fallstatus

@@ -1,5 +1,5 @@
-<?xml version='1.0' encoding='utf-8'?>
-<bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_PropertyFlow_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_PropertyFlow_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
   <bpmn:message id="Message_CaseDataChange" name="Falldaten ergänzen angefordert" />
   <bpmn:message id="Message_StaffTakeover" name="Bearbeitung während Abklärung übernehmen" />
   <bpmn:message id="Message_StaffFollowClarification" name="Direkte Wiedervorlage angefordert" />
@@ -43,12 +43,20 @@ Nur Erstanlage. Eine Wiedereröffnung darf ausschliesslich ReopenCase zuordnen; 
         <bpmn:incoming>F_Initial</bpmn:incoming>
         <bpmn:outgoing>F02</bpmn:outgoing>
       </bpmn:serviceTask>
+      <bpmn:exclusiveGateway id="Merge_Reply" gatewayDirection="Converging">
+        <bpmn:incoming>F17</bpmn:incoming>
+        <bpmn:incoming>F19</bpmn:incoming>
+        <bpmn:incoming>CA06</bpmn:incoming>
+        <bpmn:incoming>AParentWait</bpmn:incoming>
+        <bpmn:incoming>AIWait</bpmn:incoming>
+        <bpmn:outgoing>Flow_Merge_Reply</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
       <bpmn:callActivity id="Reply" name="Mieterantwort abwarten&#10;und Fortsetzung prüfen">
         <bpmn:documentation>
 Ruft mieterantwort-pruefen.bpmn auf. Vertrag: teilprozess-vertraege.md. Untergeordnete Instanz mit eigenem Scope; führende Fallzuordnung bleibt im Hauptprozess. Eingangsreferenz vor Aktivierung bereitstellen. Nur explizite Outputs übernehmen; aktueller Fallstand bleibt vor Wirkung zu prüfen.
 0.27: StaffFollowAtReply unterbricht den gesamten Call erst nach bestätigter Terminsetzung. Laufende Auswertungen verlieren bereits ab Commit die Wirkungsfreigabe; offene Fragen bleiben erhalten. Marker gilt nur für den betroffenen Aufruf und muss auch den Übergang zu Folgeschritten zuverlässig abdecken.</bpmn:documentation>
         <bpmn:extensionElements>
-          <zeebe:calledElement processId="PropertyFlow_TenantReply_Draft" bindingType="deployment" propagateAllParentVariables="false" propagateAllChildVariables="true" />
+          <zeebe:calledElement processId="PropertyFlow_TenantReply_Draft" propagateAllChildVariables="true" propagateAllParentVariables="false" bindingType="deployment" />
           <zeebe:ioMapping>
             <zeebe:input source="= caseId" target="caseId" />
             <zeebe:input source="= processInstanceKey" target="leadingProcessInstanceKey" />
@@ -57,13 +65,10 @@ Ruft mieterantwort-pruefen.bpmn auf. Vertrag: teilprozess-vertraege.md. Untergeo
             <zeebe:output source="= decisionRef" target="replyDecisionRef" />
           </zeebe:ioMapping>
         </bpmn:extensionElements>
-        <bpmn:incoming>F17</bpmn:incoming>
-        <bpmn:incoming>F19</bpmn:incoming>
-        <bpmn:incoming>CA06</bpmn:incoming>
-        <bpmn:incoming>AParentWait</bpmn:incoming>
-        <bpmn:incoming>AIWait</bpmn:incoming>
+        <bpmn:incoming>Flow_Merge_Reply</bpmn:incoming>
         <bpmn:outgoing>F09</bpmn:outgoing>
       </bpmn:callActivity>
+      <bpmn:sequenceFlow id="Flow_Merge_Reply" sourceRef="Merge_Reply" targetRef="Reply" />
       <bpmn:exclusiveGateway id="ReplyRoute" name="Ergebnis der Antwortprüfung" default="F21">
         <bpmn:documentation>
 Nur das aktuell geprüfte Fortsetzungsergebnis verwenden; genau einen Ausgang wählen. Keine erneute eigene Klassifikation oder Bewertung. FEEL-Ergebniswerte noch festzulegen.
@@ -74,13 +79,18 @@ Nach Call-Rückkehr ausschliesslich replyOutcome / replyDecisionRef auswerten. U
         <bpmn:outgoing>F18</bpmn:outgoing>
         <bpmn:outgoing>F20</bpmn:outgoing>
       </bpmn:exclusiveGateway>
-      <bpmn:serviceTask id="Close" name="Mitarbeiterabschluss prüfen&#10;und speichern">
-        <bpmn:documentation>FALL-07: Ausschliesslich Mitarbeiterabschluss aus aktueller bestätigter Entscheidung. Derselbe fachliche Abschlussvertrag wie AutoClose; keine zweite Domänenlogik. Berechtigung, führenden Durchlauf und aktuellen Fallstand einschliesslich neuer Nachrichten prüfen. Laufende KI allein blockiert den Mitarbeiterabschluss nicht. Ohne Nachrichten- oder Kommentarpflicht. Speicherung konsistent gegen konkurrierende Änderungen prüfen; veraltet -&gt; STAFF_CLOSURE_STALE und CloseConflict zur Mitarbeiterprüfung. Technische Fehler Retry/Incident. Bereits erfolgreicher identischer Auftrag bleibt Erfolg. Antwortbedarf/Wiedervorlage bei Erfolg beenden; keine zusätzliche Abschlussmail, frühere Nachrichten und Mailpflichten erhalten. Nach Commit beendet ActiveEnd den aktiven Bereich; späte Worker dürfen nicht wirken.</bpmn:documentation>
+      <bpmn:exclusiveGateway id="Merge_Close" gatewayDirection="Converging">
         <bpmn:incoming>F16</bpmn:incoming>
         <bpmn:incoming>CR06</bpmn:incoming>
+        <bpmn:outgoing>Flow_Merge_Close</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+      <bpmn:serviceTask id="Close" name="Mitarbeiterabschluss prüfen&#10;und speichern">
+        <bpmn:documentation>FALL-07: Ausschliesslich Mitarbeiterabschluss aus aktueller bestätigter Entscheidung. Derselbe fachliche Abschlussvertrag wie AutoClose; keine zweite Domänenlogik. Berechtigung, führenden Durchlauf und aktuellen Fallstand einschliesslich neuer Nachrichten prüfen. Laufende KI allein blockiert den Mitarbeiterabschluss nicht. Ohne Nachrichten- oder Kommentarpflicht. Speicherung konsistent gegen konkurrierende Änderungen prüfen; veraltet -&gt; STAFF_CLOSURE_STALE und CloseConflict zur Mitarbeiterprüfung. Technische Fehler Retry/Incident. Bereits erfolgreicher identischer Auftrag bleibt Erfolg. Antwortbedarf/Wiedervorlage bei Erfolg beenden; keine zusätzliche Abschlussmail, frühere Nachrichten und Mailpflichten erhalten. Nach Commit beendet ActiveEnd den aktiven Bereich; späte Worker dürfen nicht wirken.</bpmn:documentation>
+        <bpmn:incoming>Flow_Merge_Close</bpmn:incoming>
         <bpmn:outgoing>FActiveClose</bpmn:outgoing>
       </bpmn:serviceTask>
-      <bpmn:boundaryEvent id="CloseConflict" name="Mitarbeiterentscheidung&#10;veraltet" attachedToRef="Close" cancelActivity="true">
+      <bpmn:sequenceFlow id="Flow_Merge_Close" sourceRef="Merge_Close" targetRef="Close" />
+      <bpmn:boundaryEvent id="CloseConflict" name="Mitarbeiterentscheidung&#10;veraltet" attachedToRef="Close">
         <bpmn:documentation>Unterbricht nur den Abschlussversuch vor erfolgreicher fachlicher Speicherung. FActiveClose und damit das terminierende Ende werden nicht erreicht. Die erledigte Mitarbeiteraufgabe wird nicht reaktiviert: Rückkehr in Staff stellt genau eine neue Aufgabe für den aktuellen Fallstand bereit. Alte Abschlussfreigabe verwerfen; internen Grund Fallstand seit Abschlussbestätigung geändert übernehmen. Kein Abschlussnachweis, kein Abschlussmailauftrag und keine Wiedereröffnung. ActiveCase und der zentrale Mieternachrichtenempfang bleiben aktiv. Wiederholungen dürfen die neue Aufgabe nicht duplizieren. Vor User-Task-Abschluss abgewiesene veraltete Aktionen lassen die bisherige Aufgabe offen und laufen nicht über dieses Ereignis.
 0.20: Gilt auch für direkten Mitarbeiterabschluss aus Wartet auf Mieterantwort. Nach übernommener Entscheidung festgestellter Konflikt führt genau einmal zu Mitarbeiterprüfung am aktuellen Fallstand; offener Antwortbedarf bleibt bis zur zulässigen Erledigung bestehen. Vor Übernahme abgelehnte Aufträge erreichen diesen Pfad nicht.</bpmn:documentation>
         <bpmn:outgoing>F_CloseConflict_Staff</bpmn:outgoing>
@@ -92,7 +102,7 @@ Ruft mitarbeiterbearbeitung.bpmn auf. Vertrag: teilprozess-vertraege.md. Unterge
 0.19: Geprüfter Eintritt nach manueller Aufhebung des letzten Antwortbedarfs ohne Prüfbedarf führt direkt zu SWork. entryContextRef wird durch ClearAnswerContinue serverseitig bereitgestellt; mit Prüfbedarf regulärer Review-Eintritt.
 0.35: Einziger Eingang SCStart nach exklusiver Übernahme. entryContextRef enthält den gültigen Anspruch für diesen Ausführungspfad. SEntryCheck registriert die tatsächliche Kindinstanz dazu. Reservierung und Engine-Call müssen nach Absturz abgeglichen werden, kein zweiter paralleler Call bei unklarer Startantwort.</bpmn:documentation>
         <bpmn:extensionElements>
-          <zeebe:calledElement processId="PropertyFlow_Staff_Draft" bindingType="deployment" propagateAllParentVariables="false" propagateAllChildVariables="true" />
+          <zeebe:calledElement processId="PropertyFlow_Staff_Draft" propagateAllChildVariables="true" propagateAllParentVariables="false" bindingType="deployment" />
           <zeebe:ioMapping>
             <zeebe:input source="= caseId" target="caseId" />
             <zeebe:input source="= processInstanceKey" target="leadingProcessInstanceKey" />
@@ -114,24 +124,29 @@ Nach Call-Rückkehr ausschliesslich staffOutcome / staffDecisionRef auswerten. U
       <bpmn:sequenceFlow id="F01" sourceRef="Start" targetRef="EntryRoute" />
       <bpmn:sequenceFlow id="F09" sourceRef="Reply" targetRef="ReplyRoute" />
       <bpmn:sequenceFlow id="F15" sourceRef="Staff" targetRef="StaffRoute" />
-      <bpmn:sequenceFlow id="F16" name="Abschluss bestätigt" sourceRef="StaffRoute" targetRef="Close" />
-      <bpmn:sequenceFlow id="F17" name="Rückfrage veröffentlicht" sourceRef="StaffRoute" targetRef="Reply" />
-      <bpmn:sequenceFlow id="F19" name="Fragen bleiben offen" sourceRef="ReplyRoute" targetRef="Reply">
+      <bpmn:sequenceFlow id="F16" name="Abschluss bestätigt" sourceRef="StaffRoute" targetRef="Merge_Close" />
+      <bpmn:sequenceFlow id="F17" name="Rückfrage veröffentlicht" sourceRef="StaffRoute" targetRef="Merge_Reply" />
+      <bpmn:sequenceFlow id="F19" name="Fragen bleiben offen" sourceRef="ReplyRoute" targetRef="Merge_Reply">
         <bpmn:documentation>
 Geprüftes Ergebnis Weiter warten übernehmen. Verbrauch dieses Ergebnisstands nachvollziehbar sichern; derselbe Stand darf nicht erneut wecken, ein bereits verfügbarer neuerer Stand darf nicht verloren gehen.</bpmn:documentation>
       </bpmn:sequenceFlow>
-      <bpmn:sequenceFlow id="F21" name="Prüfung erforderlich" sourceRef="ReplyRoute" targetRef="StaffContinuationClaim">
+      <bpmn:sequenceFlow id="F21" name="Prüfung erforderlich" sourceRef="ReplyRoute" targetRef="Merge_StaffContinuationClaim">
         <bpmn:documentation>
 Nur fachliches Prüfergebnis aus RReview: Pflichtprüfbedarf/Analysefehler oder vollständige Beantwortung ohne zulässigen Abschluss beziehungsweise andere bestehende fachliche Prüfgründe. Kein Fallback für veraltete oder doppelte Auswertungen.</bpmn:documentation>
       </bpmn:sequenceFlow>
-      <bpmn:endEvent id="ActiveEnd" name="Aktive Bearbeitung beendet">
-        <bpmn:documentation>Erst nach erfolgreichem Close-Commit. Terminiert nur ActiveCase samt laufenden Ereignis-Teilprozessen und Empfang; der äussere Prozess endet danach ohne Abschlussmail. Kein fachlicher Abschluss allein durch ein technisches Endereignis.</bpmn:documentation>
+      <bpmn:exclusiveGateway id="Merge_ActiveEnd" gatewayDirection="Converging">
         <bpmn:incoming>FActiveClose</bpmn:incoming>
         <bpmn:incoming>AParentClosed</bpmn:incoming>
+        <bpmn:outgoing>Flow_Merge_ActiveEnd</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+      <bpmn:endEvent id="ActiveEnd" name="Aktive Bearbeitung beendet">
+        <bpmn:documentation>Erst nach erfolgreichem Close-Commit. Terminiert nur ActiveCase samt laufenden Ereignis-Teilprozessen und Empfang; der äussere Prozess endet danach ohne Abschlussmail. Kein fachlicher Abschluss allein durch ein technisches Endereignis.</bpmn:documentation>
+        <bpmn:incoming>Flow_Merge_ActiveEnd</bpmn:incoming>
         <bpmn:terminateEventDefinition id="ActiveEnd_definition" />
       </bpmn:endEvent>
-      <bpmn:sequenceFlow id="FActiveClose" sourceRef="Close" targetRef="ActiveEnd" />
-      <bpmn:sequenceFlow id="F_CloseConflict_Staff" name="Aktuellen Fallstand erneut prüfen" sourceRef="CloseConflict" targetRef="StaffContinuationClaim" />
+      <bpmn:sequenceFlow id="Flow_Merge_ActiveEnd" sourceRef="Merge_ActiveEnd" targetRef="ActiveEnd" />
+      <bpmn:sequenceFlow id="FActiveClose" sourceRef="Close" targetRef="Merge_ActiveEnd" />
+      <bpmn:sequenceFlow id="F_CloseConflict_Staff" name="Aktuellen Fallstand erneut prüfen" sourceRef="CloseConflict" targetRef="Merge_StaffContinuationClaim" />
       <bpmn:subProcess id="TenantInbox" name="Mieternachrichten&#10;durchgängig empfangen" triggeredByEvent="true">
         <bpmn:documentation>Einziger externer Empfänger für Message_TenantMessage in der führenden Prozessinstanz. Nicht unterbrechend und je Nachricht aktivierbar. Eingangs-ID und Analysekontext müssen pro Aufruf lokal bleiben. Keine globale überschreibbare letzte Nachricht. Steuerinformationen werden versionsgeprüft bereitgestellt: im ActiveCase-Bereich für den Hauptpfad und ausdrücklich in der aktuellen Kindinstanz für ausgelagerte Wartepunkte (teilprozess-vertraege.md). Rechteprüfung und Speicherung erfolgen vor Korrelation gemäss SS-003; Korrelation bestätigt Empfang, nicht abgeschlossene LLM-Auswertung. Keine eigene Veröffentlichung, Statusfreigabe oder Schliessung aus diesem Nebenpfad.</bpmn:documentation>
         <bpmn:startEvent id="NStart" name="Mieternachricht gespeichert" isInterrupting="false">
@@ -141,7 +156,7 @@ Nur fachliches Prüfergebnis aus RReview: Pflichtprüfbedarf/Analysefehler oder 
         <bpmn:callActivity id="ProcessTenantMessage" name="Mieternachricht&#10;verarbeiten">
           <bpmn:documentation>Ruft mieternachricht-verarbeiten.bpmn je empfangener Nachricht auf. tenantMessageId muss lokal aus der korrelierten gespeicherten Nachricht übernommen werden, niemals in einer überschreibbaren Root-Variable. Keine Outputs; keine Antwort-, Status- oder Abschlussfreigabe durch Call-Ende. Empfangsbestätigung wartet nicht auf Verarbeitung. Interne Bereitstellung gemäss teilprozess-vertraege.md.</bpmn:documentation>
           <bpmn:extensionElements>
-            <zeebe:calledElement processId="PropertyFlow_TenantMessage_Draft" bindingType="deployment" propagateAllParentVariables="false" propagateAllChildVariables="false" />
+            <zeebe:calledElement processId="PropertyFlow_TenantMessage_Draft" propagateAllChildVariables="false" propagateAllParentVariables="false" bindingType="deployment" />
             <zeebe:ioMapping>
               <zeebe:input source="= caseId" target="caseId" />
               <zeebe:input source="= processInstanceKey" target="leadingProcessInstanceKey" />
@@ -170,7 +185,7 @@ FALL-07 / ADR-002 Ergänzung 15.11.2026: Autorisierten Wiedereröffnungsauftrag,
       </bpmn:serviceTask>
       <bpmn:sequenceFlow id="F_Initial" name="Erstanlage" sourceRef="EntryRoute" targetRef="Register" />
       <bpmn:sequenceFlow id="F_Reopen" name="Wiedereröffnung" sourceRef="EntryRoute" targetRef="ReopenCase" />
-      <bpmn:sequenceFlow id="F_Reopen_Staff" name="" sourceRef="ReopenCase" targetRef="StaffContinuationClaim" />
+      <bpmn:sequenceFlow id="F_Reopen_Staff" name="" sourceRef="ReopenCase" targetRef="Merge_StaffContinuationClaim" />
       <bpmn:boundaryEvent id="ReopenRejected" name="Auftrag nicht mehr gültig" attachedToRef="ReopenCase">
         <bpmn:outgoing>F_ReopenRejected</bpmn:outgoing>
         <bpmn:errorEventDefinition id="ReopenRejected_definition" errorRef="Error_ReopenRejected" />
@@ -199,7 +214,7 @@ KOM-03: Berechtigung, aktuellen Fall, Nachricht, Antwortbedarf, führende Instan
         <bpmn:sequenceFlow id="CA01" name="" sourceRef="ClearAnswerStart" targetRef="ClearAnswerApply" />
         <bpmn:sequenceFlow id="CA02" name="" sourceRef="ClearAnswerApply" targetRef="ClearAnswerEnd" />
       </bpmn:subProcess>
-      <bpmn:boundaryEvent id="ReplyCleared" name="Antwortbedarf aufgehoben" attachedToRef="Reply" cancelActivity="true">
+      <bpmn:boundaryEvent id="ReplyCleared" name="Antwortbedarf aufgehoben" attachedToRef="Reply">
         <bpmn:documentation>
 Nur aktuell freigegebenen Aufhebungsmarker zum aktiven Reply-Call verwenden. Teilaufhebung unterbricht den Call nicht. Marker und Unterbrechung vor Ausführung mit neuen Fragen, Mitarbeiterentscheidung, Fallabschluss und Call-Wechsel koordinieren; alte Marker niemals auf neuere Calls anwenden. Kein normaler Output des abgebrochenen Calls.</bpmn:documentation>
         <bpmn:outgoing>CA03</bpmn:outgoing>
@@ -220,8 +235,8 @@ Dauerhaften Aufhebungsentscheid und aktuellen Fall-/Call-Stand laden, nicht auf 
       </bpmn:exclusiveGateway>
       <bpmn:sequenceFlow id="CA03" name="" sourceRef="ReplyCleared" targetRef="ClearAnswerContinue" />
       <bpmn:sequenceFlow id="CA04" name="" sourceRef="ClearAnswerContinue" targetRef="ClearAnswerRoute" />
-      <bpmn:sequenceFlow id="CA05" name="In Bearbeitung / vorrangige Prüfung" sourceRef="ClearAnswerRoute" targetRef="StaffContinuationClaim" />
-      <bpmn:sequenceFlow id="CA06" name="Neue offene Fragen; weiter warten" sourceRef="ClearAnswerRoute" targetRef="Reply" />
+      <bpmn:sequenceFlow id="CA05" name="In Bearbeitung / vorrangige Prüfung" sourceRef="ClearAnswerRoute" targetRef="Merge_StaffContinuationClaim" />
+      <bpmn:sequenceFlow id="CA06" name="Neue offene Fragen; weiter warten" sourceRef="ClearAnswerRoute" targetRef="Merge_Reply" />
       <bpmn:subProcess id="StaffCloseReplySide" name="Mitarbeiterabschluss während Warten auf Mieterantwort" triggeredByEvent="true">
         <bpmn:documentation>
 Nicht unterbrechender Auftragseingang. Keine vorgängige Aufhebung des Antwortbedarfs nötig. Dieser Eingang gilt ausschliesslich für den aktuellen Reply-Call bei Wartet auf Mieterantwort; bestehende Abschlussaktionen anderer Phasen bleiben unverändert. Auftragsdaten lokal halten.</bpmn:documentation>
@@ -258,7 +273,7 @@ Persistierten Entscheidungsbezug samt Quelle Mitarbeiter und aktuellem Call-Bezu
         <bpmn:sequenceFlow id="CR04" name="Nein: Konflikt / nicht zulässig" sourceRef="StaffCloseReplyAccepted" targetRef="StaffCloseReplyRejected" />
         <bpmn:sequenceFlow id="CR05" name="" sourceRef="StaffCloseReplySignal" targetRef="StaffCloseReplyReady" />
       </bpmn:subProcess>
-      <bpmn:boundaryEvent id="ReplyStaffClose" name="Abschluss bestätigt" attachedToRef="Reply" cancelActivity="true">
+      <bpmn:boundaryEvent id="ReplyStaffClose" name="Abschluss bestätigt" attachedToRef="Reply">
         <bpmn:documentation>
 Unterbrechung ausschliesslich für den aktuell gebundenen Reply-Aufruf. Keine normale Call-Rückgabe übernehmen. Close lädt den dauerhaft gespeicherten Mitarbeiterentscheid; Quelle niemals System. Erst nach erfolgreicher Abschlussspeicherung endet Antwortbedarf. Bei früher Ablehnung bleibt der aktuelle Pfad bestehen. Später fachlicher Konflikt nutzt STAFF_CLOSURE_STALE und CloseConflict.</bpmn:documentation>
         <bpmn:outgoing>CR06</bpmn:outgoing>
@@ -266,7 +281,7 @@ Unterbrechung ausschliesslich für den aktuell gebundenen Reply-Aufruf. Keine no
           <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffCloseReplyCallRef != null and staffCloseReplyCallRef = activeReplyCallRef</bpmn:condition>
         </bpmn:conditionalEventDefinition>
       </bpmn:boundaryEvent>
-      <bpmn:sequenceFlow id="CR06" name="Direkter Mitarbeiterabschluss" sourceRef="ReplyStaffClose" targetRef="Close" />
+      <bpmn:sequenceFlow id="CR06" name="Direkter Mitarbeiterabschluss" sourceRef="ReplyStaffClose" targetRef="Merge_Close" />
       <bpmn:subProcess id="ReviewNeedSide" name="Neuer Prüfbedarf – unabhängig von Mieternachrichten" triggeredByEvent="true">
         <bpmn:documentation>
 Nicht unterbrechender interner Eingang für serverseitig festgestellten fachlichen Prüfbedarf. Keine neue öffentliche Schnittstelle und kein LLM-Auftrag. Nach beendetem ActiveCase existiert dieser Empfang nicht; nach Abschluss eintreffende Hinweise werden ausserhalb des beendeten Prozesses intern gespeichert, ohne Neustart.</bpmn:documentation>
@@ -303,27 +318,32 @@ Nur für aktuellen Reply-Call bei Wartet auf Mieterantwort mit neuem fachlichem 
         <bpmn:endEvent id="ReviewNeedNoAction" name="Keine neue Prüfung&#10;aus dieser Meldung">
           <bpmn:incoming>PN05</bpmn:incoming>
         </bpmn:endEvent>
-        <bpmn:endEvent id="ReviewNeedDone" name="Nur Nebenaktion beendet">
+        <bpmn:exclusiveGateway id="Merge_ReviewNeedDone" gatewayDirection="Converging">
           <bpmn:incoming>PN06</bpmn:incoming>
           <bpmn:incoming>PN07</bpmn:incoming>
           <bpmn:incoming>PN09</bpmn:incoming>
+          <bpmn:outgoing>Flow_Merge_ReviewNeedDone</bpmn:outgoing>
+        </bpmn:exclusiveGateway>
+        <bpmn:endEvent id="ReviewNeedDone" name="Nur Nebenaktion beendet">
+          <bpmn:incoming>Flow_Merge_ReviewNeedDone</bpmn:incoming>
         </bpmn:endEvent>
+        <bpmn:sequenceFlow id="Flow_Merge_ReviewNeedDone" sourceRef="Merge_ReviewNeedDone" targetRef="ReviewNeedDone" />
         <bpmn:sequenceFlow id="PN01" name="" sourceRef="ReviewNeedStart" targetRef="ReviewNeedCheck" />
         <bpmn:sequenceFlow id="PN02" name="" sourceRef="ReviewNeedCheck" targetRef="ReviewNeedRoute" />
         <bpmn:sequenceFlow id="PN03" name="Prüfung bereits offen" sourceRef="ReviewNeedRoute" targetRef="ReviewNeedExisting" />
         <bpmn:sequenceFlow id="PN04" name="Neuer Grund im Mieterwartepfad" sourceRef="ReviewNeedRoute" targetRef="ReviewNeedWakeReply" />
         <bpmn:sequenceFlow id="PN05" name="Wiederholung / berücksichtigt / abgeschlossen" sourceRef="ReviewNeedRoute" targetRef="ReviewNeedNoAction" />
-        <bpmn:sequenceFlow id="PN06" name="" sourceRef="ReviewNeedExisting" targetRef="ReviewNeedDone" />
-        <bpmn:sequenceFlow id="PN07" name="" sourceRef="ReviewNeedWakeReply" targetRef="ReviewNeedDone" />
+        <bpmn:sequenceFlow id="PN06" name="" sourceRef="ReviewNeedExisting" targetRef="Merge_ReviewNeedDone" />
+        <bpmn:sequenceFlow id="PN07" name="" sourceRef="ReviewNeedWakeReply" targetRef="Merge_ReviewNeedDone" />
         <bpmn:serviceTask id="ReviewNeedOther" name="Automatik unterbrechen oder&#10;aktuelle Mitarbeiterphase informieren">
           <bpmn:documentation>0.31: Bei Automatic bestätigten neuen zwingenden Prüfentscheid für aktuellen automaticCallRef im Elternscope bereitstellen und automaticInterruptionReady setzen. Gemeinsames Randereignis unterbricht auch blockierte Jobs/Incident. Ab Bestätigung alte Wirkungen sperren. Bei In Bearbeitung, Wiedervorlage oder externer Wartephase weiterhin vorhandenen SWorkReviewNeeded/SFollowUpReviewNeeded/SExternalReview bedienen. Aktuellen Scope serverseitig ermitteln, keine parallele Mitarbeiterinstanz, keine verlorene Meldung bei Phasenwechsel; zuverlässig nachholen.</bpmn:documentation>
           <bpmn:incoming>PN08</bpmn:incoming>
           <bpmn:outgoing>PN09</bpmn:outgoing>
         </bpmn:serviceTask>
         <bpmn:sequenceFlow id="PN08" name="Andere aktive Phase" sourceRef="ReviewNeedRoute" targetRef="ReviewNeedOther" />
-        <bpmn:sequenceFlow id="PN09" name="" sourceRef="ReviewNeedOther" targetRef="ReviewNeedDone" />
+        <bpmn:sequenceFlow id="PN09" name="" sourceRef="ReviewNeedOther" targetRef="Merge_ReviewNeedDone" />
       </bpmn:subProcess>
-      <bpmn:boundaryEvent id="ReplyReviewNeeded" name="Neuer Prüfbedarf" attachedToRef="Reply" cancelActivity="true">
+      <bpmn:boundaryEvent id="ReplyReviewNeeded" name="Neuer Prüfbedarf" attachedToRef="Reply">
         <bpmn:documentation>
 Unterbrechung nur bei geprüftem neuen Grund zum aktuellen Reply-Call. Bereits bereitgestellte Gründe bei Eintritt erkennen. Alter Marker darf keine neuere Bearbeitung unterbrechen. Kein normaler Reply-Output; ReviewNeedPrepare lädt den persistierten Prüfentscheid.</bpmn:documentation>
         <bpmn:outgoing>PN10</bpmn:outgoing>
@@ -338,10 +358,10 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
         <bpmn:outgoing>PN11</bpmn:outgoing>
       </bpmn:serviceTask>
       <bpmn:sequenceFlow id="PN10" name="" sourceRef="ReplyReviewNeeded" targetRef="ReviewNeedPrepare" />
-      <bpmn:sequenceFlow id="PN11" name="Aktuelle Mitarbeiterprüfung" sourceRef="ReviewNeedPrepare" targetRef="StaffContinuationClaim" />
-      <bpmn:subProcess id="StaffQuestionSide" triggeredByEvent="true" name="Nachricht während In Abklärung senden">
+      <bpmn:sequenceFlow id="PN11" name="Aktuelle Mitarbeiterprüfung" sourceRef="ReviewNeedPrepare" targetRef="Merge_StaffContinuationClaim" />
+      <bpmn:subProcess id="StaffQuestionSide" name="Nachricht während In Abklärung senden" triggeredByEvent="true">
         <bpmn:documentation>0.33 / KOM-AK-31: Bestehender nicht unterbrechender Sendeweg für Informationen und Rückfragen während In Abklärung. Lokale Auftragsdaten, kein neuer Mieternachrichtenempfänger. Eine Information beendet nur die Nebenaktion. Nur eine erfolgreich veröffentlichte Rückfrage mit Antwortbedarf veranlasst Übergang 29 und gemeinsame Automatik-Ablösung. Ablehnung verändert den laufenden Pfad nicht.</bpmn:documentation>
-        <bpmn:startEvent id="StaffQuestionStart" isInterrupting="false" name="Sendeauftrag eingegangen">
+        <bpmn:startEvent id="StaffQuestionStart" name="Sendeauftrag eingegangen" isInterrupting="false">
           <bpmn:outgoing>SQ01</bpmn:outgoing>
           <bpmn:messageEventDefinition id="StaffQuestionStart_definition" messageRef="Message_StaffQuestionClarification" />
         </bpmn:startEvent>
@@ -370,17 +390,17 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
         </bpmn:endEvent>
         <bpmn:sequenceFlow id="SQ01" sourceRef="StaffQuestionStart" targetRef="StaffQuestionPublish" />
         <bpmn:sequenceFlow id="SQ02" sourceRef="StaffQuestionPublish" targetRef="StaffQuestionResult" />
-        <bpmn:sequenceFlow id="SQ03" sourceRef="StaffQuestionResult" targetRef="StaffQuestionSignal" name="QUESTION: Rückfrage gespeichert" />
+        <bpmn:sequenceFlow id="SQ03" name="QUESTION: Rückfrage gespeichert" sourceRef="StaffQuestionResult" targetRef="StaffQuestionSignal" />
         <bpmn:sequenceFlow id="SQ04" sourceRef="StaffQuestionSignal" targetRef="StaffQuestionDone" />
-        <bpmn:sequenceFlow id="SQ05" sourceRef="StaffQuestionResult" targetRef="StaffQuestionRejected" name="REJECTED: abgelehnt" />
+        <bpmn:sequenceFlow id="SQ05" name="REJECTED: abgelehnt" sourceRef="StaffQuestionResult" targetRef="StaffQuestionRejected" />
         <bpmn:endEvent id="StaffInformationDone" name="Information gespeichert&#10;Automatik bleibt aktiv">
           <bpmn:incoming>SQInfo</bpmn:incoming>
         </bpmn:endEvent>
-        <bpmn:sequenceFlow id="SQInfo" sourceRef="StaffQuestionResult" targetRef="StaffInformationDone" name="INFORMATION: ohne Antwortbedarf" />
+        <bpmn:sequenceFlow id="SQInfo" name="INFORMATION: ohne Antwortbedarf" sourceRef="StaffQuestionResult" targetRef="StaffInformationDone" />
       </bpmn:subProcess>
-      <bpmn:subProcess id="StaffCloseClarificationSide" triggeredByEvent="true" name="Direkter Mitarbeiterabschluss während In Abklärung">
+      <bpmn:subProcess id="StaffCloseClarificationSide" name="Direkter Mitarbeiterabschluss während In Abklärung" triggeredByEvent="true">
         <bpmn:documentation>FALL-06 Übergang 30 / FALL-AK-36. Nicht unterbrechender interner Mitarbeitereingang. Erst erfolgreicher Abschlusscommit beendet den aktiven Fallbereich; unberechtigte oder veraltete Aufträge verändern den aktuellen Pfad nicht. Keine offene Mitarbeiter-User-Task erfinden. Auftrag und Ergebnis lokal halten, an Fall und führenden Durchlauf binden.</bpmn:documentation>
-        <bpmn:startEvent id="StaffCloseClarificationStart" isInterrupting="false" name="Mitarbeiter bestätigt Abschluss">
+        <bpmn:startEvent id="StaffCloseClarificationStart" name="Mitarbeiter bestätigt Abschluss" isInterrupting="false">
           <bpmn:outgoing>SC01</bpmn:outgoing>
           <bpmn:messageEventDefinition id="StaffCloseClarificationStart_definition" messageRef="Message_StaffCloseClarification" />
         </bpmn:startEvent>
@@ -404,13 +424,13 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
         </bpmn:endEvent>
         <bpmn:sequenceFlow id="SC01" sourceRef="StaffCloseClarificationStart" targetRef="StaffCloseClarificationApply" />
         <bpmn:sequenceFlow id="SC02" sourceRef="StaffCloseClarificationApply" targetRef="StaffCloseClarificationResult" />
-        <bpmn:sequenceFlow id="SC03" sourceRef="StaffCloseClarificationResult" targetRef="StaffCloseClarificationCommitted" name="Ja / identischer Erfolg" />
-        <bpmn:sequenceFlow id="SC04" sourceRef="StaffCloseClarificationResult" targetRef="StaffCloseClarificationRejected" name="Nein: Konflikt / nicht zulässig" />
+        <bpmn:sequenceFlow id="SC03" name="Ja / identischer Erfolg" sourceRef="StaffCloseClarificationResult" targetRef="StaffCloseClarificationCommitted" />
+        <bpmn:sequenceFlow id="SC04" name="Nein: Konflikt / nicht zulässig" sourceRef="StaffCloseClarificationResult" targetRef="StaffCloseClarificationRejected" />
       </bpmn:subProcess>
-      <bpmn:subProcess id="StaffFollowSide" triggeredByEvent="true" name="Direkte Wiedervorlage aus Abklärung oder Mieterwartephase">
+      <bpmn:subProcess id="StaffFollowSide" name="Direkte Wiedervorlage aus Abklärung oder Mieterwartephase" triggeredByEvent="true">
         <bpmn:documentation>FALL-11 Übergang 31 / FALL-AK-37. Nicht unterbrechender interner Mitarbeiterauftrag. Ungültige oder veraltete Aufträge verändern den laufenden Pfad nicht. Lokale Auftragsvariablen, kein zusätzlicher Mieternachrichtenempfänger.
 0.27: Zusätzlich FALL-11 Übergang 32 / FALL-AK-38. Derselbe geprüfte Auftragseingang gilt aus Wartet auf Mieterantwort; keine zweite Terminsetzungslogik.</bpmn:documentation>
-        <bpmn:startEvent id="StaffFollowStart" isInterrupting="false" name="Wiedervorlage angefordert">
+        <bpmn:startEvent id="StaffFollowStart" name="Wiedervorlage angefordert" isInterrupting="false">
           <bpmn:outgoing>SF01</bpmn:outgoing>
           <bpmn:messageEventDefinition id="StaffFollowStart_definition" messageRef="Message_StaffFollowClarification" />
         </bpmn:startEvent>
@@ -437,9 +457,9 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
         </bpmn:endEvent>
         <bpmn:sequenceFlow id="SF01" sourceRef="StaffFollowStart" targetRef="StaffFollowPublish" />
         <bpmn:sequenceFlow id="SF02" sourceRef="StaffFollowPublish" targetRef="StaffFollowResult" />
-        <bpmn:sequenceFlow id="SF03" sourceRef="StaffFollowResult" targetRef="StaffFollowSignal" name="Ja / bereits übernommen" />
+        <bpmn:sequenceFlow id="SF03" name="Ja / bereits übernommen" sourceRef="StaffFollowResult" targetRef="StaffFollowSignal" />
         <bpmn:sequenceFlow id="SF04" sourceRef="StaffFollowSignal" targetRef="StaffFollowDone" />
-        <bpmn:sequenceFlow id="SF05" sourceRef="StaffFollowResult" targetRef="StaffFollowRejected" name="Nein" />
+        <bpmn:sequenceFlow id="SF05" name="Nein" sourceRef="StaffFollowResult" targetRef="StaffFollowRejected" />
       </bpmn:subProcess>
       <bpmn:serviceTask id="StaffFollowContinue" name="Aktuellen Wiedervorlage-&#10;Eintritt bereitstellen">
         <bpmn:documentation>FALL-11 Übergang 31. Gespeicherten Terminsetzungsauftrag und aktuelle Terminversion laden, nicht neu berechnen oder erneut speichern. staffEntryContextRef für direkten Eintritt in FollowUp vorbereiten; Marker konsumieren. Neue Mieternachricht oder neuer zwingender Prüfgrund nach Terminsetzung: betroffenen Termin idempotent aufheben und Mitarbeiterprüfung vorbereiten, genau eine Prüfung auch bei gleichzeitigem Timer. Keine Wiederherstellung eines aufgehobenen Termins. Alte automatische Ergebnisse bleiben gesperrt. Übergabekontext und Ereignisse zuverlässig an SEntryCheck übergeben; keine live gemeinsam genutzten Kindvariablen.
@@ -447,8 +467,8 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
         <bpmn:incoming>SF_Takeover_Reply</bpmn:incoming>
         <bpmn:outgoing>SF07</bpmn:outgoing>
       </bpmn:serviceTask>
-      <bpmn:sequenceFlow id="SF07" sourceRef="StaffFollowContinue" targetRef="StaffContinuationClaim" name="Geprüfter Eintritt: Wiedervorlage / neuer Prüfbedarf" />
-      <bpmn:boundaryEvent id="StaffFollowAtReply" attachedToRef="Reply" cancelActivity="true" name="Wiedervorlage bestätigt">
+      <bpmn:sequenceFlow id="SF07" name="Geprüfter Eintritt: Wiedervorlage / neuer Prüfbedarf" sourceRef="StaffFollowContinue" targetRef="Merge_StaffContinuationClaim" />
+      <bpmn:boundaryEvent id="StaffFollowAtReply" name="Wiedervorlage bestätigt" attachedToRef="Reply">
         <bpmn:documentation>FALL-11 Übergänge 31/32: Unterbrechung nur für bestätigte Terminsetzung aus In Abklärung oder Wartet auf Mieterantwort im aktuellen Durchlauf. Marker und Zustellverfahren sind Fachentwurf. Nach Speicherung keine automatische Wirkung des abgelösten Laufs; technische Umsetzung offen.</bpmn:documentation>
         <bpmn:outgoing>SF_Takeover_Reply</bpmn:outgoing>
         <bpmn:conditionalEventDefinition id="StaffFollowAtReply_definition">
@@ -456,9 +476,9 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
         </bpmn:conditionalEventDefinition>
       </bpmn:boundaryEvent>
       <bpmn:sequenceFlow id="SF_Takeover_Reply" sourceRef="StaffFollowAtReply" targetRef="StaffFollowContinue" />
-      <bpmn:subProcess id="StaffTakeoverSide" triggeredByEvent="true" name="Bearbeitung während In Abklärung übernehmen">
+      <bpmn:subProcess id="StaffTakeoverSide" name="Bearbeitung während In Abklärung übernehmen" triggeredByEvent="true">
         <bpmn:documentation>FALL-06 Übergang 33 / FALL-AK-40. Nicht unterbrechender interner Auftrag zur direkten Übernahme aus In Abklärung. Ungültige Aufträge lassen den aktuellen Pfad bestehen. Lokale Auftragsreferenz, keine zusätzliche Mieter-Subscription.</bpmn:documentation>
-        <bpmn:startEvent id="StaffTakeoverStart" isInterrupting="false" name="Übernahme angefordert">
+        <bpmn:startEvent id="StaffTakeoverStart" name="Übernahme angefordert" isInterrupting="false">
           <bpmn:outgoing>ST01</bpmn:outgoing>
           <bpmn:messageEventDefinition id="StaffTakeoverStart_definition" messageRef="Message_StaffTakeover" />
         </bpmn:startEvent>
@@ -485,35 +505,41 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
         </bpmn:endEvent>
         <bpmn:sequenceFlow id="ST01" sourceRef="StaffTakeoverStart" targetRef="StaffTakeoverPublish" />
         <bpmn:sequenceFlow id="ST02" sourceRef="StaffTakeoverPublish" targetRef="StaffTakeoverResult" />
-        <bpmn:sequenceFlow id="ST03" sourceRef="StaffTakeoverResult" targetRef="StaffTakeoverSignal" name="Ja / bereits übernommen" />
+        <bpmn:sequenceFlow id="ST03" name="Ja / bereits übernommen" sourceRef="StaffTakeoverResult" targetRef="StaffTakeoverSignal" />
         <bpmn:sequenceFlow id="ST04" sourceRef="StaffTakeoverSignal" targetRef="StaffTakeoverDone" />
-        <bpmn:sequenceFlow id="ST05" sourceRef="StaffTakeoverResult" targetRef="StaffTakeoverRejected" name="Nein" />
+        <bpmn:sequenceFlow id="ST05" name="Nein" sourceRef="StaffTakeoverResult" targetRef="StaffTakeoverRejected" />
       </bpmn:subProcess>
       <bpmn:serviceTask id="PrepareInitialAuto" name="Automatik-Eintritt&#10;INITIAL vorbereiten">
         <bpmn:documentation>Aktuellen Fallstand, führenden Durchlauf und Herkunft INITIAL prüfen; automaticEntryContextRef bereitstellen. Für QUESTION/CLOSE aktuellen replyDecisionRef verwenden, keine alte Freigabe und kein Statusreset. automaticCallRef für genau diesen Aufruf und Unterbrechungsbezug bereitstellen; nachholbare Registrierung mit offenen Prüfentscheiden koordinieren. Alte konsumierte Marker nicht wiederverwenden, neuen Prüfbedarf nicht löschen.</bpmn:documentation>
         <bpmn:incoming>F02</bpmn:incoming>
         <bpmn:outgoing>PrepareInitialAutoFlow</bpmn:outgoing>
       </bpmn:serviceTask>
-      <bpmn:sequenceFlow id="PrepareInitialAutoFlow" sourceRef="PrepareInitialAuto" targetRef="Automatic" name="" />
+      <bpmn:sequenceFlow id="PrepareInitialAutoFlow" name="" sourceRef="PrepareInitialAuto" targetRef="Merge_Automatic" />
       <bpmn:serviceTask id="PrepareQuestionAuto" name="Automatik-Eintritt&#10;QUESTION vorbereiten">
         <bpmn:documentation>Aktuellen Fallstand, führenden Durchlauf und Herkunft QUESTION prüfen; automaticEntryContextRef bereitstellen. Für QUESTION/CLOSE aktuellen replyDecisionRef verwenden, keine alte Freigabe und kein Statusreset. automaticCallRef für genau diesen Aufruf und Unterbrechungsbezug bereitstellen; nachholbare Registrierung mit offenen Prüfentscheiden koordinieren. Alte konsumierte Marker nicht wiederverwenden, neuen Prüfbedarf nicht löschen.</bpmn:documentation>
         <bpmn:incoming>F18</bpmn:incoming>
         <bpmn:outgoing>PrepareQuestionAutoFlow</bpmn:outgoing>
       </bpmn:serviceTask>
-      <bpmn:sequenceFlow id="PrepareQuestionAutoFlow" sourceRef="PrepareQuestionAuto" targetRef="Automatic" name="" />
+      <bpmn:sequenceFlow id="PrepareQuestionAutoFlow" name="" sourceRef="PrepareQuestionAuto" targetRef="Merge_Automatic" />
       <bpmn:serviceTask id="PrepareCloseAuto" name="Automatik-Eintritt&#10;CLOSE vorbereiten">
         <bpmn:documentation>Aktuellen Fallstand, führenden Durchlauf und Herkunft CLOSE prüfen; automaticEntryContextRef bereitstellen. Für QUESTION/CLOSE aktuellen replyDecisionRef verwenden, keine alte Freigabe und kein Statusreset. automaticCallRef für genau diesen Aufruf und Unterbrechungsbezug bereitstellen; nachholbare Registrierung mit offenen Prüfentscheiden koordinieren. Alte konsumierte Marker nicht wiederverwenden, neuen Prüfbedarf nicht löschen.</bpmn:documentation>
         <bpmn:incoming>F20</bpmn:incoming>
         <bpmn:outgoing>PrepareCloseAutoFlow</bpmn:outgoing>
       </bpmn:serviceTask>
-      <bpmn:sequenceFlow id="PrepareCloseAutoFlow" sourceRef="PrepareCloseAuto" targetRef="Automatic" name="" />
-      <bpmn:sequenceFlow id="F02" sourceRef="Register" targetRef="PrepareInitialAuto" name="" />
-      <bpmn:sequenceFlow id="F18" sourceRef="ReplyRoute" targetRef="PrepareQuestionAuto" name="Weitere Katalogfrage zulässig" />
-      <bpmn:sequenceFlow id="F20" sourceRef="ReplyRoute" targetRef="PrepareCloseAuto" name="Systemabschluss vorgeschlagen" />
+      <bpmn:sequenceFlow id="PrepareCloseAutoFlow" name="" sourceRef="PrepareCloseAuto" targetRef="Merge_Automatic" />
+      <bpmn:sequenceFlow id="F02" name="" sourceRef="Register" targetRef="PrepareInitialAuto" />
+      <bpmn:sequenceFlow id="F18" name="Weitere Katalogfrage zulässig" sourceRef="ReplyRoute" targetRef="PrepareQuestionAuto" />
+      <bpmn:sequenceFlow id="F20" name="Systemabschluss vorgeschlagen" sourceRef="ReplyRoute" targetRef="PrepareCloseAuto" />
+      <bpmn:exclusiveGateway id="Merge_Automatic" gatewayDirection="Converging">
+        <bpmn:incoming>PrepareInitialAutoFlow</bpmn:incoming>
+        <bpmn:incoming>PrepareQuestionAutoFlow</bpmn:incoming>
+        <bpmn:incoming>PrepareCloseAutoFlow</bpmn:incoming>
+        <bpmn:outgoing>Flow_Merge_Automatic</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
       <bpmn:callActivity id="Automatic" name="Automatische Abklärung">
         <bpmn:documentation>Ruft automatische-abklaerung.bpmn auf. Eigener Scope; führende Fallzuordnung bleibt im Elternprozess. Genau eine aktuelle Call-Zuordnung. Normale Outputs nur bei regulärem Ende; bei Unterbrechung aktuellen persistierten Entscheid laden. Unterbrechung beendet auch Kindjobs, nicht zuverlässig bereits gestartete externe Nebenwirkungen. Deshalb Wirkungsprüfung im Dienst ab bestätigtem Prüfbedarf/Mitarbeiterentscheid.</bpmn:documentation>
         <bpmn:extensionElements>
-          <zeebe:calledElement processId="PropertyFlow_Automatic_Draft" bindingType="deployment" propagateAllParentVariables="false" propagateAllChildVariables="false" />
+          <zeebe:calledElement processId="PropertyFlow_Automatic_Draft" propagateAllChildVariables="false" propagateAllParentVariables="false" bindingType="deployment" />
           <zeebe:ioMapping>
             <zeebe:input source="= caseId" target="caseId" />
             <zeebe:input source="= processInstanceKey" target="leadingProcessInstanceKey" />
@@ -523,11 +549,10 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
             <zeebe:output source="= decisionRef" target="automaticDecisionRef" />
           </zeebe:ioMapping>
         </bpmn:extensionElements>
-        <bpmn:incoming>PrepareInitialAutoFlow</bpmn:incoming>
-        <bpmn:incoming>PrepareQuestionAutoFlow</bpmn:incoming>
-        <bpmn:incoming>PrepareCloseAutoFlow</bpmn:incoming>
+        <bpmn:incoming>Flow_Merge_Automatic</bpmn:incoming>
         <bpmn:outgoing>AParent01</bpmn:outgoing>
       </bpmn:callActivity>
+      <bpmn:sequenceFlow id="Flow_Merge_Automatic" sourceRef="Merge_Automatic" targetRef="Automatic" />
       <bpmn:serviceTask id="AutomaticResult" name="Aktuelles Automatik-Ergebnis&#10;übernehmen">
         <bpmn:documentation>automaticOutcome/automaticDecisionRef gegen aktuellen Fallstand und Call prüfen. WAIT_FOR_REPLY: replyEntryContextRef bereitstellen; REVIEW: staffEntryContextRef; CLOSED nur nach gespeichertem Abschluss. Neuen zwingenden Prüfbedarf vor Fortsetzung berücksichtigen. Übergabe am Call-Ende und Unterbrechung atomar/logisch exklusiv koordinieren; keine parallelen Staff-Calls. Unbekannte Rückgabe ist Vertragsfehler, kein fachlicher Default.</bpmn:documentation>
         <bpmn:incoming>AParent01</bpmn:incoming>
@@ -539,19 +564,19 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
         <bpmn:outgoing>AParentReview</bpmn:outgoing>
         <bpmn:outgoing>AParentClosed</bpmn:outgoing>
       </bpmn:exclusiveGateway>
-      <bpmn:sequenceFlow id="AParent01" sourceRef="Automatic" targetRef="AutomaticResult" name="" />
-      <bpmn:sequenceFlow id="AParent02" sourceRef="AutomaticResult" targetRef="AutomaticRoute" name="" />
-      <bpmn:sequenceFlow id="AParentWait" sourceRef="AutomaticRoute" targetRef="Reply" name="WAIT_FOR_REPLY" />
-      <bpmn:sequenceFlow id="AParentReview" sourceRef="AutomaticRoute" targetRef="StaffContinuationClaim" name="REVIEW" />
-      <bpmn:sequenceFlow id="AParentClosed" sourceRef="AutomaticRoute" targetRef="ActiveEnd" name="CLOSED" />
-      <bpmn:boundaryEvent id="AutomaticInterrupted" name="Bestätigte Ablösung" attachedToRef="Automatic" cancelActivity="true">
+      <bpmn:sequenceFlow id="AParent01" name="" sourceRef="Automatic" targetRef="AutomaticResult" />
+      <bpmn:sequenceFlow id="AParent02" name="" sourceRef="AutomaticResult" targetRef="AutomaticRoute" />
+      <bpmn:sequenceFlow id="AParentWait" name="WAIT_FOR_REPLY" sourceRef="AutomaticRoute" targetRef="Merge_Reply" />
+      <bpmn:sequenceFlow id="AParentReview" name="REVIEW" sourceRef="AutomaticRoute" targetRef="Merge_StaffContinuationClaim" />
+      <bpmn:sequenceFlow id="AParentClosed" name="CLOSED" sourceRef="AutomaticRoute" targetRef="Merge_ActiveEnd" />
+      <bpmn:boundaryEvent id="AutomaticInterrupted" name="Bestätigte Ablösung" attachedToRef="Automatic">
         <bpmn:documentation>Gemeinsamer Unterbrechungspfad für geprüfte Mitarbeiterrückfrage, Terminsetzung, Übernahme oder neuen zwingenden Prüfbedarf. Nur bestätigte persistierte Entscheide zum aktuellen automaticCallRef. Condition sieht Elternvariablen; keine implizite Synchronisierung mit Kind oder Datenbank. Auch Retry/Incident unterbrechen; technische Realisierung und Runtime-Nachweis offen.</bpmn:documentation>
         <bpmn:outgoing>AI01</bpmn:outgoing>
         <bpmn:conditionalEventDefinition id="AutomaticInterrupted_definition">
           <bpmn:condition xsi:type="bpmn:tFormalExpression">= automaticInterruptionReady = true</bpmn:condition>
         </bpmn:conditionalEventDefinition>
       </bpmn:boundaryEvent>
-      <bpmn:boundaryEvent id="AutomaticFailure" name="Fachlicher Analysefehler" attachedToRef="Automatic" cancelActivity="true">
+      <bpmn:boundaryEvent id="AutomaticFailure" name="Fachlicher Analysefehler" attachedToRef="Automatic">
         <bpmn:outgoing>AutoFail01</bpmn:outgoing>
         <bpmn:errorEventDefinition id="AutomaticFailure_definition" errorRef="Error_TriageFailure" />
       </bpmn:boundaryEvent>
@@ -560,8 +585,8 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
         <bpmn:incoming>AutoFail01</bpmn:incoming>
         <bpmn:outgoing>AutoFail02</bpmn:outgoing>
       </bpmn:serviceTask>
-      <bpmn:sequenceFlow id="AutoFail01" sourceRef="AutomaticFailure" targetRef="AutomaticFailurePrepare" name="" />
-      <bpmn:sequenceFlow id="AutoFail02" sourceRef="AutomaticFailurePrepare" targetRef="StaffContinuationClaim" name="" />
+      <bpmn:sequenceFlow id="AutoFail01" name="" sourceRef="AutomaticFailure" targetRef="AutomaticFailurePrepare" />
+      <bpmn:sequenceFlow id="AutoFail02" name="" sourceRef="AutomaticFailurePrepare" targetRef="Merge_StaffContinuationClaim" />
       <bpmn:serviceTask id="AutomaticInterruptionPrepare" name="Bestätigten Entscheid und&#10;aktuellen Fallstand prüfen">
         <bpmn:documentation>Persistierten Unterbrechungsentscheid gegen automaticCallRef, führenden Durchlauf und aktuellen Fallstand prüfen; automaticInterruptionReady konsumieren. Zwingender neuer Prüfbedarf hat Vorrang -&gt; staffEntryContextRef zur Prüfung. Erfolgreiche Rückfrage ohne Vorrang -&gt; replyEntryContextRef. Übernahme ohne Prüfbedarf -&gt; staffEntryContextRef zu SWork. Gespeicherter Termin -&gt; direkter FollowUp-Kontext, bei Kontakt/neuem Prüfbedarf seit Terminsetzung Termin aufheben und Prüfung vorbereiten. Bestehende Prüfung genau einmal ergänzen. Keine Rückgaben des abgebrochenen Kindes; keine doppelte Veröffentlichung, Terminversion oder Mailpflicht. Neueren Fallstand/Abschluss nicht zurücksetzen. Geschützte Übergabe bis Zielaktivierung zuverlässig nachholen.</bpmn:documentation>
         <bpmn:incoming>AI01</bpmn:incoming>
@@ -572,10 +597,10 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
         <bpmn:outgoing>AIWait</bpmn:outgoing>
         <bpmn:outgoing>AIStaff</bpmn:outgoing>
       </bpmn:exclusiveGateway>
-      <bpmn:sequenceFlow id="AI01" sourceRef="AutomaticInterrupted" targetRef="AutomaticInterruptionPrepare" name="" />
-      <bpmn:sequenceFlow id="AI02" sourceRef="AutomaticInterruptionPrepare" targetRef="AutomaticInterruptionRoute" name="" />
-      <bpmn:sequenceFlow id="AIWait" sourceRef="AutomaticInterruptionRoute" targetRef="Reply" name="Veröffentlichte Rückfrage" />
-      <bpmn:sequenceFlow id="AIStaff" sourceRef="AutomaticInterruptionRoute" targetRef="StaffContinuationClaim" name="Prüfung / Bearbeitung / Wiedervorlage" />
+      <bpmn:sequenceFlow id="AI01" name="" sourceRef="AutomaticInterrupted" targetRef="AutomaticInterruptionPrepare" />
+      <bpmn:sequenceFlow id="AI02" name="" sourceRef="AutomaticInterruptionPrepare" targetRef="AutomaticInterruptionRoute" />
+      <bpmn:sequenceFlow id="AIWait" name="Veröffentlichte Rückfrage" sourceRef="AutomaticInterruptionRoute" targetRef="Merge_Reply" />
+      <bpmn:sequenceFlow id="AIStaff" name="Prüfung / Bearbeitung / Wiedervorlage" sourceRef="AutomaticInterruptionRoute" targetRef="Merge_StaffContinuationClaim" />
       <bpmn:subProcess id="CaseDataSide" name="Falldaten ergänzen – Bearbeitung bleibt bestehen" triggeredByEvent="true">
         <bpmn:documentation>0.34 / FALL-06 / FALL-AK-43: Ein gemeinsamer nicht unterbrechender Eingang für ADD_MEMO, SET_OBJECT_ASSIGNMENT und SET_MANUAL_URGENCY. Nur autorisierte Mitarbeiteraufträge für einen zugeordneten aktiven Fall. Kein neuer öffentlicher Endpunkt durch dieses Modell und kein Mieternachrichtenempfänger. Keine User-Task-Completion, kein neuer Call und kein Statuswechsel durch die Aktion. Lokale Auftragsreferenz je Ausführung, keine Überschreibung von Hauptpfadvariablen. Bei konkurrierendem Abschluss unveröffentlichte alte Aufträge ohne Wirkung auflösen; bereits gespeicherte Änderungen und Mailpflichten erhalten. Technische Korrelation und Transaktionskoordination noch umzusetzen.</bpmn:documentation>
         <bpmn:startEvent id="CaseDataStart" name="Änderungsauftrag eingegangen" isInterrupting="false">
@@ -593,8 +618,7 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
         <bpmn:sequenceFlow id="CD01" sourceRef="CaseDataStart" targetRef="CaseDataApply" />
         <bpmn:sequenceFlow id="CD02" sourceRef="CaseDataApply" targetRef="CaseDataEnd" />
       </bpmn:subProcess>
-      <bpmn:serviceTask id="StaffContinuationClaim" name="Fortsetzung am aktuellen&#10;Fallstand exklusiv übernehmen">
-        <bpmn:documentation>FALL-06 Fortsetzungsvertrag B07 / FALL-AK-44: Persistierten Fortsetzungsauftrag mit Fall, führendem Durchlauf, Erkenntnis-/Fallversion, Operations-ID und Quell-/Zielbezug prüfen. Exklusiven Bearbeitungsanspruch konsistent sichern; konkurrierende Auftragseingänge dürfen keinen zweiten Staff-Aufruf beanspruchen. Drei Ergebnisse: START für diesen berechtigten Ausführungspfad, EXISTING für einen anderen nachweislich laufenden zuständigen Staff-Call, SUPERSEDED für erledigten/überholten Auftrag mit gesichertem anderem zuständigem Pfad. Wiederholung derselben eigenen Übernahme bleibt START und verwendet denselben Anspruch, nicht EXISTING. Neuer zwingender Prüfgrund wird bei Versionskonflikt am aktuellen Stand erneut eingeordnet und darf nicht verloren gehen. Veraltete Mitarbeiterentscheidung dagegen ohne Übernahme neuer Erkenntnisse ablehnen. Unklare Zuordnung, nur reservierter aber noch nicht bestätigter anderer Call oder fehlender lebender Nachfolgepfad: technische Klärung/Retry/Incident, kein fachlicher Endausgang. Anspruch, Engine-Aktivierung und Wiederaufnahme zuverlässig koordinieren; gespeicherte Reservierung ist kein Beweis einer laufenden Aufgabe. staffEntryContextRef mit Übernahmebezug bereitstellen; bestehende Eintrittsarten REVIEW, direkte Bearbeitung und Wiedervorlage erhalten.</bpmn:documentation>
+      <bpmn:exclusiveGateway id="Merge_StaffContinuationClaim" gatewayDirection="Converging">
         <bpmn:incoming>F21</bpmn:incoming>
         <bpmn:incoming>F_CloseConflict_Staff</bpmn:incoming>
         <bpmn:incoming>F_Reopen_Staff</bpmn:incoming>
@@ -604,8 +628,14 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
         <bpmn:incoming>AParentReview</bpmn:incoming>
         <bpmn:incoming>AutoFail02</bpmn:incoming>
         <bpmn:incoming>AIStaff</bpmn:incoming>
+        <bpmn:outgoing>Flow_Merge_StaffContinuationClaim</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+      <bpmn:serviceTask id="StaffContinuationClaim" name="Fortsetzung am aktuellen&#10;Fallstand exklusiv übernehmen">
+        <bpmn:documentation>FALL-06 Fortsetzungsvertrag B07 / FALL-AK-44: Persistierten Fortsetzungsauftrag mit Fall, führendem Durchlauf, Erkenntnis-/Fallversion, Operations-ID und Quell-/Zielbezug prüfen. Exklusiven Bearbeitungsanspruch konsistent sichern; konkurrierende Auftragseingänge dürfen keinen zweiten Staff-Aufruf beanspruchen. Drei Ergebnisse: START für diesen berechtigten Ausführungspfad, EXISTING für einen anderen nachweislich laufenden zuständigen Staff-Call, SUPERSEDED für erledigten/überholten Auftrag mit gesichertem anderem zuständigem Pfad. Wiederholung derselben eigenen Übernahme bleibt START und verwendet denselben Anspruch, nicht EXISTING. Neuer zwingender Prüfgrund wird bei Versionskonflikt am aktuellen Stand erneut eingeordnet und darf nicht verloren gehen. Veraltete Mitarbeiterentscheidung dagegen ohne Übernahme neuer Erkenntnisse ablehnen. Unklare Zuordnung, nur reservierter aber noch nicht bestätigter anderer Call oder fehlender lebender Nachfolgepfad: technische Klärung/Retry/Incident, kein fachlicher Endausgang. Anspruch, Engine-Aktivierung und Wiederaufnahme zuverlässig koordinieren; gespeicherte Reservierung ist kein Beweis einer laufenden Aufgabe. staffEntryContextRef mit Übernahmebezug bereitstellen; bestehende Eintrittsarten REVIEW, direkte Bearbeitung und Wiedervorlage erhalten.</bpmn:documentation>
+        <bpmn:incoming>Flow_Merge_StaffContinuationClaim</bpmn:incoming>
         <bpmn:outgoing>SCClaim</bpmn:outgoing>
       </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="Flow_Merge_StaffContinuationClaim" sourceRef="Merge_StaffContinuationClaim" targetRef="StaffContinuationClaim" />
       <bpmn:exclusiveGateway id="StaffContinuationRoute" name="Wer führt weiter?">
         <bpmn:documentation>Ausgang staffContinuationOutcome aus bestätigter Übernahme prüfen: START, EXISTING oder SUPERSEDED. Unbekannte/fehlende Werte sind technische Fehler, kein Default-Endpfad. Gateway-Bedingungen noch nicht ausführbar gebunden.</bpmn:documentation>
         <bpmn:incoming>SCClaim</bpmn:incoming>
@@ -631,20 +661,25 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
         <bpmn:documentation>Normales Endereignis, kein terminate. Kein Fallabschluss, keine Beendigung der zuständigen Bearbeitung. Erreichbar nur nach Bestätigung, dass ein anderer aktueller Ausführungspfad in ActiveCase weiterläuft. Das blosse Vorhandensein einer Datenbankreferenz genügt nicht. Technischer Schutz ist noch nicht implementiert.</bpmn:documentation>
         <bpmn:incoming>SCObsolete</bpmn:incoming>
       </bpmn:endEvent>
-      <bpmn:sequenceFlow id="SCClaim" sourceRef="StaffContinuationClaim" targetRef="StaffContinuationRoute" name="" />
-      <bpmn:sequenceFlow id="SCStart" sourceRef="StaffContinuationRoute" targetRef="Staff" name="START: neuer Aufruf" />
-      <bpmn:sequenceFlow id="SCExisting" sourceRef="StaffContinuationRoute" targetRef="StaffContinuationMerge" name="EXISTING: bereits aktiv" />
-      <bpmn:sequenceFlow id="SCSuperseded" sourceRef="StaffContinuationRoute" targetRef="StaffContinuationReconcile" name="SUPERSEDED: überholt" />
-      <bpmn:sequenceFlow id="SCMerged" sourceRef="StaffContinuationMerge" targetRef="StaffContinuationMerged" name="" />
-      <bpmn:sequenceFlow id="SCObsolete" sourceRef="StaffContinuationReconcile" targetRef="StaffContinuationObsolete" name="" />
+      <bpmn:sequenceFlow id="SCClaim" name="" sourceRef="StaffContinuationClaim" targetRef="StaffContinuationRoute" />
+      <bpmn:sequenceFlow id="SCStart" name="START: neuer Aufruf" sourceRef="StaffContinuationRoute" targetRef="Staff" />
+      <bpmn:sequenceFlow id="SCExisting" name="EXISTING: bereits aktiv" sourceRef="StaffContinuationRoute" targetRef="StaffContinuationMerge" />
+      <bpmn:sequenceFlow id="SCSuperseded" name="SUPERSEDED: überholt" sourceRef="StaffContinuationRoute" targetRef="StaffContinuationReconcile" />
+      <bpmn:sequenceFlow id="SCMerged" name="" sourceRef="StaffContinuationMerge" targetRef="StaffContinuationMerged" />
+      <bpmn:sequenceFlow id="SCObsolete" name="" sourceRef="StaffContinuationReconcile" targetRef="StaffContinuationObsolete" />
     </bpmn:subProcess>
+    <bpmn:exclusiveGateway id="Merge_End" gatewayDirection="Converging">
+      <bpmn:incoming>F12</bpmn:incoming>
+      <bpmn:incoming>SC05</bpmn:incoming>
+      <bpmn:outgoing>Flow_Merge_End</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
     <bpmn:endEvent id="End" name="Durchlauf beendet">
       <bpmn:documentation>
 Technisches Ende: nach regulärem Fallabschluss oder abgelehntem Wiedereröffnungsstart. Dieses Ereignis selbst ändert keinen Status und verschickt keine Nachricht.</bpmn:documentation>
-      <bpmn:incoming>F12</bpmn:incoming>
-      <bpmn:incoming>SC05</bpmn:incoming>
+      <bpmn:incoming>Flow_Merge_End</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="F12" sourceRef="ActiveCase" targetRef="End" />
+    <bpmn:sequenceFlow id="Flow_Merge_End" sourceRef="Merge_End" targetRef="End" />
+    <bpmn:sequenceFlow id="F12" sourceRef="ActiveCase" targetRef="Merge_End" />
     <bpmn:startEvent id="ProcessStart" name="Startauftrag übernommen">
       <bpmn:outgoing>P01</bpmn:outgoing>
     </bpmn:startEvent>
@@ -656,12 +691,12 @@ Startart und Auftragsreferenz aus einem serverseitig autorisierten Startauftrag 
     </bpmn:serviceTask>
     <bpmn:sequenceFlow id="P01" sourceRef="ProcessStart" targetRef="PrepareProcessKey" />
     <bpmn:sequenceFlow id="P02" sourceRef="PrepareProcessKey" targetRef="ActiveCase" />
-    <bpmn:boundaryEvent id="StaffClosureCommitted" attachedToRef="ActiveCase" cancelActivity="true" name="Mitarbeiterabschluss&#10;aus Abklärung gespeichert">
+    <bpmn:boundaryEvent id="StaffClosureCommitted" name="Mitarbeiterabschluss&#10;aus Abklärung gespeichert" attachedToRef="ActiveCase">
       <bpmn:documentation>Nur Erfolg nach geprüftem und gespeichertem Mitarbeiterabschluss aus In Abklärung. Unterbricht gesamten ActiveCase samt untergeordneten Aktivitäten und Nebenaktionen; danach Durchlaufende. Datenbanksperre gegen verspätete Worker gilt bereits seit Abschlusscommit, nicht erst seit BPMN-Unterbrechung. Bereits gestartete eigenständige Mailprozesse bleiben erhalten.</bpmn:documentation>
       <bpmn:outgoing>SC05</bpmn:outgoing>
       <bpmn:escalationEventDefinition id="StaffClosureCommitted_definition" escalationRef="Escalation_StaffCloseCommitted" />
     </bpmn:boundaryEvent>
-    <bpmn:sequenceFlow id="SC05" sourceRef="StaffClosureCommitted" targetRef="End" />
+    <bpmn:sequenceFlow id="SC05" sourceRef="StaffClosureCommitted" targetRef="Merge_End" />
     <bpmn:textAnnotation id="ProcessScopeNote">
       <bpmn:text>FACHENTWURF 0.26 · nicht ausführbar
 Im Teilprozess «Aktiven Fall bearbeiten» liegen der bisherige Hauptablauf
@@ -673,801 +708,899 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
   <bpmndi:BPMNDiagram id="PropertyFlow_Case_Draft_diagram" name="01 · Prozess und Empfangsbereich">
     <bpmndi:BPMNPlane id="PropertyFlow_Case_Draft_plane" bpmnElement="PropertyFlow_Case_Draft">
       <bpmndi:BPMNShape id="ProcessStart_di" bpmnElement="ProcessStart" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
-        <dc:Bounds x="80" y="190" width="36" height="36" />
+        <dc:Bounds x="200" y="302" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="30" y="240" width="136" height="28" />
+          <dc:Bounds x="155" y="350" width="126" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="PrepareProcessKey_di" bpmnElement="PrepareProcessKey" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
-        <dc:Bounds x="180" y="163" width="190" height="90" />
+      <bpmndi:BPMNShape id="PrepareProcessKey_di" bpmnElement="PrepareProcessKey" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="346" y="270" width="250" height="100" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ActiveCase_di" bpmnElement="ActiveCase" bioc:stroke="#4c1d95" bioc:fill="#ede9fe" isExpanded="false">
-        <dc:Bounds x="450" y="148" width="240" height="120" />
+      <bpmndi:BPMNShape id="Merge_End_di" bpmnElement="Merge_End" isMarkerVisible="true">
+        <dc:Bounds x="1056" y="295" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="End_di" bpmnElement="End" bioc:stroke="#14532d" bioc:fill="#dcfce7">
-        <dc:Bounds x="1080" y="190" width="36" height="36" />
+        <dc:Bounds x="1206" y="302" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1030" y="240" width="136" height="28" />
+          <dc:Bounds x="1179" y="350" width="90" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ProcessScopeNote_di" bpmnElement="ProcessScopeNote" bioc:stroke="#334155" bioc:fill="#f1f5f9">
-        <dc:Bounds x="180" y="350" width="760" height="130" />
+      <bpmndi:BPMNShape id="ActiveCase_di" bpmnElement="ActiveCase" isExpanded="false" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
+        <dc:Bounds x="706" y="260" width="240" height="120" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffClosureCommitted_di" bpmnElement="StaffClosureCommitted">
+        <dc:Bounds x="882" y="362" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="835" y="410" width="131" height="27" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="P01_di" bpmnElement="P01" bioc:stroke="#334155">
-        <di:waypoint x="116" y="208" />
-        <di:waypoint x="180" y="208" />
+        <di:waypoint x="236" y="320" />
+        <di:waypoint x="346" y="320" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="P02_di" bpmnElement="P02" bioc:stroke="#334155">
-        <di:waypoint x="370" y="208" />
-        <di:waypoint x="450" y="208" />
+        <di:waypoint x="596" y="320" />
+        <di:waypoint x="706" y="320" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="F12_di" bpmnElement="F12" bioc:stroke="#334155">
-        <di:waypoint x="690" y="208" />
-        <di:waypoint x="1080" y="208.0" />
+        <di:waypoint x="946" y="320" />
+        <di:waypoint x="1056" y="320" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffClosureCommitted_di" bpmnElement="StaffClosureCommitted">
-        <dc:Bounds x="552" y="130" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="480" y="75" width="180" height="42" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SC05_di" bpmnElement="SC05">
-        <di:waypoint x="588" y="148" />
-        <di:waypoint x="1098" y="148" />
-        <di:waypoint x="1098" y="190" />
+        <di:waypoint x="900" y="398" />
+        <di:waypoint x="900" y="510" />
+        <di:waypoint x="1081" y="510" />
+        <di:waypoint x="1081" y="345" />
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Merge_End_di" bpmnElement="Flow_Merge_End">
+        <di:waypoint x="1106" y="320" />
+        <di:waypoint x="1206" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ProcessScopeNote_di" bpmnElement="ProcessScopeNote" bioc:stroke="#334155" bioc:fill="#f1f5f9">
+        <dc:Bounds x="170" y="80" width="500" height="140" />
+      </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
   <bpmndi:BPMNDiagram id="ActiveCase_diagram" name="02 · Aktiven Fall bearbeiten">
     <bpmndi:BPMNPlane id="ActiveCase_plane" bpmnElement="ActiveCase">
       <bpmndi:BPMNShape id="Start_di" bpmnElement="Start">
-        <dc:Bounds x="40" y="110" width="36" height="36" />
+        <dc:Bounds x="100" y="502" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="-5" y="154" width="126" height="40" />
+          <dc:Bounds x="18" y="550" width="200" height="55" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="EntryRoute_di" bpmnElement="EntryRoute">
-        <dc:Bounds x="130" y="105" width="50" height="50" />
+      <bpmndi:BPMNShape id="Register_di" bpmnElement="Register" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="586" y="470" width="250" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Merge_Reply_di" bpmnElement="Merge_Reply" isMarkerVisible="true">
+        <dc:Bounds x="2886" y="495" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Reply_di" bpmnElement="Reply" isExpanded="false" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
+        <dc:Bounds x="3136" y="470" width="250" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReplyRoute_di" bpmnElement="ReplyRoute" isMarkerVisible="true">
+        <dc:Bounds x="3686" y="495" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="85" y="163" width="140" height="40" />
+          <dc:Bounds x="3611" y="557" width="200" height="55" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Register_di" bpmnElement="Register" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
-        <dc:Bounds x="240" y="80" width="180" height="95" />
+      <bpmndi:BPMNShape id="Merge_Close_di" bpmnElement="Merge_Close" isMarkerVisible="true">
+        <dc:Bounds x="6136" y="495" width="50" height="50" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="PrepareInitialAuto_di" bpmnElement="PrepareInitialAuto" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
-        <dc:Bounds x="480" y="80" width="180" height="95" />
+      <bpmndi:BPMNShape id="Close_di" bpmnElement="Close" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="6386" y="470" width="250" height="100" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Automatic_di" bpmnElement="Automatic" isExpanded="false" bioc:fill="#ede9fe" bioc:stroke="#4c1d95">
-        <dc:Bounds x="750" y="80" width="240" height="100" />
+      <bpmndi:BPMNShape id="Staff_di" bpmnElement="Staff" isExpanded="false" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
+        <dc:Bounds x="5436" y="470" width="250" height="100" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="AutomaticResult_di" bpmnElement="AutomaticResult" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
-        <dc:Bounds x="1100" y="80" width="200" height="100" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="AutomaticRoute_di" bpmnElement="AutomaticRoute">
-        <dc:Bounds x="1380" y="105" width="50" height="50" />
+      <bpmndi:BPMNShape id="StaffRoute_di" bpmnElement="StaffRoute" isMarkerVisible="true">
+        <dc:Bounds x="5886" y="495" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1335" y="163" width="140" height="40" />
+          <dc:Bounds x="5811" y="557" width="200" height="55" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ReopenCase_di" bpmnElement="ReopenCase" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
-        <dc:Bounds x="240" y="320" width="180" height="95" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ReopenRejected_di" bpmnElement="ReopenRejected">
-        <dc:Bounds x="280" y="397" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="235" y="441" width="126" height="40" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ReopenRejectedEnd_di" bpmnElement="ReopenRejectedEnd">
-        <dc:Bounds x="280" y="510" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="235" y="554" width="126" height="40" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="AutomaticInterrupted_di" bpmnElement="AutomaticInterrupted">
-        <dc:Bounds x="790" y="162" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="745" y="206" width="126" height="40" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="AutomaticInterruptionPrepare_di" bpmnElement="AutomaticInterruptionPrepare" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
-        <dc:Bounds x="750" y="310" width="240" height="95" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="AutomaticInterruptionRoute_di" bpmnElement="AutomaticInterruptionRoute">
-        <dc:Bounds x="1090" y="332" width="50" height="50" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1045" y="390" width="140" height="40" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="AutomaticFailure_di" bpmnElement="AutomaticFailure">
-        <dc:Bounds x="920" y="162" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="875" y="206" width="126" height="40" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="AutomaticFailurePrepare_di" bpmnElement="AutomaticFailurePrepare" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
-        <dc:Bounds x="1180" y="500" width="220" height="95" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Reply_di" bpmnElement="Reply" isExpanded="false" bioc:fill="#ede9fe" bioc:stroke="#4c1d95">
-        <dc:Bounds x="1580" y="80" width="200" height="100" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ReplyRoute_di" bpmnElement="ReplyRoute">
-        <dc:Bounds x="1880" y="105" width="50" height="50" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1835" y="163" width="140" height="40" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="PrepareQuestionAuto_di" bpmnElement="PrepareQuestionAuto" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
-        <dc:Bounds x="1800" y="320" width="200" height="90" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="PrepareCloseAuto_di" bpmnElement="PrepareCloseAuto" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
-        <dc:Bounds x="1800" y="490" width="200" height="90" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Staff_di" bpmnElement="Staff" isExpanded="false" bioc:fill="#ede9fe" bioc:stroke="#4c1d95">
-        <dc:Bounds x="2050" y="850" width="240" height="100" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffRoute_di" bpmnElement="StaffRoute">
-        <dc:Bounds x="2380" y="875" width="50" height="50" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="2320" y="940" width="140" height="40" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Close_di" bpmnElement="Close" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
-        <dc:Bounds x="1850" y="1100" width="210" height="95" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="CloseConflict_di" bpmnElement="CloseConflict">
-        <dc:Bounds x="1890" y="1177" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1845" y="1221" width="126" height="40" />
-        </bpmndi:BPMNLabel>
+      <bpmndi:BPMNShape id="Merge_ActiveEnd_di" bpmnElement="Merge_ActiveEnd" isMarkerVisible="true">
+        <dc:Bounds x="6836" y="495" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="ActiveEnd_di" bpmnElement="ActiveEnd">
-        <dc:Bounds x="2180" y="700" width="36" height="36" />
+        <dc:Bounds x="7086" y="502" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2135" y="744" width="126" height="40" />
+          <dc:Bounds x="7004" y="550" width="200" height="55" />
         </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ReplyCleared_di" bpmnElement="ReplyCleared">
-        <dc:Bounds x="1600" y="162" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1480" y="205" width="180" height="40" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ClearAnswerContinue_di" bpmnElement="ClearAnswerContinue" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
-        <dc:Bounds x="400" y="700" width="220" height="95" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ClearAnswerRoute_di" bpmnElement="ClearAnswerRoute">
-        <dc:Bounds x="700" y="722" width="50" height="50" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="655" y="780" width="140" height="40" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ReplyStaffClose_di" bpmnElement="ReplyStaffClose">
-        <dc:Bounds x="1660" y="162" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1630" y="270" width="180" height="40" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ReplyReviewNeeded_di" bpmnElement="ReplyReviewNeeded">
-        <dc:Bounds x="1720" y="162" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1750" y="205" width="150" height="40" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ReviewNeedPrepare_di" bpmnElement="ReviewNeedPrepare" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
-        <dc:Bounds x="850" y="700" width="220" height="95" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffFollowAtReply_di" bpmnElement="StaffFollowAtReply">
-        <dc:Bounds x="1762" y="105" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1810" y="35" width="170" height="40" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffFollowContinue_di" bpmnElement="StaffFollowContinue" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
-        <dc:Bounds x="1140" y="700" width="220" height="95" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="TenantInbox_di" bpmnElement="TenantInbox" isExpanded="false">
-        <dc:Bounds x="100" y="1450" width="380" height="100" />
+        <dc:Bounds x="100" y="1780" width="380" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EntryRoute_di" bpmnElement="EntryRoute" isMarkerVisible="true">
+        <dc:Bounds x="336" y="495" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="261" y="557" width="200" height="55" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReopenCase_di" bpmnElement="ReopenCase" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="586" y="700" width="250" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReopenRejectedEnd_di" bpmnElement="ReopenRejectedEnd">
+        <dc:Bounds x="1143" y="732" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1061" y="780" width="200" height="55" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="ClearAnswerSide_di" bpmnElement="ClearAnswerSide" isExpanded="false">
-        <dc:Bounds x="620" y="1450" width="380" height="100" />
+        <dc:Bounds x="700" y="1780" width="380" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ClearAnswerContinue_di" bpmnElement="ClearAnswerContinue" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="3586" y="700" width="250" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ClearAnswerRoute_di" bpmnElement="ClearAnswerRoute" isMarkerVisible="true">
+        <dc:Bounds x="4136" y="955" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="4061" y="1017" width="200" height="55" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffCloseReplySide_di" bpmnElement="StaffCloseReplySide" isExpanded="false">
-        <dc:Bounds x="1140" y="1450" width="380" height="100" />
+        <dc:Bounds x="1300" y="1780" width="380" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="ReviewNeedSide_di" bpmnElement="ReviewNeedSide" isExpanded="false">
-        <dc:Bounds x="1660" y="1450" width="380" height="100" />
+        <dc:Bounds x="1900" y="1780" width="380" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReviewNeedPrepare_di" bpmnElement="ReviewNeedPrepare" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="3586" y="930" width="250" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffQuestionSide_di" bpmnElement="StaffQuestionSide" isExpanded="false">
-        <dc:Bounds x="100" y="1630" width="380" height="100" />
+        <dc:Bounds x="100" y="2110" width="380" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffCloseClarificationSide_di" bpmnElement="StaffCloseClarificationSide" isExpanded="false">
-        <dc:Bounds x="620" y="1630" width="380" height="100" />
+        <dc:Bounds x="700" y="2110" width="380" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffFollowSide_di" bpmnElement="StaffFollowSide" isExpanded="false">
-        <dc:Bounds x="1140" y="1630" width="380" height="100" />
+        <dc:Bounds x="1300" y="2110" width="380" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffFollowContinue_di" bpmnElement="StaffFollowContinue" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="3586" y="1160" width="250" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffTakeoverSide_di" bpmnElement="StaffTakeoverSide" isExpanded="false">
-        <dc:Bounds x="1660" y="1630" width="380" height="100" />
+        <dc:Bounds x="1900" y="2110" width="380" height="100" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="F01_di" bpmnElement="F01">
-        <di:waypoint x="76" y="128.0" />
-        <di:waypoint x="103.0" y="128.0" />
-        <di:waypoint x="103.0" y="130.0" />
-        <di:waypoint x="130" y="130.0" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="F09_di" bpmnElement="F09">
-        <di:waypoint x="1780" y="130.0" />
-        <di:waypoint x="1880" y="130.0" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="F15_di" bpmnElement="F15">
-        <di:waypoint x="2290" y="900" />
-        <di:waypoint x="2380" y="900" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="F16_di" bpmnElement="F16">
-        <di:waypoint x="2405" y="925" />
-        <di:waypoint x="2405" y="1050" />
-        <di:waypoint x="1955" y="1050" />
-        <di:waypoint x="1955" y="1100" />
+      <bpmndi:BPMNShape id="PrepareInitialAuto_di" bpmnElement="PrepareInitialAuto" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="1036" y="470" width="250" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="PrepareQuestionAuto_di" bpmnElement="PrepareQuestionAuto" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="4036" y="470" width="250" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="PrepareCloseAuto_di" bpmnElement="PrepareCloseAuto" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="4036" y="700" width="250" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Merge_Automatic_di" bpmnElement="Merge_Automatic" isMarkerVisible="true">
+        <dc:Bounds x="1486" y="495" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Automatic_di" bpmnElement="Automatic" isExpanded="false" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
+        <dc:Bounds x="1736" y="470" width="250" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AutomaticResult_di" bpmnElement="AutomaticResult" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="2186" y="470" width="250" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AutomaticRoute_di" bpmnElement="AutomaticRoute" isMarkerVisible="true">
+        <dc:Bounds x="2636" y="495" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2190" y="1010" width="180" height="35" />
+          <dc:Bounds x="2561" y="557" width="200" height="55" />
         </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="F17_di" bpmnElement="F17">
-        <di:waypoint x="2405" y="875" />
-        <di:waypoint x="2405" y="-60" />
-        <di:waypoint x="1720" y="-60" />
-        <di:waypoint x="1720" y="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AutomaticFailurePrepare_di" bpmnElement="AutomaticFailurePrepare" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="2186" y="930" width="250" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AutomaticInterruptionPrepare_di" bpmnElement="AutomaticInterruptionPrepare" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="2186" y="700" width="250" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AutomaticInterruptionRoute_di" bpmnElement="AutomaticInterruptionRoute" isMarkerVisible="true">
+        <dc:Bounds x="2636" y="725" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2200" y="-100" width="180" height="35" />
+          <dc:Bounds x="2561" y="787" width="200" height="55" />
         </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="F19_di" bpmnElement="F19">
-        <di:waypoint x="1905" y="105" />
-        <di:waypoint x="1905" y="0" />
-        <di:waypoint x="1680" y="0" />
-        <di:waypoint x="1680" y="80" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1610" y="-42" width="150" height="36" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="F21_di" bpmnElement="F21">
-        <di:waypoint x="1930" y="130" />
-        <di:waypoint x="2120" y="130" />
-        <di:waypoint x="2120" y="820" />
-        <di:waypoint x="1640" y="820" />
-        <di:waypoint x="1640" y="850" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="2050" y="778" width="150" height="36" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="FActiveClose_di" bpmnElement="FActiveClose">
-        <di:waypoint x="2060" y="1147" />
-        <di:waypoint x="2198" y="1147" />
-        <di:waypoint x="2198" y="736" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="F_CloseConflict_Staff_di" bpmnElement="F_CloseConflict_Staff">
-        <di:waypoint x="1908" y="1213" />
-        <di:waypoint x="1908" y="1300" />
-        <di:waypoint x="1600" y="1300" />
-        <di:waypoint x="1600" y="950" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1530" y="1258" width="150" height="36" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="F_Initial_di" bpmnElement="F_Initial">
-        <di:waypoint x="180" y="130.0" />
-        <di:waypoint x="210.0" y="130.0" />
-        <di:waypoint x="210.0" y="127.5" />
-        <di:waypoint x="240" y="127.5" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="140.0" y="85.5" width="150" height="36" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="F_Reopen_di" bpmnElement="F_Reopen">
-        <di:waypoint x="155" y="155" />
-        <di:waypoint x="155" y="367" />
-        <di:waypoint x="240" y="367" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="85" y="325" width="150" height="36" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="F_Reopen_Staff_di" bpmnElement="F_Reopen_Staff">
-        <di:waypoint x="420" y="367" />
-        <di:waypoint x="460" y="367" />
-        <di:waypoint x="460" y="1250" />
-        <di:waypoint x="1640" y="1250" />
-        <di:waypoint x="1640" y="950" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="F_ReopenRejected_di" bpmnElement="F_ReopenRejected">
-        <di:waypoint x="298" y="433" />
-        <di:waypoint x="298" y="510" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="CA03_di" bpmnElement="CA03">
-        <di:waypoint x="1618" y="198" />
-        <di:waypoint x="1618" y="600" />
-        <di:waypoint x="510" y="600" />
-        <di:waypoint x="510" y="700" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="CA04_di" bpmnElement="CA04">
-        <di:waypoint x="620" y="747.5" />
-        <di:waypoint x="700" y="747.0" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="CA05_di" bpmnElement="CA05">
-        <di:waypoint x="725" y="772" />
-        <di:waypoint x="725" y="900" />
-        <di:waypoint x="1520" y="900" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="655" y="858" width="150" height="36" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="CA06_di" bpmnElement="CA06">
-        <di:waypoint x="725" y="722" />
-        <di:waypoint x="725" y="680" />
-        <di:waypoint x="1550" y="680" />
-        <di:waypoint x="1550" y="130" />
-        <di:waypoint x="1580" y="130" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1480" y="638" width="150" height="36" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="CR06_di" bpmnElement="CR06">
-        <di:waypoint x="1678" y="198" />
-        <di:waypoint x="1678" y="270" />
-        <di:waypoint x="2160" y="270" />
-        <di:waypoint x="2160" y="1050" />
-        <di:waypoint x="1955" y="1050" />
-        <di:waypoint x="1955" y="1100" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="2090" y="1008" width="150" height="36" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="PN10_di" bpmnElement="PN10">
-        <di:waypoint x="1738" y="198" />
-        <di:waypoint x="1738" y="620" />
-        <di:waypoint x="960" y="620" />
-        <di:waypoint x="960" y="700" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="PN11_di" bpmnElement="PN11">
-        <di:waypoint x="1070" y="747" />
-        <di:waypoint x="1100" y="747" />
-        <di:waypoint x="1100" y="920" />
-        <di:waypoint x="1520" y="920" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1030" y="878" width="150" height="36" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="SF07_di" bpmnElement="SF07">
-        <di:waypoint x="1360" y="747" />
-        <di:waypoint x="1420" y="747" />
-        <di:waypoint x="1420" y="940" />
-        <di:waypoint x="1520" y="940" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1350" y="898" width="150" height="36" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="SF_Takeover_Reply_di" bpmnElement="SF_Takeover_Reply">
-        <di:waypoint x="1798" y="123" />
-        <di:waypoint x="2040" y="123" />
-        <di:waypoint x="2040" y="660" />
-        <di:waypoint x="1250" y="660" />
-        <di:waypoint x="1250" y="700" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="PrepareInitialAutoFlow_di" bpmnElement="PrepareInitialAutoFlow">
-        <di:waypoint x="660" y="127.5" />
-        <di:waypoint x="750" y="130.0" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="PrepareQuestionAutoFlow_di" bpmnElement="PrepareQuestionAutoFlow">
-        <di:waypoint x="1800" y="365" />
-        <di:waypoint x="1740" y="365" />
-        <di:waypoint x="1740" y="-100" />
-        <di:waypoint x="870" y="-100" />
-        <di:waypoint x="870" y="80" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="PrepareCloseAutoFlow_di" bpmnElement="PrepareCloseAutoFlow">
-        <di:waypoint x="1800" y="535" />
-        <di:waypoint x="1700" y="535" />
-        <di:waypoint x="1700" y="-160" />
-        <di:waypoint x="850" y="-160" />
-        <di:waypoint x="850" y="80" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="F02_di" bpmnElement="F02">
-        <di:waypoint x="420" y="127.5" />
-        <di:waypoint x="480" y="127.5" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="F18_di" bpmnElement="F18">
-        <di:waypoint x="1905" y="155" />
-        <di:waypoint x="1905" y="320" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1835" y="278" width="150" height="36" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="F20_di" bpmnElement="F20">
-        <di:waypoint x="1930" y="130" />
-        <di:waypoint x="2080" y="130" />
-        <di:waypoint x="2080" y="535" />
-        <di:waypoint x="2000" y="535" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="2010" y="493" width="150" height="36" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="AParent01_di" bpmnElement="AParent01">
-        <di:waypoint x="990" y="130.0" />
-        <di:waypoint x="1100" y="130.0" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="AParent02_di" bpmnElement="AParent02">
-        <di:waypoint x="1300" y="130.0" />
-        <di:waypoint x="1380" y="130.0" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="AParentWait_di" bpmnElement="AParentWait">
-        <di:waypoint x="1430" y="130" />
-        <di:waypoint x="1580" y="130" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1510" y="88" width="150" height="36" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="AParentReview_di" bpmnElement="AParentReview">
-        <di:waypoint x="1405" y="155" />
-        <di:waypoint x="1450" y="155" />
-        <di:waypoint x="1450" y="900" />
-        <di:waypoint x="1520" y="900" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1380" y="858" width="150" height="36" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="AParentClosed_di" bpmnElement="AParentClosed">
-        <di:waypoint x="1405" y="105" />
-        <di:waypoint x="1405" y="20" />
-        <di:waypoint x="2198" y="20" />
-        <di:waypoint x="2198" y="700" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="2128" y="-22" width="150" height="36" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="AutoFail01_di" bpmnElement="AutoFail01">
-        <di:waypoint x="938" y="198" />
-        <di:waypoint x="1030" y="198" />
-        <di:waypoint x="1030" y="547" />
-        <di:waypoint x="1180" y="547" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="AutoFail02_di" bpmnElement="AutoFail02">
-        <di:waypoint x="1400" y="547" />
-        <di:waypoint x="1470" y="547" />
-        <di:waypoint x="1470" y="860" />
-        <di:waypoint x="1520" y="860" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="AI01_di" bpmnElement="AI01">
-        <di:waypoint x="808" y="198" />
-        <di:waypoint x="808" y="310" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="AI02_di" bpmnElement="AI02">
-        <di:waypoint x="990" y="357.5" />
-        <di:waypoint x="1090" y="357.0" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="AIWait_di" bpmnElement="AIWait">
-        <di:waypoint x="1115" y="332" />
-        <di:waypoint x="1115" y="250" />
-        <di:waypoint x="1680" y="250" />
-        <di:waypoint x="1680" y="180" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1610" y="208" width="150" height="36" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="AIStaff_di" bpmnElement="AIStaff">
-        <di:waypoint x="1115" y="382" />
-        <di:waypoint x="1115" y="640" />
-        <di:waypoint x="1490" y="640" />
-        <di:waypoint x="1490" y="880" />
-        <di:waypoint x="1520" y="880" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1420" y="598" width="150" height="36" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="CaseDataSide_di" bpmnElement="CaseDataSide" isExpanded="false">
-        <dc:Bounds x="100" y="1810" width="380" height="100" />
+        <dc:Bounds x="100" y="2440" width="380" height="100" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffContinuationClaim_di" bpmnElement="StaffContinuationClaim" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
-        <dc:Bounds x="1520" y="850" width="240" height="100" />
+      <bpmndi:BPMNShape id="Merge_StaffContinuationClaim_di" bpmnElement="Merge_StaffContinuationClaim" isMarkerVisible="true">
+        <dc:Bounds x="4486" y="495" width="50" height="50" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffContinuationRoute_di" bpmnElement="StaffContinuationRoute">
-        <dc:Bounds x="1840" y="875" width="50" height="50" />
+      <bpmndi:BPMNShape id="StaffContinuationClaim_di" bpmnElement="StaffContinuationClaim" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="4736" y="470" width="250" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffContinuationRoute_di" bpmnElement="StaffContinuationRoute" isMarkerVisible="true">
+        <dc:Bounds x="5186" y="495" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1780" y="933" width="180" height="40" />
+          <dc:Bounds x="5111" y="557" width="200" height="55" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffContinuationMerge_di" bpmnElement="StaffContinuationMerge" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
-        <dc:Bounds x="1520" y="1020" width="250" height="95" />
+      <bpmndi:BPMNShape id="StaffContinuationMerge_di" bpmnElement="StaffContinuationMerge" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="5436" y="700" width="250" height="100" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffContinuationReconcile_di" bpmnElement="StaffContinuationReconcile" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
-        <dc:Bounds x="1200" y="1020" width="250" height="95" />
+      <bpmndi:BPMNShape id="StaffContinuationReconcile_di" bpmnElement="StaffContinuationReconcile" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="5436" y="930" width="250" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffContinuationMerged_di" bpmnElement="StaffContinuationMerged">
-        <dc:Bounds x="1620" y="1210" width="36" height="36" />
+        <dc:Bounds x="5893" y="732" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1560" y="1254" width="180" height="40" />
+          <dc:Bounds x="5811" y="780" width="200" height="55" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffContinuationObsolete_di" bpmnElement="StaffContinuationObsolete">
-        <dc:Bounds x="1295" y="1210" width="36" height="36" />
+        <dc:Bounds x="5893" y="962" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1235" y="1254" width="180" height="40" />
+          <dc:Bounds x="5811" y="1010" width="200" height="55" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AutomaticFailure_di" bpmnElement="AutomaticFailure">
+        <dc:Bounds x="1823" y="552" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1741" y="600" width="200" height="55" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AutomaticInterrupted_di" bpmnElement="AutomaticInterrupted">
+        <dc:Bounds x="1771" y="552" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1689" y="600" width="200" height="55" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffFollowAtReply_di" bpmnElement="StaffFollowAtReply">
+        <dc:Bounds x="3327" y="552" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="3245" y="600" width="200" height="55" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReplyReviewNeeded_di" bpmnElement="ReplyReviewNeeded">
+        <dc:Bounds x="3275" y="552" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="3193" y="600" width="200" height="55" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReplyStaffClose_di" bpmnElement="ReplyStaffClose">
+        <dc:Bounds x="3223" y="552" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="3141" y="600" width="200" height="55" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReplyCleared_di" bpmnElement="ReplyCleared">
+        <dc:Bounds x="3171" y="552" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="3089" y="600" width="200" height="55" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReopenRejected_di" bpmnElement="ReopenRejected">
+        <dc:Bounds x="621" y="782" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="539" y="830" width="200" height="55" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="CloseConflict_di" bpmnElement="CloseConflict">
+        <dc:Bounds x="6421" y="552" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="6339" y="600" width="200" height="55" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_Merge_Reply_di" bpmnElement="Flow_Merge_Reply">
+        <di:waypoint x="2936" y="520" />
+        <di:waypoint x="3136" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Merge_Close_di" bpmnElement="Flow_Merge_Close">
+        <di:waypoint x="6186" y="520" />
+        <di:waypoint x="6386" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F01_di" bpmnElement="F01">
+        <di:waypoint x="136" y="520" />
+        <di:waypoint x="336" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F09_di" bpmnElement="F09">
+        <di:waypoint x="3386" y="520" />
+        <di:waypoint x="3686" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F15_di" bpmnElement="F15">
+        <di:waypoint x="5686" y="520" />
+        <di:waypoint x="5886" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F16_di" bpmnElement="F16">
+        <di:waypoint x="5936" y="520" />
+        <di:waypoint x="6136" y="520" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="5946" y="465" width="180" height="50" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F17_di" bpmnElement="F17">
+        <di:waypoint x="5936" y="520" />
+        <di:waypoint x="6001" y="520" />
+        <di:waypoint x="6001" y="350" />
+        <di:waypoint x="2826" y="350" />
+        <di:waypoint x="2826" y="520" />
+        <di:waypoint x="2886" y="520" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="4323.5" y="295" width="180" height="50" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F19_di" bpmnElement="F19">
+        <di:waypoint x="3736" y="520" />
+        <di:waypoint x="3801" y="520" />
+        <di:waypoint x="3801" y="295" />
+        <di:waypoint x="2826" y="295" />
+        <di:waypoint x="2826" y="520" />
+        <di:waypoint x="2886" y="520" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="3223.5" y="240" width="180" height="50" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F21_di" bpmnElement="F21">
+        <di:waypoint x="3736" y="520" />
+        <di:waypoint x="3796" y="520" />
+        <di:waypoint x="3796" y="310" />
+        <di:waypoint x="4426" y="310" />
+        <di:waypoint x="4426" y="520" />
+        <di:waypoint x="4486" y="520" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="4021" y="255" width="180" height="50" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Merge_ActiveEnd_di" bpmnElement="Flow_Merge_ActiveEnd">
+        <di:waypoint x="6886" y="520" />
+        <di:waypoint x="7086" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="FActiveClose_di" bpmnElement="FActiveClose">
+        <di:waypoint x="6636" y="520" />
+        <di:waypoint x="6836" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_CloseConflict_Staff_di" bpmnElement="F_CloseConflict_Staff">
+        <di:waypoint x="6439" y="588" />
+        <di:waypoint x="6439" y="623" />
+        <di:waypoint x="6711" y="623" />
+        <di:waypoint x="6711" y="1575" />
+        <di:waypoint x="4411" y="1575" />
+        <di:waypoint x="4411" y="520" />
+        <di:waypoint x="4486" y="520" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="5471" y="1520" width="180" height="50" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_Initial_di" bpmnElement="F_Initial">
+        <di:waypoint x="386" y="520" />
+        <di:waypoint x="586" y="520" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="396" y="465" width="180" height="50" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_Reopen_di" bpmnElement="F_Reopen">
+        <di:waypoint x="386" y="520" />
+        <di:waypoint x="486" y="520" />
+        <di:waypoint x="486" y="750" />
+        <di:waypoint x="586" y="750" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="446" y="695" width="180" height="50" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_Reopen_Staff_di" bpmnElement="F_Reopen_Staff">
+        <di:waypoint x="836" y="750" />
+        <di:waypoint x="896" y="750" />
+        <di:waypoint x="896" y="240" />
+        <di:waypoint x="4426" y="240" />
+        <di:waypoint x="4426" y="520" />
+        <di:waypoint x="4486" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_ReopenRejected_di" bpmnElement="F_ReopenRejected">
+        <di:waypoint x="639" y="818" />
+        <di:waypoint x="639" y="853" />
+        <di:waypoint x="911" y="853" />
+        <di:waypoint x="911" y="1685" />
+        <di:waypoint x="1068" y="1685" />
+        <di:waypoint x="1068" y="750" />
+        <di:waypoint x="1143" y="750" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="CA03_di" bpmnElement="CA03">
+        <di:waypoint x="3189" y="588" />
+        <di:waypoint x="3189" y="638" />
+        <di:waypoint x="3516" y="638" />
+        <di:waypoint x="3516" y="750" />
+        <di:waypoint x="3586" y="750" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="CA04_di" bpmnElement="CA04">
+        <di:waypoint x="3836" y="750" />
+        <di:waypoint x="3986" y="750" />
+        <di:waypoint x="3986" y="980" />
+        <di:waypoint x="4136" y="980" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="CA05_di" bpmnElement="CA05">
+        <di:waypoint x="4186" y="980" />
+        <di:waypoint x="4336" y="980" />
+        <di:waypoint x="4336" y="520" />
+        <di:waypoint x="4486" y="520" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="4321" y="465" width="180" height="50" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="CA06_di" bpmnElement="CA06">
+        <di:waypoint x="4186" y="980" />
+        <di:waypoint x="4251" y="980" />
+        <di:waypoint x="4251" y="20" />
+        <di:waypoint x="2826" y="20" />
+        <di:waypoint x="2826" y="520" />
+        <di:waypoint x="2886" y="520" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="3448.5" y="-35" width="180" height="50" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="CR06_di" bpmnElement="CR06">
+        <di:waypoint x="3241" y="588" />
+        <di:waypoint x="3241" y="638" />
+        <di:waypoint x="6066" y="638" />
+        <di:waypoint x="6066" y="520" />
+        <di:waypoint x="6136" y="520" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="4563.5" y="583" width="180" height="50" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="PN10_di" bpmnElement="PN10">
+        <di:waypoint x="3293" y="588" />
+        <di:waypoint x="3293" y="638" />
+        <di:waypoint x="3516" y="638" />
+        <di:waypoint x="3516" y="980" />
+        <di:waypoint x="3586" y="980" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="PN11_di" bpmnElement="PN11">
+        <di:waypoint x="3836" y="980" />
+        <di:waypoint x="3906" y="980" />
+        <di:waypoint x="3906" y="-35" />
+        <di:waypoint x="4416" y="-35" />
+        <di:waypoint x="4416" y="520" />
+        <di:waypoint x="4486" y="520" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="4071" y="-90" width="180" height="50" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF07_di" bpmnElement="SF07">
+        <di:waypoint x="3836" y="1210" />
+        <di:waypoint x="3906" y="1210" />
+        <di:waypoint x="3906" y="-90" />
+        <di:waypoint x="4416" y="-90" />
+        <di:waypoint x="4416" y="520" />
+        <di:waypoint x="4486" y="520" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="4071" y="-145" width="180" height="50" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Takeover_Reply_di" bpmnElement="SF_Takeover_Reply">
+        <di:waypoint x="3345" y="588" />
+        <di:waypoint x="3345" y="638" />
+        <di:waypoint x="3516" y="638" />
+        <di:waypoint x="3516" y="1210" />
+        <di:waypoint x="3586" y="1210" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="PrepareInitialAutoFlow_di" bpmnElement="PrepareInitialAutoFlow">
+        <di:waypoint x="1286" y="520" />
+        <di:waypoint x="1486" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="PrepareQuestionAutoFlow_di" bpmnElement="PrepareQuestionAutoFlow">
+        <di:waypoint x="4286" y="520" />
+        <di:waypoint x="4351" y="520" />
+        <di:waypoint x="4351" y="-145" />
+        <di:waypoint x="1426" y="-145" />
+        <di:waypoint x="1426" y="520" />
+        <di:waypoint x="1486" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="PrepareCloseAutoFlow_di" bpmnElement="PrepareCloseAutoFlow">
+        <di:waypoint x="4286" y="750" />
+        <di:waypoint x="4351" y="750" />
+        <di:waypoint x="4351" y="-200" />
+        <di:waypoint x="1426" y="-200" />
+        <di:waypoint x="1426" y="520" />
+        <di:waypoint x="1486" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F02_di" bpmnElement="F02">
+        <di:waypoint x="836" y="520" />
+        <di:waypoint x="1036" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F18_di" bpmnElement="F18">
+        <di:waypoint x="3736" y="520" />
+        <di:waypoint x="4036" y="520" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="3796" y="465" width="180" height="50" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F20_di" bpmnElement="F20">
+        <di:waypoint x="3736" y="520" />
+        <di:waypoint x="3886" y="520" />
+        <di:waypoint x="3886" y="750" />
+        <di:waypoint x="4036" y="750" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="3871" y="695" width="180" height="50" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Merge_Automatic_di" bpmnElement="Flow_Merge_Automatic">
+        <di:waypoint x="1536" y="520" />
+        <di:waypoint x="1736" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="AParent01_di" bpmnElement="AParent01">
+        <di:waypoint x="1986" y="520" />
+        <di:waypoint x="2186" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="AParent02_di" bpmnElement="AParent02">
+        <di:waypoint x="2436" y="520" />
+        <di:waypoint x="2636" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="AParentWait_di" bpmnElement="AParentWait">
+        <di:waypoint x="2686" y="520" />
+        <di:waypoint x="2886" y="520" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2696" y="465" width="180" height="50" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="AParentReview_di" bpmnElement="AParentReview">
+        <di:waypoint x="2686" y="520" />
+        <di:waypoint x="2746" y="520" />
+        <di:waypoint x="2746" y="-5" />
+        <di:waypoint x="4426" y="-5" />
+        <di:waypoint x="4426" y="520" />
+        <di:waypoint x="4486" y="520" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="3496" y="-60" width="180" height="50" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="AParentClosed_di" bpmnElement="AParentClosed">
+        <di:waypoint x="2686" y="520" />
+        <di:waypoint x="2746" y="520" />
+        <di:waypoint x="2746" y="-40" />
+        <di:waypoint x="6776" y="-40" />
+        <di:waypoint x="6776" y="520" />
+        <di:waypoint x="6836" y="520" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="4671" y="-95" width="180" height="50" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="AutoFail01_di" bpmnElement="AutoFail01">
+        <di:waypoint x="1841" y="588" />
+        <di:waypoint x="1841" y="623" />
+        <di:waypoint x="2061" y="623" />
+        <di:waypoint x="2061" y="2125" />
+        <di:waypoint x="2111" y="2125" />
+        <di:waypoint x="2111" y="980" />
+        <di:waypoint x="2186" y="980" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="AutoFail02_di" bpmnElement="AutoFail02">
+        <di:waypoint x="2436" y="980" />
+        <di:waypoint x="2496" y="980" />
+        <di:waypoint x="2496" y="-110" />
+        <di:waypoint x="4426" y="-110" />
+        <di:waypoint x="4426" y="520" />
+        <di:waypoint x="4486" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="AI01_di" bpmnElement="AI01">
+        <di:waypoint x="1789" y="588" />
+        <di:waypoint x="1789" y="638" />
+        <di:waypoint x="2116" y="638" />
+        <di:waypoint x="2116" y="750" />
+        <di:waypoint x="2186" y="750" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="AI02_di" bpmnElement="AI02">
+        <di:waypoint x="2436" y="750" />
+        <di:waypoint x="2636" y="750" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="AIWait_di" bpmnElement="AIWait">
+        <di:waypoint x="2686" y="750" />
+        <di:waypoint x="2786" y="750" />
+        <di:waypoint x="2786" y="520" />
+        <di:waypoint x="2886" y="520" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2746" y="465" width="180" height="50" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="AIStaff_di" bpmnElement="AIStaff">
+        <di:waypoint x="2686" y="750" />
+        <di:waypoint x="2746" y="750" />
+        <di:waypoint x="2746" y="-145" />
+        <di:waypoint x="4426" y="-145" />
+        <di:waypoint x="4426" y="520" />
+        <di:waypoint x="4486" y="520" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="3496" y="-200" width="180" height="50" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Merge_StaffContinuationClaim_di" bpmnElement="Flow_Merge_StaffContinuationClaim">
+        <di:waypoint x="4536" y="520" />
+        <di:waypoint x="4736" y="520" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SCClaim_di" bpmnElement="SCClaim">
-        <di:waypoint x="1760" y="900" />
-        <di:waypoint x="1840" y="900" />
+        <di:waypoint x="4986" y="520" />
+        <di:waypoint x="5186" y="520" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SCStart_di" bpmnElement="SCStart">
-        <di:waypoint x="1890" y="900" />
-        <di:waypoint x="2050" y="900" />
+        <di:waypoint x="5236" y="520" />
+        <di:waypoint x="5436" y="520" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1900" y="850" width="150" height="35" />
+          <dc:Bounds x="5246" y="465" width="180" height="50" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SCExisting_di" bpmnElement="SCExisting">
-        <di:waypoint x="1865" y="925" />
-        <di:waypoint x="1865" y="990" />
-        <di:waypoint x="1645" y="990" />
-        <di:waypoint x="1645" y="1020" />
+        <di:waypoint x="5236" y="520" />
+        <di:waypoint x="5336" y="520" />
+        <di:waypoint x="5336" y="750" />
+        <di:waypoint x="5436" y="750" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1650" y="950" width="180" height="35" />
+          <dc:Bounds x="5296" y="695" width="180" height="50" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SCSuperseded_di" bpmnElement="SCSuperseded">
-        <di:waypoint x="1865" y="875" />
-        <di:waypoint x="1865" y="805" />
-        <di:waypoint x="1380" y="805" />
-        <di:waypoint x="1380" y="1020" />
+        <di:waypoint x="5236" y="520" />
+        <di:waypoint x="5336" y="520" />
+        <di:waypoint x="5336" y="980" />
+        <di:waypoint x="5436" y="980" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1450" y="770" width="200" height="35" />
+          <dc:Bounds x="5296" y="925" width="180" height="50" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SCMerged_di" bpmnElement="SCMerged">
-        <di:waypoint x="1645" y="1115" />
-        <di:waypoint x="1645" y="1180" />
-        <di:waypoint x="1638" y="1180" />
-        <di:waypoint x="1638" y="1210" />
+        <di:waypoint x="5686" y="750" />
+        <di:waypoint x="5893" y="750" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SCObsolete_di" bpmnElement="SCObsolete">
-        <di:waypoint x="1325" y="1115" />
-        <di:waypoint x="1325" y="1180" />
-        <di:waypoint x="1313" y="1180" />
-        <di:waypoint x="1313" y="1210" />
+        <di:waypoint x="5686" y="980" />
+        <di:waypoint x="5893" y="980" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
   <bpmndi:BPMNDiagram id="TenantInbox_diagram" name="06 · Durchgängiger Mieternachrichteneingang">
     <bpmndi:BPMNPlane id="TenantInbox_plane" bpmnElement="TenantInbox">
       <bpmndi:BPMNShape id="NStart_di" bpmnElement="NStart">
-        <dc:Bounds x="80" y="130" width="36" height="36" />
+        <dc:Bounds x="100" y="502" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="20" y="180" width="156" height="45" />
+          <dc:Bounds x="18" y="550" width="200" height="55" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ProcessTenantMessage_di" bpmnElement="ProcessTenantMessage" bioc:fill="#ede9fe" bioc:stroke="#4c1d95">
-        <dc:Bounds x="210" y="105" width="220" height="90" />
+      <bpmndi:BPMNShape id="ProcessTenantMessage_di" bpmnElement="ProcessTenantMessage" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
+        <dc:Bounds x="336" y="470" width="250" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="NReceptionEnd_di" bpmnElement="NReceptionEnd">
-        <dc:Bounds x="530" y="130" width="36" height="36" />
+        <dc:Bounds x="786" y="502" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="470" y="180" width="156" height="45" />
+          <dc:Bounds x="704" y="550" width="200" height="55" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="NReceive_Call_di" bpmnElement="NReceive_Call">
-        <di:waypoint x="116" y="148" />
-        <di:waypoint x="210" y="148" />
+        <di:waypoint x="136" y="520" />
+        <di:waypoint x="336" y="520" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="NReceive_End_di" bpmnElement="NReceive_End">
-        <di:waypoint x="430" y="148" />
-        <di:waypoint x="530" y="148" />
+        <di:waypoint x="586" y="520" />
+        <di:waypoint x="786" y="520" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
   <bpmndi:BPMNDiagram id="ClearAnswerSide_diagram">
     <bpmndi:BPMNPlane id="ClearAnswerSide_diagram_plane" bpmnElement="ClearAnswerSide">
       <bpmndi:BPMNShape id="ClearAnswerStart_di" bpmnElement="ClearAnswerStart">
-        <dc:Bounds x="250" y="1270" width="36" height="36" />
+        <dc:Bounds x="100" y="502" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ClearAnswerApply_di" bpmnElement="ClearAnswerApply" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
-        <dc:Bounds x="420" y="1240" width="400" height="100" />
+      <bpmndi:BPMNShape id="ClearAnswerApply_di" bpmnElement="ClearAnswerApply" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="336" y="470" width="250" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="ClearAnswerEnd_di" bpmnElement="ClearAnswerEnd">
-        <dc:Bounds x="1000" y="1270" width="36" height="36" />
+        <dc:Bounds x="786" y="502" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="CA01_di" bpmnElement="CA01">
-        <di:waypoint x="286" y="1288" />
-        <di:waypoint x="420" y="1288" />
+        <di:waypoint x="136" y="520" />
+        <di:waypoint x="336" y="520" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="CA02_di" bpmnElement="CA02">
-        <di:waypoint x="820" y="1288" />
-        <di:waypoint x="1000" y="1288" />
+        <di:waypoint x="586" y="520" />
+        <di:waypoint x="786" y="520" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
   <bpmndi:BPMNDiagram id="StaffCloseReplySide_diagram">
     <bpmndi:BPMNPlane id="StaffCloseReplySide_diagram_plane" bpmnElement="StaffCloseReplySide">
       <bpmndi:BPMNShape id="StaffCloseReplyStart_di" bpmnElement="StaffCloseReplyStart">
-        <dc:Bounds x="250" y="1662" width="36" height="36" />
+        <dc:Bounds x="100" y="502" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffCloseReplyCheck_di" bpmnElement="StaffCloseReplyCheck" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
-        <dc:Bounds x="400" y="1635" width="260" height="90" />
+      <bpmndi:BPMNShape id="StaffCloseReplyCheck_di" bpmnElement="StaffCloseReplyCheck" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="336" y="470" width="250" height="100" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffCloseReplyAccepted_di" bpmnElement="StaffCloseReplyAccepted">
-        <dc:Bounds x="750" y="1655" width="50" height="50" />
+      <bpmndi:BPMNShape id="StaffCloseReplyAccepted_di" bpmnElement="StaffCloseReplyAccepted" isMarkerVisible="true">
+        <dc:Bounds x="786" y="495" width="50" height="50" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffCloseReplySignal_di" bpmnElement="StaffCloseReplySignal" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
-        <dc:Bounds x="930" y="1635" width="310" height="90" />
+      <bpmndi:BPMNShape id="StaffCloseReplySignal_di" bpmnElement="StaffCloseReplySignal" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="1036" y="470" width="250" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffCloseReplyRejected_di" bpmnElement="StaffCloseReplyRejected">
-        <dc:Bounds x="757" y="1810" width="36" height="36" />
+        <dc:Bounds x="1143" y="732" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffCloseReplyReady_di" bpmnElement="StaffCloseReplyReady">
-        <dc:Bounds x="1450" y="1662" width="36" height="36" />
+        <dc:Bounds x="1486" y="502" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="CR01_di" bpmnElement="CR01">
-        <di:waypoint x="286" y="1680" />
-        <di:waypoint x="400" y="1680" />
+        <di:waypoint x="136" y="520" />
+        <di:waypoint x="336" y="520" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="CR02_di" bpmnElement="CR02">
-        <di:waypoint x="660" y="1680" />
-        <di:waypoint x="750" y="1680" />
+        <di:waypoint x="586" y="520" />
+        <di:waypoint x="786" y="520" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="CR03_di" bpmnElement="CR03">
-        <di:waypoint x="800" y="1680" />
-        <di:waypoint x="930" y="1680" />
+        <di:waypoint x="836" y="520" />
+        <di:waypoint x="1036" y="520" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="846" y="465" width="180" height="50" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="CR04_di" bpmnElement="CR04">
-        <di:waypoint x="775" y="1705" />
-        <di:waypoint x="775" y="1810" />
+        <di:waypoint x="836" y="520" />
+        <di:waypoint x="989.5" y="520" />
+        <di:waypoint x="989.5" y="750" />
+        <di:waypoint x="1143" y="750" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="976.25" y="695" width="180" height="50" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="CR05_di" bpmnElement="CR05">
-        <di:waypoint x="1240" y="1680" />
-        <di:waypoint x="1450" y="1680" />
+        <di:waypoint x="1286" y="520" />
+        <di:waypoint x="1486" y="520" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
   <bpmndi:BPMNDiagram id="ReviewNeedSide_diagram">
     <bpmndi:BPMNPlane id="ReviewNeedSide_diagram_plane" bpmnElement="ReviewNeedSide">
       <bpmndi:BPMNShape id="ReviewNeedStart_di" bpmnElement="ReviewNeedStart">
-        <dc:Bounds x="250" y="2192" width="36" height="36" />
+        <dc:Bounds x="100" y="502" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ReviewNeedCheck_di" bpmnElement="ReviewNeedCheck" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
-        <dc:Bounds x="400" y="2165" width="260" height="90" />
+      <bpmndi:BPMNShape id="ReviewNeedCheck_di" bpmnElement="ReviewNeedCheck" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="336" y="470" width="250" height="100" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ReviewNeedRoute_di" bpmnElement="ReviewNeedRoute">
-        <dc:Bounds x="750" y="2185" width="50" height="50" />
+      <bpmndi:BPMNShape id="ReviewNeedRoute_di" bpmnElement="ReviewNeedRoute" isMarkerVisible="true">
+        <dc:Bounds x="786" y="495" width="50" height="50" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ReviewNeedExisting_di" bpmnElement="ReviewNeedExisting" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
-        <dc:Bounds x="980" y="2050" width="310" height="90" />
+      <bpmndi:BPMNShape id="ReviewNeedExisting_di" bpmnElement="ReviewNeedExisting" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="1036" y="470" width="250" height="100" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ReviewNeedWakeReply_di" bpmnElement="ReviewNeedWakeReply" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
-        <dc:Bounds x="980" y="2215" width="310" height="90" />
+      <bpmndi:BPMNShape id="ReviewNeedWakeReply_di" bpmnElement="ReviewNeedWakeReply" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="1036" y="700" width="250" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="ReviewNeedNoAction_di" bpmnElement="ReviewNeedNoAction">
-        <dc:Bounds x="757" y="2385" width="36" height="36" />
+        <dc:Bounds x="1143" y="962" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Merge_ReviewNeedDone_di" bpmnElement="Merge_ReviewNeedDone" isMarkerVisible="true">
+        <dc:Bounds x="1486" y="495" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="ReviewNeedDone_di" bpmnElement="ReviewNeedDone">
-        <dc:Bounds x="1640" y="2192" width="36" height="36" />
+        <dc:Bounds x="1736" y="502" width="36" height="36" />
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReviewNeedOther_di" bpmnElement="ReviewNeedOther" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="1036" y="1160" width="250" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_Merge_ReviewNeedDone_di" bpmnElement="Flow_Merge_ReviewNeedDone">
+        <di:waypoint x="1536" y="520" />
+        <di:waypoint x="1736" y="520" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="PN01_di" bpmnElement="PN01">
-        <di:waypoint x="286" y="2210" />
-        <di:waypoint x="400" y="2210" />
+        <di:waypoint x="136" y="520" />
+        <di:waypoint x="336" y="520" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="PN02_di" bpmnElement="PN02">
-        <di:waypoint x="660" y="2210" />
-        <di:waypoint x="750" y="2210" />
+        <di:waypoint x="586" y="520" />
+        <di:waypoint x="786" y="520" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="PN03_di" bpmnElement="PN03">
-        <di:waypoint x="775" y="2185" />
-        <di:waypoint x="775" y="2095" />
-        <di:waypoint x="980" y="2095" />
+        <di:waypoint x="836" y="520" />
+        <di:waypoint x="1036" y="520" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="846" y="465" width="180" height="50" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="PN04_di" bpmnElement="PN04">
-        <di:waypoint x="800" y="2210" />
-        <di:waypoint x="890" y="2210" />
-        <di:waypoint x="890" y="2260" />
-        <di:waypoint x="980" y="2260" />
+        <di:waypoint x="836" y="520" />
+        <di:waypoint x="936" y="520" />
+        <di:waypoint x="936" y="750" />
+        <di:waypoint x="1036" y="750" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="896" y="695" width="180" height="50" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="PN05_di" bpmnElement="PN05">
-        <di:waypoint x="775" y="2235" />
-        <di:waypoint x="775" y="2385" />
+        <di:waypoint x="836" y="520" />
+        <di:waypoint x="989.5" y="520" />
+        <di:waypoint x="989.5" y="980" />
+        <di:waypoint x="1143" y="980" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="976.25" y="925" width="180" height="50" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="PN06_di" bpmnElement="PN06">
-        <di:waypoint x="1290" y="2095" />
-        <di:waypoint x="1540" y="2095" />
-        <di:waypoint x="1540" y="2210" />
-        <di:waypoint x="1640" y="2210" />
+        <di:waypoint x="1286" y="520" />
+        <di:waypoint x="1486" y="520" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="PN07_di" bpmnElement="PN07">
-        <di:waypoint x="1290" y="2260" />
-        <di:waypoint x="1540" y="2260" />
-        <di:waypoint x="1540" y="2210" />
-        <di:waypoint x="1640" y="2210" />
+        <di:waypoint x="1286" y="750" />
+        <di:waypoint x="1386" y="750" />
+        <di:waypoint x="1386" y="520" />
+        <di:waypoint x="1486" y="520" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="ReviewNeedOther_di" bpmnElement="ReviewNeedOther" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
-        <dc:Bounds x="1320" y="2340" width="320" height="90" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="PN08_di" bpmnElement="PN08">
-        <di:waypoint x="800" y="2210" />
-        <di:waypoint x="850" y="2210" />
-        <di:waypoint x="850" y="2440" />
-        <di:waypoint x="1480" y="2440" />
-        <di:waypoint x="1480" y="2430" />
+        <di:waypoint x="836" y="520" />
+        <di:waypoint x="936" y="520" />
+        <di:waypoint x="936" y="1210" />
+        <di:waypoint x="1036" y="1210" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="896" y="1155" width="180" height="50" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="PN09_di" bpmnElement="PN09">
-        <di:waypoint x="1640" y="2385" />
-        <di:waypoint x="1740" y="2385" />
-        <di:waypoint x="1740" y="2210" />
-        <di:waypoint x="1676" y="2210" />
+        <di:waypoint x="1286" y="1210" />
+        <di:waypoint x="1386" y="1210" />
+        <di:waypoint x="1386" y="520" />
+        <di:waypoint x="1486" y="520" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
   <bpmndi:BPMNDiagram id="StaffQuestionSide_diagram">
     <bpmndi:BPMNPlane id="StaffQuestionSide_diagram_plane" bpmnElement="StaffQuestionSide">
       <bpmndi:BPMNShape id="StaffQuestionStart_di" bpmnElement="StaffQuestionStart">
-        <dc:Bounds x="250" y="2710" width="36" height="36" />
+        <dc:Bounds x="100" y="502" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffQuestionPublish_di" bpmnElement="StaffQuestionPublish" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
-        <dc:Bounds x="350" y="2680" width="300" height="100" />
+      <bpmndi:BPMNShape id="StaffQuestionPublish_di" bpmnElement="StaffQuestionPublish" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="336" y="470" width="250" height="100" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffQuestionResult_di" bpmnElement="StaffQuestionResult">
-        <dc:Bounds x="740" y="2705" width="50" height="50" />
+      <bpmndi:BPMNShape id="StaffQuestionResult_di" bpmnElement="StaffQuestionResult" isMarkerVisible="true">
+        <dc:Bounds x="786" y="495" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="625" y="2760" width="150" height="40" />
+          <dc:Bounds x="711" y="557" width="200" height="55" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffQuestionSignal_di" bpmnElement="StaffQuestionSignal" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
-        <dc:Bounds x="880" y="2680" width="290" height="100" />
+      <bpmndi:BPMNShape id="StaffQuestionSignal_di" bpmnElement="StaffQuestionSignal" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="1036" y="470" width="250" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffQuestionDone_di" bpmnElement="StaffQuestionDone">
-        <dc:Bounds x="1300" y="2710" width="36" height="36" />
+        <dc:Bounds x="1486" y="502" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffQuestionRejected_di" bpmnElement="StaffQuestionRejected">
-        <dc:Bounds x="750" y="2840" width="36" height="36" />
+        <dc:Bounds x="1143" y="732" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="675" y="2890" width="220" height="65" />
+          <dc:Bounds x="1061" y="780" width="200" height="55" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffInformationDone_di" bpmnElement="StaffInformationDone">
+        <dc:Bounds x="1143" y="962" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1061" y="1010" width="200" height="55" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SQ01_di" bpmnElement="SQ01">
-        <di:waypoint x="286" y="2728" />
-        <di:waypoint x="350" y="2728" />
+        <di:waypoint x="136" y="520" />
+        <di:waypoint x="336" y="520" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SQ02_di" bpmnElement="SQ02">
-        <di:waypoint x="650" y="2728" />
-        <di:waypoint x="740" y="2730" />
+        <di:waypoint x="586" y="520" />
+        <di:waypoint x="786" y="520" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SQ03_di" bpmnElement="SQ03">
-        <di:waypoint x="790" y="2730" />
-        <di:waypoint x="880" y="2730" />
+        <di:waypoint x="836" y="520" />
+        <di:waypoint x="1036" y="520" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="795" y="2650" width="170" height="40" />
+          <dc:Bounds x="846" y="465" width="180" height="50" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SQ04_di" bpmnElement="SQ04">
-        <di:waypoint x="1170" y="2730" />
-        <di:waypoint x="1300" y="2728" />
+        <di:waypoint x="1286" y="520" />
+        <di:waypoint x="1486" y="520" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SQ05_di" bpmnElement="SQ05">
-        <di:waypoint x="765" y="2755" />
-        <di:waypoint x="768" y="2840" />
+        <di:waypoint x="836" y="520" />
+        <di:waypoint x="989.5" y="520" />
+        <di:waypoint x="989.5" y="750" />
+        <di:waypoint x="1143" y="750" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="790" y="2790" width="160" height="40" />
+          <dc:Bounds x="976.25" y="695" width="180" height="50" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffInformationDone_di" bpmnElement="StaffInformationDone">
-        <dc:Bounds x="750" y="2520" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="690" y="2460" width="200" height="50" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SQInfo_di" bpmnElement="SQInfo">
-        <di:waypoint x="765" y="2705" />
-        <di:waypoint x="765" y="2630" />
-        <di:waypoint x="768" y="2630" />
-        <di:waypoint x="768" y="2556" />
+        <di:waypoint x="836" y="520" />
+        <di:waypoint x="989.5" y="520" />
+        <di:waypoint x="989.5" y="980" />
+        <di:waypoint x="1143" y="980" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="790" y="2590" width="220" height="40" />
+          <dc:Bounds x="976.25" y="925" width="180" height="50" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
@@ -1475,146 +1608,170 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
   <bpmndi:BPMNDiagram id="StaffCloseClarificationSide_diagram">
     <bpmndi:BPMNPlane id="StaffCloseClarificationSide_diagram_plane" bpmnElement="StaffCloseClarificationSide">
       <bpmndi:BPMNShape id="StaffCloseClarificationStart_di" bpmnElement="StaffCloseClarificationStart">
-        <dc:Bounds x="250" y="3170" width="36" height="36" />
+        <dc:Bounds x="100" y="502" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffCloseClarificationApply_di" bpmnElement="StaffCloseClarificationApply" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
-        <dc:Bounds x="390" y="3138" width="340" height="100" />
+      <bpmndi:BPMNShape id="StaffCloseClarificationApply_di" bpmnElement="StaffCloseClarificationApply" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="336" y="470" width="250" height="100" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffCloseClarificationResult_di" bpmnElement="StaffCloseClarificationResult">
-        <dc:Bounds x="850" y="3163" width="50" height="50" />
+      <bpmndi:BPMNShape id="StaffCloseClarificationResult_di" bpmnElement="StaffCloseClarificationResult" isMarkerVisible="true">
+        <dc:Bounds x="786" y="495" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffCloseClarificationCommitted_di" bpmnElement="StaffCloseClarificationCommitted">
-        <dc:Bounds x="1120" y="3170" width="36" height="36" />
+        <dc:Bounds x="1036" y="502" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffCloseClarificationRejected_di" bpmnElement="StaffCloseClarificationRejected">
-        <dc:Bounds x="857" y="3310" width="36" height="36" />
+        <dc:Bounds x="1036" y="732" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SC01_di" bpmnElement="SC01">
-        <di:waypoint x="286" y="3188" />
-        <di:waypoint x="390" y="3188" />
+        <di:waypoint x="136" y="520" />
+        <di:waypoint x="336" y="520" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SC02_di" bpmnElement="SC02">
-        <di:waypoint x="730" y="3188" />
-        <di:waypoint x="850" y="3188" />
+        <di:waypoint x="586" y="520" />
+        <di:waypoint x="786" y="520" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SC03_di" bpmnElement="SC03">
-        <di:waypoint x="900" y="3188" />
-        <di:waypoint x="1120" y="3188" />
+        <di:waypoint x="836" y="520" />
+        <di:waypoint x="1036" y="520" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="846" y="465" width="180" height="50" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SC04_di" bpmnElement="SC04">
-        <di:waypoint x="875" y="3213" />
-        <di:waypoint x="875" y="3310" />
+        <di:waypoint x="836" y="520" />
+        <di:waypoint x="936" y="520" />
+        <di:waypoint x="936" y="750" />
+        <di:waypoint x="1036" y="750" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="896" y="695" width="180" height="50" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
   <bpmndi:BPMNDiagram id="StaffFollowSide_diagram">
     <bpmndi:BPMNPlane id="StaffFollowSide_diagram_plane" bpmnElement="StaffFollowSide">
       <bpmndi:BPMNShape id="StaffFollowStart_di" bpmnElement="StaffFollowStart">
-        <dc:Bounds x="250" y="3610.0" width="36" height="36" />
+        <dc:Bounds x="100" y="502" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffFollowPublish_di" bpmnElement="StaffFollowPublish" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
-        <dc:Bounds x="350" y="3580.0" width="300" height="100" />
+      <bpmndi:BPMNShape id="StaffFollowPublish_di" bpmnElement="StaffFollowPublish" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="336" y="470" width="250" height="100" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffFollowResult_di" bpmnElement="StaffFollowResult">
-        <dc:Bounds x="740" y="3605.0" width="50" height="50" />
+      <bpmndi:BPMNShape id="StaffFollowResult_di" bpmnElement="StaffFollowResult" isMarkerVisible="true">
+        <dc:Bounds x="786" y="495" width="50" height="50" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffFollowSignal_di" bpmnElement="StaffFollowSignal" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
-        <dc:Bounds x="880" y="3580.0" width="290" height="100" />
+      <bpmndi:BPMNShape id="StaffFollowSignal_di" bpmnElement="StaffFollowSignal" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="1036" y="470" width="250" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffFollowDone_di" bpmnElement="StaffFollowDone">
-        <dc:Bounds x="1300" y="3610.0" width="36" height="36" />
+        <dc:Bounds x="1486" y="502" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffFollowRejected_di" bpmnElement="StaffFollowRejected">
-        <dc:Bounds x="750" y="3740.0" width="36" height="36" />
+        <dc:Bounds x="1143" y="732" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SF01_di" bpmnElement="SF01">
-        <di:waypoint x="286" y="3628.0" />
-        <di:waypoint x="350" y="3628.0" />
+        <di:waypoint x="136" y="520" />
+        <di:waypoint x="336" y="520" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SF02_di" bpmnElement="SF02">
-        <di:waypoint x="650" y="3628.0" />
-        <di:waypoint x="740" y="3630.0" />
+        <di:waypoint x="586" y="520" />
+        <di:waypoint x="786" y="520" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SF03_di" bpmnElement="SF03">
-        <di:waypoint x="790" y="3630.0" />
-        <di:waypoint x="880" y="3630.0" />
+        <di:waypoint x="836" y="520" />
+        <di:waypoint x="1036" y="520" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="846" y="465" width="180" height="50" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SF04_di" bpmnElement="SF04">
-        <di:waypoint x="1170" y="3630.0" />
-        <di:waypoint x="1300" y="3628.0" />
+        <di:waypoint x="1286" y="520" />
+        <di:waypoint x="1486" y="520" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SF05_di" bpmnElement="SF05">
-        <di:waypoint x="765" y="3655.0" />
-        <di:waypoint x="768" y="3740.0" />
+        <di:waypoint x="836" y="520" />
+        <di:waypoint x="989.5" y="520" />
+        <di:waypoint x="989.5" y="750" />
+        <di:waypoint x="1143" y="750" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="976.25" y="695" width="180" height="50" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
   <bpmndi:BPMNDiagram id="StaffTakeoverSide_diagram">
     <bpmndi:BPMNPlane id="StaffTakeoverSide_diagram_plane" bpmnElement="StaffTakeoverSide">
       <bpmndi:BPMNShape id="StaffTakeoverStart_di" bpmnElement="StaffTakeoverStart">
-        <dc:Bounds x="250" y="4050.0" width="36" height="36" />
+        <dc:Bounds x="100" y="502" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffTakeoverPublish_di" bpmnElement="StaffTakeoverPublish" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
-        <dc:Bounds x="350" y="4020.0" width="300" height="100" />
+      <bpmndi:BPMNShape id="StaffTakeoverPublish_di" bpmnElement="StaffTakeoverPublish" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="336" y="470" width="250" height="100" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffTakeoverResult_di" bpmnElement="StaffTakeoverResult">
-        <dc:Bounds x="740" y="4045.0" width="50" height="50" />
+      <bpmndi:BPMNShape id="StaffTakeoverResult_di" bpmnElement="StaffTakeoverResult" isMarkerVisible="true">
+        <dc:Bounds x="786" y="495" width="50" height="50" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffTakeoverSignal_di" bpmnElement="StaffTakeoverSignal" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
-        <dc:Bounds x="880" y="4020.0" width="290" height="100" />
+      <bpmndi:BPMNShape id="StaffTakeoverSignal_di" bpmnElement="StaffTakeoverSignal" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="1036" y="470" width="250" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffTakeoverDone_di" bpmnElement="StaffTakeoverDone">
-        <dc:Bounds x="1300" y="4050.0" width="36" height="36" />
+        <dc:Bounds x="1486" y="502" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffTakeoverRejected_di" bpmnElement="StaffTakeoverRejected">
-        <dc:Bounds x="750" y="4180.0" width="36" height="36" />
+        <dc:Bounds x="1143" y="732" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="ST01_di" bpmnElement="ST01">
-        <di:waypoint x="286" y="4068.0" />
-        <di:waypoint x="350" y="4068.0" />
+        <di:waypoint x="136" y="520" />
+        <di:waypoint x="336" y="520" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="ST02_di" bpmnElement="ST02">
-        <di:waypoint x="650" y="4068.0" />
-        <di:waypoint x="740" y="4070.0" />
+        <di:waypoint x="586" y="520" />
+        <di:waypoint x="786" y="520" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="ST03_di" bpmnElement="ST03">
-        <di:waypoint x="790" y="4070.0" />
-        <di:waypoint x="880" y="4070.0" />
+        <di:waypoint x="836" y="520" />
+        <di:waypoint x="1036" y="520" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="846" y="465" width="180" height="50" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="ST04_di" bpmnElement="ST04">
-        <di:waypoint x="1170" y="4070.0" />
-        <di:waypoint x="1300" y="4068.0" />
+        <di:waypoint x="1286" y="520" />
+        <di:waypoint x="1486" y="520" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="ST05_di" bpmnElement="ST05">
-        <di:waypoint x="765" y="4095.0" />
-        <di:waypoint x="768" y="4180.0" />
+        <di:waypoint x="836" y="520" />
+        <di:waypoint x="989.5" y="520" />
+        <di:waypoint x="989.5" y="750" />
+        <di:waypoint x="1143" y="750" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="976.25" y="695" width="180" height="50" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
   <bpmndi:BPMNDiagram id="CaseDataSide_diagram">
     <bpmndi:BPMNPlane id="CaseDataSide_diagram_plane" bpmnElement="CaseDataSide">
       <bpmndi:BPMNShape id="CaseDataStart_di" bpmnElement="CaseDataStart">
-        <dc:Bounds x="100" y="150" width="36" height="36" />
+        <dc:Bounds x="100" y="502" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="30" y="205" width="190" height="50" />
+          <dc:Bounds x="18" y="550" width="200" height="55" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="CaseDataApply_di" bpmnElement="CaseDataApply" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
-        <dc:Bounds x="260" y="120" width="360" height="100" />
+      <bpmndi:BPMNShape id="CaseDataApply_di" bpmnElement="CaseDataApply" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="336" y="470" width="250" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="CaseDataEnd_di" bpmnElement="CaseDataEnd">
-        <dc:Bounds x="780" y="150" width="36" height="36" />
+        <dc:Bounds x="786" y="502" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="710" y="205" width="190" height="50" />
+          <dc:Bounds x="704" y="550" width="200" height="55" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="CD01_di" bpmnElement="CD01">
-        <di:waypoint x="136" y="168" />
-        <di:waypoint x="260" y="170" />
+        <di:waypoint x="136" y="520" />
+        <di:waypoint x="336" y="520" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="CD02_di" bpmnElement="CD02">
-        <di:waypoint x="620" y="170" />
-        <di:waypoint x="780" y="168" />
+        <di:waypoint x="586" y="520" />
+        <di:waypoint x="786" y="520" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

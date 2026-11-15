@@ -139,6 +139,27 @@ Die verbindlichen Einzelregeln stehen in FALL-06 unter B09.1–B09.5.
 
 ## 7. Darstellung und Zusammenarbeit
 
+**Leserichtung:** Prozesse MÜSSEN möglichst von links nach rechts angeordnet
+werden. Vorwärtsführende Pfade SOLLEN nicht nach links zeigen. Alternative Zweige
+werden untereinander dargestellt und rechts wieder zusammengeführt. Notwendige
+Rückschleifen werden ausserhalb des Hauptablaufs geführt; ihre Pfeilspitze soll
+nach Möglichkeit von links in das Ziel führen. Die Leserichtung darf keine
+Fachlogik verändern und keine künstlichen Prozesskopien erzeugen.
+
+**Linienführung:** Verbindungen SOLLEN möglichst gerade und ohne unnötige Knicke
+verlaufen. Zusammengehörige Elemente werden dafür horizontal beziehungsweise
+vertikal ausgerichtet. Wenn Umwege wegen Verzweigungen, Rückschleifen oder anderer
+Elemente nötig sind, werden wenige rechtwinklige Knicke verwendet. Linien dürfen
+nicht zur Erzwingung einer geraden Verbindung durch Aufgaben oder Beschriftungen
+geführt werden. Lesbarkeit und eindeutige Anschlussstellen haben Vorrang.
+
+**Rückwege und Fehlerpfade:** Rückflüsse nach links SOLLEN bevorzugt oberhalb
+des Hauptablaufs verlaufen. Error-Boundary-Events werden möglichst an der
+Unterseite ihrer Aktivität platziert; ihre Fehlerpfade führen zunächst nach unten
+und unterhalb des Hauptablaufs weiter. Muss ein solcher Fehlerpfad zu einem
+früheren Schritt zurückführen, hat die untere Fehlerführung Vorrang. Diese
+Darstellungskonvention ändert weder Ereignistyp noch Unterbrechungsverhalten.
+
 Für reine Layoutarbeit gelten die detaillierten Regeln in der BPMN-README:
 
 - Positionen, Grössen, Abstände, Linienpunkte und Beschriftungspositionen dürfen
