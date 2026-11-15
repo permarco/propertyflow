@@ -455,6 +455,67 @@ Aktionen im folgenden Vertrag 0.34 festgelegt. Backend-Umsetzung bleibt offen.
 
 ### Vorrang einer laufenden Mitarbeiterprüfung
 
+### Fortsetzungsvertrag: genau eine aktuelle Bearbeitung (B07)
+
+**Bestätigt am 15.11.2026 – Entwurf 0.35:** Pro Fall gibt es genau einen führenden
+Bearbeitungsdurchlauf und eine zuständige aktuelle fachliche Fortsetzung.
+Nicht unterbrechende Nebenaktionen und der eigenständige Mailversand bleiben möglich;
+sie erhalten dadurch keinen zweiten Anspruch auf die Hauptbearbeitung.
+
+| Bestandteil | Verbindliche Bedeutung |
+|---|---|
+| Fallversion | Fachliche Änderung nur auf geprüftem aktuellem Stand; konkurrierende alte Änderungen dürfen nicht beide wirksam werden. |
+| Operations-ID | Derselbe logische Auftrag wirkt einmal; Wiederholung liest den gespeicherten Ausgang. Auftraggeber/Fallbindung und Inhaltsprüfung bleiben Pflicht. |
+| Bearbeitungsbezug | Führender Durchlauf und konkreter Call-/Warte-/Task-Bezug soweit vorhanden; serverseitig verifiziert, nicht vom Client autorisiert. |
+| Fortsetzungsauftrag | Dauerhaft gespeicherte Pflicht, eine bestätigte Änderung bzw. relevante Erkenntnis zuverlässig im Prozess fortzuführen. |
+| Übernahmebezug | Eindeutige Zuordnung, welcher aktuelle Ausführungspfad diese Fortsetzung übernehmen darf. Keine zweite Mitarbeiteraufgabe durch konkurrierende Übernahme. |
+
+Fachliche Änderung und erforderlicher Fortsetzungsauftrag werden in derselben
+Datenbanktransaktion gespeichert. Die Engine wird anschliessend zuverlässig
+bedient; technische Fehler/Timeouts wiederholen denselben Auftrag. Eine
+verlorene Antwort ist kein Beweis, dass die Engine nichts ausgeführt hat.
+Der Auftrag wird erst nach nachgewiesener Übernahme/Erledigung oder sicherer
+Übergabe an die aktuelle Zuständigkeit als erledigt behandelt. Speicherung in
+Datenbank und Camunda werden nicht als gemeinsame atomare Transaktion behauptet.
+
+Vor jedem neuen Staff-Aufruf prüft StaffContinuationClaim den aktuellen Stand
+und sichert die Übernahme exklusiv. Die drei Ausgänge sind:
+
+| Ergebnis | Fortsetzung |
+|---|---|
+| START | Dieser Ausführungspfad besitzt die gültige Übernahme; einmalig Staff aufrufen. Bestehende Eintrittsarten Prüfung, direkte Bearbeitung oder Wiedervorlage bleiben erhalten. |
+| EXISTING | Ein anderer nachweislich laufender zuständiger Staff-Call existiert: aktuelle Prüfung ergänzen oder vorhandenen phasenspezifischen Prüfpfad bedienen, keinen zweiten Staff-Aufruf starten. |
+| SUPERSEDED | Auftrag bereits erledigt/überholt: alte Mitarbeiterentscheidung nicht erneut ausführen; noch relevanten neuen Prüfgrund zuverlässig der aktuellen Bearbeitung zuordnen. |
+
+Die Wiederholung der eigenen bereits gesicherten Übernahme bleibt START mit
+demselben Übernahmebezug; sie wird nicht fälschlich als fremde EXISTING-Bearbeitung
+beendet. Reservierung, Engine-Aufruf und Registrierung der tatsächlichen Kindinstanz
+werden nach Absturz abgeglichen. Eine Datenbankreferenz oder Reservierung allein
+beweist weder einen laufenden Call noch eine bestehende Mitarbeiteraufgabe.
+Bei unklarer Zuordnung wird technisch geklärt/wiederholt, kein zweiter Call gestartet.
+
+Die Ausgänge EXISTING/SUPERSEDED dürfen nur den redundanten Ausführungspfad beenden,
+wenn ein anderer zuständiger Pfad im aktiven Bereich nachweislich weiterläuft.
+Sie verwenden kein Terminate-Ereignis und dürfen nicht versehentlich den letzten
+Hauptpfad und damit ActiveCase beenden. Fehlt ein gesicherter Nachfolgepfad,
+bleibt die technische Klärung/Retry/Incident offen. Ein bereits wirksamer Abschluss
+folgt dem bestehenden geschützten Prozessbeendigungsvertrag, nicht einem
+beliebigen «Duplikat erledigt»-Ende.
+
+**Versionskonflikte unterscheiden:** Eine Mitarbeiterentscheidung auf veralteter
+Grundlage wird ohne Übernahme neuer Erkenntnisse abgelehnt. Ein dauerhaft
+angenommener neuer zwingender Prüfgrund wird dagegen am aktuellen Stand erneut
+eingeordnet, nicht wegen Versionskonflikts verworfen. Bereits berücksichtigte
+identische Erkenntnisse erzeugen keine zweite Prüfung; neue Erkenntnisse bleiben
+erhalten. Nach wirksamem Fallabschluss gilt nur interner Hinweis, keine
+Wiedereröffnung durch verspätete Ereignisse.
+
+Beispiel Timer und Mieternachricht: beide Auslöser führen zu einer gemeinsamen
+Mitarbeiterprüfung. Beispiel Abschluss und KI: wirksamer Abschluss sperrt das
+späte Ergebnis; eine zuvor relevante Änderung kann die bestätigte Abschlussgrundlage
+überholen und damit den Abschluss ablehnen. Die konkrete technische Umsetzung
+und der Laufzeitnachweis dieses Vertrags stehen noch aus.
+
 ### Gemeinsamer Aktionsvertrag «Falldaten ergänzen»
 
 **Bestätigt am 15.11.2026 – B02.3 / Entwurf 0.34:** Die bestehenden UI-Funktionen
@@ -1557,3 +1618,23 @@ Geplante Laufzeitprüfungen, keine ausgeführten Nachweise:
 - Neuer zwingender Prüfbedarf und erforderliche Mailpflicht werden zuverlässig
   über bestehende Wege nachgeholt. Keine globale Variablenüberschreibung und
   keine Wiederbelebung einer bereits beendeten Bearbeitung durch alte Worker.
+
+### FALL-AK-44: Einmalige Fortsetzung bei konkurrierenden Aktionen
+
+Geplante Laufzeitprüfungen, keine ausgeführten Nachweise:
+
+- Timer und Mieternachricht gleichzeitig: eine Mitarbeiterprüfung, beide Auslöser berücksichtigt.
+- Zwei unterschiedliche neue Prüfgründe und wiederholte Zustellung: dieselbe Aufgabe
+  ergänzen, kein zweiter Staff-Call; alte berücksichtigte Erkenntnis nicht erneut prüfen.
+- Absturz nach Fach-Commit, vor Zustellung: dauerhaften Auftrag nachholen.
+  Timeout nach Engine-Annahme: denselben Auftrag wiederholen, keine Doppelwirkung.
+- Eigene Übernahme nach Worker-Retry: gleicher START-Anspruch. Andere unbestätigte
+  Reservierung: abgleichen statt neuen Call oder fingierten EXISTING-Erfolg erzeugen.
+- EXISTING/SUPERSEDED nur bei gesichertem anderem zuständigem Pfad beenden;
+  ohne solchen Pfad technische Klärung, kein versehentliches Ende von ActiveCase.
+- Veralteten Mitarbeiterentscheid ablehnen; neuen gespeicherten zwingenden Prüfgrund
+  nach Versionskonflikt am aktuellen Stand erneut einordnen und zuverlässig zustellen.
+- Relevante Änderung gegen Mitarbeiterabschluss und verspätetes KI-Ergebnis prüfen:
+  gültiger Abschluss bleibt wirksam, überholte Abschlussgrundlage wird abgelehnt.
+- Alter Call-/Durchlauf-/Timerbezug nach Wiedereröffnung darf die neue Bearbeitung
+  nicht unterbrechen. Offene Zustellpflichten dürfen bei Phasenwechsel nicht verschwinden.

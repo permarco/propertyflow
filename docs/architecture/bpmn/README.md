@@ -1,7 +1,7 @@
 # PropertyFlow-Fallprozess
 
 [propertyflow-fallprozess-entwurf.bpmn](propertyflow-fallprozess-entwurf.bpmn)
-ist der führende BPMN-Entwurf 0.34 zur gemeinsamen Besprechung, Stand 15.11.2026.
+ist der führende BPMN-Entwurf 0.35 zur gemeinsamen Besprechung, Stand 15.11.2026.
 Er enthält BPMN-Diagrammkoordinaten und kann im Camunda Modeler geöffnet werden.
 
 ## Dateien – hier bearbeiten
@@ -28,7 +28,7 @@ Alle sieben Dateien bleiben **nicht ausführbare Fachentwürfe**. Die Dateiaufte
 ist umgesetzt; die notwendige Übergabe zwischen den Kindinstanzen und die
 Präzisierung von ADR-002/SS-003 sind noch nicht im Backend implementiert.
 
-## Aktuelle Struktur und Navigation (Gesamtstand 0.34)
+## Aktuelle Struktur und Navigation (Gesamtstand 0.35)
 
 Im Hauptprozess «Aktiven Fall bearbeiten» öffnen. Der Call **«Automatische
 Abklärung»** verweist auf `automatische-abklaerung.bpmn`. An ihm liegen genau
@@ -862,3 +862,25 @@ Erfolg ohne Bestätigung; identische Operations-ID erlaubt Wiederholung ohne
 zweite Wirkung. Erforderliche neue Prüfgründe über bestehenden Eingang nachliefern.
 Technische Korrelation, Rückmeldung, atomare Konfliktbehandlung und Worker fehlen
 weiterhin. FALL-AK-43 ist ein Prüfplan. Hauptmodell 0.34 bleibt nicht ausführbar.
+
+## Exklusive Fortsetzung vor Staff (0.35)
+
+Alle neun bisherigen Eingänge zu Staff führen jetzt über StaffContinuationClaim
+und StaffContinuationRoute. START führt als einziger Eingang SCStart zum Call;
+EXISTING zu StaffContinuationMerge, SUPERSEDED zu StaffContinuationReconcile.
+Die letzten beiden Wege beenden nur eine nachweislich redundante Fortsetzung,
+nicht die zuständige Bearbeitung und nicht den Fall. Ohne anderen lebenden
+Hauptpfad kein normales Ende, sondern technische Klärung/Retry/Incident.
+
+FALL-06 «Fortsetzungsvertrag: genau eine aktuelle Bearbeitung» ist verbindlich.
+Fachänderung und Fortsetzungspflicht gemeinsam speichern; Engine-Übergabe nachholbar.
+Eigene erfolgreiche Übernahme bei Retry bleibt derselbe START-Anspruch. SEntryCheck
+registriert das tatsächliche Kind zu diesem Anspruch. Reservierung ist kein
+Nachweis einer laufenden Aufgabe; fehlende Startantwort verlangt Abgleich.
+Bestehende Prüfung ergänzen, neuen zwingenden Prüfgrund bei Konflikt neu einordnen,
+veralteten Mitarbeiterentscheid nicht erneut anwenden. Kein paralleler Staff-Call.
+
+Der Eingabevertrag staffEntryContextRef enthält den Übernahmebezug; keine neue
+frei autorisierende Client-Prozesskennung. Das Diagramm ist weiterhin nicht
+ausführbar. Transaktions-/Korrelationsimplementierung, FEEL-Bindung der drei Ausgänge
+und Nachweise aus FALL-AK-44 stehen aus. Keine Backend-Logik geändert.

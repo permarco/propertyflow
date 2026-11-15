@@ -25,7 +25,7 @@
   <bpmn:error id="Error_AnalysisStale" name="Analysegrundlage überholt" errorCode="ANALYSIS_BASIS_STALE">
     <bpmn:documentation>Fachlicher Platzhalter für Zeilen 1 und 3: Die Auswertung enthält neue relevante gespeicherte Mieternachrichten noch nicht. In Validate führt der Konflikt zur aktuellen Analysegrundlage; in RValidate zur aktuellen Antwortauswertung. Kein technischer Jobfehler und kein Analysefehler. Meldung durch den späteren Prüfdienst, nicht automatisch durch blossen Nachrichteneingang. Keine zweite unabhängige Verarbeitung; aktuelle Mitarbeiterentscheidung und Abschluss schützen. Keine Ausführungsimplementierung.</bpmn:documentation>
   </bpmn:error>
-  <bpmn:process id="PropertyFlow_Case_Draft" name="PropertyFlow · Fallprozess · Fachentwurf 0.34" isExecutable="false">
+  <bpmn:process id="PropertyFlow_Case_Draft" name="PropertyFlow · Fallprozess · Fachentwurf 0.35" isExecutable="false">
     <bpmn:documentation>Fachentwurf 0.13, nicht ausführbar. Individuelle LLM-Nachricht im AutoAnswer-Worker erzeugen, prüfen, speichern und Versand beauftragen; danach Close. Kein Vorlagenkatalog, keine zusätzliche Abschlussmail. Mitarbeiterabschluss ohne Nachricht. Menschliche Priorität, Aktualität, Rückfragen, Wiedervorlage und bisherige Konfliktrückwege bleiben. Technische Fehler: Job-Retries/Incidents. Start-/Kindinstanz-Verträge weiterhin vor Ausführung konkretisieren; keine Backend-Implementierung.
 Fachentwurf 0.15: Wiedereröffnung startet eine neue Instanz für denselben Fall; direkter Mitarbeiterpfad gemäss FALL-07. Keine Backend-Implementierung.</bpmn:documentation>
     <bpmn:subProcess id="ActiveCase" name="Aktiven Fall bearbeiten">
@@ -89,7 +89,8 @@ Nach Call-Rückkehr ausschliesslich replyOutcome / replyDecisionRef auswerten. U
       <bpmn:callActivity id="Staff" name="Mitarbeiterprüfung&#10;und weitere Bearbeitung">
         <bpmn:documentation>
 Ruft mitarbeiterbearbeitung.bpmn auf. Vertrag: teilprozess-vertraege.md. Untergeordnete Instanz mit eigenem Scope; führende Fallzuordnung bleibt im Hauptprozess. Eingangsreferenz vor Aktivierung bereitstellen. Nur explizite Outputs übernehmen; aktueller Fallstand bleibt vor Wirkung zu prüfen.
-0.19: Geprüfter Eintritt nach manueller Aufhebung des letzten Antwortbedarfs ohne Prüfbedarf führt direkt zu SWork. entryContextRef wird durch ClearAnswerContinue serverseitig bereitgestellt; mit Prüfbedarf regulärer Review-Eintritt.</bpmn:documentation>
+0.19: Geprüfter Eintritt nach manueller Aufhebung des letzten Antwortbedarfs ohne Prüfbedarf führt direkt zu SWork. entryContextRef wird durch ClearAnswerContinue serverseitig bereitgestellt; mit Prüfbedarf regulärer Review-Eintritt.
+0.35: Einziger Eingang SCStart nach exklusiver Übernahme. entryContextRef enthält den gültigen Anspruch für diesen Ausführungspfad. SEntryCheck registriert die tatsächliche Kindinstanz dazu. Reservierung und Engine-Call müssen nach Absturz abgeglichen werden, kein zweiter paralleler Call bei unklarer Startantwort.</bpmn:documentation>
         <bpmn:extensionElements>
           <zeebe:calledElement processId="PropertyFlow_Staff_Draft" bindingType="deployment" propagateAllParentVariables="false" propagateAllChildVariables="true" />
           <zeebe:ioMapping>
@@ -100,15 +101,7 @@ Ruft mitarbeiterbearbeitung.bpmn auf. Vertrag: teilprozess-vertraege.md. Unterge
             <zeebe:output source="= decisionRef" target="staffDecisionRef" />
           </zeebe:ioMapping>
         </bpmn:extensionElements>
-        <bpmn:incoming>F21</bpmn:incoming>
-        <bpmn:incoming>F_CloseConflict_Staff</bpmn:incoming>
-        <bpmn:incoming>F_Reopen_Staff</bpmn:incoming>
-        <bpmn:incoming>CA05</bpmn:incoming>
-        <bpmn:incoming>PN11</bpmn:incoming>
-        <bpmn:incoming>SF07</bpmn:incoming>
-        <bpmn:incoming>AParentReview</bpmn:incoming>
-        <bpmn:incoming>AutoFail02</bpmn:incoming>
-        <bpmn:incoming>AIStaff</bpmn:incoming>
+        <bpmn:incoming>SCStart</bpmn:incoming>
         <bpmn:outgoing>F15</bpmn:outgoing>
       </bpmn:callActivity>
       <bpmn:exclusiveGateway id="StaffRoute" name="Fortsetzung">
@@ -127,7 +120,7 @@ Nach Call-Rückkehr ausschliesslich staffOutcome / staffDecisionRef auswerten. U
         <bpmn:documentation>
 Geprüftes Ergebnis Weiter warten übernehmen. Verbrauch dieses Ergebnisstands nachvollziehbar sichern; derselbe Stand darf nicht erneut wecken, ein bereits verfügbarer neuerer Stand darf nicht verloren gehen.</bpmn:documentation>
       </bpmn:sequenceFlow>
-      <bpmn:sequenceFlow id="F21" name="Prüfung erforderlich" sourceRef="ReplyRoute" targetRef="Staff">
+      <bpmn:sequenceFlow id="F21" name="Prüfung erforderlich" sourceRef="ReplyRoute" targetRef="StaffContinuationClaim">
         <bpmn:documentation>
 Nur fachliches Prüfergebnis aus RReview: Pflichtprüfbedarf/Analysefehler oder vollständige Beantwortung ohne zulässigen Abschluss beziehungsweise andere bestehende fachliche Prüfgründe. Kein Fallback für veraltete oder doppelte Auswertungen.</bpmn:documentation>
       </bpmn:sequenceFlow>
@@ -138,7 +131,7 @@ Nur fachliches Prüfergebnis aus RReview: Pflichtprüfbedarf/Analysefehler oder 
         <bpmn:terminateEventDefinition id="ActiveEnd_definition" />
       </bpmn:endEvent>
       <bpmn:sequenceFlow id="FActiveClose" sourceRef="Close" targetRef="ActiveEnd" />
-      <bpmn:sequenceFlow id="F_CloseConflict_Staff" name="Aktuellen Fallstand erneut prüfen" sourceRef="CloseConflict" targetRef="Staff" />
+      <bpmn:sequenceFlow id="F_CloseConflict_Staff" name="Aktuellen Fallstand erneut prüfen" sourceRef="CloseConflict" targetRef="StaffContinuationClaim" />
       <bpmn:subProcess id="TenantInbox" name="Mieternachrichten&#10;durchgängig empfangen" triggeredByEvent="true">
         <bpmn:documentation>Einziger externer Empfänger für Message_TenantMessage in der führenden Prozessinstanz. Nicht unterbrechend und je Nachricht aktivierbar. Eingangs-ID und Analysekontext müssen pro Aufruf lokal bleiben. Keine globale überschreibbare letzte Nachricht. Steuerinformationen werden versionsgeprüft bereitgestellt: im ActiveCase-Bereich für den Hauptpfad und ausdrücklich in der aktuellen Kindinstanz für ausgelagerte Wartepunkte (teilprozess-vertraege.md). Rechteprüfung und Speicherung erfolgen vor Korrelation gemäss SS-003; Korrelation bestätigt Empfang, nicht abgeschlossene LLM-Auswertung. Keine eigene Veröffentlichung, Statusfreigabe oder Schliessung aus diesem Nebenpfad.</bpmn:documentation>
         <bpmn:startEvent id="NStart" name="Mieternachricht gespeichert" isInterrupting="false">
@@ -177,7 +170,7 @@ FALL-07 / ADR-002 Ergänzung 15.11.2026: Autorisierten Wiedereröffnungsauftrag,
       </bpmn:serviceTask>
       <bpmn:sequenceFlow id="F_Initial" name="Erstanlage" sourceRef="EntryRoute" targetRef="Register" />
       <bpmn:sequenceFlow id="F_Reopen" name="Wiedereröffnung" sourceRef="EntryRoute" targetRef="ReopenCase" />
-      <bpmn:sequenceFlow id="F_Reopen_Staff" name="" sourceRef="ReopenCase" targetRef="Staff" />
+      <bpmn:sequenceFlow id="F_Reopen_Staff" name="" sourceRef="ReopenCase" targetRef="StaffContinuationClaim" />
       <bpmn:boundaryEvent id="ReopenRejected" name="Auftrag nicht mehr gültig" attachedToRef="ReopenCase">
         <bpmn:outgoing>F_ReopenRejected</bpmn:outgoing>
         <bpmn:errorEventDefinition id="ReopenRejected_definition" errorRef="Error_ReopenRejected" />
@@ -227,7 +220,7 @@ Dauerhaften Aufhebungsentscheid und aktuellen Fall-/Call-Stand laden, nicht auf 
       </bpmn:exclusiveGateway>
       <bpmn:sequenceFlow id="CA03" name="" sourceRef="ReplyCleared" targetRef="ClearAnswerContinue" />
       <bpmn:sequenceFlow id="CA04" name="" sourceRef="ClearAnswerContinue" targetRef="ClearAnswerRoute" />
-      <bpmn:sequenceFlow id="CA05" name="In Bearbeitung / vorrangige Prüfung" sourceRef="ClearAnswerRoute" targetRef="Staff" />
+      <bpmn:sequenceFlow id="CA05" name="In Bearbeitung / vorrangige Prüfung" sourceRef="ClearAnswerRoute" targetRef="StaffContinuationClaim" />
       <bpmn:sequenceFlow id="CA06" name="Neue offene Fragen; weiter warten" sourceRef="ClearAnswerRoute" targetRef="Reply" />
       <bpmn:subProcess id="StaffCloseReplySide" name="Mitarbeiterabschluss während Warten auf Mieterantwort" triggeredByEvent="true">
         <bpmn:documentation>
@@ -345,7 +338,7 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
         <bpmn:outgoing>PN11</bpmn:outgoing>
       </bpmn:serviceTask>
       <bpmn:sequenceFlow id="PN10" name="" sourceRef="ReplyReviewNeeded" targetRef="ReviewNeedPrepare" />
-      <bpmn:sequenceFlow id="PN11" name="Aktuelle Mitarbeiterprüfung" sourceRef="ReviewNeedPrepare" targetRef="Staff" />
+      <bpmn:sequenceFlow id="PN11" name="Aktuelle Mitarbeiterprüfung" sourceRef="ReviewNeedPrepare" targetRef="StaffContinuationClaim" />
       <bpmn:subProcess id="StaffQuestionSide" triggeredByEvent="true" name="Nachricht während In Abklärung senden">
         <bpmn:documentation>0.33 / KOM-AK-31: Bestehender nicht unterbrechender Sendeweg für Informationen und Rückfragen während In Abklärung. Lokale Auftragsdaten, kein neuer Mieternachrichtenempfänger. Eine Information beendet nur die Nebenaktion. Nur eine erfolgreich veröffentlichte Rückfrage mit Antwortbedarf veranlasst Übergang 29 und gemeinsame Automatik-Ablösung. Ablehnung verändert den laufenden Pfad nicht.</bpmn:documentation>
         <bpmn:startEvent id="StaffQuestionStart" isInterrupting="false" name="Sendeauftrag eingegangen">
@@ -454,7 +447,7 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
         <bpmn:incoming>SF_Takeover_Reply</bpmn:incoming>
         <bpmn:outgoing>SF07</bpmn:outgoing>
       </bpmn:serviceTask>
-      <bpmn:sequenceFlow id="SF07" sourceRef="StaffFollowContinue" targetRef="Staff" name="Geprüfter Eintritt: Wiedervorlage / neuer Prüfbedarf" />
+      <bpmn:sequenceFlow id="SF07" sourceRef="StaffFollowContinue" targetRef="StaffContinuationClaim" name="Geprüfter Eintritt: Wiedervorlage / neuer Prüfbedarf" />
       <bpmn:boundaryEvent id="StaffFollowAtReply" attachedToRef="Reply" cancelActivity="true" name="Wiedervorlage bestätigt">
         <bpmn:documentation>FALL-11 Übergänge 31/32: Unterbrechung nur für bestätigte Terminsetzung aus In Abklärung oder Wartet auf Mieterantwort im aktuellen Durchlauf. Marker und Zustellverfahren sind Fachentwurf. Nach Speicherung keine automatische Wirkung des abgelösten Laufs; technische Umsetzung offen.</bpmn:documentation>
         <bpmn:outgoing>SF_Takeover_Reply</bpmn:outgoing>
@@ -549,7 +542,7 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
       <bpmn:sequenceFlow id="AParent01" sourceRef="Automatic" targetRef="AutomaticResult" name="" />
       <bpmn:sequenceFlow id="AParent02" sourceRef="AutomaticResult" targetRef="AutomaticRoute" name="" />
       <bpmn:sequenceFlow id="AParentWait" sourceRef="AutomaticRoute" targetRef="Reply" name="WAIT_FOR_REPLY" />
-      <bpmn:sequenceFlow id="AParentReview" sourceRef="AutomaticRoute" targetRef="Staff" name="REVIEW" />
+      <bpmn:sequenceFlow id="AParentReview" sourceRef="AutomaticRoute" targetRef="StaffContinuationClaim" name="REVIEW" />
       <bpmn:sequenceFlow id="AParentClosed" sourceRef="AutomaticRoute" targetRef="ActiveEnd" name="CLOSED" />
       <bpmn:boundaryEvent id="AutomaticInterrupted" name="Bestätigte Ablösung" attachedToRef="Automatic" cancelActivity="true">
         <bpmn:documentation>Gemeinsamer Unterbrechungspfad für geprüfte Mitarbeiterrückfrage, Terminsetzung, Übernahme oder neuen zwingenden Prüfbedarf. Nur bestätigte persistierte Entscheide zum aktuellen automaticCallRef. Condition sieht Elternvariablen; keine implizite Synchronisierung mit Kind oder Datenbank. Auch Retry/Incident unterbrechen; technische Realisierung und Runtime-Nachweis offen.</bpmn:documentation>
@@ -568,7 +561,7 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
         <bpmn:outgoing>AutoFail02</bpmn:outgoing>
       </bpmn:serviceTask>
       <bpmn:sequenceFlow id="AutoFail01" sourceRef="AutomaticFailure" targetRef="AutomaticFailurePrepare" name="" />
-      <bpmn:sequenceFlow id="AutoFail02" sourceRef="AutomaticFailurePrepare" targetRef="Staff" name="" />
+      <bpmn:sequenceFlow id="AutoFail02" sourceRef="AutomaticFailurePrepare" targetRef="StaffContinuationClaim" name="" />
       <bpmn:serviceTask id="AutomaticInterruptionPrepare" name="Bestätigten Entscheid und&#10;aktuellen Fallstand prüfen">
         <bpmn:documentation>Persistierten Unterbrechungsentscheid gegen automaticCallRef, führenden Durchlauf und aktuellen Fallstand prüfen; automaticInterruptionReady konsumieren. Zwingender neuer Prüfbedarf hat Vorrang -&gt; staffEntryContextRef zur Prüfung. Erfolgreiche Rückfrage ohne Vorrang -&gt; replyEntryContextRef. Übernahme ohne Prüfbedarf -&gt; staffEntryContextRef zu SWork. Gespeicherter Termin -&gt; direkter FollowUp-Kontext, bei Kontakt/neuem Prüfbedarf seit Terminsetzung Termin aufheben und Prüfung vorbereiten. Bestehende Prüfung genau einmal ergänzen. Keine Rückgaben des abgebrochenen Kindes; keine doppelte Veröffentlichung, Terminversion oder Mailpflicht. Neueren Fallstand/Abschluss nicht zurücksetzen. Geschützte Übergabe bis Zielaktivierung zuverlässig nachholen.</bpmn:documentation>
         <bpmn:incoming>AI01</bpmn:incoming>
@@ -582,7 +575,7 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
       <bpmn:sequenceFlow id="AI01" sourceRef="AutomaticInterrupted" targetRef="AutomaticInterruptionPrepare" name="" />
       <bpmn:sequenceFlow id="AI02" sourceRef="AutomaticInterruptionPrepare" targetRef="AutomaticInterruptionRoute" name="" />
       <bpmn:sequenceFlow id="AIWait" sourceRef="AutomaticInterruptionRoute" targetRef="Reply" name="Veröffentlichte Rückfrage" />
-      <bpmn:sequenceFlow id="AIStaff" sourceRef="AutomaticInterruptionRoute" targetRef="Staff" name="Prüfung / Bearbeitung / Wiedervorlage" />
+      <bpmn:sequenceFlow id="AIStaff" sourceRef="AutomaticInterruptionRoute" targetRef="StaffContinuationClaim" name="Prüfung / Bearbeitung / Wiedervorlage" />
       <bpmn:subProcess id="CaseDataSide" name="Falldaten ergänzen – Bearbeitung bleibt bestehen" triggeredByEvent="true">
         <bpmn:documentation>0.34 / FALL-06 / FALL-AK-43: Ein gemeinsamer nicht unterbrechender Eingang für ADD_MEMO, SET_OBJECT_ASSIGNMENT und SET_MANUAL_URGENCY. Nur autorisierte Mitarbeiteraufträge für einen zugeordneten aktiven Fall. Kein neuer öffentlicher Endpunkt durch dieses Modell und kein Mieternachrichtenempfänger. Keine User-Task-Completion, kein neuer Call und kein Statuswechsel durch die Aktion. Lokale Auftragsreferenz je Ausführung, keine Überschreibung von Hauptpfadvariablen. Bei konkurrierendem Abschluss unveröffentlichte alte Aufträge ohne Wirkung auflösen; bereits gespeicherte Änderungen und Mailpflichten erhalten. Technische Korrelation und Transaktionskoordination noch umzusetzen.</bpmn:documentation>
         <bpmn:startEvent id="CaseDataStart" name="Änderungsauftrag eingegangen" isInterrupting="false">
@@ -600,6 +593,50 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
         <bpmn:sequenceFlow id="CD01" sourceRef="CaseDataStart" targetRef="CaseDataApply" />
         <bpmn:sequenceFlow id="CD02" sourceRef="CaseDataApply" targetRef="CaseDataEnd" />
       </bpmn:subProcess>
+      <bpmn:serviceTask id="StaffContinuationClaim" name="Fortsetzung am aktuellen&#10;Fallstand exklusiv übernehmen">
+        <bpmn:documentation>FALL-06 Fortsetzungsvertrag B07 / FALL-AK-44: Persistierten Fortsetzungsauftrag mit Fall, führendem Durchlauf, Erkenntnis-/Fallversion, Operations-ID und Quell-/Zielbezug prüfen. Exklusiven Bearbeitungsanspruch konsistent sichern; konkurrierende Auftragseingänge dürfen keinen zweiten Staff-Aufruf beanspruchen. Drei Ergebnisse: START für diesen berechtigten Ausführungspfad, EXISTING für einen anderen nachweislich laufenden zuständigen Staff-Call, SUPERSEDED für erledigten/überholten Auftrag mit gesichertem anderem zuständigem Pfad. Wiederholung derselben eigenen Übernahme bleibt START und verwendet denselben Anspruch, nicht EXISTING. Neuer zwingender Prüfgrund wird bei Versionskonflikt am aktuellen Stand erneut eingeordnet und darf nicht verloren gehen. Veraltete Mitarbeiterentscheidung dagegen ohne Übernahme neuer Erkenntnisse ablehnen. Unklare Zuordnung, nur reservierter aber noch nicht bestätigter anderer Call oder fehlender lebender Nachfolgepfad: technische Klärung/Retry/Incident, kein fachlicher Endausgang. Anspruch, Engine-Aktivierung und Wiederaufnahme zuverlässig koordinieren; gespeicherte Reservierung ist kein Beweis einer laufenden Aufgabe. staffEntryContextRef mit Übernahmebezug bereitstellen; bestehende Eintrittsarten REVIEW, direkte Bearbeitung und Wiedervorlage erhalten.</bpmn:documentation>
+        <bpmn:incoming>F21</bpmn:incoming>
+        <bpmn:incoming>F_CloseConflict_Staff</bpmn:incoming>
+        <bpmn:incoming>F_Reopen_Staff</bpmn:incoming>
+        <bpmn:incoming>CA05</bpmn:incoming>
+        <bpmn:incoming>PN11</bpmn:incoming>
+        <bpmn:incoming>SF07</bpmn:incoming>
+        <bpmn:incoming>AParentReview</bpmn:incoming>
+        <bpmn:incoming>AutoFail02</bpmn:incoming>
+        <bpmn:incoming>AIStaff</bpmn:incoming>
+        <bpmn:outgoing>SCClaim</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:exclusiveGateway id="StaffContinuationRoute" name="Wer führt weiter?">
+        <bpmn:documentation>Ausgang staffContinuationOutcome aus bestätigter Übernahme prüfen: START, EXISTING oder SUPERSEDED. Unbekannte/fehlende Werte sind technische Fehler, kein Default-Endpfad. Gateway-Bedingungen noch nicht ausführbar gebunden.</bpmn:documentation>
+        <bpmn:incoming>SCClaim</bpmn:incoming>
+        <bpmn:outgoing>SCStart</bpmn:outgoing>
+        <bpmn:outgoing>SCExisting</bpmn:outgoing>
+        <bpmn:outgoing>SCSuperseded</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+      <bpmn:serviceTask id="StaffContinuationMerge" name="Bestehende Bearbeitung&#10;zuverlässig ergänzen">
+        <bpmn:documentation>Vorhandenen aktuellen Staff-Call und gegebenenfalls dieselbe Prüfaufgabe anhand Engine-/Dienstzuordnung verifizieren. Neuer Prüfgrund wird nachvollziehbar und idempotent der aktuellen Bearbeitung zugestellt. Bei bestehender Prüfung dieselbe Aufgabe ergänzen; bei anderer Mitarbeiterphase vorhandenen Prüfbedarfspfad nutzen, keinen zweiten Staff-Call starten. Veraltete Mitarbeiterentscheidung nicht neu ausführen. Erst bestätigte Übernahme beziehungsweise dauerhafte nachholbare Zuständigkeit mit weiterhin lebendem Ausführungspfad erlaubt Ende dieser redundanten Fortsetzung. Bei Zielwechsel erneut einordnen; keine Meldung verlieren und keinen alten Call reaktivieren.</bpmn:documentation>
+        <bpmn:incoming>SCExisting</bpmn:incoming>
+        <bpmn:outgoing>SCMerged</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:serviceTask id="StaffContinuationReconcile" name="Überholten Auftrag und&#10;zuständige Fortsetzung abgleichen">
+        <bpmn:documentation>Auftrag ist bereits erledigt oder anderer aktueller Pfad zuständig. Noch relevanten neuen Prüfgrund dauerhaft an aktuelle Bearbeitung übergeben, bei bereits abgeschlossenem Fall nur interner Hinweis ohne Wiedereröffnung. Alten Mitarbeiterentscheid nicht erneut anwenden. Ende nur wenn ein anderer zuständiger Ausführungspfad in ActiveCase nachweislich weiterläuft; niemals den letzten aktiven Hauptpfad wegen eines vermeintlichen Duplikats beenden. Bereits wirksamer Abschluss verwendet den bestehenden geschützten Abschluss-/Prozessbeendigungsvertrag, nicht dieses normale Endereignis. Fehlender/unklarer Eigentümer bleibt technische Klärung/Retry/Incident und verliert den Auftrag nicht.</bpmn:documentation>
+        <bpmn:incoming>SCSuperseded</bpmn:incoming>
+        <bpmn:outgoing>SCObsolete</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:endEvent id="StaffContinuationMerged" name="Nur redundante&#10;Fortsetzung beendet">
+        <bpmn:documentation>Normales Endereignis, kein terminate. Kein Fallabschluss, keine Beendigung der zuständigen Bearbeitung. Erreichbar nur nach Bestätigung, dass ein anderer aktueller Ausführungspfad in ActiveCase weiterläuft. Das blosse Vorhandensein einer Datenbankreferenz genügt nicht. Technischer Schutz ist noch nicht implementiert.</bpmn:documentation>
+        <bpmn:incoming>SCMerged</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:endEvent id="StaffContinuationObsolete" name="Nur redundante&#10;Fortsetzung beendet">
+        <bpmn:documentation>Normales Endereignis, kein terminate. Kein Fallabschluss, keine Beendigung der zuständigen Bearbeitung. Erreichbar nur nach Bestätigung, dass ein anderer aktueller Ausführungspfad in ActiveCase weiterläuft. Das blosse Vorhandensein einer Datenbankreferenz genügt nicht. Technischer Schutz ist noch nicht implementiert.</bpmn:documentation>
+        <bpmn:incoming>SCObsolete</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SCClaim" sourceRef="StaffContinuationClaim" targetRef="StaffContinuationRoute" name="" />
+      <bpmn:sequenceFlow id="SCStart" sourceRef="StaffContinuationRoute" targetRef="Staff" name="START: neuer Aufruf" />
+      <bpmn:sequenceFlow id="SCExisting" sourceRef="StaffContinuationRoute" targetRef="StaffContinuationMerge" name="EXISTING: bereits aktiv" />
+      <bpmn:sequenceFlow id="SCSuperseded" sourceRef="StaffContinuationRoute" targetRef="StaffContinuationReconcile" name="SUPERSEDED: überholt" />
+      <bpmn:sequenceFlow id="SCMerged" sourceRef="StaffContinuationMerge" targetRef="StaffContinuationMerged" name="" />
+      <bpmn:sequenceFlow id="SCObsolete" sourceRef="StaffContinuationReconcile" targetRef="StaffContinuationObsolete" name="" />
     </bpmn:subProcess>
     <bpmn:endEvent id="End" name="Durchlauf beendet">
       <bpmn:documentation>
@@ -768,12 +805,12 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
         <dc:Bounds x="1800" y="490" width="200" height="90" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Staff_di" bpmnElement="Staff" isExpanded="false">
-        <dc:Bounds x="1520" y="850" width="240" height="100" />
+        <dc:Bounds x="2050" y="850" width="240" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffRoute_di" bpmnElement="StaffRoute">
-        <dc:Bounds x="1850" y="875" width="50" height="50" />
+        <dc:Bounds x="2380" y="875" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1805" y="933" width="140" height="40" />
+          <dc:Bounds x="2320" y="940" width="140" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Close_di" bpmnElement="Close">
@@ -865,24 +902,25 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
         <di:waypoint x="1880" y="130.0" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="F15_di" bpmnElement="F15">
-        <di:waypoint x="1760" y="900.0" />
-        <di:waypoint x="1850" y="900.0" />
+        <di:waypoint x="2290" y="900" />
+        <di:waypoint x="2380" y="900" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="F16_di" bpmnElement="F16">
-        <di:waypoint x="1875" y="925" />
-        <di:waypoint x="1875" y="1100" />
+        <di:waypoint x="2405" y="925" />
+        <di:waypoint x="2405" y="1050" />
+        <di:waypoint x="1955" y="1050" />
+        <di:waypoint x="1955" y="1100" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1805" y="1058" width="150" height="36" />
+          <dc:Bounds x="2190" y="1010" width="180" height="35" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="F17_di" bpmnElement="F17">
-        <di:waypoint x="1900" y="900" />
-        <di:waypoint x="2100" y="900" />
-        <di:waypoint x="2100" y="-60" />
+        <di:waypoint x="2405" y="875" />
+        <di:waypoint x="2405" y="-60" />
         <di:waypoint x="1720" y="-60" />
         <di:waypoint x="1720" y="80" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2030" y="-102" width="150" height="36" />
+          <dc:Bounds x="2200" y="-100" width="180" height="35" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="F19_di" bpmnElement="F19">
@@ -1129,6 +1167,74 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
       <bpmndi:BPMNShape id="CaseDataSide_di" bpmnElement="CaseDataSide" isExpanded="false">
         <dc:Bounds x="100" y="1810" width="380" height="100" />
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffContinuationClaim_di" bpmnElement="StaffContinuationClaim">
+        <dc:Bounds x="1520" y="850" width="240" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffContinuationRoute_di" bpmnElement="StaffContinuationRoute">
+        <dc:Bounds x="1840" y="875" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1780" y="933" width="180" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffContinuationMerge_di" bpmnElement="StaffContinuationMerge">
+        <dc:Bounds x="1520" y="1020" width="250" height="95" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffContinuationReconcile_di" bpmnElement="StaffContinuationReconcile">
+        <dc:Bounds x="1200" y="1020" width="250" height="95" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffContinuationMerged_di" bpmnElement="StaffContinuationMerged">
+        <dc:Bounds x="1620" y="1210" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1560" y="1254" width="180" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffContinuationObsolete_di" bpmnElement="StaffContinuationObsolete">
+        <dc:Bounds x="1295" y="1210" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1235" y="1254" width="180" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SCClaim_di" bpmnElement="SCClaim">
+        <di:waypoint x="1760" y="900" />
+        <di:waypoint x="1840" y="900" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SCStart_di" bpmnElement="SCStart">
+        <di:waypoint x="1890" y="900" />
+        <di:waypoint x="2050" y="900" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1900" y="850" width="150" height="35" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SCExisting_di" bpmnElement="SCExisting">
+        <di:waypoint x="1865" y="925" />
+        <di:waypoint x="1865" y="990" />
+        <di:waypoint x="1645" y="990" />
+        <di:waypoint x="1645" y="1020" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1650" y="950" width="180" height="35" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SCSuperseded_di" bpmnElement="SCSuperseded">
+        <di:waypoint x="1865" y="875" />
+        <di:waypoint x="1865" y="805" />
+        <di:waypoint x="1380" y="805" />
+        <di:waypoint x="1380" y="1020" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1450" y="770" width="200" height="35" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SCMerged_di" bpmnElement="SCMerged">
+        <di:waypoint x="1645" y="1115" />
+        <di:waypoint x="1645" y="1180" />
+        <di:waypoint x="1638" y="1180" />
+        <di:waypoint x="1638" y="1210" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SCObsolete_di" bpmnElement="SCObsolete">
+        <di:waypoint x="1325" y="1115" />
+        <di:waypoint x="1325" y="1180" />
+        <di:waypoint x="1313" y="1180" />
+        <di:waypoint x="1313" y="1210" />
+      </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
   <bpmndi:BPMNDiagram id="TenantInbox_diagram" name="06 · Durchgängiger Mieternachrichteneingang">

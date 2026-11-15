@@ -1,6 +1,6 @@
 # Status-/Aktionsmatrix und BPMN-Abgleich
 
-**Konsolidierter Stand:** 15.11.2026, Hauptprozess 0.34, Mitarbeiterbearbeitung und Wiedervorlage 0.33; Automatik 0.31; Mieterantwort 0.32.
+**Konsolidierter Stand:** 15.11.2026, Hauptprozess und Mitarbeiterbearbeitung 0.35, Wiedervorlage 0.33; Automatik 0.31; Mieterantwort 0.32.
 Dieser Bericht ersetzt die überholte Erstprüfungs-Matrix. Die Befundkennungen
 B01–B10 bleiben für Nachverfolgung erhalten. Frühere Modellstände sind keine
 zusätzlichen offenen Anforderungen.
@@ -24,7 +24,7 @@ keine ausführbare oder getestete Gesamtlösung.
 | B04 – Prüfbedarf unterbricht Automatik | Im Entwurf behandelt | Zuverlässige Zustellung, Abbruch bei blockiertem Job und Konflikte zur Laufzeit prüfen. |
 | B05 – Fehlerpfad der Vorgehensbestimmung | Im Entwurf behandelt | Fachliche Fehler im Worker ausdrücklich melden; technische Fehler getrennt testen. |
 | B06 – Mailanbindung | Im Entwurf behandelt | Dauerhafte Mailpflicht, Start, Wiederholungsschutz und Versandfehler implementieren/testen. |
-| B07 – Gleichzeitige Aktionen und einmalige Fortsetzung | Technisch offen | Exklusive Übernahme und Behandlung bereits überholter/erledigter Aufträge verbindlich ausarbeiten. |
+| B07 – Gleichzeitige Aktionen und einmalige Fortsetzung | Vertrag festgelegt, Ausgänge im Entwurf 0.35 ergänzt | Technische Umsetzung und Laufzeitnachweise FALL-AK-44 stehen aus. |
 | B08 – Dokumentationskonsistenz | Festgestellte Widersprüche bereinigt | Aktuelle Übersicht 0.34 verwenden; historische technische Stände sind ausdrücklich gekennzeichnet. |
 | B09 – Rechtebindung und Aktionsbezug | Technischer Vertrag teilweise vorhanden | Rechte über führende Instanz, Kind, Call und gegebenenfalls User Task vollständig konkretisieren. |
 | B10 – Ausführbare Bindungen und Tests | Offen | Worker-Typen, Gateway-Bedingungen, Korrelation, Variablen und Integrationstests schrittweise ergänzen. |
@@ -47,10 +47,10 @@ die Navigation [README.md](README.md).
 
 | Datei | Modellstand | Zuständigkeit |
 |---|---|---|
-| [propertyflow-fallprozess-entwurf.bpmn](propertyflow-fallprozess-entwurf.bpmn) | 0.34 | Führender Ablauf, zentrale Eingänge, gemeinsame Unterbrechung, Mitarbeiterabschluss |
+| [propertyflow-fallprozess-entwurf.bpmn](propertyflow-fallprozess-entwurf.bpmn) | 0.35 | Führender Ablauf, zentrale Eingänge, gemeinsame Unterbrechung, Mitarbeiterabschluss |
 | [automatische-abklaerung.bpmn](automatische-abklaerung.bpmn) | 0.31 | Analyse, Ausführungsprüfung, automatische Rückfrage/Antwort/Systemabschluss |
 | [mieterantwort-pruefen.bpmn](mieterantwort-pruefen.bpmn) | 0.32 | Antwortauswertung, fachliche Fortsetzung und manueller Sendeweg |
-| [mitarbeiterbearbeitung.bpmn](mitarbeiterbearbeitung.bpmn) | 0.33 | Prüfung, Bearbeitung und externe Wartephase |
+| [mitarbeiterbearbeitung.bpmn](mitarbeiterbearbeitung.bpmn) | 0.35 | Prüfung, Bearbeitung und externe Wartephase |
 | [wiedervorlage.bpmn](wiedervorlage.bpmn) | 0.33 | Termin, Timer und Mitarbeiteraktionen zur Wiedervorlage |
 | [mieternachricht-verarbeiten.bpmn](mieternachricht-verarbeiten.bpmn) | 0.12 | Zentrale Verarbeitung gespeicherter Mieternachrichten |
 | [fallbenachrichtigung-versenden.bpmn](fallbenachrichtigung-versenden.bpmn) | 0.23 | Eigenständiger Versandprozess mit Mail-Worker |
@@ -206,17 +206,21 @@ und Prüfgrund-Deduplizierung ohne Benachrichtigungsschleife.
 
 ## B07 / B09: Technische Verträge vor ausführbarer Umsetzung
 
-**B07 – einmalige Fortsetzung:** Worker-Texte verlangen bestehende Prüfaufgaben
-wiederzuverwenden, während Rückwege weiterhin zum Call `Staff` führen. Ein normaler
-Call-Aufruf allein verwendet keine andere laufende Kindinstanz wieder. Verbindlich
-festlegen: exklusive Übernahme vor Call-Eintritt oder ausdrücklicher Ausgang für
-«bereits erledigt / anderer aktueller Pfad zuständig». Keine zweite Aufgabe.
+**B07 – Vertrag und Modell ergänzt (0.35):** FALL-06 beschreibt Fallversion,
+Operations-ID, verifizierten Bearbeitungsbezug, dauerhaften Fortsetzungsauftrag
+und exklusive Übernahme. Alle bisherigen Staff-Eingänge führen über
+StaffContinuationClaim/StaffContinuationRoute. START startet einmalig den Call;
+EXISTING ergänzt die laufende Bearbeitung; SUPERSEDED gleicht den alten Auftrag
+mit der aktuellen Zuständigkeit ab. Gespeicherte neue Prüfgründe gehen bei einem
+Versionskonflikt nicht verloren. Veraltete Mitarbeiterentscheidungen werden abgelehnt.
 
-Das betrifft konkurrierende Mitarbeiteraktionen, Mieternachrichten, Prüfbedarf,
-Timer und normales Call-Ende. `automaticCallRef` und konsumierbare Marker konkretisieren
-die Zuordnung, ersetzen aber noch kein sicheres Transaktions-/Übergabeprotokoll.
-Prüfen: Meldung vor Registrierung, während Abbruch/Call-Ende und nach Wiedereröffnung.
-Keine verlorene Meldung, kein Wiederbeleben eines alten Aufrufs.
+Eigene Übernahme bleibt bei Retry START. Unbestätigte Reservierung verlangt
+Abgleich, keinen zweiten Call. Die redundanten Endpfade sind nur bei gesichertem
+anderem lebendem Hauptpfad zulässig; kein versehentliches Ende von ActiveCase.
+SEntryCheck bindet die tatsächliche Kindinstanz an den Anspruch. Prüfplan FALL-AK-44.
+Keine implementierte Transaktion/Korrelation und kein Laufzeitnachweis; technische
+Ausführungsarbeit bleibt B09/B10. Der ursprüngliche fehlende Fortsetzungsvertrag
+und die fehlenden Ausgänge sind damit im Entwurf behandelt.
 
 **B09 – Rechtebindung:** Die Verträge verlangen bereits Mitarbeiteridentität,
 Fall, führenden Durchlauf, Kind-/Call-Bezug, gegebenenfalls Task-Schlüssel,
@@ -237,7 +241,7 @@ Aktuelle statische Zählung der sieben Dateien am 15.11.2026:
 | Merkmal | Anzahl / Stand |
 |---|---|
 | Prozesse | 7, alle `isExecutable=false` |
-| Service Tasks | 69 |
+| Service Tasks | 72 |
 | Send Tasks | 2 |
 | `zeebe:taskDefinition` | 4 |
 | Sequence-Flow-`conditionExpression` | 3 |
@@ -259,7 +263,7 @@ Prüfpläne, keine erfolgreichen Testläufe.
 
 ## Nächste Schritte
 
-1. B07/B09 für den ersten ausführbaren Ablauf technisch konkretisieren, einschliesslich
+1. B09 für den ersten ausführbaren Ablauf technisch konkretisieren, einschliesslich
    der festgelegten Nebenaktionsverträge aus B02.
 2. B10 schrittweise implementieren und gegen PostgreSQL/Camunda testen.
 
@@ -315,3 +319,9 @@ Die benannten Widersprüche wurden in den Kerntexten korrigiert; aktuelle Übers
 und historische Stände sind getrennt. Geprüft wurden lokale Dokumentlinks und die
 betroffenen Aussagen. BPMN und Backend wurden in dieser Runde nicht geändert;
 keine erneuten Engine-/Laufzeittests erforderlich oder behauptet.
+
+## Nachführung B07 (0.35)
+
+Fortsetzungsvertrag und drei Ausgänge vor Staff ergänzt, Mitarbeiter-Kindeintritt
+an exklusiven Übernahmebezug gebunden. B07 ist im Entwurf behandelt; Umsetzung
+und Nebenläufigkeitstests bleiben offen. Keine Backend-Logik geändert.
