@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_PropertyFlow_Mail_Draft" targetNamespace="https://propertyflow.local/bpmn/draft">
+<bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_PropertyFlow_Mail_Draft" targetNamespace="https://propertyflow.local/bpmn/draft">
   <bpmn:error id="Error_MailClarification" name="Versand fachlich klären" errorCode="MAIL_CLARIFICATION_REQUIRED" />
   <bpmn:process id="PropertyFlow_Mail_Draft" name="Fallbenachrichtigung versenden · Fachentwurf 0.23" isExecutable="false">
     <bpmn:documentation>BEN-03: Eigenständige Camunda-Versandinstanz je dauerhaftem Mailauftrag, kein führender Fallprozess und kein Call innerhalb des abbrechbaren ActiveCase. Ein dauerhafter Starter übergibt nur mailOrderRef. Noch keine Backend-Implementierung. Erststart, Wiederholungen und parallele Starts anhand dieser Referenz im Versanddienst koordinieren. Wiederholungsgrenzen und Abstände sind vor Ausführung gemäss BEN-04 festzulegen.</bpmn:documentation>
@@ -89,19 +89,19 @@
       <bpmndi:BPMNShape id="MailStart_di" bpmnElement="MailStart">
         <dc:Bounds x="60" y="202" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="MailLoad_di" bpmnElement="MailLoad">
+      <bpmndi:BPMNShape id="MailLoad_di" bpmnElement="MailLoad" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="170" y="175" width="220" height="90" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="MailRoute_di" bpmnElement="MailRoute">
         <dc:Bounds x="460" y="195" width="50" height="50" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="MailSendChange_di" bpmnElement="MailSendChange">
+      <bpmndi:BPMNShape id="MailSendChange_di" bpmnElement="MailSendChange" bioc:fill="#ccfbf1" bioc:stroke="#134e4a">
         <dc:Bounds x="650" y="70" width="220" height="90" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="MailSendChangeProblem_di" bpmnElement="MailSendChangeProblem">
         <dc:Bounds x="830" y="142" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="MailSendMessage_di" bpmnElement="MailSendMessage">
+      <bpmndi:BPMNShape id="MailSendMessage_di" bpmnElement="MailSendMessage" bioc:fill="#ccfbf1" bioc:stroke="#134e4a">
         <dc:Bounds x="650" y="290" width="220" height="90" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="MailSendMessageProblem_di" bpmnElement="MailSendMessageProblem">
@@ -110,7 +110,7 @@
       <bpmndi:BPMNShape id="MailEnd_di" bpmnElement="MailEnd">
         <dc:Bounds x="1050" y="202" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="MailProblem_di" bpmnElement="MailProblem">
+      <bpmndi:BPMNShape id="MailProblem_di" bpmnElement="MailProblem" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="970" y="460" width="300" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="MailProblemEnd_di" bpmnElement="MailProblemEnd">

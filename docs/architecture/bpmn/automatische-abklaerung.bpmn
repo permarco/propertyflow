@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_AutomaticClarification_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+<bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_AutomaticClarification_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
   <bpmn:error id="Error_ClosureMessageInvalid" name="LLM-Nachricht inhaltlich unzulässig" errorCode="CLOSURE_MESSAGE_INVALID" />
   <bpmn:error id="Error_AutoClosureStale" name="Automatischer Abschluss veraltet" errorCode="AUTO_CLOSURE_STALE" />
   <bpmn:error id="Error_PublicationStale" name="Veröffentlichungsgrundlage überholt" errorCode="PUBLICATION_BASIS_STALE">
@@ -193,7 +193,7 @@ FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklär
           <dc:Bounds x="5" y="164" width="126" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="AEntry_di" bpmnElement="AEntry">
+      <bpmndi:BPMNShape id="AEntry_di" bpmnElement="AEntry" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="140" y="90" width="200" height="95" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="AEntryRoute_di" bpmnElement="AEntryRoute">
@@ -202,16 +202,16 @@ FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklär
           <dc:Bounds x="365" y="170" width="140" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Clarification_di" bpmnElement="Clarification">
+      <bpmndi:BPMNShape id="Clarification_di" bpmnElement="Clarification" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="550" y="90" width="180" height="95" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Triage_di" bpmnElement="Triage">
+      <bpmndi:BPMNShape id="Triage_di" bpmnElement="Triage" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="810" y="90" width="180" height="95" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Recommend_di" bpmnElement="Recommend">
+      <bpmndi:BPMNShape id="Recommend_di" bpmnElement="Recommend" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="1070" y="90" width="190" height="95" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Validate_di" bpmnElement="Validate">
+      <bpmndi:BPMNShape id="Validate_di" bpmnElement="Validate" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="1070" y="340" width="200" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Route_di" bpmnElement="Route">
@@ -220,16 +220,16 @@ FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklär
           <dc:Bounds x="805" y="423" width="140" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="CurrentAnalysis_di" bpmnElement="CurrentAnalysis">
+      <bpmndi:BPMNShape id="CurrentAnalysis_di" bpmnElement="CurrentAnalysis" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="560" y="340" width="210" height="100" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Question_di" bpmnElement="Question">
+      <bpmndi:BPMNShape id="Question_di" bpmnElement="Question" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="550" y="630" width="200" height="95" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="AutoAnswer_di" bpmnElement="AutoAnswer">
+      <bpmndi:BPMNShape id="AutoAnswer_di" bpmnElement="AutoAnswer" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="850" y="630" width="200" height="95" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="AutoClose_di" bpmnElement="AutoClose">
+      <bpmndi:BPMNShape id="AutoClose_di" bpmnElement="AutoClose" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="1150" y="630" width="200" height="95" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="AnalysisStale_di" bpmnElement="AnalysisStale">
@@ -262,7 +262,7 @@ FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklär
           <dc:Bounds x="965" y="555" width="200" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="AWait_di" bpmnElement="AWait">
+      <bpmndi:BPMNShape id="AWait_di" bpmnElement="AWait" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="180" y="630" width="210" height="95" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="AWaitEnd_di" bpmnElement="AWaitEnd">
@@ -271,7 +271,7 @@ FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklär
           <dc:Bounds x="215" y="864" width="126" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="AReview_di" bpmnElement="AReview">
+      <bpmndi:BPMNShape id="AReview_di" bpmnElement="AReview" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="1410" y="340" width="200" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="AReviewEnd_di" bpmnElement="AReviewEnd">
@@ -280,7 +280,7 @@ FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklär
           <dc:Bounds x="1655" y="416" width="126" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="AClosed_di" bpmnElement="AClosed">
+      <bpmndi:BPMNShape id="AClosed_di" bpmnElement="AClosed" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="1440" y="630" width="200" height="95" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="AClosedEnd_di" bpmnElement="AClosedEnd">

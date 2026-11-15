@@ -678,7 +678,7 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
           <dc:Bounds x="30" y="240" width="136" height="28" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="PrepareProcessKey_di" bpmnElement="PrepareProcessKey" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+      <bpmndi:BPMNShape id="PrepareProcessKey_di" bpmnElement="PrepareProcessKey" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="180" y="163" width="190" height="90" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="ActiveCase_di" bpmnElement="ActiveCase" bioc:stroke="#4c1d95" bioc:fill="#ede9fe" isExpanded="false">
@@ -732,16 +732,16 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
           <dc:Bounds x="85" y="163" width="140" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Register_di" bpmnElement="Register">
+      <bpmndi:BPMNShape id="Register_di" bpmnElement="Register" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="240" y="80" width="180" height="95" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="PrepareInitialAuto_di" bpmnElement="PrepareInitialAuto">
+      <bpmndi:BPMNShape id="PrepareInitialAuto_di" bpmnElement="PrepareInitialAuto" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="480" y="80" width="180" height="95" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Automatic_di" bpmnElement="Automatic" isExpanded="false">
+      <bpmndi:BPMNShape id="Automatic_di" bpmnElement="Automatic" isExpanded="false" bioc:fill="#ede9fe" bioc:stroke="#4c1d95">
         <dc:Bounds x="750" y="80" width="240" height="100" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="AutomaticResult_di" bpmnElement="AutomaticResult">
+      <bpmndi:BPMNShape id="AutomaticResult_di" bpmnElement="AutomaticResult" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="1100" y="80" width="200" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="AutomaticRoute_di" bpmnElement="AutomaticRoute">
@@ -750,7 +750,7 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
           <dc:Bounds x="1335" y="163" width="140" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ReopenCase_di" bpmnElement="ReopenCase">
+      <bpmndi:BPMNShape id="ReopenCase_di" bpmnElement="ReopenCase" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="240" y="320" width="180" height="95" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="ReopenRejected_di" bpmnElement="ReopenRejected">
@@ -771,7 +771,7 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
           <dc:Bounds x="745" y="206" width="126" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="AutomaticInterruptionPrepare_di" bpmnElement="AutomaticInterruptionPrepare">
+      <bpmndi:BPMNShape id="AutomaticInterruptionPrepare_di" bpmnElement="AutomaticInterruptionPrepare" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="750" y="310" width="240" height="95" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="AutomaticInterruptionRoute_di" bpmnElement="AutomaticInterruptionRoute">
@@ -786,10 +786,10 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
           <dc:Bounds x="875" y="206" width="126" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="AutomaticFailurePrepare_di" bpmnElement="AutomaticFailurePrepare">
+      <bpmndi:BPMNShape id="AutomaticFailurePrepare_di" bpmnElement="AutomaticFailurePrepare" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="1180" y="500" width="220" height="95" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Reply_di" bpmnElement="Reply" isExpanded="false">
+      <bpmndi:BPMNShape id="Reply_di" bpmnElement="Reply" isExpanded="false" bioc:fill="#ede9fe" bioc:stroke="#4c1d95">
         <dc:Bounds x="1580" y="80" width="200" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="ReplyRoute_di" bpmnElement="ReplyRoute">
@@ -798,13 +798,13 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
           <dc:Bounds x="1835" y="163" width="140" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="PrepareQuestionAuto_di" bpmnElement="PrepareQuestionAuto">
+      <bpmndi:BPMNShape id="PrepareQuestionAuto_di" bpmnElement="PrepareQuestionAuto" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="1800" y="320" width="200" height="90" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="PrepareCloseAuto_di" bpmnElement="PrepareCloseAuto">
+      <bpmndi:BPMNShape id="PrepareCloseAuto_di" bpmnElement="PrepareCloseAuto" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="1800" y="490" width="200" height="90" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Staff_di" bpmnElement="Staff" isExpanded="false">
+      <bpmndi:BPMNShape id="Staff_di" bpmnElement="Staff" isExpanded="false" bioc:fill="#ede9fe" bioc:stroke="#4c1d95">
         <dc:Bounds x="2050" y="850" width="240" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffRoute_di" bpmnElement="StaffRoute">
@@ -813,7 +813,7 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
           <dc:Bounds x="2320" y="940" width="140" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Close_di" bpmnElement="Close">
+      <bpmndi:BPMNShape id="Close_di" bpmnElement="Close" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="1850" y="1100" width="210" height="95" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="CloseConflict_di" bpmnElement="CloseConflict">
@@ -834,7 +834,7 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
           <dc:Bounds x="1480" y="205" width="180" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ClearAnswerContinue_di" bpmnElement="ClearAnswerContinue">
+      <bpmndi:BPMNShape id="ClearAnswerContinue_di" bpmnElement="ClearAnswerContinue" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="400" y="700" width="220" height="95" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="ClearAnswerRoute_di" bpmnElement="ClearAnswerRoute">
@@ -855,7 +855,7 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
           <dc:Bounds x="1750" y="205" width="150" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ReviewNeedPrepare_di" bpmnElement="ReviewNeedPrepare">
+      <bpmndi:BPMNShape id="ReviewNeedPrepare_di" bpmnElement="ReviewNeedPrepare" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="850" y="700" width="220" height="95" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffFollowAtReply_di" bpmnElement="StaffFollowAtReply">
@@ -864,7 +864,7 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
           <dc:Bounds x="1810" y="35" width="170" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffFollowContinue_di" bpmnElement="StaffFollowContinue">
+      <bpmndi:BPMNShape id="StaffFollowContinue_di" bpmnElement="StaffFollowContinue" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="1140" y="700" width="220" height="95" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="TenantInbox_di" bpmnElement="TenantInbox" isExpanded="false">
@@ -1167,7 +1167,7 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
       <bpmndi:BPMNShape id="CaseDataSide_di" bpmnElement="CaseDataSide" isExpanded="false">
         <dc:Bounds x="100" y="1810" width="380" height="100" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffContinuationClaim_di" bpmnElement="StaffContinuationClaim">
+      <bpmndi:BPMNShape id="StaffContinuationClaim_di" bpmnElement="StaffContinuationClaim" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="1520" y="850" width="240" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffContinuationRoute_di" bpmnElement="StaffContinuationRoute">
@@ -1176,10 +1176,10 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
           <dc:Bounds x="1780" y="933" width="180" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffContinuationMerge_di" bpmnElement="StaffContinuationMerge">
+      <bpmndi:BPMNShape id="StaffContinuationMerge_di" bpmnElement="StaffContinuationMerge" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="1520" y="1020" width="250" height="95" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffContinuationReconcile_di" bpmnElement="StaffContinuationReconcile">
+      <bpmndi:BPMNShape id="StaffContinuationReconcile_di" bpmnElement="StaffContinuationReconcile" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="1200" y="1020" width="250" height="95" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffContinuationMerged_di" bpmnElement="StaffContinuationMerged">
@@ -1245,7 +1245,7 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
           <dc:Bounds x="20" y="180" width="156" height="45" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ProcessTenantMessage_di" bpmnElement="ProcessTenantMessage">
+      <bpmndi:BPMNShape id="ProcessTenantMessage_di" bpmnElement="ProcessTenantMessage" bioc:fill="#ede9fe" bioc:stroke="#4c1d95">
         <dc:Bounds x="210" y="105" width="220" height="90" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="NReceptionEnd_di" bpmnElement="NReceptionEnd">
@@ -1269,7 +1269,7 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
       <bpmndi:BPMNShape id="ClearAnswerStart_di" bpmnElement="ClearAnswerStart">
         <dc:Bounds x="250" y="1270" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ClearAnswerApply_di" bpmnElement="ClearAnswerApply">
+      <bpmndi:BPMNShape id="ClearAnswerApply_di" bpmnElement="ClearAnswerApply" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="420" y="1240" width="400" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="ClearAnswerEnd_di" bpmnElement="ClearAnswerEnd">
@@ -1290,13 +1290,13 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
       <bpmndi:BPMNShape id="StaffCloseReplyStart_di" bpmnElement="StaffCloseReplyStart">
         <dc:Bounds x="250" y="1662" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffCloseReplyCheck_di" bpmnElement="StaffCloseReplyCheck">
+      <bpmndi:BPMNShape id="StaffCloseReplyCheck_di" bpmnElement="StaffCloseReplyCheck" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="400" y="1635" width="260" height="90" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffCloseReplyAccepted_di" bpmnElement="StaffCloseReplyAccepted">
         <dc:Bounds x="750" y="1655" width="50" height="50" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffCloseReplySignal_di" bpmnElement="StaffCloseReplySignal">
+      <bpmndi:BPMNShape id="StaffCloseReplySignal_di" bpmnElement="StaffCloseReplySignal" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="930" y="1635" width="310" height="90" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffCloseReplyRejected_di" bpmnElement="StaffCloseReplyRejected">
@@ -1332,16 +1332,16 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
       <bpmndi:BPMNShape id="ReviewNeedStart_di" bpmnElement="ReviewNeedStart">
         <dc:Bounds x="250" y="2192" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ReviewNeedCheck_di" bpmnElement="ReviewNeedCheck">
+      <bpmndi:BPMNShape id="ReviewNeedCheck_di" bpmnElement="ReviewNeedCheck" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="400" y="2165" width="260" height="90" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="ReviewNeedRoute_di" bpmnElement="ReviewNeedRoute">
         <dc:Bounds x="750" y="2185" width="50" height="50" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ReviewNeedExisting_di" bpmnElement="ReviewNeedExisting">
+      <bpmndi:BPMNShape id="ReviewNeedExisting_di" bpmnElement="ReviewNeedExisting" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="980" y="2050" width="310" height="90" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ReviewNeedWakeReply_di" bpmnElement="ReviewNeedWakeReply">
+      <bpmndi:BPMNShape id="ReviewNeedWakeReply_di" bpmnElement="ReviewNeedWakeReply" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="980" y="2215" width="310" height="90" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="ReviewNeedNoAction_di" bpmnElement="ReviewNeedNoAction">
@@ -1385,7 +1385,7 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
         <di:waypoint x="1540" y="2210" />
         <di:waypoint x="1640" y="2210" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="ReviewNeedOther_di" bpmnElement="ReviewNeedOther">
+      <bpmndi:BPMNShape id="ReviewNeedOther_di" bpmnElement="ReviewNeedOther" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="1320" y="2340" width="320" height="90" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="PN08_di" bpmnElement="PN08">
@@ -1408,7 +1408,7 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
       <bpmndi:BPMNShape id="StaffQuestionStart_di" bpmnElement="StaffQuestionStart">
         <dc:Bounds x="250" y="2710" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffQuestionPublish_di" bpmnElement="StaffQuestionPublish">
+      <bpmndi:BPMNShape id="StaffQuestionPublish_di" bpmnElement="StaffQuestionPublish" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="350" y="2680" width="300" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffQuestionResult_di" bpmnElement="StaffQuestionResult">
@@ -1417,7 +1417,7 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
           <dc:Bounds x="625" y="2760" width="150" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffQuestionSignal_di" bpmnElement="StaffQuestionSignal">
+      <bpmndi:BPMNShape id="StaffQuestionSignal_di" bpmnElement="StaffQuestionSignal" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="880" y="2680" width="290" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffQuestionDone_di" bpmnElement="StaffQuestionDone">
@@ -1477,7 +1477,7 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
       <bpmndi:BPMNShape id="StaffCloseClarificationStart_di" bpmnElement="StaffCloseClarificationStart">
         <dc:Bounds x="250" y="3170" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffCloseClarificationApply_di" bpmnElement="StaffCloseClarificationApply">
+      <bpmndi:BPMNShape id="StaffCloseClarificationApply_di" bpmnElement="StaffCloseClarificationApply" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="390" y="3138" width="340" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffCloseClarificationResult_di" bpmnElement="StaffCloseClarificationResult">
@@ -1512,13 +1512,13 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
       <bpmndi:BPMNShape id="StaffFollowStart_di" bpmnElement="StaffFollowStart">
         <dc:Bounds x="250" y="3610.0" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffFollowPublish_di" bpmnElement="StaffFollowPublish">
+      <bpmndi:BPMNShape id="StaffFollowPublish_di" bpmnElement="StaffFollowPublish" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="350" y="3580.0" width="300" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffFollowResult_di" bpmnElement="StaffFollowResult">
         <dc:Bounds x="740" y="3605.0" width="50" height="50" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffFollowSignal_di" bpmnElement="StaffFollowSignal">
+      <bpmndi:BPMNShape id="StaffFollowSignal_di" bpmnElement="StaffFollowSignal" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="880" y="3580.0" width="290" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffFollowDone_di" bpmnElement="StaffFollowDone">
@@ -1554,13 +1554,13 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
       <bpmndi:BPMNShape id="StaffTakeoverStart_di" bpmnElement="StaffTakeoverStart">
         <dc:Bounds x="250" y="4050.0" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffTakeoverPublish_di" bpmnElement="StaffTakeoverPublish">
+      <bpmndi:BPMNShape id="StaffTakeoverPublish_di" bpmnElement="StaffTakeoverPublish" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="350" y="4020.0" width="300" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffTakeoverResult_di" bpmnElement="StaffTakeoverResult">
         <dc:Bounds x="740" y="4045.0" width="50" height="50" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffTakeoverSignal_di" bpmnElement="StaffTakeoverSignal">
+      <bpmndi:BPMNShape id="StaffTakeoverSignal_di" bpmnElement="StaffTakeoverSignal" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="880" y="4020.0" width="290" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffTakeoverDone_di" bpmnElement="StaffTakeoverDone">
@@ -1599,7 +1599,7 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
           <dc:Bounds x="30" y="205" width="190" height="50" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="CaseDataApply_di" bpmnElement="CaseDataApply">
+      <bpmndi:BPMNShape id="CaseDataApply_di" bpmnElement="CaseDataApply" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="260" y="120" width="360" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="CaseDataEnd_di" bpmnElement="CaseDataEnd">

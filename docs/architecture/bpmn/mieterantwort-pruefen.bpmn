@@ -160,7 +160,7 @@ Mitarbeiteraktionen bleiben möglich; separate Wiedervorlage gilt weiter.</bpmn:
           <dc:Bounds x="13" y="216" width="150" height="48" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="RStatus_di" bpmnElement="RStatus" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+      <bpmndi:BPMNShape id="RStatus_di" bpmnElement="RStatus" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="170" y="145" width="170" height="90" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="RMessage_di" bpmnElement="RMessage" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
@@ -169,10 +169,10 @@ Mitarbeiteraktionen bleiben möglich; separate Wiedervorlage gilt weiter.</bpmn:
           <dc:Bounds x="353" y="216" width="150" height="48" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="REvaluate_di" bpmnElement="REvaluate" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+      <bpmndi:BPMNShape id="REvaluate_di" bpmnElement="REvaluate" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="530" y="145" width="170" height="90" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="RValidate_di" bpmnElement="RValidate" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+      <bpmndi:BPMNShape id="RValidate_di" bpmnElement="RValidate" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="1010" y="145" width="170" height="90" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="RResult_di" bpmnElement="RResult" isMarkerVisible="true" bioc:stroke="#334155" bioc:fill="#f1f5f9">
@@ -271,7 +271,7 @@ Mitarbeiteraktionen bleiben möglich; separate Wiedervorlage gilt weiter.</bpmn:
           <dc:Bounds x="1105" y="92" width="130" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="RCurrentAnalysis_di" bpmnElement="RCurrentAnalysis" bioc:stroke="#9a3412" bioc:fill="#fff7ed">
+      <bpmndi:BPMNShape id="RCurrentAnalysis_di" bpmnElement="RCurrentAnalysis" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="770" y="20" width="200" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="R_Stale_Current_di" bpmnElement="R_Stale_Current" bioc:stroke="#9a3412">
@@ -297,7 +297,7 @@ Mitarbeiteraktionen bleiben möglich; separate Wiedervorlage gilt weiter.</bpmn:
           <dc:Bounds x="110" y="1068" width="180" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="RStaffMessagePublish_di" bpmnElement="RStaffMessagePublish" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
+      <bpmndi:BPMNShape id="RStaffMessagePublish_di" bpmnElement="RStaffMessagePublish" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="430" y="995" width="320" height="90" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="RStaffMessageEnd_di" bpmnElement="RStaffMessageEnd" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">

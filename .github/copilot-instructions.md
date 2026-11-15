@@ -15,6 +15,9 @@ Read at minimum:
 For work on the MCP server, its tools, or agent access, also read the
 [MCP Guidelines](../docs/specifications/MCP_GUIDELINES.md) as a design and review reference.
 
+For work on Camunda, BPMN models, workflow integration, or job workers, also read
+the [Camunda Guidelines](../docs/specifications/CAMUNDA_GUIDELINES.md).
+
 ## Architecture
 
 - Follow all accepted ADRs.

@@ -255,10 +255,10 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
           <dc:Bounds x="-657.0" y="206.0" width="150" height="48" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="SReviewStatus_di" bpmnElement="SReviewStatus" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+      <bpmndi:BPMNShape id="SReviewStatus_di" bpmnElement="SReviewStatus" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="170" y="135" width="170" height="90" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="SReview_di" bpmnElement="SReview" bioc:stroke="#7c2d12" bioc:fill="#ffedd5">
+      <bpmndi:BPMNShape id="SReview_di" bpmnElement="SReview" bioc:fill="#ffedd5" bioc:stroke="#7c2d12">
         <dc:Bounds x="420" y="135" width="170" height="90" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="SDecision_di" bpmnElement="SDecision" isMarkerVisible="true" bioc:stroke="#334155" bioc:fill="#f1f5f9">
@@ -267,10 +267,10 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
           <dc:Bounds x="640" y="213" width="150" height="48" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="SProgress_di" bpmnElement="SProgress" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+      <bpmndi:BPMNShape id="SProgress_di" bpmnElement="SProgress" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="830" y="135" width="170" height="90" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="SWork_di" bpmnElement="SWork" bioc:stroke="#7c2d12" bioc:fill="#ffedd5">
+      <bpmndi:BPMNShape id="SWork_di" bpmnElement="SWork" bioc:fill="#ffedd5" bioc:stroke="#7c2d12">
         <dc:Bounds x="1080" y="135" width="170" height="90" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="SWorkDecision_di" bpmnElement="SWorkDecision" isMarkerVisible="true" bioc:stroke="#334155" bioc:fill="#f1f5f9">
@@ -279,7 +279,7 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
           <dc:Bounds x="1300" y="213" width="150" height="48" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="SQuestion_di" bpmnElement="SQuestion" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+      <bpmndi:BPMNShape id="SQuestion_di" bpmnElement="SQuestion" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="1500" y="35" width="170" height="90" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="SReplyEnd_di" bpmnElement="SReplyEnd" bioc:stroke="#14532d" bioc:fill="#dcfce7">
@@ -294,7 +294,7 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
           <dc:Bounds x="1703" y="306" width="150" height="48" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="FollowUp_di" bpmnElement="FollowUp" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
+      <bpmndi:BPMNShape id="FollowUp_di" bpmnElement="FollowUp" bioc:fill="#ede9fe" bioc:stroke="#4c1d95">
         <dc:Bounds x="850" y="445" width="170" height="90" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="SFollowResult_di" bpmnElement="SFollowResult" isMarkerVisible="true" bioc:stroke="#334155" bioc:fill="#f1f5f9">
@@ -432,7 +432,7 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
           <dc:Bounds x="950" y="565" width="150" height="42" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="SStopFollowUp_di" bpmnElement="SStopFollowUp" bioc:stroke="#7c2d12" bioc:fill="#ffedd5">
+      <bpmndi:BPMNShape id="SStopFollowUp_di" bpmnElement="SStopFollowUp" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="420" y="420" width="190" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="S20_di" bpmnElement="S20" bioc:stroke="#334155">
@@ -455,7 +455,7 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
           <dc:Bounds x="110" y="1068" width="180" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="SMessagePublish_di" bpmnElement="SMessagePublish" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
+      <bpmndi:BPMNShape id="SMessagePublish_di" bpmnElement="SMessagePublish" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="430" y="995" width="320" height="90" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="SMessageEnd_di" bpmnElement="SMessageEnd" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
@@ -472,7 +472,7 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
         <di:waypoint x="750" y="1038" />
         <di:waypoint x="1030" y="1038" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="SEntryCheck_di" bpmnElement="SEntryCheck" bioc:fill="#e4ecff" bioc:stroke="#203c62">
+      <bpmndi:BPMNShape id="SEntryCheck_di" bpmnElement="SEntryCheck" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="-480" y="135" width="200" height="90" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="SEntryRoute_di" bpmnElement="SEntryRoute">
@@ -492,10 +492,10 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
         <di:waypoint x="1165" y="-100" />
         <di:waypoint x="1165" y="135" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="SExternalStatus_di" bpmnElement="SExternalStatus" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+      <bpmndi:BPMNShape id="SExternalStatus_di" bpmnElement="SExternalStatus" bioc:fill="#e2ecff" bioc:stroke="#1e3a5f">
         <dc:Bounds x="300" y="-500" width="230" height="100" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="SExternalWait_di" bpmnElement="SExternalWait" bioc:stroke="#1e3a5f" bioc:fill="#ffedd5">
+      <bpmndi:BPMNShape id="SExternalWait_di" bpmnElement="SExternalWait" bioc:fill="#ffedd5" bioc:stroke="#7c2d12">
         <dc:Bounds x="650" y="-500" width="250" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="SExternalDecision_di" bpmnElement="SExternalDecision" bioc:stroke="#1e3a5f" bioc:fill="#f1f5f9">

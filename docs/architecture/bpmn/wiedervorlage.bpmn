@@ -1,5 +1,5 @@
-<?xml version='1.0' encoding='utf-8'?>
-<bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_PropertyFlow_FollowUp_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_PropertyFlow_FollowUp_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
   <bpmn:message id="Message_StaffQuestion" name="Mitarbeiternachricht während Wiedervorlage angefordert" />
   <bpmn:message id="Message_StaffClose" name="Mitarbeiterabschluss bestätigt" />
   <bpmn:message id="Message_FollowUpDelete" name="Wiedervorlage löschen" />
@@ -22,8 +22,7 @@ FALL-11 / FALL-AK-30: Bestätigten Termin als absoluten followUpDueAt mit Offset
       <bpmn:outgoing>W02</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:eventBasedGateway id="WEvents" name="Auf erstes Ereignis warten">
-      <bpmn:incoming>W02</bpmn:incoming>
-      <bpmn:incoming>W15</bpmn:incoming>
+      <bpmn:incoming>Flow_1azuihh</bpmn:incoming>
       <bpmn:outgoing>W03</bpmn:outgoing>
       <bpmn:outgoing>W05</bpmn:outgoing>
       <bpmn:outgoing>W06</bpmn:outgoing>
@@ -99,7 +98,7 @@ Normaler Kindprozessabschluss: outcome=CLOSE und decisionRef zur geprüften Grun
       <bpmn:incoming>W19</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="W01" sourceRef="WStart" targetRef="WSave" />
-    <bpmn:sequenceFlow id="W02" sourceRef="WSave" targetRef="WEvents" />
+    <bpmn:sequenceFlow id="W02" sourceRef="WSave" targetRef="Gateway_0z8028n" />
     <bpmn:sequenceFlow id="W03" sourceRef="WEvents" targetRef="WTimer" />
     <bpmn:sequenceFlow id="W05" sourceRef="WEvents" targetRef="WChange" />
     <bpmn:sequenceFlow id="W06" sourceRef="WEvents" targetRef="WDelete" />
@@ -107,7 +106,7 @@ Normaler Kindprozessabschluss: outcome=CLOSE und decisionRef zur geprüften Grun
     <bpmn:sequenceFlow id="W09" sourceRef="WTimer" targetRef="WClearTimer" />
     <bpmn:sequenceFlow id="W10" sourceRef="WClearTimer" targetRef="WReviewEnd" />
     <bpmn:sequenceFlow id="W14" sourceRef="WChange" targetRef="WUpdate" />
-    <bpmn:sequenceFlow id="W15" sourceRef="WUpdate" targetRef="WEvents" />
+    <bpmn:sequenceFlow id="W15" sourceRef="WUpdate" targetRef="Gateway_0z8028n" />
     <bpmn:sequenceFlow id="W16" sourceRef="WDelete" targetRef="WDeleteTask" />
     <bpmn:sequenceFlow id="W17" sourceRef="WDeleteTask" targetRef="WProgressEnd" />
     <bpmn:sequenceFlow id="W18" sourceRef="WClose" targetRef="WCloseTask" />
@@ -132,6 +131,12 @@ Nach Auslagerung Zielinstanz serverseitig über die aktuelle Wiedervorlage-Zuord
       <bpmn:sequenceFlow id="W20" sourceRef="WQuestionStart" targetRef="WPublish" />
       <bpmn:sequenceFlow id="W21" sourceRef="WPublish" targetRef="WQuestionEnd" />
     </bpmn:subProcess>
+    <bpmn:exclusiveGateway id="Gateway_0z8028n">
+      <bpmn:incoming>W02</bpmn:incoming>
+      <bpmn:incoming>W15</bpmn:incoming>
+      <bpmn:outgoing>Flow_1azuihh</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_1azuihh" sourceRef="Gateway_0z8028n" targetRef="WEvents" />
     <bpmn:textAnnotation id="WRule">
       <bpmn:text>Mieterkontakt wird zentral empfangen und versionsgebunden bereitgestellt.
 Das Randereignis im Mitarbeiterprozess beendet diesen Call samt Timer vor KI-Ende.
@@ -143,174 +148,178 @@ Atomare Koordination vor Ausführung implementieren (FALL-11 / FALL-AK-27).</bpm
   </bpmn:process>
   <bpmndi:BPMNDiagram id="FollowUp_diagram" name="05 · Wiedervorlage">
     <bpmndi:BPMNPlane id="FollowUp_plane" bpmnElement="PropertyFlow_FollowUp_Draft">
-      <bpmndi:BPMNShape id="WStart_di" bpmnElement="WStart" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
-        <dc:Bounds x="70" y="242" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="13" y="286" width="150" height="48" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="WSave_di" bpmnElement="WSave" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
-        <dc:Bounds x="180" y="215" width="170" height="90" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="WEvents_di" bpmnElement="WEvents" bioc:stroke="#334155" bioc:fill="#f1f5f9">
-        <dc:Bounds x="440" y="235" width="50" height="50" />
+        <dc:Bounds x="730" y="525" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="390" y="293" width="150" height="48" />
+          <dc:Bounds x="691" y="583" width="129" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="WTimer_di" bpmnElement="WTimer" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
-        <dc:Bounds x="660" y="42" width="36" height="36" />
+        <dc:Bounds x="941" y="409" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="603" y="86" width="150" height="48" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="WChange_di" bpmnElement="WChange" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
-        <dc:Bounds x="660" y="322" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="603" y="366" width="150" height="48" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="WDelete_di" bpmnElement="WDelete" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
-        <dc:Bounds x="660" y="462" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="603" y="506" width="150" height="48" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="WClose_di" bpmnElement="WClose" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
-        <dc:Bounds x="660" y="602" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="603" y="646" width="150" height="48" />
+          <dc:Bounds x="887" y="453" width="145" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="WClearTimer_di" bpmnElement="WClearTimer" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
-        <dc:Bounds x="900" y="15" width="170" height="90" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="WReviewEnd_di" bpmnElement="WReviewEnd" bioc:stroke="#14532d" bioc:fill="#dcfce7">
-        <dc:Bounds x="1420" y="112" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1363" y="156" width="150" height="48" />
-        </bpmndi:BPMNLabel>
+        <dc:Bounds x="1181" y="382" width="170" height="90" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="WUpdate_di" bpmnElement="WUpdate" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
-        <dc:Bounds x="900" y="295" width="170" height="90" />
+        <dc:Bounds x="1190" y="185" width="170" height="90" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="WDeleteTask_di" bpmnElement="WDeleteTask" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
-        <dc:Bounds x="900" y="435" width="170" height="90" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="WProgressEnd_di" bpmnElement="WProgressEnd" bioc:stroke="#14532d" bioc:fill="#dcfce7">
-        <dc:Bounds x="1420" y="462" width="36" height="36" />
+      <bpmndi:BPMNShape id="WChange_di" bpmnElement="WChange" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
+        <dc:Bounds x="941" y="212" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1363" y="506" width="150" height="48" />
+          <dc:Bounds x="897" y="256" width="125" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="WClose_di" bpmnElement="WClose" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
+        <dc:Bounds x="935" y="772" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="906" y="816" width="95" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="WCloseTask_di" bpmnElement="WCloseTask" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
-        <dc:Bounds x="900" y="575" width="170" height="90" />
+        <dc:Bounds x="1175" y="745" width="170" height="90" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="WCloseEnd_di" bpmnElement="WCloseEnd" bioc:stroke="#14532d" bioc:fill="#dcfce7">
-        <dc:Bounds x="1420" y="602" width="36" height="36" />
+        <dc:Bounds x="1695" y="772" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1363" y="646" width="150" height="48" />
+          <dc:Bounds x="1649" y="816" width="128" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="WReviewEnd_di" bpmnElement="WReviewEnd" bioc:stroke="#14532d" bioc:fill="#dcfce7">
+        <dc:Bounds x="1701" y="409" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1665" y="453" width="109" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="WDeleteTask_di" bpmnElement="WDeleteTask" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="1175" y="565" width="170" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="WDelete_di" bpmnElement="WDelete" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
+        <dc:Bounds x="935" y="592" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="892" y="636" width="122" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="WProgressEnd_di" bpmnElement="WProgressEnd" bioc:stroke="#14532d" bioc:fill="#dcfce7">
+        <dc:Bounds x="1695" y="592" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1658" y="636" width="111" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="WStart_di" bpmnElement="WStart" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="195" y="532" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="157" y="576" width="112" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="WSave_di" bpmnElement="WSave" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="305" y="505" width="170" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0z8028n_di" bpmnElement="Gateway_0z8028n" isMarkerVisible="true">
+        <dc:Bounds x="575" y="525" width="50" height="50" />
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="WQuestionSide_di" bpmnElement="WQuestionSide" isExpanded="true" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
-        <dc:Bounds x="660" y="735" width="900" height="210" />
+        <dc:Bounds x="870" y="930" width="900" height="210" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="WQuestionStart_di" bpmnElement="WQuestionStart" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
-        <dc:Bounds x="720" y="812" width="36" height="36" />
+        <dc:Bounds x="930" y="1007" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="663" y="856" width="150" height="48" />
+          <dc:Bounds x="882" y="1051" width="133" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="WPublish_di" bpmnElement="WPublish" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
-        <dc:Bounds x="900" y="785" width="170" height="90" />
+        <dc:Bounds x="1110" y="980" width="170" height="90" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="WQuestionEnd_di" bpmnElement="WQuestionEnd" bioc:stroke="#14532d" bioc:fill="#dcfce7">
-        <dc:Bounds x="1250" y="812" width="36" height="36" />
+        <dc:Bounds x="1460" y="1007" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1193" y="856" width="150" height="48" />
+          <dc:Bounds x="1426" y="1051" width="105" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="W20_di" bpmnElement="W20">
-        <di:waypoint x="756" y="830" />
-        <di:waypoint x="900" y="830" />
+        <di:waypoint x="966" y="1025" />
+        <di:waypoint x="1110" y="1025" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="W21_di" bpmnElement="W21">
-        <di:waypoint x="1070" y="830" />
-        <di:waypoint x="1250" y="830" />
+        <di:waypoint x="1280" y="1025" />
+        <di:waypoint x="1460" y="1025" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="WRule_di" bpmnElement="WRule" bioc:stroke="#475569" bioc:fill="#ffffff">
-        <dc:Bounds x="90" y="1020" width="1390" height="130" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="W01_di" bpmnElement="W01">
-        <di:waypoint x="106" y="260" />
-        <di:waypoint x="180" y="260" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="W02_di" bpmnElement="W02">
-        <di:waypoint x="350" y="260" />
-        <di:waypoint x="440" y="260" />
+      <bpmndi:BPMNEdge id="Flow_1azuihh_di" bpmnElement="Flow_1azuihh">
+        <di:waypoint x="625" y="550" />
+        <di:waypoint x="730" y="550" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="W03_di" bpmnElement="W03">
-        <di:waypoint x="490" y="260" />
-        <di:waypoint x="560" y="260" />
-        <di:waypoint x="560" y="60" />
-        <di:waypoint x="660" y="60" />
+        <di:waypoint x="780" y="550" />
+        <di:waypoint x="850" y="550" />
+        <di:waypoint x="850" y="427" />
+        <di:waypoint x="941" y="427" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="W05_di" bpmnElement="W05">
-        <di:waypoint x="490" y="260" />
-        <di:waypoint x="560" y="260" />
-        <di:waypoint x="560" y="340" />
-        <di:waypoint x="660" y="340" />
+        <di:waypoint x="780" y="550" />
+        <di:waypoint x="850" y="550" />
+        <di:waypoint x="850" y="230" />
+        <di:waypoint x="941" y="230" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="W06_di" bpmnElement="W06">
-        <di:waypoint x="490" y="260" />
-        <di:waypoint x="560" y="260" />
-        <di:waypoint x="560" y="480" />
-        <di:waypoint x="660" y="480" />
+        <di:waypoint x="780" y="550" />
+        <di:waypoint x="850" y="550" />
+        <di:waypoint x="850" y="610" />
+        <di:waypoint x="935" y="610" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="W07_di" bpmnElement="W07">
-        <di:waypoint x="490" y="260" />
-        <di:waypoint x="560" y="260" />
-        <di:waypoint x="560" y="620" />
-        <di:waypoint x="660" y="620" />
+        <di:waypoint x="780" y="550" />
+        <di:waypoint x="850" y="550" />
+        <di:waypoint x="850" y="790" />
+        <di:waypoint x="935" y="790" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="W09_di" bpmnElement="W09">
-        <di:waypoint x="696" y="60" />
-        <di:waypoint x="900" y="60" />
+        <di:waypoint x="977" y="427" />
+        <di:waypoint x="1181" y="427" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="W10_di" bpmnElement="W10">
-        <di:waypoint x="1070" y="60" />
-        <di:waypoint x="1380" y="60" />
-        <di:waypoint x="1380" y="130" />
-        <di:waypoint x="1420" y="130" />
+        <di:waypoint x="1351" y="427" />
+        <di:waypoint x="1701" y="427" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="W14_di" bpmnElement="W14">
-        <di:waypoint x="696" y="340" />
-        <di:waypoint x="900" y="340" />
+        <di:waypoint x="977" y="230" />
+        <di:waypoint x="1190" y="230" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="W15_di" bpmnElement="W15">
-        <di:waypoint x="1070" y="340" />
-        <di:waypoint x="1110" y="340" />
-        <di:waypoint x="1110" y="395" />
-        <di:waypoint x="400" y="395" />
-        <di:waypoint x="400" y="260" />
-        <di:waypoint x="440" y="260" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="W16_di" bpmnElement="W16">
-        <di:waypoint x="696" y="480" />
-        <di:waypoint x="900" y="480" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="W17_di" bpmnElement="W17">
-        <di:waypoint x="1070" y="480" />
-        <di:waypoint x="1420" y="480" />
+        <di:waypoint x="1360" y="230" />
+        <di:waypoint x="1470" y="230" />
+        <di:waypoint x="1470" y="80" />
+        <di:waypoint x="600" y="80" />
+        <di:waypoint x="600" y="525" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="W18_di" bpmnElement="W18">
-        <di:waypoint x="696" y="620" />
-        <di:waypoint x="900" y="620" />
+        <di:waypoint x="971" y="790" />
+        <di:waypoint x="1175" y="790" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="W19_di" bpmnElement="W19">
-        <di:waypoint x="1070" y="620" />
-        <di:waypoint x="1420" y="620" />
+        <di:waypoint x="1345" y="790" />
+        <di:waypoint x="1695" y="790" />
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="W16_di" bpmnElement="W16">
+        <di:waypoint x="971" y="610" />
+        <di:waypoint x="1175" y="610" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="W17_di" bpmnElement="W17">
+        <di:waypoint x="1345" y="610" />
+        <di:waypoint x="1695" y="610" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="W01_di" bpmnElement="W01">
+        <di:waypoint x="231" y="550" />
+        <di:waypoint x="305" y="550" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="W02_di" bpmnElement="W02">
+        <di:waypoint x="475" y="550" />
+        <di:waypoint x="575" y="550" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="WRule_di" bpmnElement="WRule" bioc:stroke="#475569" bioc:fill="#ffffff">
+        <dc:Bounds x="240" y="870" width="600" height="100" />
+      </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>

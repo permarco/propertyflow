@@ -4,6 +4,75 @@
 ist der führende BPMN-Entwurf 0.35 zur gemeinsamen Besprechung, Stand 15.11.2026.
 Er enthält BPMN-Diagrammkoordinaten und kann im Camunda Modeler geöffnet werden.
 
+Die [Camunda Guidelines](../../specifications/CAMUNDA_GUIDELINES.md) bündeln die
+Projektregeln für Modellierung, Integration, Worker, Rechte und Prüfungen.
+
+## Regeln für die visuelle Überarbeitung
+
+**Vereinbart am 15.11.2026:** Die sieben Prozesse werden im Camunda Modeler
+visuell überarbeitet. Dabei bleibt die fachliche und technische Prozesssemantik
+unverändert. Die Modelle sind fachlich abgestimmte, statisch geprüfte Entwürfe;
+ausführbare Anbindung und Laufzeitnachweise unter B10 stehen noch aus.
+
+### Erlaubte Layoutänderungen
+
+- Elemente verschieben, ausrichten und ihre dargestellte Grösse anpassen.
+- Abstände, Linienführung und Knickpunkte verbessern, ohne Quelle oder Ziel
+  einer Verbindung zu ändern.
+- Beschriftungen verschieben und ihre Darstellungsbreite anpassen; reine
+  Zeilenumbrüche sind erlaubt, die inhaltliche Bedeutung bleibt erhalten.
+- Die unten dokumentierte Farbkonvention einheitlich beibehalten.
+
+### Unverändert lassen
+
+- Element- und Prozess-IDs, Elementtypen und die Aufteilung auf die sieben Dateien.
+- Verbindungen samt Quelle und Ziel, Standardpfade und Gateway-Bedingungen.
+- Prozesszugehörigkeit und Verschachtelung: Ein Element beim Verschieben nicht
+  versehentlich in einen anderen Teilprozess ziehen.
+- Randereignis-Zuordnung und unterbrechendes beziehungsweise nicht unterbrechendes
+  Verhalten; Ereignisarten, Nachrichten, Fehler, Eskalationen und Timerdefinitionen.
+- Call-Verweise, Variablen und Ein-/Ausgabezuordnungen, Jobtypen, technische
+  Erweiterungen und Ausführbarkeitseinstellungen.
+- Fachliche Beschriftungen, Dokumentation und vereinbarte Regeln. Inhaltliche
+  Korrekturen werden separat besprochen und nicht als Layoutänderung mitgeführt.
+
+### Zusammenarbeit und Prüfung
+
+Während der manuellen Layoutarbeit ändern Agenten keine BPMN-Dateien parallel.
+Dokumentationsarbeit ist möglich, sofern sie keine neuen Prozessänderungen
+vorwegnimmt. Die bestehenden Dateien bleiben die bearbeiteten Quellen; keine
+zweite Modellkopie als alternative Quelle anlegen.
+
+Nach Abschluss wird der Diff gegen den Stand vor der Layoutarbeit geprüft.
+Erwartet werden Darstellungsänderungen an BPMN-DI (Positionen, Grössen,
+Beschriftungspositionen und Linienpunkten) sowie gegebenenfalls Farbattribute
+und reine Zeilenumbrüche. Modeler-Metadaten oder XML-Neuformatierung werden
+gesondert eingeordnet, nicht ungeprüft als Logikänderung oder als harmlos gewertet.
+IDs, Flussziele, Scopes, Ereignisdefinitionen, Call-Verweise und technische
+Eigenschaften müssen semantisch unverändert sein.
+
+Alle sieben Dateien werden anschliessend auf XML-/Referenzkonsistenz sowie
+Modeler-Import und -Export geprüft und die Darstellung auf Lesbarkeit kontrolliert.
+Diese Prüfung ersetzt weder ein Camunda-Deployment noch Backend-Laufzeittests.
+
+## Farben im Camunda Modeler
+
+Alle sieben BPMN-Dateien verwenden dieselbe Task-Farbgebung. Die Farben dienen
+der Orientierung; sie ändern keine Prozesslogik und bezeichnen weder Fallstatus
+noch Dringlichkeit oder Berechtigungen. Massgebend bleiben BPMN-Typ und Symbol.
+
+| Farbe | BPMN-Typ | Bedeutung |
+|---|---|---|
+| Blau | Service Task (Zahnrad) | Automatische Verarbeitung durch einen Worker, etwa Prüfung, KI-Auswertung oder Speicherung. |
+| Orange | User Task (Person) | Aufgabe, die ein Mitarbeiter bearbeitet oder entscheidet. |
+| Violett | Call Activity (dicker Rahmen) | Aufruf eines separat modellierten Teilprozesses. |
+| Türkis | Send Task (Briefumschlag) | Versand-/Sendeauftrag gemäss dem jeweiligen Task-Vertrag. |
+
+Auch ein Service Task, der eine Mitarbeiterentscheidung prüft, bleibt blau:
+Die Entscheidung stammt vom Menschen, ihre technische Prüfung erfolgt automatisch.
+Ereignisse, Gateways und eingebettete Teilprozessrahmen behalten ihre bisherige
+Darstellung. Die Farbgebung ist eine PropertyFlow-Konvention, keine BPMN-Vorgabe.
+
 ## Dateien – hier bearbeiten
 
 | Datei | Inhalt / typische Änderung |
