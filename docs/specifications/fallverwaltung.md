@@ -251,7 +251,18 @@ Die Statusübernahme wird mit dem aktuellen Fallstand und Camunda abgestimmt. Ei
 
 ### Status nach manuellem Aufheben des Antwortbedarfs
 
-**Bestätigt am 10.10.2026:** Hebt ein Mitarbeiter den letzten offenen Mieterantwortbedarf über die UI3-Aktion «Antwortbedarf aufheben» auf, wechselt der aktive Fall auf «In Bearbeitung», sofern keine laufende Wiedervorlage und kein vorrangiger aktueller Mitarbeiterprüfbedarf bestehen. Eine laufende Wiedervorlage bleibt gemäss FALL-11 wirksam; vorrangiger Mitarbeiterprüfbedarf behält «Mitarbeiterprüfung erforderlich». Bereits durch eine bewusste Mitarbeiterentscheidung berücksichtigte Prüfgründe werden dabei nach FALL-06/FALL-11 nicht erneut als neuer Prüfbedarf behandelt.
+**Prozessfortsetzung bestätigt am 15.11.2026:** Der geprüfte Mitarbeiterauftrag
+weckt den aktuellen Mieterwartepfad ohne Mieternachricht oder neue KI-Analyse.
+Nach Aufhebung des letzten Antwortbedarfs folgt direkt die Mitarbeiterbearbeitung,
+sofern keine vorrangige Prüfung oder Wiedervorlage besteht. Teilaufhebung lässt
+den Wartepfad bestehen. Mitarbeiterprüfung und Wiedervorlage werden durch die
+Nebenaktion nicht beendet. Die eigenständige externe Wartephase nach FALL-12
+bleibt ebenfalls bestehen; der direkte Wechsel betrifft den Mieterwartepfad.
+Einzelheiten und geplante Konfliktprüfungen stehen in
+[KOM-03](fallkommunikation.md#prozesseingang-für-antwortbedarf-aufheben) und KOM-AK-29.
+
+
+**Bestätigt am 10.10.2026:** Hebt ein Mitarbeiter den letzten offenen Mieterantwortbedarf über die UI3-Aktion «Antwortbedarf aufheben» auf, wechselt der aktive Fall auf «In Bearbeitung», sofern keine laufende Wiedervorlage, externe Wartephase oder vorrangiger aktueller Mitarbeiterprüfbedarf bestehen. Eine laufende Wiedervorlage bleibt gemäss FALL-11 wirksam; vorrangiger Mitarbeiterprüfbedarf behält «Mitarbeiterprüfung erforderlich». Bereits durch eine bewusste Mitarbeiterentscheidung berücksichtigte Prüfgründe werden dabei nach FALL-06/FALL-11 nicht erneut als neuer Prüfbedarf behandelt.
 
 Besteht nach der Aufhebung weiterer Mieterantwortbedarf, löst die Aktion allein keinen Statuswechsel aus. Die Aufhebung schliesst den Fall nicht ab, bestätigt keine Behebung des Problems und gibt keine weiteren Massnahmen frei. Fallabschluss und Beantwortung durch den Mieter bleiben eigene Vorgänge. PropertyFlow prüft und speichert Antwortbedarf und einen daraus folgenden Statuswechsel konsistent auf dem aktuellen Fallstand und stimmt die Änderung mit Camunda ab. Es entsteht kein zusätzlicher Status. Die Kommunikationsregeln und Prüfkriterien stehen in KOM-03/KOM-AK-10.
 

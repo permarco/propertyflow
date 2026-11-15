@@ -266,6 +266,30 @@ Der Fall bleibt aktiv und bearbeitbar. Die Aufhebung ist kein Fallabschluss und 
 
 PropertyFlow prüft serverseitig die Berechtigung, den aktuellen Fall- und Antwortbedarf sowie die Zulässigkeit der Aktion im Fallprozess. Camunda veranlasst die Aufhebung und bestimmt einen allfälligen Statuswechsel nach [FALL-06](fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow). PropertyFlow speichert die Aufhebung mit Bezug zur Nachricht, Zeitpunkt und handelnder Mitarbeiteridentität. Mieter können die Aktion nicht ausführen. Nach Fallabschluss steht sie nicht mehr zur Verfügung. Dann gilt KOM-04. Wiederholungen erzeugen keine zusätzliche Aufhebung und verspätete Auswertungen setzen den aufgehobenen Antwortbedarf nicht wieder. Eine nicht bestätigte oder fehlgeschlagene Speicherung wird nicht als Erfolg dargestellt. Ungesendeter Text, die Auswahl «Intern» und «Mieterantwort erforderlich» sowie die laufende KI-Formulierung bleiben erhalten.
 
+### Prozesseingang für «Antwortbedarf aufheben»
+
+**Bestätigt am 15.11.2026:** Auslöser ist die bewusste Mitarbeiteraktion an einer
+veröffentlichten Rückfrage mit offenem Antwortbedarf. Der Dienst prüft Berechtigung
+und aktuellen Fallstand; Camunda verarbeitet den Auftrag unabhängig von einer
+neuen Mieternachricht oder KI-Auswertung. Die ursprüngliche Nachricht bleibt
+unverändert im Verlauf und wird nicht als beantwortet markiert.
+
+| Stand nach bestätigter Aufhebung | Fortsetzung |
+|---|---|
+| Weitere Rückfragen offen | Weiter warten; kein Statuswechsel durch die Aufhebung. |
+| Letzter Antwortbedarf im Mieterwartepfad aufgehoben, kein vorrangiger Prüfbedarf | Direkt «In Bearbeitung» und weitere Mitarbeiterbearbeitung; keine erneute KI-Analyse. |
+| Mitarbeiterprüfung aktiv oder vorrangiger aktueller Prüfbedarf | Bestehende Prüfung erhalten beziehungsweise notwendige Prüfung veranlassen; keine automatische Aufhebung des Prüfbedarfs. |
+| Wiedervorlage läuft | Wiedervorlage und Timer bleiben bestehen. |
+
+Die Aktion schliesst keinen Fall ab. Ein späteres KI-Ergebnis darf aufgehobenen
+Antwortbedarf nicht reaktivieren. Wiederholungen erzeugen weder eine zweite
+Aufhebung noch eine zweite Mitarbeiteraufgabe. Veraltete Aufträge nach Abschluss,
+Wiedereröffnung oder Wechsel des Warteaufrufs dürfen keine neue Bearbeitung
+unterbrechen. Entsteht vor der Fortsetzung neuer Antwortbedarf, wird der aktuelle
+Stand geprüft und gegebenenfalls weiter gewartet statt eine alte Freigabe zu verwenden.
+Der bestehende Mitarbeitereingang gilt auch ausserhalb des Mieterwartepfads als
+Nebenaktion; er beendet keine externe Wartephase nach FALL-12.
+
 ## KOM-04: Nachrichtensperre nach Fallabschluss
 
 **UI1-Präzisierung vom 13.10.2026:** Bei serverseitig bestätigt erkanntem Abschluss löscht die Mieteransicht ungesendeten Text und blendet die Eingabe aus; nach Wiedereröffnung erscheint sie leer. Netzwerkfehler allein lösen diese Löschung nicht aus. Gespeicherte Nachrichten bleiben erhalten. Die Mitarbeiteransicht UI3 behält dagegen ihre bisherigen Eingabe-/KI-Erhaltungsregeln. Details und Prüfkriterien stehen in [UI1](../frontend/ansicht-01-mieter-fallansicht.md#ungesendeter-mietertext-bei-abschluss).
@@ -639,6 +663,17 @@ Manuelles Nachfragen, bewusstes Aufheben des Antwortbedarfs und zulässiger
 Mitarbeiterabschluss bleiben möglich. Eine separat gesetzte Wiedervorlage wird
 weiterhin zum vereinbarten Termin fällig. Dies sind geplante Integrationsprüfungen,
 keine ausgeführten Laufzeittests.
+
+### KOM-AK-29: Mitarbeitergesteuerte Aufhebung im Prozess
+
+Ohne neue Mieternachricht und ohne KI-Ergebnis eine offene Rückfrage aufheben:
+bei verbleibenden Fragen weiter warten; bei letzter Frage direkt Mitarbeiter-
+bearbeitung ohne neue Analyse. Prüfung und Wiedervorlage jeweils unverändert
+fortführen. Nachricht bleibt erhalten, nicht als beantwortet markieren, kein
+Fallabschluss. Doppelte Aufträge, neue Fragen während Fortsetzung, alte
+KI-Ergebnisse und verspätete Aktionen nach Abschluss oder Wiedereröffnung prüfen:
+keine Reaktivierung, doppelte Aufgabe oder Überschreibung aktueller Entscheidungen.
+Dies sind geplante Integrationsprüfungen, keine ausgeführten Laufzeittests.
 
 ## Abgleich mit bestehenden Dokumenten
 

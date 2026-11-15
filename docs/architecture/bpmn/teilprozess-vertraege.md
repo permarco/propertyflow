@@ -260,3 +260,27 @@ verzögerter Verarbeitung nicht nachträglich als ungültige Eingabe behandelt.
 Eine abgelehnte neue Terminänderung darf die laufende Wartephase nicht beenden;
 sie muss vor Bestätigung/Korrelation der Änderung geprüft werden. Technische
 Koordination und Worker sind weiterhin nicht implementiert.
+
+## Mitarbeiterauftrag «Antwortbedarf aufheben» (0.19)
+
+`ClearAnswerSide` empfängt ausschliesslich serverseitig autorisierte Aufträge zur
+aktuellen führenden Instanz. Der Auftrag enthält Referenzen auf Rückfrage und
+geprüften Fallstand; keine frei wählbare Statusfreigabe. Nebenaktionsdaten bleiben
+lokal. Der Dienst speichert Aufhebung und Fortsetzungsnachweis idempotent und
+stellt den aktuellen Marker zuverlässig bereit. Teilaufhebung benötigt keinen
+Call-Abbruch. Laufende Mitarbeiterprüfung, Wiedervorlage oder externe Wartephase
+werden nicht unterbrochen.
+
+`clearedAnswerCallRef` und `activeReplyCallRef` sind fachliche Platzhalter für die
+Bindung an den aktuellen Mieterwarte-Call. Markerübergabe und Unterbrechung müssen
+vor ausführbarer Umsetzung gegen neue Fragen, Abschluss und Call-Wechsel abgesichert
+werden; eine nachträgliche Prüfung allein reicht nicht. Keine normalen Outputs
+vom abgebrochenen `Reply` erwarten. `ClearAnswerContinue` lädt stattdessen den
+persistierten Entscheid, prüft den aktuellen Stand und bereitet je nach Ergebnis
+`staffEntryContextRef` oder `replyEntryContextRef` vor. Ein inzwischen überholter
+Auftrag darf keine andere aktive Bearbeitung verdrängen.
+
+`SEntryCheck` akzeptiert den geprüften Aufhebungsentscheid ohne Prüfbedarf als
+weiteren Direkteintritt zu `SWork`, neben der Wiedereröffnung. Kein durch den
+Client wählbarer Direkteintritt; neuer Prüfbedarf bleibt vorrangig. Vorhandene
+Call-Rückgabewerte bleiben unverändert. Technische Realisierung noch offen.

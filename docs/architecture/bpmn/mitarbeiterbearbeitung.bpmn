@@ -151,7 +151,7 @@ FALL-11 Zeile 5: Dieselbe Erledigungs- und Prüfzuordnung wie Timerweg WClearTim
     </bpmn:subProcess>
     <bpmn:serviceTask id="SEntryCheck" name="Eintritt prüfen&#10;Fallstand laden">
       <bpmn:documentation>
-Kindinstanz und Call-Bezug aus Engine-Metadaten zur aktuellen führenden Instanz prüfen/registrieren und aktuellen Fallstand laden. Nur geprüfter entryContextRef eines erfolgreichen Wiedereröffnungsauftrags ohne offenen Prüfbedarf erlaubt direkten Eintritt in SWork. Sonst reguläre Mitarbeiterprüfung; neue Prüfgründe haben Vorrang. Ungültige oder überholte Generation nicht weiterbearbeiten. Keine führende Zuordnung durch diesen Kindprozess. Technische Umsetzung bleibt offen.</bpmn:documentation>
+Kindinstanz und Call-Bezug aus Engine-Metadaten zur aktuellen führenden Instanz prüfen/registrieren und aktuellen Fallstand laden. Nur geprüfter entryContextRef eines erfolgreichen Wiedereröffnungsauftrags oder der bewussten Aufhebung des letzten Antwortbedarfs ohne offenen Prüfbedarf erlaubt direkten Eintritt in SWork. Sonst reguläre Mitarbeiterprüfung; neue Prüfgründe haben Vorrang. Ungültige oder überholte Generation nicht weiterbearbeiten. Keine führende Zuordnung durch diesen Kindprozess. Technische Umsetzung bleibt offen.</bpmn:documentation>
       <bpmn:incoming>S01</bpmn:incoming>
       <bpmn:outgoing>S_EntryChecked</bpmn:outgoing>
     </bpmn:serviceTask>
@@ -162,7 +162,7 @@ Kindinstanz und Call-Bezug aus Engine-Metadaten zur aktuellen führenden Instanz
     </bpmn:exclusiveGateway>
     <bpmn:sequenceFlow id="S_EntryChecked" name="" sourceRef="SEntryCheck" targetRef="SEntryRoute" />
     <bpmn:sequenceFlow id="S_EntryReview" name="Ja / regulärer Eintritt" sourceRef="SEntryRoute" targetRef="SReviewStatus" />
-    <bpmn:sequenceFlow id="S_EntryWork" name="Wiedereröffnet ohne Prüfbedarf" sourceRef="SEntryRoute" targetRef="SWork" />
+    <bpmn:sequenceFlow id="S_EntryWork" name="Geprüfter Direkteintritt ohne Prüfbedarf" sourceRef="SEntryRoute" targetRef="SWork" />
     <bpmn:serviceTask id="SExternalStatus" name="Status speichern:&#10;Wartet auf externe Rückmeldung">
       <bpmn:documentation>
 FALL-12: Nur bewusste berechtigte Aktion aus In Bearbeitung, aktuelle User Task, Fallversion und führende Instanz prüfen. Keine externe Beauftragung oder Kommunikationsnachricht durch diese Aktion; bestehende Statusbenachrichtigungen nach BEN-01 bleiben unberührt. Memo optional und separat. Neuen zwingenden Prüfbedarf nicht überschreiben. Auftrag und Wartephase idempotent binden; technische Konfliktkoordination vor Ausführung festlegen.</bpmn:documentation>

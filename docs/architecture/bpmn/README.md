@@ -1,7 +1,7 @@
 # PropertyFlow-Fallprozess
 
 [propertyflow-fallprozess-entwurf.bpmn](propertyflow-fallprozess-entwurf.bpmn)
-ist der führende BPMN-Entwurf 0.15 zur gemeinsamen Besprechung, Stand 15.11.2026.
+ist der führende BPMN-Entwurf 0.19 zur gemeinsamen Besprechung, Stand 15.11.2026.
 Er enthält BPMN-Diagrammkoordinaten und kann im Camunda Modeler geöffnet werden.
 
 ## Dateien – hier bearbeiten
@@ -563,3 +563,19 @@ und Antwortbedarf bestehen. Manuelle Aktionen folgen den bisherigen Regeln;
 der separate Wiedervorlage-Timer bleibt unverändert. Siehe
 [KOM-03](../../specifications/fallkommunikation.md#ausbleibende-mieterantwort-in-version-1)
 und KOM-AK-28. Nur Fachentwurf, keine Backend-Implementierung.
+
+## Antwortbedarf aufheben · Entwurf 0.19
+
+Im Hauptmodell «Aktiven Fall bearbeiten» liegt der nicht unterbrechende
+Mitarbeitereingang `ClearAnswerSide`. Er prüft und speichert die gezielte Aufhebung.
+Bei verbleibenden Fragen oder laufender Prüfung/Wiedervorlage bleibt der Hauptpfad
+bestehen. Nur die letzte Aufhebung im aktuellen Mieterwartepfad aktiviert den
+Randpfad `ReplyCleared` am Call `Reply`. `ClearAnswerContinue` prüft erneut den
+aktuellen Stand und bereitet die Fortsetzung vor: direkt `Staff`/`SWork` ohne
+KI-Analyse, bei Prüfbedarf reguläre Prüfung oder bei neuen Fragen wieder `Reply`.
+Die externe Wartephase wird durch die Nebenaktion ebenfalls nicht beendet.
+
+Keine Änderung der ursprünglichen Nachricht, keine erfundene Antwort und kein
+Fallabschluss. Die Diagramme zeigen die Fachfortsetzung; sichere Markerübergabe,
+Versionsbindung, Autorisierung und Worker bleiben zu implementieren. Quelle:
+[KOM-03](../../specifications/fallkommunikation.md#prozesseingang-für-antwortbedarf-aufheben).

@@ -1,5 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_PropertyFlow_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+<bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_PropertyFlow_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+  <bpmn:message id="Message_ClearAnswer" name="Antwortbedarf aufheben angefordert" />
   <bpmn:error id="Error_ReopenRejected" name="Wiedereröffnung abgelehnt" errorCode="REOPEN_REJECTED" />
   <bpmn:error id="Error_ClosureMessageInvalid" name="LLM-Nachricht inhaltlich unzulässig" errorCode="CLOSURE_MESSAGE_INVALID" />
   <bpmn:error id="Error_AutoClosureStale" name="Automatischer Abschluss veraltet" errorCode="AUTO_CLOSURE_STALE" />
@@ -16,7 +17,7 @@
   <bpmn:error id="Error_AnalysisStale" name="Analysegrundlage überholt" errorCode="ANALYSIS_BASIS_STALE">
     <bpmn:documentation>Fachlicher Platzhalter für Zeilen 1 und 3: Die Auswertung enthält neue relevante gespeicherte Mieternachrichten noch nicht. In Validate führt der Konflikt zur aktuellen Analysegrundlage; in RValidate zur aktuellen Antwortauswertung. Kein technischer Jobfehler und kein Analysefehler. Meldung durch den späteren Prüfdienst, nicht automatisch durch blossen Nachrichteneingang. Keine zweite unabhängige Verarbeitung; aktuelle Mitarbeiterentscheidung und Abschluss schützen. Keine Ausführungsimplementierung.</bpmn:documentation>
   </bpmn:error>
-  <bpmn:process id="PropertyFlow_Case_Draft" name="PropertyFlow · Fallprozess · Fachentwurf 0.15" isExecutable="false">
+  <bpmn:process id="PropertyFlow_Case_Draft" name="PropertyFlow · Fallprozess · Fachentwurf 0.19" isExecutable="false">
     <bpmn:documentation>Fachentwurf 0.13, nicht ausführbar. Individuelle LLM-Nachricht im AutoAnswer-Worker erzeugen, prüfen, speichern und Versand beauftragen; danach Close. Kein Vorlagenkatalog, keine zusätzliche Abschlussmail. Mitarbeiterabschluss ohne Nachricht. Menschliche Priorität, Aktualität, Rückfragen, Wiedervorlage und bisherige Konfliktrückwege bleiben. Technische Fehler: Job-Retries/Incidents. Start-/Kindinstanz-Verträge weiterhin vor Ausführung konkretisieren; keine Backend-Implementierung.
 Fachentwurf 0.15: Wiedereröffnung startet eine neue Instanz für denselben Fall; direkter Mitarbeiterpfad gemäss FALL-07. Keine Backend-Implementierung.</bpmn:documentation>
     <bpmn:subProcess id="ActiveCase" name="Aktiven Fall bearbeiten">
@@ -120,6 +121,7 @@ Ruft mieterantwort-pruefen.bpmn auf. Vertrag: teilprozess-vertraege.md. Untergeo
         <bpmn:incoming>F17</bpmn:incoming>
         <bpmn:incoming>F19</bpmn:incoming>
         <bpmn:incoming>F_RefreshWait</bpmn:incoming>
+        <bpmn:incoming>CA06</bpmn:incoming>
         <bpmn:outgoing>F09</bpmn:outgoing>
       </bpmn:callActivity>
       <bpmn:exclusiveGateway id="ReplyRoute" name="Ergebnis der Antwortprüfung" default="F21">
@@ -161,7 +163,8 @@ Vereinfachter Stand: Der Abschluss erzeugt keine Nachricht und keinen Versandauf
       </bpmn:boundaryEvent>
       <bpmn:callActivity id="Staff" name="Mitarbeiterprüfung&#10;und weitere Bearbeitung">
         <bpmn:documentation>
-Ruft mitarbeiterbearbeitung.bpmn auf. Vertrag: teilprozess-vertraege.md. Untergeordnete Instanz mit eigenem Scope; führende Fallzuordnung bleibt im Hauptprozess. Eingangsreferenz vor Aktivierung bereitstellen. Nur explizite Outputs übernehmen; aktueller Fallstand bleibt vor Wirkung zu prüfen.</bpmn:documentation>
+Ruft mitarbeiterbearbeitung.bpmn auf. Vertrag: teilprozess-vertraege.md. Untergeordnete Instanz mit eigenem Scope; führende Fallzuordnung bleibt im Hauptprozess. Eingangsreferenz vor Aktivierung bereitstellen. Nur explizite Outputs übernehmen; aktueller Fallstand bleibt vor Wirkung zu prüfen.
+0.19: Geprüfter Eintritt nach manueller Aufhebung des letzten Antwortbedarfs ohne Prüfbedarf führt direkt zu SWork. entryContextRef wird durch ClearAnswerContinue serverseitig bereitgestellt; mit Prüfbedarf regulärer Review-Eintritt.</bpmn:documentation>
         <bpmn:extensionElements>
           <zeebe:calledElement processId="PropertyFlow_Staff_Draft" bindingType="deployment" propagateAllParentVariables="false" propagateAllChildVariables="true" />
           <zeebe:ioMapping>
@@ -178,6 +181,7 @@ Ruft mitarbeiterbearbeitung.bpmn auf. Vertrag: teilprozess-vertraege.md. Unterge
         <bpmn:incoming>F_CloseConflict_Staff</bpmn:incoming>
         <bpmn:incoming>F_MessageInvalid_Staff</bpmn:incoming>
         <bpmn:incoming>F_Reopen_Staff</bpmn:incoming>
+        <bpmn:incoming>CA05</bpmn:incoming>
         <bpmn:outgoing>F15</bpmn:outgoing>
       </bpmn:callActivity>
       <bpmn:exclusiveGateway id="StaffRoute" name="Fortsetzung">
@@ -298,8 +302,50 @@ FALL-07 / ADR-002 Ergänzung 15.11.2026: Autorisierten Wiedereröffnungsauftrag,
         <bpmn:terminateEventDefinition id="ReopenRejectedEnd_definition" />
       </bpmn:endEvent>
       <bpmn:sequenceFlow id="F_ReopenRejected" name="" sourceRef="ReopenRejected" targetRef="ReopenRejectedEnd" />
+      <bpmn:subProcess id="ClearAnswerSide" name="Mitarbeiteraktion: Antwortbedarf aufheben" triggeredByEvent="true">
+        <bpmn:documentation>
+Nicht unterbrechender Mitarbeitereingang in jeder aktiven Phase. Keine Mieternachricht und keine KI-Auswertung erforderlich. Lokale Auftragsdaten; keine pauschale Überschreibung von Hauptpfadvariablen. Nach Fallabschluss keine neuen Wirkungen.</bpmn:documentation>
+        <bpmn:startEvent id="ClearAnswerStart" name="Geprüfter Mitarbeiterauftrag" isInterrupting="false">
+          <bpmn:outgoing>CA01</bpmn:outgoing>
+          <bpmn:messageEventDefinition id="ClearAnswerStart_definition" messageRef="Message_ClearAnswer" />
+        </bpmn:startEvent>
+        <bpmn:serviceTask id="ClearAnswerApply" name="Antwortbedarf geprüft aufheben&#10;Fortsetzung bereitstellen">
+          <bpmn:documentation>
+KOM-03: Berechtigung, aktuellen Fall, Nachricht, Antwortbedarf, führende Instanz und Auftragsversion prüfen. Nur gezielten Bedarf idempotent aufheben, Nachricht erhalten und nicht als beantwortet markieren. Weitere offene Fragen: keine Statusänderung. Laufende Mitarbeiterprüfung, Wiedervorlage und externe Wartephase erhalten. Nur beim aktuellen Reply-Aufruf und letztem aufgehobenen Bedarf den geprüften Fortsetzungsmarker mit Call-Bezug dauerhaft bereitstellen. Bereits bestehende Prüfgründe haben Vorrang. Neue Fragen und konkurrierende Entscheidungen dürfen nicht überschrieben werden. Abgelehnte oder veraltete Aktionen bleiben ohne Wirkung; technische Fehler Retry/Incident. Speicherung und Markerzustellung müssen wiederholbar ohne Lücke sein. Keine direkte User-Task-Erledigung.</bpmn:documentation>
+          <bpmn:incoming>CA01</bpmn:incoming>
+          <bpmn:outgoing>CA02</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:endEvent id="ClearAnswerEnd" name="Nur Nebenaktion beendet">
+          <bpmn:incoming>CA02</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="CA01" name="" sourceRef="ClearAnswerStart" targetRef="ClearAnswerApply" />
+        <bpmn:sequenceFlow id="CA02" name="" sourceRef="ClearAnswerApply" targetRef="ClearAnswerEnd" />
+      </bpmn:subProcess>
+      <bpmn:boundaryEvent id="ReplyCleared" name="Letzter Antwortbedarf&#10;aufgehoben" attachedToRef="Reply" cancelActivity="true">
+        <bpmn:documentation>
+Nur aktuell freigegebenen Aufhebungsmarker zum aktiven Reply-Call verwenden. Teilaufhebung unterbricht den Call nicht. Marker und Unterbrechung vor Ausführung mit neuen Fragen, Mitarbeiterentscheidung, Fallabschluss und Call-Wechsel koordinieren; alte Marker niemals auf neuere Calls anwenden. Kein normaler Output des abgebrochenen Calls.</bpmn:documentation>
+        <bpmn:outgoing>CA03</bpmn:outgoing>
+        <bpmn:conditionalEventDefinition id="ReplyCleared_definition">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">= clearedAnswerCallRef != null and clearedAnswerCallRef = activeReplyCallRef</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:serviceTask id="ClearAnswerContinue" name="Aktuelle Fortsetzung prüfen&#10;Mitarbeitereintritt vorbereiten">
+        <bpmn:documentation>
+Dauerhaften Aufhebungsentscheid und aktuellen Fall-/Call-Stand laden, nicht auf Outputs des abgebrochenen Calls warten. Ohne offenen Antwortbedarf und ohne vorrangigen Prüfbedarf In Bearbeitung konsistent speichern und staffEntryContextRef für direkten SWork-Eintritt bereitstellen. Bei aktuellem Prüfbedarf Kontext für Mitarbeiterprüfung setzen. Bei inzwischen neuen offenen Fragen ohne Prüfbedarf aktuellen Reply-Kontext bereitstellen und weiter warten. Bestehende Mitarbeiter-/Wiedervorlageinstanz nicht duplizieren; überholte Aufträge dürfen keine neuere Bearbeitung verdrängen. Keine erneute KI-Analyse, keine Abschlussfreigabe. Technische Konfliktkoordination bleibt offen.</bpmn:documentation>
+        <bpmn:incoming>CA03</bpmn:incoming>
+        <bpmn:outgoing>CA04</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:exclusiveGateway id="ClearAnswerRoute" name="Aktueller&#10;Fortsetzungsweg">
+        <bpmn:incoming>CA04</bpmn:incoming>
+        <bpmn:outgoing>CA05</bpmn:outgoing>
+        <bpmn:outgoing>CA06</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+      <bpmn:sequenceFlow id="CA03" name="" sourceRef="ReplyCleared" targetRef="ClearAnswerContinue" />
+      <bpmn:sequenceFlow id="CA04" name="" sourceRef="ClearAnswerContinue" targetRef="ClearAnswerRoute" />
+      <bpmn:sequenceFlow id="CA05" name="In Bearbeitung / vorrangige Prüfung" sourceRef="ClearAnswerRoute" targetRef="Staff" />
+      <bpmn:sequenceFlow id="CA06" name="Neue offene Fragen; weiter warten" sourceRef="ClearAnswerRoute" targetRef="Reply" />
       <bpmn:textAnnotation id="MainDraft">
-        <bpmn:text>FACHENTWURF 0.15 · 15.11.2026
+        <bpmn:text>FACHENTWURF 0.19 · 15.11.2026
 Nicht ausführbar / kein Deployment.
 Bisheriger Hauptablauf in «Aktiven Fall bearbeiten».
 Nachrichteneingang oben links separat öffnen.</bpmn:text>
@@ -361,7 +407,7 @@ Startart und Auftragsreferenz aus einem serverseitig autorisierten Startauftrag 
     <bpmn:sequenceFlow id="P01" sourceRef="ProcessStart" targetRef="PrepareProcessKey" />
     <bpmn:sequenceFlow id="P02" sourceRef="PrepareProcessKey" targetRef="ActiveCase" />
     <bpmn:textAnnotation id="ProcessScopeNote">
-      <bpmn:text>FACHENTWURF 0.15 · nicht ausführbar
+      <bpmn:text>FACHENTWURF 0.19 · nicht ausführbar
 Im Teilprozess «Aktiven Fall bearbeiten» liegen der bisherige Hauptablauf
 und der durchgängige Mieternachrichteneingang.
 Empfang vor fachlicher Aktivierung; Ende erst nach gespeichertem Abschluss.
@@ -758,6 +804,60 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
       <bpmndi:BPMNEdge id="F_ReopenRejected_di" bpmnElement="F_ReopenRejected">
         <di:waypoint x="-400" y="438" />
         <di:waypoint x="-400" y="510" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ClearAnswerSide_di" bpmnElement="ClearAnswerSide" isExpanded="true">
+        <dc:Bounds x="200" y="1180" width="950" height="210" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ClearAnswerStart_di" bpmnElement="ClearAnswerStart">
+        <dc:Bounds x="250" y="1270" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ClearAnswerApply_di" bpmnElement="ClearAnswerApply">
+        <dc:Bounds x="420" y="1240" width="400" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ClearAnswerEnd_di" bpmnElement="ClearAnswerEnd">
+        <dc:Bounds x="1000" y="1270" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="CA01_di" bpmnElement="CA01">
+        <di:waypoint x="286" y="1288" />
+        <di:waypoint x="420" y="1288" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="CA02_di" bpmnElement="CA02">
+        <di:waypoint x="820" y="1288" />
+        <di:waypoint x="1000" y="1288" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ReplyCleared_di" bpmnElement="ReplyCleared">
+        <dc:Bounds x="1937.0" y="537.0" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ClearAnswerContinue_di" bpmnElement="ClearAnswerContinue">
+        <dc:Bounds x="1700" y="1120" width="280" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ClearAnswerRoute_di" bpmnElement="ClearAnswerRoute">
+        <dc:Bounds x="2050" y="1145" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="CA03_di" bpmnElement="CA03">
+        <di:waypoint x="1955.0" y="573.0" />
+        <di:waypoint x="1955.0" y="1080" />
+        <di:waypoint x="1840" y="1080" />
+        <di:waypoint x="1840" y="1120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="CA04_di" bpmnElement="CA04">
+        <di:waypoint x="1980" y="1170" />
+        <di:waypoint x="2050" y="1170" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="CA05_di" bpmnElement="CA05">
+        <di:waypoint x="2075" y="1195" />
+        <di:waypoint x="2075" y="1460" />
+        <di:waypoint x="2960" y="1460" />
+        <di:waypoint x="2960" y="-80" />
+        <di:waypoint x="1595" y="-80" />
+        <di:waypoint x="1595" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="CA06_di" bpmnElement="CA06">
+        <di:waypoint x="2100" y="1170" />
+        <di:waypoint x="2860" y="1170" />
+        <di:waypoint x="2860" y="415.0" />
+        <di:waypoint x="2020.0" y="415.0" />
+        <di:waypoint x="2020.0" y="465.0" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
