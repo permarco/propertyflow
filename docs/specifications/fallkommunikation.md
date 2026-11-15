@@ -290,6 +290,43 @@ Stand geprüft und gegebenenfalls weiter gewartet statt eine alte Freigabe zu ve
 Der bestehende Mitarbeitereingang gilt auch ausserhalb des Mieterwartepfads als
 Nebenaktion; er beendet keine externe Wartephase nach FALL-12.
 
+### Manuelles Nachfragen während «Wartet auf Mieterantwort»
+
+**Bestätigt am 15.11.2026 – B02.1:** Der Mitarbeiter verwendet die bestehende
+Nachrichtenfunktion im Falldetail. Er schreibt den Text und setzt für eine
+Rückfrage «Mieterantwort erforderlich». Es gibt keinen zusätzlichen Nachfragen-Button.
+
+Der Dienst prüft Berechtigung, aktuellen Fallstand und den laufenden Mieterwarteaufruf.
+Nachricht, optionaler Antwortbedarf und Mailpflicht werden konsistent gespeichert.
+Camunda beauftragt den Mail-Worker über den bestehenden Versandprozess; die
+Mieterwartephase wartet nicht auf SMTP. Der Sendeweg ist eine nicht unterbrechende
+Nebenaktion: Status und bestehender Reply-Aufruf bleiben erhalten, es entsteht
+kein zweiter Warteprozess und keine User Task wird abgeschlossen.
+
+- Mit Antwortbedarf entsteht eine zusätzliche offene Rückfrage. Bestehende Fragen
+  werden weder erledigt noch ersetzt. Ohne Antwortbedarf entsteht nur eine
+  Informationsnachricht; bestehende Antwortbedarfe bleiben unverändert.
+- Eine spätere Mieterantwort wird über den bestehenden zentralen Eingang ausgewertet.
+  Der Antwortpfad prüft, welche offenen Fragen beantwortet sind. Läuft bereits eine
+  Auswertung, muss sie neuen gespeicherten Antwortbedarf vor Fortsetzung berücksichtigen;
+  eine alte Freigabe darf ihn nicht übergehen. Senden allein erzeugt keine Mieterantwort.
+- Wurde der Fall inzwischen weitergeführt oder abgeschlossen, wird ein alter,
+  unveröffentlichter Sendeauftrag ohne Wirkung abgelehnt; der Text bleibt für den
+  Mitarbeiter erhalten. Auch andere relevante Versionskonflikte verlangen Prüfung
+  des aktuellen Stands. Keine stillschweigende Umleitung in eine andere Phase.
+- Eine Wiederholung desselben erfolgreichen Auftrags erzeugt weder eine doppelte
+  Nachricht noch eine zweite Mailpflicht. Bereits gespeicherte Nachrichten und
+  Versandpflichten bleiben bei späterer Fortsetzung bestehen.
+- Version 1 erkennt nicht automatisch inhaltlich gleiche Rückfragen. Bewusst erneut
+  gesendeter Text mit neuer Operationskennung ist eine neue Nachricht; mit gesetztem
+  Antwortbedarf eine zusätzliche offene Rückfrage. Technische Wiederholung verwendet
+  dagegen dieselbe Operationskennung und bleibt ohne doppelte Wirkung.
+
+Im BPMN bildet `RStaffMessageSide` diese Nebenaktion innerhalb der Mieterantwort-
+Kindinstanz ab. Ihre eigenen Auftragsdaten dürfen keine Hauptpfad-Ergebnisse
+überschreiben. Technische Fehler folgen Retry/Incident. Autorisierung und
+zuverlässige Korrelation mit dem tatsächlichen aktuellen Call sind noch umzusetzen.
+
 ## KOM-04: Nachrichtensperre nach Fallabschluss
 
 **UI1-Präzisierung vom 13.10.2026:** Bei serverseitig bestätigt erkanntem Abschluss löscht die Mieteransicht ungesendeten Text und blendet die Eingabe aus; nach Wiedereröffnung erscheint sie leer. Netzwerkfehler allein lösen diese Löschung nicht aus. Gespeicherte Nachrichten bleiben erhalten. Die Mitarbeiteransicht UI3 behält dagegen ihre bisherigen Eingabe-/KI-Erhaltungsregeln. Details und Prüfkriterien stehen in [UI1](../frontend/ansicht-01-mieter-fallansicht.md#ungesendeter-mietertext-bei-abschluss).
@@ -716,3 +753,73 @@ Die verbindlichen Status-, Fortsetzungs- und Konfliktregeln stehen zentral in
 [FALL-12](fallverwaltung.md#fall-12-warten-auf-externe-rückmeldung);
 geplante Prüffälle: FALL-AK-39. `SMessageSide` prüft dafür die aktuelle
 `SExternalWait`-Zuordnung statt einer offenen `SReview`-Aufgabe.
+
+### KOM-AK-30: Manuelles Nachfragen im bestehenden Mieterwartepfad
+
+Geplante Prüfungen; keine ausgeführten Laufzeitnachweise:
+
+- Rückfrage senden: Nachricht, neuer Antwortbedarf und Mailpflicht einmal speichern;
+  Status und derselbe Reply-Aufruf bleiben bestehen, alte Fragen bleiben offen.
+- Information ohne Antwortbedarf senden: kein neuer Bedarf, alte Fragen unverändert.
+- Mieterantwort danach: bestehender Auswertungsweg berücksichtigt alle offenen Fragen.
+  Neue Mitarbeiterrückfrage während Auswertung verhindert Fortsetzung auf alter Grundlage.
+- Konkurrierende Fortsetzung/Abschluss oder veraltete Fallversion: unveröffentlichten
+  Auftrag ablehnen, Mitarbeitereingabe erhalten, keine Nachricht/Mailpflicht speichern.
+- Erfolgreichen Auftrag wiederholen, auch nach Fortsetzung: keine doppelte Nachricht
+  oder Mailpflicht. Bewusst neuer Auftrag mit gleichem Text ist dagegen eine neue Nachricht.
+- Unberechtigter, falscher oder alter Call-/Durchlaufbezug wird abgewiesen; keine
+  User-Task-Completion und keine Wiederbelebung eines beendeten Warteaufrufs.
+- Technischen Fehler wiederholen und bereits gespeicherten Versand zuverlässig
+  nachholen; Nebenaktion überschreibt keine outcome-/decisionRef-Variablen.
+
+### Reine Informationsnachrichten über bestehende Sendewege (0.33)
+
+**Bestätigt am 15.11.2026 – B02.2:** Die bestehende Nachrichtenfunktion veröffentlicht
+externe Informationen ohne neuen Antwortbedarf als Nebenaktion in allen aktiven
+Status. Kein neuer Button oder zusätzlicher grosser Teilprozess. Die zentrale
+Freigabe «Daten ergänzen» in FALL-06 bleibt massgebend.
+
+| Phase | Anbindung | Wirkung |
+|---|---|---|
+| In Abklärung | StaffQuestionSide: nach Speicherung zwischen Information und Rückfrage unterscheiden | Information endet ohne Automatik-Ablösung; nur Rückfrage mit Antwortbedarf verwendet den bestehenden Übergang 29. |
+| In Bearbeitung | SMessageSide für die aktuelle SWork-Aufgabe erweitern | Nur Information ohne neuen Antwortbedarf über diesen Nebenweg; dieselbe Aufgabe bleibt offen. Rückfrage bleibt bewusste Fortsetzung über SQuestion. |
+| Wartet auf Wiedervorlage | WQuestionSide für Information und Rückfrage verwenden | Termin, Terminversion, Timer und Wartephase bleiben bestehen. |
+| Mitarbeiterprüfung / externe Wartephase | Bestehendes SMessageSide | Bestehende Freigaben unverändert. |
+| Wartet auf Mieterantwort | RStaffMessageSide gemäss KOM-AK-30 | Bestehender Warteaufruf und Antwortbedarfe bleiben erhalten. |
+
+Berechtigung, bestätigter Fallstand und aktueller Prozess-/Call-/Aufgabenbezug
+werden vor Veröffentlichung serverseitig geprüft. Nachricht und Mailpflicht
+werden gemeinsam gespeichert; Camunda beauftragt den Versand über den bestehenden
+Mailprozess. Es wird kein neuer Antwortbedarf angelegt, kein alter Bedarf erledigt
+und keine User Task oder Wartephase durch Informationsversand beendet.
+
+Ein veralteter unveröffentlichter Auftrag wird ohne Wirkung abgelehnt; Eingabe
+bleibt erhalten. Erfolgreiche Wiederholung erzeugt keine zweite Nachricht oder
+Mailpflicht. Bereits gespeicherte Nachrichten und Versandpflichten bleiben bei
+späterer Fortsetzung bestehen. Technische Fehler folgen Retry/Incident.
+
+Während der Abklärung darf ein altes KI-Ergebnis eine relevante neue Information
+nicht ignorieren. Der bestehende Aktualitätsschutz prüft die Grundlage vor Wirkung;
+das Senden allein unterbricht die Automatik nicht. Neuer zwingender Prüfbedarf
+wird weiterhin über seinen eigenen Eingang verarbeitet. Eine Information ist
+keine automatische Freigabe von Prüfung, Kosten, Auftrag oder Abschluss.
+
+### KOM-AK-31: Statusneutraler Informationsversand
+
+Geplante Laufzeitprüfungen, keine ausgeführten Nachweise:
+
+- In Abklärung Information senden: Nachricht/Mailpflicht gespeichert, kein neuer
+  Antwortbedarf, kein Ablösemarker, Automatik und Status bleiben bestehen.
+  Rückfrage mit Antwortbedarf verwendet weiterhin den geschützten Übergang 29.
+- Relevante Information während KI-Auswertung speichern: alte Grundlage darf
+  keine nachfolgende Veröffentlichung oder Abschlussentscheidung autorisieren.
+- In Bearbeitung Information über SMessageSide senden: gleiche offene SWork-Aufgabe.
+  Rückfrage mit Antwortbedarf über diesen Nebenweg ablehnen; bestehender SQuestion-
+  Fortsetzungsweg bleibt zulässig und darf nicht statusneutral umgangen werden.
+- Während Wiedervorlage Information senden: Termin, Terminversion und Timer unverändert;
+  bestehende Rückfragen bleiben offen. Rückfrage mit Bedarf weiterhin ohne Timeränderung.
+- Berechtigungen, Phasen-/Versionskonflikte und konkurrierenden Abschluss/Timer prüfen:
+  unveröffentlichte alte Aufträge ohne Wirkung ablehnen und Eingabe erhalten.
+- Erfolgreichen Auftrag wiederholen: keine zweite Nachricht/Mailpflicht. Bereits
+  gespeicherten Versand nach Phasenwechsel zuverlässig fortsetzen. Keine Änderung
+  der Hauptpfadvariablen und kein neuer Warteprozess durch die Nebenaktion.

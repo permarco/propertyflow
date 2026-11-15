@@ -6,7 +6,7 @@
 **Primary Actor:** Berechtigter Mitarbeiter der Immobilienverwaltung  
 **Supporting Actor:** Camunda-Fallprozess\
 **Goal:** Über eine fachlich kritische Handlung entscheiden und die Entscheidung am konkreten Fall nachvollziehbar festhalten.  
-**Status:** Entscheidungsgrenzen und [HTTP-Zielvertrag](../architecture/openapi/fallannahme.yaml) beschrieben. Bedienung, BPMN-Modell und Umsetzung stehen aus.
+**Status:** Entscheidungsgrenzen und [HTTP-Zielvertrag](../architecture/openapi/propertyflow-web.yaml) beschrieben. Bedienung, BPMN-Modell und Umsetzung stehen aus.
 
 ## Use-Case-Diagramm
 

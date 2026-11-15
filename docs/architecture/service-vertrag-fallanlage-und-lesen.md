@@ -17,7 +17,7 @@ Der Gesamtumfang dieses Dokuments ist:
 
 Nicht enthalten: Falllisten/Suche, neue Nachrichten, Mitarbeiter-Schreibaktionen, vollständiger OAuth-Aufbau, KI-Anbindung und ausführbares BPMN. Diese folgen als eigene Abschnitte. Der Startauftrag wird jetzt dauerhaft gespeichert; er wird bis zur abgestimmten Camunda-Implementierung nicht abgearbeitet. Niemand setzt deshalb eigenständig „In Bearbeitung“ oder „In Abklärung“.
 
-Es gelten der vorhandene [HTTP-Vertrag](openapi/fallannahme.yaml), [SS-004](schnittstellenentwurf-block-3.md#ss-004--mcp-werkzeug-fallstand-abrufen), [FALL-02/03](../specifications/fallverwaltung.md), [ZUG](../specifications/fallzugriff-und-sicherheit.md) und [ADR-004](adr/ADR-004-tokenbasierter-mieterzugriff.md). Insbesondere bleibt die Gastanlage zulässig; ein Login wird nicht neu erzwungen. Die Originalangabe `unit` ist Freitext/Referenz aus dem Formular, keine neue Pflicht zu einer existierenden Fremdschlüssel-ID.
+Es gelten der vorhandene [HTTP-Vertrag](openapi/propertyflow-web.yaml), [SS-004](schnittstellenentwurf-block-3.md#ss-004--mcp-werkzeug-fallstand-abrufen), [FALL-02/03](../specifications/fallverwaltung.md), [ZUG](../specifications/fallzugriff-und-sicherheit.md) und [ADR-004](adr/ADR-004-tokenbasierter-mieterzugriff.md). Insbesondere bleibt die Gastanlage zulässig; ein Login wird nicht neu erzwungen. Die Originalangabe `unit` ist Freitext/Referenz aus dem Formular, keine neue Pflicht zu einer existierenden Fremdschlüssel-ID.
 
 ## 2. Gemeinsame Java-Schnittstellen
 
@@ -362,7 +362,7 @@ Die Dateien sind noch nicht committet. Ein anderer Worktree erhält sie nicht au
 
 - [Backend-Umsetzungsplan](backend-umsetzungsplan.md)
 - [Modulvertrag Fallanlage](module-structure.md#fallanlage--intake-und-case-processing)
-- [OpenAPI](openapi/fallannahme.yaml)
+- [OpenAPI](openapi/propertyflow-web.yaml)
 - [Fallverwaltung](../specifications/fallverwaltung.md)
 - [Fallzugriff](../specifications/fallzugriff-und-sicherheit.md)
 - [MCP Guidelines](../specifications/MCP_GUIDELINES.md)

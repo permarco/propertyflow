@@ -59,7 +59,7 @@ Mitarbeiteraufgaben über Neustarts behalten, damit sie fortgesetzt werden könn
 Der zentrale Endpunkt `POST /mieter/fall` nimmt die Formulardaten entgegen. Die
 Fallannahme ist nach dem Commit von Fall und Startauftrag bestätigt. HTTP `303`
 verweist per `Location` auf die persönliche Fallansicht, in der die Case-ID
-sichtbar ist. [OpenAPI-Datei](../architecture/openapi/fallannahme.yaml)
+sichtbar ist. [OpenAPI-Datei](../architecture/openapi/propertyflow-web.yaml)
 
 | Aspekt | Vertrag |
 | --- | --- |

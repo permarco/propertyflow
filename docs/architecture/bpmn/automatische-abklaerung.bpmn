@@ -1,0 +1,439 @@
+<?xml version='1.0' encoding='utf-8'?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_AutomaticClarification_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+  <bpmn:error id="Error_ClosureMessageInvalid" name="LLM-Nachricht inhaltlich unzulässig" errorCode="CLOSURE_MESSAGE_INVALID" />
+  <bpmn:error id="Error_AutoClosureStale" name="Automatischer Abschluss veraltet" errorCode="AUTO_CLOSURE_STALE" />
+  <bpmn:error id="Error_PublicationStale" name="Veröffentlichungsgrundlage überholt" errorCode="PUBLICATION_BASIS_STALE">
+    <bpmn:documentation>Zeile 2, fachlicher Platzhalter: Dienst erkennt bei synchronisierter Prüfung vor Veröffentlichung eine neue relevante gespeicherte Mieternachricht, die die Grundlage überholt. Keine Nachricht gespeichert, kein neuer Antwortbedarf und kein zugehöriger Mailauftrag. Technische Speicherfehler und Wiederholung einer bereits erfolgreichen Veröffentlichung sind keine solchen Konflikte. Nicht direkt durch Nachrichteneingang ausgelöst; keine ausführbare Implementierung.</bpmn:documentation>
+  </bpmn:error>
+  <bpmn:error id="Error_AnalysisStale" name="Analysegrundlage überholt" errorCode="ANALYSIS_BASIS_STALE">
+    <bpmn:documentation>Fachlicher Platzhalter für Zeilen 1 und 3: Die Auswertung enthält neue relevante gespeicherte Mieternachrichten noch nicht. In Validate führt der Konflikt zur aktuellen Analysegrundlage; in RValidate zur aktuellen Antwortauswertung. Kein technischer Jobfehler und kein Analysefehler. Meldung durch den späteren Prüfdienst, nicht automatisch durch blossen Nachrichteneingang. Keine zweite unabhängige Verarbeitung; aktuelle Mitarbeiterentscheidung und Abschluss schützen. Keine Ausführungsimplementierung.</bpmn:documentation>
+  </bpmn:error>
+  <bpmn:process id="PropertyFlow_Automatic_Draft" name="Automatische Abklärung · Fachentwurf 0.31" isExecutable="false">
+    <bpmn:serviceTask id="AutoClose" name="Automatischen Abschluss prüfen&#10;und speichern">
+      <bpmn:documentation>FALL-07/10, KOM-06: Derselbe fachliche Abschlussvertrag wie der Mitarbeiterabschluss im Elternprozess, hier ausschliesslich Quelle System. Nur In Abklärung oder Wartet auf Mieterantwort, kein zwingender Prüfbedarf, aktuelle Freigabe und sämtliche relevanten Nachrichten berücksichtigt. Abschlussgrund Problem behoben nur bei vollständiger Behebung ohne Hilfebedarf und Widerspruch; kein Bearbeitungsbedarf nur bei ausdrücklich freigegebener gültiger vollständig anwendbarer Fachregel. Belegreferenzen/Regelversion auditieren; keine Reparatur behaupten, wenn nur fehlender Verwaltungsbedarf belegt ist.
+Unmittelbar vor Commit Fallversion, aktuelle Call-/Durchlaufzuordnung, neue Nachrichten, Mitarbeiterentscheidungen und Wirkungsfreigabe prüfen. Bereits bestätigte Ablösung sperrt die alte automatische Wirkung, auch vor Engine-Abbruch. Bei veralteter Grundlage AUTO_CLOSURE_STALE -&gt; CurrentAnalysis -&gt; Validate, nicht STAFF_CLOSURE_STALE. Bereits veröffentlichte Antwort bleibt einmalig erhalten und ihre Mailpflicht besteht weiter. Keine identische Antwort erneut senden. Antwortbedarf erst bei erfolgreichem Abschluss beenden, keine unbeantwortete Frage als beantwortet ausgeben.
+Technische Speicherfehler bleiben Retry/Incident; beim Retry aktuellen Stand prüfen. Identischer erfolgreicher Abschluss bleibt Erfolg. Keine zusätzliche Abschlussmail. Erst nach Commit CLOSED/decisionRef liefern; Elternprozess beendet ActiveCase und laufende Nebenpfade. Nicht auf normalen Output eines abgebrochenen Calls vertrauen. Nach wirksamem Abschluss keine Wiedereröffnung durch verspätete Ergebnisse.</bpmn:documentation>
+      <bpmn:incoming>A_AnswerClose</bpmn:incoming>
+      <bpmn:outgoing>A_CloseEnd</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Clarification" name="Status speichern:&#10;In Abklärung">
+      <bpmn:documentation>BEN-03 / 0.23: Bei tatsächlicher benachrichtigungspflichtiger Änderung Ereignis und Mailpflicht dauerhaft zusammen sichern. Der dauerhafte Starter startet fallbenachrichtigung-versenden.bpmn mit mailOrderRef; dort beauftragen Camunda-Send-Tasks den Mail-Worker. Hier kein direkter SMTP-Aufruf und kein Warten auf SMTP. Unveränderte Werte und identische Wiederholungen erzeugen keine neue Mailpflicht.
+FALL-06 Übergang 29: Übernommene Mitarbeiterrückfrage sperrt jede weitere automatische Wirkung dieses Abklärungslaufs; verspätete Ergebnisse verwerfen. Status und Übergangsbezug vor jedem Schreiben konsistent prüfen.
+FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklärungslauf seine automatische Schreibfreigabe. Auch vor BPMN-Unterbrechung keine verspäteten Wirkungen speichern.</bpmn:documentation>
+      <bpmn:incoming>A03</bpmn:incoming>
+      <bpmn:outgoing>F03</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Triage" name="Dringlichkeit&#10;bewerten">
+      <bpmn:documentation>BEN-03 / 0.23: Bei tatsächlicher benachrichtigungspflichtiger Änderung Ereignis und Mailpflicht dauerhaft zusammen sichern. Der dauerhafte Starter startet fallbenachrichtigung-versenden.bpmn mit mailOrderRef; dort beauftragen Camunda-Send-Tasks den Mail-Worker. Hier kein direkter SMTP-Aufruf und kein Warten auf SMTP. Unveränderte Werte und identische Wiederholungen erzeugen keine neue Mailpflicht. Triage über Modell-Port. Vorhandene manuelle Dringlichkeit hat Vorrang. Bei festgestelltem Analysefehler oder ungültiger Modellausgabe meldet der spätere Worker TRIAGE_ANALYSIS_FAILED. Der unterbrechende Fehlerpfad führt unmittelbar zur Mitarbeiterprüfung; Vorgehen bestimmen wird in diesem Durchlauf nicht aufgerufen. Eine vorhandene Einstufung bleibt erhalten, sonst gilt Noch nicht bewertet. Keine erfundene Stufe. Technische Speicherfehler bleiben von dieser fachlichen Analysefehlerreaktion getrennt.
+KOM-03 Zeile 1: Ergebnis vor Übernahme gegen relevante gespeicherte Nachrichten prüfen; keine aktuelle Einstufung durch alte Grundlage überschreiben. Neue Nachrichten berücksichtigt die zentrale Auswertung. Ein überholter Erfolgsstand darf keine Folgeaktion autorisieren; Validate führt zur aktuellen Auswertung zurück. Keine technische Pflicht zum Abbruch laufender Modellaufrufe.
+FALL-06 Übergang 29: Übernommene Mitarbeiterrückfrage sperrt jede weitere automatische Wirkung dieses Abklärungslaufs; verspätete Ergebnisse verwerfen. Status und Übergangsbezug vor jedem Schreiben konsistent prüfen.
+FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklärungslauf seine automatische Schreibfreigabe. Auch vor BPMN-Unterbrechung keine verspäteten Wirkungen speichern.
+0.31: Festgestellter fachlicher Analysefehler oder ungültige Empfehlung wird als TRIAGE_ANALYSIS_FAILED gemeldet und am Eltern-Call gemeinsam gefangen. Technischer Jobfehler bleibt Retry/Incident; nicht automatisch als BPMN-Fehler behandeln.</bpmn:documentation>
+      <bpmn:incoming>F03</bpmn:incoming>
+      <bpmn:outgoing>F04</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Recommend" name="Vorgehen bestimmen&#10;LLM + Fachkontext">
+      <bpmn:documentation>UC-018/021: erlaubten Fallkontext und freigegebene Fachregeln verwenden. Rückfrage, Antwort mit Systemabschluss oder Mitarbeiterprüfung vorschlagen. Für Rückfragen passende Frage-IDs aus KOM-05 für notwendige fehlende Sachangaben auswählen; keine freien Textzusätze automatisch veröffentlichen. Bekannte Angaben und bisherigen Antwortbedarf berücksichtigen. Keine internen Memos oder Ableitungen daraus an Kommunikations-LLM; auch nicht bei anschliessender menschlicher Prüfung. Für einen vorgeschlagenen Systemabschluss genau einen der bestätigten FALL-07-Gründe mit Belegstellen zur vollständigen Behebung beziehungsweise mit Regelkennung und -version für den gesamten Sachverhalt begründen. Keine unbekannten Tatsachen oder Zuständigkeitsregeln ergänzen. Fehlende Belege und Widersprüche offen ausweisen. Der Vorschlag erteilt keine dauerhafte Abschluss- oder Veröffentlichungsfreigabe; diese werden separat am aktuellen Stand geprüft.
+ Die Empfehlung enthält noch keinen zu versendenden Text; AutoAnswer erzeugt später die individuelle LLM-Nachricht und prüft sie im Worker. Empfehlung ist keine Ausführungsfreigabe; Kontextgrenze KOM-02 bleibt verbindlich.
+KOM-03 Zeile 1: Ergebnis vor Übernahme gegen relevante gespeicherte Nachrichten prüfen; keine aktuelle Einstufung durch alte Grundlage überschreiben. Neue Nachrichten berücksichtigt die zentrale Auswertung. Ein überholter Erfolgsstand darf keine Folgeaktion autorisieren; Validate führt zur aktuellen Auswertung zurück. Keine technische Pflicht zum Abbruch laufender Modellaufrufe.
+KOM-06: Abschlussgrund und Belege empfehlen. Individuelle Abschlussnachricht erst im nachgelagerten AutoAnswer-Worker erzeugen und dort prüfen; keine Antwortart-/Vorlagenwahl.
+FALL-06 Übergang 29: Übernommene Mitarbeiterrückfrage sperrt jede weitere automatische Wirkung dieses Abklärungslaufs; verspätete Ergebnisse verwerfen. Status und Übergangsbezug vor jedem Schreiben konsistent prüfen.
+FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklärungslauf seine automatische Schreibfreigabe. Auch vor BPMN-Unterbrechung keine verspäteten Wirkungen speichern.
+0.31: Festgestellter fachlicher Analysefehler oder ungültige Empfehlung wird als TRIAGE_ANALYSIS_FAILED gemeldet und am Eltern-Call gemeinsam gefangen. Technischer Jobfehler bleibt Retry/Incident; nicht automatisch als BPMN-Fehler behandeln.</bpmn:documentation>
+      <bpmn:incoming>F04</bpmn:incoming>
+      <bpmn:outgoing>F05</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Validate" name="Ausführungsbedingungen&#10;und Abschlussgründe prüfen">
+      <bpmn:documentation>PropertyFlow prüft aktuelle Fallversion, Prozessfreigabe, Katalogfassung und Frage-IDs sowie offene Prüfgründe nach KOM-05. Ein inzwischen auf Mitarbeiterprüfung erforderlich stehender Fall behält Status und dieselbe Aufgabe bis zur bewussten Mitarbeiterentscheidung; keine automatische Fortsetzung oder Schliessung unabhängig vom Ursprung des Prüfbedarfs. Pflichtprüfung nach FALL-10, offene Objektzuordnung, Analysefehler und klärungsbedürftiger Versand haben Vorrang. Keine automatische Rückfrage während Mitarbeiterbearbeitung oder Wiedervorlage. Widersprüchliche Grundlage oder notwendige Frage ausserhalb des Katalogs -&gt; Mitarbeiterprüfung. Bekannte, offene, beantwortete oder bewusst aufgehobene Fragen nicht wiederholen. Überholte Ergebnisse ohne Veröffentlichung verwerfen bzw. aktuell neu bewerten; sie sind kein Default-Prüfgrund. Ein gültiges Schema beweist keine semantische Richtigkeit. Nur FALL-07-Abschlussgründe, kein Abschluss aus niedriger Dringlichkeit allein. Systemabschluss nach den am 15.11.2026 bestätigten Regeln in FALL-07: ausschliesslich gespeicherter Status In Abklärung oder Wartet auf Mieterantwort, aktuelle Prozessfreigabe und keine offenen menschlichen Entscheidungen nach FALL-06/FALL-10, keine offene Objektzuordnung, kein Analysefehler und kein klärungsbedürftiger Versand. Alle relevanten gespeicherten Mieternachrichten müssen berücksichtigt sein; eine neue, noch nicht ausgewertete Nachricht sperrt den Abschluss auf alter Grundlage. Problem behoben verlangt eine gespeicherte eindeutige Bestätigung der bereits eingetretenen Behebung des gesamten offenen Sachverhalts ohne weiteren Hilfebedarf oder aktuellen Widerspruch. Vorläufige Besserung, geplante Massnahmen, Restschäden, Danke, Schweigen oder Bitte schliessen allein genügen nicht. Kein Bearbeitungsbedarf der Verwaltung verlangt eine ausdrücklich für Systemabschluss freigegebene, gültige Regel mit Kennung, Version und passendem Geltungsbereich; alle Voraussetzungen müssen belegt, alle Teilprobleme abgedeckt und Ausnahmen oder Widersprüche ausgeschlossen sein. Fehlende Angaben, unbekannte Regeln, allgemeines Modellwissen oder begründete Mietereinwände geben keinen Abschluss frei. Belege und gegebenenfalls Regelreferenz prüfen und nachvollziehbar halten. Eine hohe Modellsicherheit oder formal gültige Ausgabe ersetzt keine semantische Evaluation. Bei belegter Gesamtbehebung dürfen gegenstandslos gewordene Rückfragen bis zum Abschluss offen bleiben; sie werden nicht als beantwortet erfunden. Unklare oder widersprüchliche fachliche Einordnung benötigt Mitarbeiterprüfung; gezielt erfragbare fehlende Angaben folgen gegebenenfalls KOM-05. Doppelte, überholte oder inzwischen unzulässige Vorschläge dürfen keine andere aktive Bearbeitung verdrängen und erzeugen für sich keine zusätzliche Aufgabe. Ihre technische Fortsetzung ist vor Ausführung festzulegen, kein pauschaler Default-Ausgang zur Mitarbeiterprüfung. Die Freigabe des Abschlussgrundes ersetzt keine Inhaltsprüfung im erzeugenden Worker.
+KOM-06: Individuelle Nachricht erst nach fachlicher Freigabe im AutoAnswer-Worker erzeugen und inhaltlich prüfen. Unzulässiger Inhalt führt zur Mitarbeiterprüfung, technische Generierungsfehler folgen Retries/Incident. Keine feste Textfassung.
+Zeile 1 bestätigt: Neue Nachricht während automatischer Analyse macht die unvollständige Grundlage unzulässig. Bei weiterhin In Abklärung über ANALYSIS_BASIS_STALE zu CurrentAnalysis und danach erneut prüfen. Kein Weg über den Default-Ausgang zur Mitarbeiterprüfung allein wegen veralteter Grundlage. Zeile 2: QuestionStale und AutoAnswerStale führen vor Veröffentlichung ebenfalls über CurrentAnalysis zurück.
+Bei Rückkehr aus Zeile 2 den bisherigen Rückfragenkontext berücksichtigen: Alle zuvor offenen Fragen beantwortet und kein zulässiger Systemabschluss sowie keine vorrangige Wiedervorlage -&gt; Mitarbeiterprüfung nach FALL-05. Dies nicht durch neue Katalogfragen umgehen. Teilantworten lassen übrige Fragen offen; reine Information ohne zuvor offene Fragen löst diesen Übergang nicht allein aus. Kein Statuswechsel zu In Abklärung durch den Rückweg. Fachliche Ergebnis- und Wartewege gelten weiter; technische Koordination bleibt vor Ausführung festzulegen.
+Zeile 3 / KOM-AK-24, am aktuellen Fallstand in dieser Reihenfolge: 1. Pflichtprüfbedarf oder Analysefehler -&gt; Mitarbeiterprüfung. 2. Zulässiger Systemabschluss mit anschliessender LLM-Nachricht -&gt; Antwort veröffentlichen und Abschluss erneut prüfen. 3. Alle zuvor offenen Fragen beantwortet, kein zulässiger Abschluss -&gt; Mitarbeiterprüfung, nicht durch neue Fragen umgehen. 4. Fragen bleiben offen und weitere notwendige Katalogfrage zulässig -&gt; nur diese neue Frage veröffentlichen. 5. Fragen offen und keine weitere Frage nötig -&gt; weiter warten ohne neue Kommunikation. Unzuverlässige Grundlage, fehlende zulässigen Nachrichteninhalt und notwendige Frage ausserhalb des Katalogs folgen den bestehenden Prüfregeln, kein stilles Weiterwarten. Teilantwort allein ist kein Prüfgrund. Kein Status In Abklärung allein durch Antwortauswertung. Zwischenzeitliche Mitarbeiterentscheidung und Abschluss schützen.
+FALL-06 Übergang 29: Übernommene Mitarbeiterrückfrage sperrt jede weitere automatische Wirkung dieses Abklärungslaufs; verspätete Ergebnisse verwerfen. Status und Übergangsbezug vor jedem Schreiben konsistent prüfen.
+FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklärungslauf seine automatische Schreibfreigabe. Auch vor BPMN-Unterbrechung keine verspäteten Wirkungen speichern.</bpmn:documentation>
+      <bpmn:incoming>F05</bpmn:incoming>
+      <bpmn:incoming>F_Current_Validate</bpmn:incoming>
+      <bpmn:outgoing>F06</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:boundaryEvent id="AnalysisStale" name="Analysegrundlage&#10;überholt" attachedToRef="Validate" cancelActivity="true">
+      <bpmn:documentation>Nur Zeile 1: Die Ausführungsprüfung erkennt, dass die Auswertung neue relevante Nachrichten während Analyse/Empfehlung noch nicht enthält. Den normalen Ausgang F06 unterbrechen und die aktuelle zentrale Auswertung übernehmen. Der Fehler allein ist kein Mitarbeiterprüfgrund. Aktuelle menschliche Entscheidungen und Abschluss dürfen nicht zurückgesetzt werden.</bpmn:documentation>
+      <bpmn:outgoing>F_AnalysisStale_Current</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="AnalysisStale_definition" errorRef="Error_AnalysisStale" />
+    </bpmn:boundaryEvent>
+    <bpmn:serviceTask id="CurrentAnalysis" name="Aktuelle Auswertung&#10;übernehmen / abwarten">
+      <bpmn:documentation>KOM-03 / KOM-AK-22/23: Bereits vorhandene aktuelle Auswertung aus der zentralen Verarbeitung übernehmen. Eine passende laufende Auswertung abwarten; fehlt sie, ihre Erstellung über dieselbe zentrale Verarbeitung veranlassen. Keine zweite unabhängige Analyse und kein weiterer externer Nachrichtenempfänger. Alle relevanten gespeicherten Nachrichten einbeziehen; bei weiterem Eingang erneut aktuellen Stand verlangen. Vor Rückkehr Fallstand und Prozessfreigabe prüfen. Bei Zeile 1 zunächst In Abklärung beibehalten; bei Zeile 2 den aktuellen zulässigen Status erhalten, insbesondere Wartet auf Mieterantwort nicht durch den Rückweg zurücksetzen; Mitarbeiterentscheidung, Pflichtprüfbedarf und Abschluss haben Vorrang. Tatsächlicher Analysefehler folgt der Fehlerbehandlung, kein endloses Warten auf ein erfolgreiches Ergebnis. Der Task fasst Bereitstellung und Warten fachlich zusammen: ausführbares Warteverfahren, Ergebnisverbrauch, Variablen und Fehlerkoordination noch festzulegen. Kein blockierender Worker-Vertrag vorgeschrieben. Rückkehr ausschliesslich zu Validate, keine Veröffentlichung oder Abschlussfreigabe durch diesen Schritt.
+Rückwege von Katalogrückfrage und automatischer Antwort verwenden dieselbe zentrale Verarbeitung. Bisherige Rückfragen, aktueller Antwortbedarf und bereits berücksichtigte Mitarbeiterentscheidungen bleiben Teil der Prüfung. Kein Verbrauch eines alten Ergebnisses für eine neue Grundlage, keine zweite unabhängige Auswertung, keine Übernahme alter Veröffentlichungsfreigaben.
+Rückweg AUTO_CLOSURE_STALE: bereits veröffentlichte Antwort und ihren Auftragsbezug laden/erhalten; aktuelle Auswertung einschliesslich neuer Nachrichten verwenden. Keine alte Abschlussfreigabe übernehmen. Mitarbeiterentscheidung und Abschluss schützen; keine zweite identische Antwort. KOM-AK-26.
+FALL-06 Übergang 29: Übernommene Mitarbeiterrückfrage sperrt jede weitere automatische Wirkung dieses Abklärungslaufs; verspätete Ergebnisse verwerfen. Status und Übergangsbezug vor jedem Schreiben konsistent prüfen.
+FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklärungslauf seine automatische Schreibfreigabe. Auch vor BPMN-Unterbrechung keine verspäteten Wirkungen speichern.</bpmn:documentation>
+      <bpmn:incoming>F_AnalysisStale_Current</bpmn:incoming>
+      <bpmn:incoming>F_QuestionStale_Current</bpmn:incoming>
+      <bpmn:incoming>F_AutoAnswerStale_Current</bpmn:incoming>
+      <bpmn:incoming>F_AutoCloseStale_Current</bpmn:incoming>
+      <bpmn:incoming>A04</bpmn:incoming>
+      <bpmn:outgoing>F_Current_Validate</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Route" name="Geprüftes Vorgehen" default="A_RouteReview">
+      <bpmn:documentation>
+Zeile 3 / KOM-AK-24, am aktuellen Fallstand in dieser Reihenfolge: 1. Pflichtprüfbedarf oder Analysefehler -&gt; Mitarbeiterprüfung. 2. Zulässiger Systemabschluss mit anschliessender LLM-Nachricht -&gt; Antwort veröffentlichen und Abschluss erneut prüfen. 3. Alle zuvor offenen Fragen beantwortet, kein zulässiger Abschluss -&gt; Mitarbeiterprüfung, nicht durch neue Fragen umgehen. 4. Fragen bleiben offen und weitere notwendige Katalogfrage zulässig -&gt; nur diese neue Frage veröffentlichen. 5. Fragen offen und keine weitere Frage nötig -&gt; weiter warten ohne neue Kommunikation. Unzuverlässige Grundlage, fehlende zulässigen Nachrichteninhalt und notwendige Frage ausserhalb des Katalogs folgen den bestehenden Prüfregeln, kein stilles Weiterwarten. Teilantwort allein ist kein Prüfgrund. Kein Status In Abklärung allein durch Antwortauswertung. Zwischenzeitliche Mitarbeiterentscheidung und Abschluss schützen.</bpmn:documentation>
+      <bpmn:incoming>F06</bpmn:incoming>
+      <bpmn:outgoing>F07</bpmn:outgoing>
+      <bpmn:outgoing>F10</bpmn:outgoing>
+      <bpmn:outgoing>A_RefreshWait</bpmn:outgoing>
+      <bpmn:outgoing>A_RouteReview</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Question" name="Katalogrückfrage&#10;veröffentlichen">
+      <bpmn:documentation>BEN-03 / 0.23: Bei tatsächlicher benachrichtigungspflichtiger Änderung Ereignis und Mailpflicht dauerhaft zusammen sichern. Der dauerhafte Starter startet fallbenachrichtigung-versenden.bpmn mit mailOrderRef; dort beauftragen Camunda-Send-Tasks den Mail-Worker. Hier kein direkter SMTP-Aufruf und kein Warten auf SMTP. Unveränderte Werte und identische Wiederholungen erzeugen keine neue Mailpflicht. KOM-05: Unmittelbar vor Speicherung Fallversion, Prozessfreigabe, Katalog und Antwortbedarf erneut konsistent prüfen. Nur hinterlegten freigegebenen Fragetext veröffentlichen; kein freier LLM-Zusatz. Erst erfolgreiche Veröffentlichung erzeugt Antwortbedarf. Systemherkunft, externe Sichtbarkeit und Entscheidungsbezug festhalten. Idempotente Wiederholungen erzeugen keine zweite Nachricht; keine bereits offene, beantwortete oder bewusst aufgehobene Frage reaktivieren. Vorrang von Mitarbeiterprüfung und Wiedervorlage sowie Abschluss nach KOM-04 wahren. Technische Synchronisierung bleibt festzulegen.
+Zeile 2 bestätigt: Nachrichtenstand prüfen und Veröffentlichung mit konkurrierender Nachrichtenspeicherung konsistent synchronisieren. Neue relevante Nachricht zuerst gespeichert -&gt; vor Speicherung PUBLICATION_BASIS_STALE melden; keine Veröffentlichung und kein normaler Folgeweg. Veröffentlichung zuerst gespeichert -&gt; erhalten, nachfolgende Nachricht gegen aktuellen Verlauf auswerten. Kein rückwirkendes Löschen oder neuer Mailauftrag beim Retry. Die Wiederholung einer schon erfolgreichen Veröffentlichung allein meldet keinen fachlichen Konflikt. Technische DB-Fehler getrennt behandeln.
+FALL-06 Übergang 29: Übernommene Mitarbeiterrückfrage sperrt jede weitere automatische Wirkung dieses Abklärungslaufs; verspätete Ergebnisse verwerfen. Status und Übergangsbezug vor jedem Schreiben konsistent prüfen.
+FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklärungslauf seine automatische Schreibfreigabe. Auch vor BPMN-Unterbrechung keine verspäteten Wirkungen speichern.</bpmn:documentation>
+      <bpmn:incoming>F07</bpmn:incoming>
+      <bpmn:outgoing>A_QuestionWait</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:boundaryEvent id="QuestionStale" name="Grundlage veraltet" attachedToRef="Question" cancelActivity="true">
+      <bpmn:documentation>KOM-03 Zeile 2 / KOM-AK-23: Nur vor Speicherung unterdrückte automatische Veröffentlichung. Normalen Ausgang unterbrechen, aktuelle zentrale Auswertung übernehmen und erneut prüfen. Keine neue Nachricht, kein neuer Antwortbedarf, kein zugehöriger Mailauftrag. War die Veröffentlichung bereits zuerst gespeichert, bleibt sie samt Benachrichtigungspflicht erhalten; spätere Mieternachricht normal auswerten, kein rückwirkender Konfliktpfad. Kein Mitarbeiterprüfgrund allein durch veraltete Grundlage. Mitarbeiterentscheidung und Abschluss schützen.</bpmn:documentation>
+      <bpmn:outgoing>F_QuestionStale_Current</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="QuestionStale_definition" errorRef="Error_PublicationStale" />
+    </bpmn:boundaryEvent>
+    <bpmn:serviceTask id="AutoAnswer" name="LLM-Nachricht erstellen&#10;und versenden">
+      <bpmn:documentation>BEN-03 / 0.23: Bei tatsächlicher benachrichtigungspflichtiger Änderung Ereignis und Mailpflicht dauerhaft zusammen sichern. Der dauerhafte Starter startet fallbenachrichtigung-versenden.bpmn mit mailOrderRef; dort beauftragen Camunda-Send-Tasks den Mail-Worker. Hier kein direkter SMTP-Aufruf und kein Warten auf SMTP. Unveränderte Werte und identische Wiederholungen erzeugen keine neue Mailpflicht. KOM-06, vereinfachte Version: Nach zulässiger Systemabschlussentscheidung eine individuelle LLM-Nachricht über den Modell-Port erzeugen. Im selben Worker Inhalt, Fall-/Prozessbezug, aktuelle relevante Nachrichten, Abschlussgrund und Mitarbeiterpriorität prüfen; KOM-02 einhalten. Keine festen Antwortvorlagen oder separate Textfreigabe. Die Nachricht darf den Abschluss mitteilen. Bei inhaltlich unzulässiger Ausgabe CLOSURE_MESSAGE_INVALID melden: nichts veröffentlichen, kein automatischer Abschluss, Mitarbeiterprüfung. Technische Modell-/Speicherfehler über Job-Retries und nach Ausschöpfung Incident, nicht über diesen fachlichen Fehler.
+Vollständige Nachricht extern mit Systemherkunft speichern und E-Mail-Versand zuverlässig beauftragen; kein Warten auf SMTP-Annahme oder Zustellung. Erst danach F11 zu Close. Keine neue Rückfrage und kein vorzeitiges Beenden offenen Antwortbedarfs. Keine Übernahme in das Mitarbeiter-Antwortfeld.
+Vor Veröffentlichung veraltete Grundlage: PUBLICATION_BASIS_STALE, keine alte Nachricht speichern. Bereits erfolgreich veröffentlichter identischer Auftrag wird nicht nochmals generiert, gespeichert oder beauftragt; gespeicherten Bezug verwenden, aktuelle Zulässigkeit und Close trotzdem erneut prüfen. Bei AUTO_CLOSURE_STALE-Rückweg vorhandene Nachricht samt Versandauftrag erhalten. Ein anderer Auftrag braucht neue fachliche Prüfung. Nach Abschluss und für alte Bearbeitungen keine neue Wirkung. Keine zusätzliche Abschlussmail nach Close. Technische Umsetzung steht aus.
+FALL-06 Übergang 29: Übernommene Mitarbeiterrückfrage sperrt jede weitere automatische Wirkung dieses Abklärungslaufs; verspätete Ergebnisse verwerfen. Status und Übergangsbezug vor jedem Schreiben konsistent prüfen.
+FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklärungslauf seine automatische Schreibfreigabe. Auch vor BPMN-Unterbrechung keine verspäteten Wirkungen speichern.</bpmn:documentation>
+      <bpmn:incoming>F10</bpmn:incoming>
+      <bpmn:outgoing>A_AnswerClose</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:boundaryEvent id="AutoAnswerStale" name="Grundlage veraltet" attachedToRef="AutoAnswer" cancelActivity="true">
+      <bpmn:documentation>KOM-03 Zeile 2 / KOM-AK-23: Nur vor Speicherung unterdrückte automatische Veröffentlichung. Normalen Ausgang unterbrechen, aktuelle zentrale Auswertung übernehmen und erneut prüfen. Keine neue Nachricht, kein neuer Antwortbedarf, kein zugehöriger Mailauftrag. War die Veröffentlichung bereits zuerst gespeichert, bleibt sie samt Benachrichtigungspflicht erhalten; spätere Mieternachricht normal auswerten, kein rückwirkender Konfliktpfad. Kein Mitarbeiterprüfgrund allein durch veraltete Grundlage. Mitarbeiterentscheidung und Abschluss schützen.</bpmn:documentation>
+      <bpmn:outgoing>F_AutoAnswerStale_Current</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="AutoAnswerStale_definition" errorRef="Error_PublicationStale" />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="AutoCloseStale" name="Abschluss veraltet" attachedToRef="AutoClose" cancelActivity="true">
+      <bpmn:documentation>KOM-AK-26: Nur noch nicht gespeicherter automatischer Abschluss nach veröffentlichter Antwort mit veralteter Grundlage. Antwort erhalten, keine Abschlussmail; aktuelle zentrale Auswertung und erneute Ausführungsprüfung. Kein technischer Retry und kein Mitarbeiterkonflikt.</bpmn:documentation>
+      <bpmn:outgoing>F_AutoCloseStale_Current</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="AutoCloseStale_definition" errorRef="Error_AutoClosureStale" />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="ClosureMessageInvalid" name="Nachricht unzulässig" attachedToRef="AutoAnswer" cancelActivity="true">
+      <bpmn:outgoing>A_InvalidReview</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="ClosureMessageInvalid_definition" errorRef="Error_ClosureMessageInvalid" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="F03" sourceRef="Clarification" targetRef="Triage" />
+    <bpmn:sequenceFlow id="F04" sourceRef="Triage" targetRef="Recommend" />
+    <bpmn:sequenceFlow id="F05" sourceRef="Recommend" targetRef="Validate" />
+    <bpmn:sequenceFlow id="F06" sourceRef="Validate" targetRef="Route" />
+    <bpmn:sequenceFlow id="F07" name="Katalogrückfrage zulässig" sourceRef="Route" targetRef="Question" />
+    <bpmn:sequenceFlow id="F10" name="Belegter Systemabschluss&#10;in zulässigem Status" sourceRef="Route" targetRef="AutoAnswer">
+      <bpmn:documentation>Positives Prüfergebnis nur bei sämtlichen Voraussetzungen aus FALL-07: zulässiger Status, kein offener Prüfbedarf und aktueller vollständig belegter Grund. Keine Freigabe allein aus LLM-Vorschlag, Konfidenz, niedriger Dringlichkeit oder dem Wort behoben. Weiterhin Inhaltsprüfung im erzeugenden Worker vor Veröffentlichung und erneute Prüfung bei Abschlussspeicherung erforderlich.
+ Vor der tatsächlichen Veröffentlichung erneut am aktuellen Stand prüfen.</bpmn:documentation>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F_AnalysisStale_Current" sourceRef="AnalysisStale" targetRef="CurrentAnalysis" />
+    <bpmn:sequenceFlow id="F_Current_Validate" sourceRef="CurrentAnalysis" targetRef="Validate" />
+    <bpmn:sequenceFlow id="F_QuestionStale_Current" sourceRef="QuestionStale" targetRef="CurrentAnalysis" />
+    <bpmn:sequenceFlow id="F_AutoAnswerStale_Current" sourceRef="AutoAnswerStale" targetRef="CurrentAnalysis" />
+    <bpmn:sequenceFlow id="F_AutoCloseStale_Current" sourceRef="AutoCloseStale" targetRef="CurrentAnalysis" name="Antwort bleibt erhalten; erneut prüfen" />
+    <bpmn:sequenceFlow id="A_AnswerClose" sourceRef="AutoAnswer" targetRef="AutoClose" name="" />
+    <bpmn:startEvent id="AStart" name="Aufruf empfangen">
+      <bpmn:outgoing>A01</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="AEntry" name="Eintritt und aktuellen&#10;Fallstand prüfen">
+      <bpmn:documentation>Fall und führenden Prozess sowie aktuellen Call-Bezug anhand Engine-Metadaten prüfen/registrieren; entryContextRef laden. INITIAL nur bei bestätigter Erstanlage: Clarification. QUESTION oder CLOSE stammen aus aktuellem replyDecisionRef und führen über CurrentAnalysis/Validate zur erneuten Prüfung, ohne Status auf In Abklärung zu setzen. Ungültige/veraltete Grundlage nicht als Freigabe verwenden. Bereits veröffentlichte Antwort bei erneutem Einstieg erhalten. Kein zweiter Mieternachrichtenempfang; Auswertung aus zentraler Verarbeitung übernehmen. Aktuellen automaticCallRef und nachholbare Ergebniszustellung koordinieren, keine neue führende Instanz.</bpmn:documentation>
+      <bpmn:incoming>A01</bpmn:incoming>
+      <bpmn:outgoing>A02</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="AEntryRoute" name="Erstanlage oder&#10;Fortsetzung?">
+      <bpmn:incoming>A02</bpmn:incoming>
+      <bpmn:outgoing>A03</bpmn:outgoing>
+      <bpmn:outgoing>A04</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="A01" sourceRef="AStart" targetRef="AEntry" name="" />
+    <bpmn:sequenceFlow id="A02" sourceRef="AEntry" targetRef="AEntryRoute" name="" />
+    <bpmn:sequenceFlow id="A03" sourceRef="AEntryRoute" targetRef="Clarification" name="INITIAL" />
+    <bpmn:sequenceFlow id="A04" sourceRef="AEntryRoute" targetRef="CurrentAnalysis" name="QUESTION / CLOSE" />
+    <bpmn:serviceTask id="AWait" name="Mieterwarte-Eintritt bereitstellen">
+      <bpmn:documentation>Aktuellen Fallstand und Call-Zuordnung prüfen; outcome=WAIT_FOR_REPLY und decisionRef auf dauerhaft nachvollziehbare Grundlage setzen. Keine dauerhafte Freigabe durch diese Referenz. Wiederholung ohne neue fachliche Wirkung. CLOSED nur nach nachgewiesenem Abschlusscommit. WAIT_FOR_REPLY enthält aktuelle offene Antwortbedarfe; REVIEW erhält Prüfgründe.</bpmn:documentation>
+      <bpmn:incoming>A_QuestionWait</bpmn:incoming>
+      <bpmn:incoming>A_RefreshWait</bpmn:incoming>
+      <bpmn:outgoing>AWaitFlow</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="AWaitEnd" name="WAIT_FOR_REPLY">
+      <bpmn:incoming>AWaitFlow</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="AWaitFlow" sourceRef="AWait" targetRef="AWaitEnd" name="" />
+    <bpmn:serviceTask id="AReview" name="Prüfkontext bereitstellen">
+      <bpmn:documentation>Aktuellen Fallstand und Call-Zuordnung prüfen; outcome=REVIEW und decisionRef auf dauerhaft nachvollziehbare Grundlage setzen. Keine dauerhafte Freigabe durch diese Referenz. Wiederholung ohne neue fachliche Wirkung. CLOSED nur nach nachgewiesenem Abschlusscommit. WAIT_FOR_REPLY enthält aktuelle offene Antwortbedarfe; REVIEW erhält Prüfgründe.</bpmn:documentation>
+      <bpmn:incoming>A_RouteReview</bpmn:incoming>
+      <bpmn:incoming>A_InvalidReview</bpmn:incoming>
+      <bpmn:outgoing>AReviewFlow</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="AReviewEnd" name="REVIEW">
+      <bpmn:incoming>AReviewFlow</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="AReviewFlow" sourceRef="AReview" targetRef="AReviewEnd" name="" />
+    <bpmn:serviceTask id="AClosed" name="Gespeicherten Abschluss bestätigen">
+      <bpmn:documentation>Aktuellen Fallstand und Call-Zuordnung prüfen; outcome=CLOSED und decisionRef auf dauerhaft nachvollziehbare Grundlage setzen. Keine dauerhafte Freigabe durch diese Referenz. Wiederholung ohne neue fachliche Wirkung. CLOSED nur nach nachgewiesenem Abschlusscommit. WAIT_FOR_REPLY enthält aktuelle offene Antwortbedarfe; REVIEW erhält Prüfgründe.</bpmn:documentation>
+      <bpmn:incoming>A_CloseEnd</bpmn:incoming>
+      <bpmn:outgoing>AClosedFlow</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="AClosedEnd" name="CLOSED">
+      <bpmn:incoming>AClosedFlow</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="AClosedFlow" sourceRef="AClosed" targetRef="AClosedEnd" name="" />
+    <bpmn:sequenceFlow id="A_QuestionWait" sourceRef="Question" targetRef="AWait" name="" />
+    <bpmn:sequenceFlow id="A_RefreshWait" sourceRef="Route" targetRef="AWait" name="Offene Fragen; keine weitere Aktion" />
+    <bpmn:sequenceFlow id="A_RouteReview" sourceRef="Route" targetRef="AReview" name="Prüfbedarf / unklar" />
+    <bpmn:sequenceFlow id="A_InvalidReview" sourceRef="ClosureMessageInvalid" targetRef="AReview" name="" />
+    <bpmn:sequenceFlow id="A_CloseEnd" sourceRef="AutoClose" targetRef="AClosed" name="" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="AutomaticDiagram">
+    <bpmndi:BPMNPlane id="AutomaticDiagram_plane" bpmnElement="PropertyFlow_Automatic_Draft">
+      <bpmndi:BPMNShape id="AStart_di" bpmnElement="AStart">
+        <dc:Bounds x="50" y="120" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="5" y="164" width="126" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AEntry_di" bpmnElement="AEntry">
+        <dc:Bounds x="140" y="90" width="200" height="95" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AEntryRoute_di" bpmnElement="AEntryRoute">
+        <dc:Bounds x="410" y="112" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="365" y="170" width="140" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Clarification_di" bpmnElement="Clarification">
+        <dc:Bounds x="550" y="90" width="180" height="95" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Triage_di" bpmnElement="Triage">
+        <dc:Bounds x="810" y="90" width="180" height="95" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Recommend_di" bpmnElement="Recommend">
+        <dc:Bounds x="1070" y="90" width="190" height="95" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Validate_di" bpmnElement="Validate">
+        <dc:Bounds x="1070" y="340" width="200" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Route_di" bpmnElement="Route">
+        <dc:Bounds x="850" y="365" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="805" y="423" width="140" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="CurrentAnalysis_di" bpmnElement="CurrentAnalysis">
+        <dc:Bounds x="560" y="340" width="210" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Question_di" bpmnElement="Question">
+        <dc:Bounds x="550" y="630" width="200" height="95" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AutoAnswer_di" bpmnElement="AutoAnswer">
+        <dc:Bounds x="850" y="630" width="200" height="95" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AutoClose_di" bpmnElement="AutoClose">
+        <dc:Bounds x="1150" y="630" width="200" height="95" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AnalysisStale_di" bpmnElement="AnalysisStale">
+        <dc:Bounds x="1085" y="422" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1040" y="466" width="126" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="QuestionStale_di" bpmnElement="QuestionStale">
+        <dc:Bounds x="575" y="707" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="500" y="760" width="180" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AutoAnswerStale_di" bpmnElement="AutoAnswerStale">
+        <dc:Bounds x="875" y="707" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="800" y="760" width="180" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AutoCloseStale_di" bpmnElement="AutoCloseStale">
+        <dc:Bounds x="1175" y="707" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1100" y="760" width="180" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ClosureMessageInvalid_di" bpmnElement="ClosureMessageInvalid">
+        <dc:Bounds x="985" y="612" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="965" y="555" width="200" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AWait_di" bpmnElement="AWait">
+        <dc:Bounds x="180" y="630" width="210" height="95" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AWaitEnd_di" bpmnElement="AWaitEnd">
+        <dc:Bounds x="260" y="820" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="215" y="864" width="126" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AReview_di" bpmnElement="AReview">
+        <dc:Bounds x="1410" y="340" width="200" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AReviewEnd_di" bpmnElement="AReviewEnd">
+        <dc:Bounds x="1700" y="372" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1655" y="416" width="126" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AClosed_di" bpmnElement="AClosed">
+        <dc:Bounds x="1440" y="630" width="200" height="95" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AClosedEnd_di" bpmnElement="AClosedEnd">
+        <dc:Bounds x="1720" y="658" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1675" y="702" width="126" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="F03_di" bpmnElement="F03">
+        <di:waypoint x="730" y="137.5" />
+        <di:waypoint x="810" y="137.5" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F04_di" bpmnElement="F04">
+        <di:waypoint x="990" y="137.5" />
+        <di:waypoint x="1070" y="137.5" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F05_di" bpmnElement="F05">
+        <di:waypoint x="1165" y="185" />
+        <di:waypoint x="1165" y="340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F06_di" bpmnElement="F06">
+        <di:waypoint x="1070" y="390" />
+        <di:waypoint x="900" y="390" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F07_di" bpmnElement="F07">
+        <di:waypoint x="850" y="390" />
+        <di:waypoint x="820" y="390" />
+        <di:waypoint x="820" y="585" />
+        <di:waypoint x="650" y="585" />
+        <di:waypoint x="650" y="630" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="650" y="545" width="170" height="35" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F10_di" bpmnElement="F10">
+        <di:waypoint x="875" y="415" />
+        <di:waypoint x="875" y="550" />
+        <di:waypoint x="950" y="550" />
+        <di:waypoint x="950" y="630" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="890" y="505" width="210" height="35" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_AnalysisStale_Current_di" bpmnElement="F_AnalysisStale_Current">
+        <di:waypoint x="1103" y="458" />
+        <di:waypoint x="1103" y="480" />
+        <di:waypoint x="665" y="480" />
+        <di:waypoint x="665" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_Current_Validate_di" bpmnElement="F_Current_Validate">
+        <di:waypoint x="665" y="340" />
+        <di:waypoint x="665" y="280" />
+        <di:waypoint x="1170" y="280" />
+        <di:waypoint x="1170" y="340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_QuestionStale_Current_di" bpmnElement="F_QuestionStale_Current">
+        <di:waypoint x="593" y="743" />
+        <di:waypoint x="593" y="910" />
+        <di:waypoint x="480" y="910" />
+        <di:waypoint x="480" y="390" />
+        <di:waypoint x="560" y="390" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_AutoAnswerStale_Current_di" bpmnElement="F_AutoAnswerStale_Current">
+        <di:waypoint x="893" y="743" />
+        <di:waypoint x="893" y="950" />
+        <di:waypoint x="440" y="950" />
+        <di:waypoint x="440" y="390" />
+        <di:waypoint x="560" y="390" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_AutoCloseStale_Current_di" bpmnElement="F_AutoCloseStale_Current">
+        <di:waypoint x="1193" y="743" />
+        <di:waypoint x="1193" y="990" />
+        <di:waypoint x="400" y="990" />
+        <di:waypoint x="400" y="390" />
+        <di:waypoint x="560" y="390" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="650" y="1000" width="280" height="35" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="A_AnswerClose_di" bpmnElement="A_AnswerClose">
+        <di:waypoint x="1050" y="677.5" />
+        <di:waypoint x="1150" y="677.5" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="A01_di" bpmnElement="A01">
+        <di:waypoint x="86" y="138.0" />
+        <di:waypoint x="140" y="137.5" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="A02_di" bpmnElement="A02">
+        <di:waypoint x="340" y="137.5" />
+        <di:waypoint x="410" y="137.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="A03_di" bpmnElement="A03">
+        <di:waypoint x="460" y="137.0" />
+        <di:waypoint x="550" y="137.5" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="470" y="80" width="80" height="30" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="A04_di" bpmnElement="A04">
+        <di:waypoint x="435" y="162" />
+        <di:waypoint x="435" y="390" />
+        <di:waypoint x="560" y="390" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="365" y="348" width="150" height="36" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="AWaitFlow_di" bpmnElement="AWaitFlow">
+        <di:waypoint x="285" y="725" />
+        <di:waypoint x="285" y="780" />
+        <di:waypoint x="278" y="780" />
+        <di:waypoint x="278" y="820" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="AReviewFlow_di" bpmnElement="AReviewFlow">
+        <di:waypoint x="1610" y="390.0" />
+        <di:waypoint x="1700" y="390.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="AClosedFlow_di" bpmnElement="AClosedFlow">
+        <di:waypoint x="1640" y="677.5" />
+        <di:waypoint x="1720" y="676.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="A_QuestionWait_di" bpmnElement="A_QuestionWait">
+        <di:waypoint x="550" y="677" />
+        <di:waypoint x="390" y="677" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="A_RefreshWait_di" bpmnElement="A_RefreshWait">
+        <di:waypoint x="850" y="390" />
+        <di:waypoint x="800" y="390" />
+        <di:waypoint x="800" y="520" />
+        <di:waypoint x="285" y="520" />
+        <di:waypoint x="285" y="630" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="280" y="475" width="210" height="35" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="A_RouteReview_di" bpmnElement="A_RouteReview">
+        <di:waypoint x="875" y="365" />
+        <di:waypoint x="875" y="240" />
+        <di:waypoint x="1510" y="240" />
+        <di:waypoint x="1510" y="340" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1440" y="198" width="150" height="36" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="A_InvalidReview_di" bpmnElement="A_InvalidReview">
+        <di:waypoint x="1003" y="612" />
+        <di:waypoint x="1003" y="500" />
+        <di:waypoint x="1510" y="500" />
+        <di:waypoint x="1510" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="A_CloseEnd_di" bpmnElement="A_CloseEnd">
+        <di:waypoint x="1350" y="677.5" />
+        <di:waypoint x="1440" y="677.5" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

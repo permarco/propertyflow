@@ -1,286 +1,302 @@
 # Status-/Aktionsmatrix und BPMN-Abgleich
 
-Stand der Erstprüfung: 15.11.2026. Nachgeführt um die Entscheidung und Modellierung zu B06 (0.23).
-Auftrag: Bericht erstellen; keine Änderung an BPMN, Fachspezifikationen oder Backend.
+**Konsolidierter Stand:** 15.11.2026, Hauptprozess 0.34, Mitarbeiterbearbeitung und Wiedervorlage 0.33; Automatik 0.31; Mieterantwort 0.32.
+Dieser Bericht ersetzt die überholte Erstprüfungs-Matrix. Die Befundkennungen
+B01–B10 bleiben für Nachverfolgung erhalten. Frühere Modellstände sind keine
+zusätzlichen offenen Anforderungen.
 
-## Review-Status nach Entscheidung zu B06
+**Umfang:** Konsolidierter Abgleich mit Nachführung B02.1 (0.32). Der manuelle
+Sendeweg in der Mieterwartephase ist inzwischen in Spezifikation und BPMN ergänzt.
+Backend-Implementierung und Laufzeitnachweise stehen weiterhin aus.
 
-**B06: fachlich entschieden und im BPMN-Entwurf ergänzt; Laufzeitumsetzung offen.**
-Camunda beauftragt den Mail-Worker in einem eigenständigen Versandprozess anhand
-einer dauerhaften Mailpflicht. Zwei Send-Tasks decken Status/Dringlichkeit sowie
-Annahme/externe Nachrichten ab. Kein direkter SMTP-Versand durch Fach-Worker und
-kein Warten des Fallprozesses auf SMTP. Keine Zusatz-Abschlussmail.
-Siehe [Versandmodell](fallbenachrichtigung-versenden.bpmn) und
-[BEN-03](../../specifications/benachrichtigungen-und-zustellung.md#ben-03-speicherung-und-zuverlässige-übergabe).
+## Ergebnis und verbleibende Arbeit
 
-B02/B03 sind teilweise geklärt: Daten ergänzen bleibt in allen aktiven Status eine
-Nebenaktion. Übergang 29 (Mitarbeiterrückfrage aus In Abklärung) ist in FALL-06,
-im Zustandsdiagramm und im Hauptmodell 0.24 ergänzt. Auch Übergang 30
-(direkter Mitarbeiterabschluss aus In Abklärung) ist nun in FALL-06,
-im Zustandsdiagramm und im Hauptmodell 0.25 ergänzt, einschliesslich
-Konfliktpfad und Beendigung der aktiven Bearbeitung nach Speicherung.
-Geplante Prüffälle: FALL-AK-36; Laufzeitnachweis offen. Übergang 31
-(In Abklärung direkt zur Wiedervorlage) ist ebenfalls fachlich bestätigt und
-in FALL-11, Zustandsdiagramm und den beteiligten Modellen 0.26 ergänzt.
-Geplante Prüffälle: FALL-AK-37; technische Übergabe und Laufzeitnachweis offen. Übergang 32 (Mieterwartephase direkt zur Wiedervorlage) ist in 0.27 ergänzt;
-Terminlöschung führt auch bei offenen Rückfragen zu In Bearbeitung (Übergang 17).
-Geplante Prüffälle: FALL-AK-38; Laufzeitnachweis offen. Weitere markierte
-Mitarbeiterübergänge sowie technische Synchronisierung bleiben offen.
-B02/B03: Die Mitarbeiterrückfrage während externer Wartephase ist in FALL-12
-und Mitarbeiterprozess 0.28 geklärt: Status und offene Aufgabe bleiben bestehen,
-auch mit Antwortbedarf. SMessageSide ist erweitert; FALL-AK-39 bleibt ein Prüfplan.
-B03: Direkte Mitarbeiterübernahme aus In Abklärung ist in 0.29 modelliert
-(Übergang 33); zwingender Prüfbedarf führt vorrangig zur Mitarbeiterprüfung.
-FALL-AK-40 ist ein Prüfplan, kein Laufzeitnachweis.
-B01, B04/B05 und B07–B10 bleiben offen. Die folgenden Befunde und Zählwerte dokumentieren
-den Stand der Erstprüfung mit fünf Modellen; nun existiert zusätzlich das sechste
-Versandmodell mit Jobtypen und Routingbedingungen. B10 bleibt für die
-Ausführungsreife der Gesamtlösung relevant. Der nachfolgende ursprüngliche B06-Befund
-ist historisch und nicht mehr als fehlendes Versanddiagramm zu verstehen.
+Die bisher markierten Mitarbeiterübergänge sind fachlich entschieden und im
+Entwurf modelliert. Automatische Abklärung, gemeinsame Unterbrechung,
+Analysefehlerpfad und Mailversand sind ebenfalls modelliert. Das bedeutet noch
+keine ausführbare oder getestete Gesamtlösung.
 
-## Ergebnis der Erstprüfung
-
-Die besprochenen Kernabläufe sind als Fachentwurf weitgehend vorhanden. Der Prozess
-ist aber noch **nicht vollständig modelliert und nicht ausführungsreif**. Die
-wichtigsten offenen Stellen betreffen Mitarbeiter-Nebenaktionen, Prüfbedarf während
-automatischer Verarbeitung und die explizit vereinbarte Statusmail-Anbindung.
-Mehrere Konfliktpfade beschreiben ihre Sicherheit nur im Worker-Text; die sichere
-Ausführung ist dadurch noch nicht nachgewiesen.
-
-Eine neue Fachentscheidung ist nicht für jede Lücke nötig. Vieles ist bereits
-fachlich festgelegt und muss konsistent modelliert oder technisch konkretisiert
-werden. Es wäre falsch, für jeden Eintrag pauschal einen zusätzlichen Service Task
-oder eine neue Funktion einzuführen.
-
-## Quellen und Bewertung
-
-- [Fallverwaltung](../../specifications/fallverwaltung.md): FALL-02, 04–07, 10–12 und Prüfkriterien.
-- [Fallkommunikation](../../specifications/fallkommunikation.md): KOM-01–06 und Prüfkriterien.
-- [Benachrichtigungen](../../specifications/benachrichtigungen-und-zustellung.md): BEN-01, BEN-03, BEN-05.
-- [Dringlichkeit](../../specifications/dringlichkeitsbewertung.md), [UI3](../../frontend/ansicht-03-mitarbeiter-falldetail.md).
-- [ADR-002](../adr/ADR-002-camunda8-workflow-orchestrierung.md), [Projektkontext](../../project-context.md), [Modulstruktur](../module-structure.md).
-- [Hauptprozess](propertyflow-fallprozess-entwurf.bpmn), [Mieterantwort](mieterantwort-pruefen.bpmn), [Mieternachrichten](mieternachricht-verarbeiten.bpmn), [Mitarbeiterbearbeitung](mitarbeiterbearbeitung.bpmn), [Wiedervorlage](wiedervorlage.bpmn).
-- [Teilprozess-Verträge](teilprozess-vertraege.md) und [BPMN-README](README.md).
-
-**A – abgedeckt:** Fachregel und sichtbarer Ablauf passen im Entwurf zusammen;
-keine Aussage über funktionierende Laufzeit. **L – Lücke:** erlaubte Aktion oder
-benötigte Fortsetzung fehlt bzw. ist nur textlich delegiert. **W – Widerspruch:**
-Quellen passen nicht eindeutig zusammen. **T – Technik offen:** Fachentscheidung
-steht, technische Realisierung und Nachweis fehlen. **–:** nicht vorgesehen,
-verboten oder kein BPMN-Schritt nötig. Mehrere Kennzeichen können zusammen gelten.
-
-## Status-/Aktionsmatrix
-
-Abkürzungen: H = Hauptprozess, R = Mieterantwort, S = Mitarbeiterbearbeitung,
-Wv = Wiedervorlage, N = Mieternachrichten. Die Element-IDs sind im Modeler/XML suchbar.
-
-| Status | Mieternachricht | Mitarbeiternachricht / Memo | Mitarbeiter-Fortsetzung | Abschluss | Neuer zwingender Prüfbedarf |
-|---|---|---|---|---|---|
-| Eingegangen | Aktivierung/Empfang erst nach Prozesszuordnung; Zeitpunkt und Rechte technisch binden (T) | Schreibaktionen vor Prozessstart gesperrt (A als Dienstregel) | H: Register → Clarification (A/W, B01) | Kein freigegebener Mitarbeiterpfad vor Aktivierung (–) | Noch kein aktiver Empfang; bei Aktivierung aktuelle Gründe berücksichtigen (T) |
-| In Abklärung | H: TenantInbox → N, aktuelle Grundlage vor Wirkung prüfen (A/T) | Prozessfreigabe verlangt, allgemeiner Nebenaktionsweg fehlt (L, B02) | Über Validate/Route zur passenden Fortsetzung; manuelle Übernahme/Terminsetzung nicht eindeutig freigegeben (L, B03) | System: AutoAnswer → Close (A); manueller Abschluss hier nicht explizit modelliert/freigegeben (L, B03) | TriageFailure vorhanden; unabhängiger Grund während Recommend/anderen laufenden Jobs nur generisch delegiert (L, B04/B05) |
-| Wartet auf Mieterantwort | RMessage → REvaluate → RValidate; Teilantworten/Restfragen/zulässiger Systemabschluss (A/T) | Manuelles Nachfragen ist zugesagt; Eingang dafür fehlt. Memo-Freigabe nicht konkretisiert (L, B02) | ClearAnswerSide/ReplyCleared: letzter Bedarf → SWork; Teilaufhebung wartet weiter (A/T). Direkte Wiedervorlage nicht modelliert (L, B03) | ReplyStaffClose → Close; Systemweg RClose → AutoAnswer → Close; Konfliktpfade vorhanden (A/T) | ReviewNeedSide → ReplyReviewNeeded → ReviewNeedPrepare → Staff (A/T) |
-| Mitarbeiterprüfung erforderlich | NKeepReview ergänzt dieselbe Aufgabe; kein automatisches Verlassen (A/T) | SMessageSide sendet als Nebenaktion, auch mit Antwortbedarf. Memo bleibt Dienst-/Freigabelücke (A/L, B02) | SReview/SDecision: Fortsetzen, Wiedervorlage oder Abschluss (A) | SCloseEnd → H.Close; keine Nachricht nötig (A/T) | ReviewNeedExisting ergänzt dieselbe aktuelle Aufgabe (A/T) |
-| In Bearbeitung | NRefresh/NApply aktualisieren Grundlage; menschlicher Vorrang (A/T) | Rückfrage über SQuestion vorhanden; reine Informationsnachricht ohne Aufgabenabschluss sowie Memo nicht explizit angebunden (L, B02) | SWorkDecision: Rückfrage, Wiedervorlage, externe Wartephase, Abschluss, Prüfung (A) | Mitarbeiterweg vorhanden, Systemabschluss ausgeschlossen (A) | SWorkReviewNeeded → SReviewStatus (A/T) |
-| Wartet auf externe Rückmeldung | Nachricht allein beendet Wartephase nicht; neuer Prüfbedarf separat (A/T) | Allgemeine Nebenaktion für Information/Memo fehlt; Wirkung einer neuen Rückfrage mit Antwortbedarf nicht vollständig abgegrenzt (L, B02/B03) | SExternalDecision: Fortsetzen, Wiedervorlage, Abschluss (A) | Mitarbeiterabschluss; kein Systemabschluss (A) | SExternalReview → SReviewStatus (A/T) |
-| Wartet auf Wiedervorlage | NWake → SContactDuringFollowUp → SStopFollowUp; nicht auf KI warten (A/T) | WQuestionSide/WPublish für Rückfrage; reine Information/Memo nicht ausdrücklich abgegrenzt (A/L, B02) | Termin ändern/löschen; Timer 08:00 Europe/Zurich; keine automatische Wiederherstellung (A/T) | WClose → WCloseTask → SCloseEnd → H.Close (A/T) | SFollowUpReviewNeeded → SStopFollowUp; Timer/Termin beenden (A/T) |
-| Abgeschlossen | Nachrichtensperre, Lesen bleibt möglich (A als Dienstregel) | Keine neuen Nachrichten/Memos; zulässige technische Hinweise separat (A) | Mitarbeiter-Wiedereröffnung: neue Instanz, gleiche Case-ID, direkter Mitarbeitereintritt (A/T) | Identischen erfolgreichen Abschluss idempotent bestätigen (A/T) | Nur interner Hinweis, keine Wiedereröffnung; bewusst ausserhalb des beendeten Empfängers (A/T) |
-
-### Weitere Aktionen über Statusgrenzen
-
-| Aktion/Ereignis | Abgleich | Ergebnis |
+| Befund | Aktueller Stand | Verbleibende Arbeit |
 |---|---|---|
-| Keine Mieterantwort | Keine Antwortfrist, Erinnerung, Schweigeeskalation oder automatischer Schweigeabschluss; R hat keinen Timer | A |
-| Antwortbedarf aufheben | Gezielte Aufhebung ohne erfundene Antwort; letzte Frage führt aus Reply direkt zu SWork; Prüfung/Wartezustände geschützt | A/T; ältere Ausnahmetexte siehe B08 |
-| Manuelle Dringlichkeit | DRING schützt menschliche Einstufung; konkrete Freigabe/Nebenaktionszuordnung fehlt im Modell | L/T, B02 |
-| Objektzuordnung bestätigen/korrigieren | FALL-04/UI3 erlauben aktive Bearbeitung; kein ausdrücklicher Prozessvertrag für Freigabe und Prüfgrundfortsetzung | L/T, B02 |
-| KI-Formulierungshilfe | UI-Hilfe erzeugt keinen automatischen Versand/Statuswechsel; muss kein eigener BPMN-Task sein | – für eigenen Prozesspfad; Rechte-/Veröffentlichungsprüfung erforderlich |
-| Status-/Dringlichkeitsmail | BEN-01 verlangt Versand, BEN-03 nennt einen Camunda-Send-Task; ein solcher Pfad fehlt | L/W, B06 |
-| Automatische Antwort vor Abschluss | AutoAnswer erzeugt/prüft/veröffentlicht individuell; danach erneute Close-Prüfung. Keine Zusatz-Abschlussmail | A/T |
-| Neuer Prüfgrund nach Mitarbeiterentscheidung | Neue Erkenntnis kann prüfen lassen; gleiche berücksichtigte Erkenntnis nicht | A/T, sichere Erkenntnisidentität fehlt noch |
-| Fall lesen | Autorisierte Datenabfrage, keine Prozessfortsetzung nötig | – für BPMN; Zugriffsschutz im Dienst |
+| B01 – Erster aktiver Status | Fachlich geklärt, Alttext widersprüchlich | «In Abklärung» als bestätigten Einstieg konsistent dokumentieren. |
+| B02 – Mitarbeiter-Nebenaktionen | Fachlich weitgehend geklärt, Anbindung teilweise offen | B02.1–B02.3 im Entwurf behandelt; technische Umsetzung bei B07/B09/B10. |
+| B03 – Mitarbeiterübergänge | Im Entwurf behandelt | Ausführbare Umsetzung und Prüfung mit B07/B09/B10. Keine erneute Entscheidung über Übergänge 29–33. |
+| B04 – Prüfbedarf unterbricht Automatik | Im Entwurf behandelt | Zuverlässige Zustellung, Abbruch bei blockiertem Job und Konflikte zur Laufzeit prüfen. |
+| B05 – Fehlerpfad der Vorgehensbestimmung | Im Entwurf behandelt | Fachliche Fehler im Worker ausdrücklich melden; technische Fehler getrennt testen. |
+| B06 – Mailanbindung | Im Entwurf behandelt | Dauerhafte Mailpflicht, Start, Wiederholungsschutz und Versandfehler implementieren/testen. |
+| B07 – Gleichzeitige Aktionen und einmalige Fortsetzung | Technisch offen | Exklusive Übernahme und Behandlung bereits überholter/erledigter Aufträge verbindlich ausarbeiten. |
+| B08 – Dokumentationskonsistenz | Teilweise bereinigt | Verbleibende widersprüchliche Kerntexte nachführen; historische Abschnitte nicht als aktuellen Vertrag verwenden. |
+| B09 – Rechtebindung und Aktionsbezug | Technischer Vertrag teilweise vorhanden | Rechte über führende Instanz, Kind, Call und gegebenenfalls User Task vollständig konkretisieren. |
+| B10 – Ausführbare Bindungen und Tests | Offen | Worker-Typen, Gateway-Bedingungen, Korrelation, Variablen und Integrationstests schrittweise ergänzen. |
 
-## Befunde und Prioritäten
+**«Im Entwurf behandelt» ist kein Laufzeitnachweis.** Der Anbindungsentscheid für B02.3 ist mit CaseDataSide und dem gemeinsamen
+Aktionsvertrag getroffen. B01/B08 sind Dokumentationsarbeit. B07/B09/B10
+sind technische Umsetzungsvoraussetzungen; sie verlangen nicht automatisch neue
+Geschäftsfunktionen oder zusätzliche Diagrammzweige.
 
-### B01 – Dokumentationswiderspruch zum ersten aktiven Status (W, mittel)
+## Quellen und Modellbestand
 
-FALL-05 bezeichnet Tabellenpfeil 2 und den Text darunter weiterhin als Vorschlag/
-Entwurf. Der Hauptprozess modelliert fest `Register → Clarification → Triage`,
-wobei `Clarification` «In Abklärung» speichert. Dieser Einstieg wurde bereits
-bestätigt. Keine neue Statusentscheidung nötig: den widersprüchlichen Alttext
-später nachführen. Registrierung und Status-Commit bleiben technische Schritte;
-«Prozessstart» ist weiterhin kein zusätzlicher fachlicher Status.
+Fachliche Quellen bleiben [Fallverwaltung](../../specifications/fallverwaltung.md),
+[Fallkommunikation](../../specifications/fallkommunikation.md),
+[Dringlichkeitsbewertung](../../specifications/dringlichkeitsbewertung.md),
+[Benachrichtigungen](../../specifications/benachrichtigungen-und-zustellung.md),
+[UI3](../../frontend/ansicht-03-mitarbeiter-falldetail.md) und
+[ADR-002](../adr/ADR-002-camunda8-workflow-orchestrierung.md).
+Die technische Aufteilung beschreibt [teilprozess-vertraege.md](teilprozess-vertraege.md),
+die Navigation [README.md](README.md).
 
-### B02 – Mitarbeiter-Nebenaktionen nicht durchgängig zugeordnet (L, hoch)
+| Datei | Modellstand | Zuständigkeit |
+|---|---|---|
+| [propertyflow-fallprozess-entwurf.bpmn](propertyflow-fallprozess-entwurf.bpmn) | 0.34 | Führender Ablauf, zentrale Eingänge, gemeinsame Unterbrechung, Mitarbeiterabschluss |
+| [automatische-abklaerung.bpmn](automatische-abklaerung.bpmn) | 0.31 | Analyse, Ausführungsprüfung, automatische Rückfrage/Antwort/Systemabschluss |
+| [mieterantwort-pruefen.bpmn](mieterantwort-pruefen.bpmn) | 0.32 | Antwortauswertung, fachliche Fortsetzung und manueller Sendeweg |
+| [mitarbeiterbearbeitung.bpmn](mitarbeiterbearbeitung.bpmn) | 0.33 | Prüfung, Bearbeitung und externe Wartephase |
+| [wiedervorlage.bpmn](wiedervorlage.bpmn) | 0.33 | Termin, Timer und Mitarbeiteraktionen zur Wiedervorlage |
+| [mieternachricht-verarbeiten.bpmn](mieternachricht-verarbeiten.bpmn) | 0.12 | Zentrale Verarbeitung gespeicherter Mieternachrichten |
+| [fallbenachrichtigung-versenden.bpmn](fallbenachrichtigung-versenden.bpmn) | 0.23 | Eigenständiger Versandprozess mit Mail-Worker |
 
-KOM-01 verlangt eine passende laufende Prozessaktion für externe Veröffentlichung
-und Memo. UI3 und DRING erlauben weitere geschützte Änderungen. Vorhanden sind
-`SMessageSide` nur für offene `SReview`, `WQuestionSide` für Wiedervorlage und
-`SQuestion` als Übergang in den Mieterwartepfad. Nicht vollständig abgedeckt sind
-reine Information ohne Aufgabenabschluss, manuelles Nachfragen während `Reply`,
-Memo, Zuordnung und manuelle Dringlichkeit in den jeweils erlaubten aktiven Phasen.
+Alle sieben Modelle tragen `isExecutable=false`. Unterschiedliche Modellstände
+je Datei sind beabsichtigt. Die führende Fallzuordnung bleibt im Hauptprozess;
+Call Activities erzeugen untergeordnete Instanzen, keine neuen Fälle.
 
-Konkreter Testfall: Fall wartet auf Mieterantwort; Mitarbeiter möchte manuell
-nachfragen. Das ist in KOM-03 zugesagt, der neue `ClearAnswerSide`-Eingang ist dafür
-aber nicht zuständig. Ein Versand darf nicht ersatzweise die Aufgabe abschliessen.
+## Aktuelle Status-/Aktionsmatrix
 
-Nächster Entscheid: pro Aktion erlaubte Phasen und statusneutrale Nebenwirkung
-festlegen; anschliessend gemeinsamen Freigabevertrag oder gezielte Nebenaktionen
-modellieren. Nicht für jedes Memo einen eigenen grossen Prozess bauen.
+«Daten ergänzen» bezeichnet die zentrale Freigabe aus FALL-06: internes Memo,
+reine externe Information ohne neuen Antwortbedarf, Objektzuordnung und manuelle
+Dringlichkeit. In allen sechs aktiven Status ist dies erlaubt und beendet weder
+Aufgabe noch Wartephase. Neuer zwingender Prüfbedarf wirkt über seinen eigenen
+Pfad. Die noch fehlende technische Anbindung dieser Freigabe ist B02/B09.
 
-### B03 – Breite UI-Aktionsbeschreibung versus engere Prozessfreigabe (L, mittel)
+| Status | Mieternachricht | Mitarbeiteraktion / Fortsetzung | Abschluss | Neuer zwingender Prüfbedarf |
+|---|---|---|---|---|
+| Eingegangen | Aktivierung und aktuelle Zuordnung sind Voraussetzung des aktiven Eingangs | Nur berechtigt lesen; Änderungen bis Aktivierung gesperrt | Kein aktiver Mitarbeiter-Abschlusspfad | Bei Aktivierung aktuellen Stand berücksichtigen; technische Übergabe offen |
+| In Abklärung | Zentral verarbeiten; alte Auswertungen dürfen aktuelle Grundlage nicht überschreiben | Daten ergänzen; Rückfrage → Mieterwartephase (29); Termin → Wiedervorlage (31); Übernahme → Bearbeitung mit Prüfvorrang (33) | Systemabschluss unter FALL-07/10; direkter Mitarbeiterabschluss (30) | Gesamten aktuellen Automatic-Call unterbrechen, auch bei blockiertem KI-Job; Mitarbeiterprüfung |
+| Wartet auf Mieterantwort | Teilantworten und Restfragen berücksichtigen; nach vollständiger Antwort Prüfung, sofern kein zulässiger Systemabschluss | Daten ergänzen; manuelles Nachfragen als Nebenaktion in RStaffMessageSide; letzter Antwortbedarf aufgehoben → Bearbeitung ohne vorrangigen Prüfbedarf; Termin → Wiedervorlage (32) | Geprüfter Systemabschluss oder direkter Mitarbeiterabschluss (28) | Reply unterbrechen und zur Mitarbeiterprüfung |
+| Mitarbeiterprüfung erforderlich | Dieselbe Prüfung ergänzen; kein automatisches Verlassen | Daten ergänzen; Nachricht mit/ohne Antwortbedarf als Nebenaktion; bewusste Entscheidung über Fortsetzung, Rückfrage, Termin oder Abschluss | Nur bestätigter Mitarbeiterabschluss | Dieselbe Aufgabe ergänzen, keine zweite Prüfung |
+| In Bearbeitung | Aktuelle Grundlage ergänzen; menschlichen Vorrang erhalten | Daten ergänzen; Rückfrage → Mieterwartephase; Wiedervorlage, externe Wartephase oder Prüfung wählen | Mitarbeiterabschluss; kein Systemabschluss | Bearbeitungsaufgabe ablösen und zur Mitarbeiterprüfung |
+| Wartet auf externe Rückmeldung | Ohne neuen zwingenden Prüfbedarf bleibt die Wartephase bestehen | Daten ergänzen; Rückfrage mit Antwortbedarf bleibt Nebenaktion; bewusst fortsetzen, Termin setzen oder abschliessen | Mitarbeiterabschluss; kein Systemabschluss | Externe Wartephase beenden und zur Mitarbeiterprüfung |
+| Wartet auf Wiedervorlage | Termin/Timer aufheben und sofort zur Mitarbeiterprüfung, ohne KI abzuwarten | Daten ergänzen; Rückfrage lässt Termin bestehen; Termin ändern oder löschen; Löschen → Bearbeitung auch bei offenen Fragen | Mitarbeiterabschluss; kein Systemabschluss | Wiedervorlage samt Timer beenden und zur Mitarbeiterprüfung |
+| Abgeschlossen | Keine neuen fachlichen Nachrichten | Berechtigt lesen; bewusste Wiedereröffnung separat, neue führende Instanz für denselben Fall | Identischen erfolgreichen Auftrag idempotent bestätigen | Nur interner Hinweis, keine automatische Wiedereröffnung |
 
-FALL-11/UI3 beschreiben Wiedervorlage für aktive Fälle, schränken aber auf
-Prozessfreigabe ein. Sichtbar setzen können sie SReview, SWork und SExternalWait.
-Aus Reply oder laufender Erstabklärung gibt es keinen direkten Setzpfad. Ähnlich
-ist Mitarbeiterabschluss aus In Abklärung nicht ausdrücklich modelliert; die
-neu bestätigte Direktaktion gilt nur für Reply.
+Diese Matrix beschreibt vereinbartes Entwurfsverhalten, nicht die Implementierung
+von UI, Backend oder Engine. Aus der allgemeinen Freigabe «Daten ergänzen» folgt
+keine Freigabe zusätzlicher statusändernder Aktionen.
 
-Das ist **kein Beweis**, dass jede Aktion in jedem aktiven Status erlaubt sein
-muss. Es fehlt eine verbindliche Phasenliste. Vor Umsetzung entscheiden: dort
-bewusst sperren oder vorhandene Aktion auch dort zulassen. Für externe Wartephase
-zusätzlich festhalten, ob eine neu veröffentlichte Rückfrage ihren Status erhält;
-FALL-12 klärt den Eingang von Mieternachrichten, nicht alle Sendeaktionen.
+## B02 im Detail: Was bleibt tatsächlich offen?
 
-### B04 – Neuer Prüfbedarf während automatischer Jobs bleibt generisch (L, hoch)
+### B02.1 – Manuelles Nachfragen (im Entwurf 0.32 behandelt)
 
-`ReviewNeedOther` benennt jetzt konkrete Ziele für Bearbeitung, Wiedervorlage und
-externe Wartephase. Für `Triage`, `Recommend`, `Question`, `AutoAnswer` oder einen
-technisch blockierten automatischen Job gibt es keinen gleichwertig konkreten
-Unterbrechungs-/Übernahmepfad. `Validate` und `Close` prüfen Gründe, werden bei
-einem blockierten vorgelagerten Job aber eventuell noch nicht erreicht.
+Die bestehende Nachrichtenfunktion mit optionalem «Mieterantwort erforderlich»
+verwendet `RStaffMessageSide` in der aktuellen Reply-Kindinstanz. Nicht unterbrechender
+Message-Eingang → `RStaffMessagePublish` → Ende nur der Nebenaktion. Status und
+bestehender Warteaufruf bleiben erhalten; neue Fragen ergänzen alte Antwortbedarfe.
+Reine Information erzeugt keinen neuen Bedarf. Berechtigungs-, Fallstands- und
+Call-Prüfung sind im Vertrag beschrieben. Veralteter unveröffentlichter Auftrag
+wird abgelehnt; erfolgreiche Wiederholung erzeugt keine zweite Nachricht/Mailpflicht.
+Bewusst erneut gesendeter gleicher Text ist eine neue Nachricht, keine automatische
+semantische Dublettenprüfung. Laufende Auswertung berücksichtigt neue Antwortbedarfe.
 
-Testfall: `Recommend` hängt in einem technischen Fehlerzustand; unabhängig davon
-wird klärungsbedürftiger Versand festgestellt. Der neue Grund muss gespeichert
-bleiben, aber der sichtbare Entwurf erklärt nicht abschliessend, wie die
-Mitarbeiterprüfung dann tatsächlich erreicht wird. Das ist eine Fortsetzungslücke,
-kein Beleg für Datenverlust. Fachlich/technisch festlegen, wann unterbrochen wird
-und wann der laufende Worker kontrolliert übergibt; keine parallelen Staff-Calls.
+Quelle: KOM-03, geplante Prüfungen KOM-AK-30. Der Anbindungsentscheid ist getroffen
+und im BPMN ergänzt. Technische Korrelation, Konkurrenzschutz, Versand und
+Laufzeittests bleiben bei B07/B09/B10 offen; kein Implementierungsnachweis.
 
-### B05 – Unterschiedliche Fehlerpfade für die LLM-Empfehlung (L, hoch)
+### B02.2 – Informationsnachrichten (im Entwurf 0.33 behandelt)
 
-In N haben sowohl `NAnalyze` als auch `NRecommend` einen Analysefehler-Randpfad zu
-`NFailure`. Im Hauptprozess hat `Triage` einen solchen Randpfad, `Recommend` jedoch
-nicht. FALL-05 verlangt Mitarbeiterprüfung bei fehlgeschlagener KI-Analyse.
+Die fachlich bestätigte statusneutrale Information ist jetzt in allen aktiven
+Phasen einem bestehenden Sendeweg zugeordnet:
 
-Für ungültige Empfehlung oder endgültig festgestellten fachlichen Analysefehler
-in `Recommend` fehlt die eindeutige Abbildung. Technische Retries und fachliche
-Fehler nicht gleichsetzen. Entweder geregeltes Fehlerergebnis bis `Validate`
-weiterreichen oder ausdrücklichen fachlichen Fehlerpfad vorsehen; Entscheidung
-und zugehörige Tests dokumentieren. Das blosse Wort «Fehler» am Route-Ausgang
-beantwortet nicht, wie ein fehlgeschlagener Task dorthin gelangt.
+| Phase | Aktueller Sendeweg | Schutz |
+|---|---|---|
+| In Abklärung | StaffQuestionSide mit Informationsausgang StaffInformationDone | Kein Ablösemarker; nur Rückfrage mit Antwortbedarf führt zu StaffQuestionSignal. |
+| In Bearbeitung | SMessageSide für aktuelle SWork-Aufgabe | Nur Information ohne neuen Antwortbedarf; Aufgabe bleibt offen. Rückfrage bleibt SQuestion-Fortsetzung. |
+| Mitarbeiterprüfung / externe Wartephase | SMessageSide wie bisher | Dieselbe Aufgabe/Wartephase bleibt bestehen. |
+| Mieterwartephase | RStaffMessageSide (0.32) | Bestehender Reply-Aufruf bleibt bestehen. |
+| Wiedervorlage | WQuestionSide für Information oder Rückfrage | Termin, Terminversion und Timer bleiben unverändert. |
 
-### B06 – Statusmail-Anbindung (Entwurf erledigt, technische Umsetzung offen)
+Nachricht und Mailpflicht konsistent speichern; alte Fragen erhalten. Aktueller
+Fall-/Prozessbezug und Berechtigungen bleiben Pflicht. Veraltete unveröffentlichte
+Aufträge ablehnen; erfolgreichen Retry ohne Duplikat bestätigen. Relevante neue
+Information muss bei weiteren automatischen Wirkungen berücksichtigt werden,
+aber das Senden selbst unterbricht die Automatik nicht. Neuer zwingender Prüfbedarf
+bleibt separater Pfad. Quelle: FALL-06 und KOM-AK-31. B02.2 ist im Entwurf behandelt;
+technische Umsetzung und Laufzeittests bleiben B07/B09/B10.
 
-BEN-03 beschreibt ausdrücklich: Status-Worker liefert Ereignisreferenz nach
-Commit, Camunda-Send-Task ruft wiederverwendbaren Mail-Worker auf. In den fünf
-BPMN-Dateien existiert kein solcher Statusmail-Sendeschritt. AutoAnswer und
-Mitarbeiter-Veröffentlichungen erwähnen Versandaufträge, ersetzen aber nicht die
-Benachrichtigung für reine Status-/Dringlichkeitsänderungen.
+### B02.3 – Falldaten ergänzen (im Entwurf 0.34 behandelt)
 
-Zu klären ist der bereits gewählte Integrationsweg: Modell ergänzen oder die
-Send-Task-Vorgabe bewusst neu entscheiden und konsistent dokumentieren. Nicht
-versehentlich die abgeschaffte Abschlussmail zurückbringen: BEN-05 nimmt den
-Statuswechsel zu Abgeschlossen weiterhin aus. Versandfehler dürfen keinen
-unkontrollierten Kreislauf aus Prüfstatusmail und neuem Prüfgrund erzeugen;
-Ereignis-/Grund-Deduplizierung ist dafür notwendig.
+FALL-06 definiert den gemeinsamen Auftragsrahmen mit Fall-ID, festgelegter
+Aktionsart, Aktionsdaten, bestätigter Fallversion und Operations-ID. Identität
+und führende Prozesszuordnung ermittelt der Server. CaseDataSide im ActiveCase
+ist ein nicht unterbrechender Ereignis-Teilprozess: CaseDataApply prüft und delegiert
+an die zuständige Fachlogik für Memo, Zuordnung oder manuelle Dringlichkeit.
+Keine Mitarbeiter-User-Task erforderlich; Status, Aufgabe und Timer bleiben bestehen.
 
-### B07 – Rückwege setzen bereits vorhandene Prüfung textlich voraus (T/L, hoch)
+Berechtigung und aktueller Fallstand werden vor Speicherung erneut geprüft.
+Änderung, erforderlicher Nachweis, Operationsausgang und nötige Mailpflicht werden
+konsistent gesichert. Memo bleibt intern; Zuordnung schützt aktuelle Grundlage;
+manuelle Dringlichkeit behält Vorrang. Neue zwingende Prüfgründe folgen separat.
+Veraltete/unberechtigte Aufträge ohne Wirkung ablehnen; erfolgreiche Wiederholung
+ohne zweite Wirkung. Kein Erfolg ohne Bestätigung. Quelle: FALL-06 / FALL-AK-43.
 
-`ReviewNeedPrepare` und `ClearAnswerContinue` verlangen, eine bereits gleichzeitig
-entstandene Prüfung wiederzuverwenden und keine zweite anzulegen. Die Flows
-`PN11`/`CA05` führen jedoch direkt zum Call `Staff`. Ein normaler Call-Eintritt
-allein beschreibt keine Wiederverwendung einer anderen laufenden Kindinstanz.
+Damit ist B02.3 im Entwurf behandelt. Technische Korrelation, atomare Speicherung,
+Auftrags-/HTTP-Rückmeldung und Ausführungstests sind weiterhin B07/B09/B10.
+Keine Backend-Implementierung durch die Modellergänzung.
 
-Kein nachgewiesener Laufzeitfehler: noch fehlen Worker und Bedingungen. Aber der
-Vertrag muss vor Implementierung einen klaren Ausgang für «bereits erledigt /
-anderer aktueller Pfad besitzt die Bearbeitung» erhalten oder die exklusive
-Übernahme vor Call-Eintritt garantieren. Dasselbe gilt für konkurrierende
-`ReplyCleared`, `ReplyStaffClose` und `ReplyReviewNeeded`: die erste Unterbrechung
-und der weiterhin gültige fachliche Auftrag müssen abgestimmt werden. Andere
-Marker dürfen weder verloren gehen noch einen neuen Call irrtümlich unterbrechen.
+### B02: Bereits geklärt – nicht erneut öffnen
 
-### B08 – Nachträge und ältere Texte sind nicht vollständig konsolidiert (W, mittel)
+- Daten ergänzen in allen aktiven Status; gesperrt vor Aktivierung und nach Abschluss.
+- Nachricht während Mitarbeiterprüfung beendet dieselbe Prüfaufgabe nicht.
+- Rückfrage während externer Wartephase beendet diese nicht.
+- Rückfrage während Wiedervorlage lässt Termin/Timer bestehen.
+- Mitarbeiterrückfrage aus Abklärung führt kontrolliert in die Mieterwartephase.
+- KI-Formulierungshilfe allein veröffentlicht nichts und braucht keinen eigenen BPMN-Task.
 
-Die neue FALL-05-Regel zur manuellen Aufhebung schützt ausdrücklich auch die
-externe Wartephase. Ältere KOM-03-Formulierungen nennen als Ausnahmen beim letzten
-Antwortbedarf nur Wiedervorlage und Mitarbeiterprüfung; der neuere Absatz weiter
-unten schützt wiederum externe Wartephase. Implementierer könnten unterschiedliche
-Absätze als Grundlage wählen. Ebenso enthält die Hauptprozess-Dokumentation noch
-«Fachentwurf 0.13», während der Prozessname 0.21 lautet; der Vertragskopf nennt
-0.10, obwohl Nachträge bis 0.22 existieren. Unterschiedliche Revisionen je Datei
-sind an sich kein Fehler, veraltete Aussagen innerhalb derselben Quelle schon.
+**Abschlusskriterium B02:** Für jede oben erlaubte Aktion ist ein konkreter,
+statusgerechter Auftragsweg oder ein gemeinsamer Freigabevertrag benannt; keine
+Aktion muss ersatzweise eine Aufgabe oder Wartephase beenden. Laufzeitprüfung
+bleibt anschliessend Teil von B09/B10. Dieses Kriterium ist im Entwurf 0.34 für B02.1–B02.3 erfüllt;
+die technische Ausführbarkeit ist weiterhin offen.
 
-Empfehlung: bestätigte Regeln später in die jeweiligen Kernabschnitte integrieren;
-Nachträge als Entscheidungshistorie behalten. Keine neuen Regeln aus alten
-«offen»-Listen ableiten, bevor ihr aktueller Stand geprüft wurde.
+## B01 / B08: Verbleibende Dokumentationsbereinigung
 
-### B09 – Rechtebindung über Kindinstanzen und neue Aktionsarten (T, hoch)
+**B01:** In FALL-05 steht Übergang 2 weiterhin als «Erster Bearbeitungsschritt ·
+Entwurf»; der Absatz nach der Übergangstabelle nennt den Einstieg einen Vorschlag.
+Bestätigt und modelliert ist dagegen INITIAL → Clarification → Triage im neuen
+Automatik-Teilprozess. Alttext korrigieren, keine neue Fachentscheidung nötig.
+Registrierung und Status-Commit bleiben getrennte technische Schritte.
 
-ADR-002 beschreibt den synchronen Abschluss nativer User Tasks anhand Aufgabe,
-Fallstand und Prozesszugehörigkeit. Die Teilprozess-Verträge erkennen selbst an,
-dass Eltern-/Kindbindung noch präzisiert werden muss. Die neu ergänzten Aktionen
-während Reply besitzen ausdrücklich keine Mitarbeiter-User-Task; hier braucht es
-einen anderen geprüften Aktionsbezug, ohne die bestehenden Rechte zu lockern.
+**B08:** Die ältere KOM-03-Formulierung zur Aufhebung des letzten Antwortbedarfs
+nennt Wiedervorlage und Prüfbedarf als Ausnahmen, aber nicht die externe Wartephase.
+Der neuere Absatz und FALL-05 schützen diese ausdrücklich. Den Kerntext konsistent
+nachführen. README und Teilprozess-Verträge haben aktuelle 0.31-Abschnitte mit
+Vorrang gegenüber historischen Elementnamen; die alte pauschale Behauptung eines
+unaktuellen Vertragskopfs ist deshalb erledigt. Weitere historische Zahlen und
+Pfade nicht als aktuellen Modellbestand interpretieren.
 
-Vor Umsetzung gemeinsame Verträge festlegen: Mitarbeiteridentität, Fall,
-führender Durchlauf, Kind-/Call-/Task-Bezug soweit vorhanden, bestätigter Fallstand,
-Idempotenzkennung und Antwort bei früher/später Ablehnung. Eine frei mitgesendete
-Prozess-ID ist keine Autorisierung. Das ist primär technische Ausarbeitung,
-keine neue Fachfunktion.
+## B03–B06: Im Entwurf behandelt
 
-### B10 – Fehlende ausführbare Bindungen sind erwartete Arbeit, keine neuen Fachfragen (T)
+**B03:** Übergänge 29–33 decken Mitarbeiterrückfrage, direkten Abschluss,
+Wiedervorlage und Übernahme aus Abklärung sowie Wiedervorlage aus der Mieterwartephase
+ab. Terminlöschung führt auch bei offenen Fragen zu «In Bearbeitung» (17).
+Die Mitarbeiterrückfrage während externer Wartephase bleibt statusneutral.
+Nachweise sind als FALL-AK-35 bis FALL-AK-40 geplant, nicht ausgeführt.
 
-Alle fünf Prozesse tragen `isExecutable=false`. Statisch vorhanden sind insgesamt
-46 Service Tasks, aber keine `zeebe:taskDefinition`; keine der Sequence Flows hat
-eine `conditionExpression`. Benannte Gateway-Ausgänge sind damit noch keine
-implementierten Entscheidungsbedingungen. Die drei Mitarbeiter-User-Tasks besitzen
-noch keine explizite `zeebe:userTask`-Erweiterung. Engine-konforme Task-Typen,
-Message-Korrelation, FEEL-Bedingungen, lokale Variablen, Fehlercodes und sichere
-Übergaben müssen vor Deployment konkretisiert und gegen die Zielversion geprüft
-werden. Dieser Bericht behauptet keine Engine-Kompatibilitätsprüfung.
+**B04:** `ReviewNeedSide` prüft den neuen Grund. Bei aktiver Automatik stellt
+`ReviewNeedOther` den aufrufgebundenen Entscheid im Elternscope bereit.
+`AutomaticInterrupted` unterbricht den gesamten Call, auch bei blockierten Jobs.
+`AutomaticInterruptionPrepare` berücksichtigt Prüfvorrang und die aktuelle
+Fortsetzung. Die alten `AutoReviewAt…`-Randereignisse sind durch 0.31 ersetzt.
+Geplant: FALL-AK-41/42. Die Sperre verspäteter Worker ab Bestätigung und zuverlässige
+Übergabe sind technische Anforderungen, kein Beweis durch das Diagramm.
 
-`followUpDueAt` ist bereits als Timerreferenz eingetragen, aber seine Bereitstellung
-fehlt noch. Die Output-Propagation-Flags und expliziten Mappings der Calls müssen
-im Engine-Test gemeinsam geprüft werden; aus einem XML-Flag allein wird hier kein
-Variablenleck behauptet. Ohne Laufzeittests ist weder die behauptete Einmaligkeit
-von Prüfungen noch die Transaktionssicherheit bewiesen.
+**B05:** Triage und Recommend melden festgestellte fachliche Analysefehler
+explizit als `TRIAGE_ANALYSIS_FAILED`. `AutomaticFailure` am gemeinsamen Call führt
+über `AutomaticFailurePrepare` zur Mitarbeiterprüfung. Ungültiger Nachrichtentext
+und veraltete Grundlage behalten ihre eigenen Kindpfade. Technische Fehler sind
+Retry/Incident, nicht automatisch BPMN-Fehler. Worker und Ausführungstests fehlen.
 
-## Bereits konsistent und nicht erneut zu entscheiden
+**B06:** Der eigenständige Mailprozess enthält zwei Send-Tasks. Fachliche Änderungen
+sichern die nötige Mailpflicht dauerhaft; Camunda beauftragt den Mail-Worker.
+Der Fallprozess wartet nicht auf SMTP. Keine zusätzliche Abschlussmail;
+Benachrichtigung zu bereits veröffentlichten Nachrichten bleibt erhalten.
+Implementieren/testen: zuverlässiger Start, Wiederholungsschutz, SMTP-Ungewissheit
+und Prüfgrund-Deduplizierung ohne Benachrichtigungsschleife.
 
-- Wiedereröffnung: gleiche Case-ID, neue führende Instanz; alte Arbeit bleibt gesperrt.
-- Menschliche Prüfung bleibt bis zur bewussten Mitarbeiterentscheidung bestehen.
-- Automatischer Abschluss nur in den freigegebenen Status mit fachlichen Belegen;
-  individuelle Nachricht vor Abschluss, keine zusätzliche Abschlussmail.
-- Mitarbeiterabschluss ohne Nachricht/Kommentar; aktueller Fallstand bleibt Pflicht.
-- Antwortbedarf aufheben bedeutet nicht «beantwortet» und nicht «Fall abschliessen».
-- Keine Antwortfrist, automatische Erinnerung oder Schliessung wegen Schweigens.
-- Wiedervorlage: Kalendertage, 08:00 Europe/Zurich, versionsgebundener Timer;
-  neuer Mieterkontakt oder zwingender Prüfbedarf beendet die betroffene Wartephase.
-- Externe Wartephase wird nicht durch normale Mieternachrichten automatisch beendet.
+## B07 / B09: Technische Verträge vor ausführbarer Umsetzung
 
-## Empfohlene Reihenfolge
+**B07 – einmalige Fortsetzung:** Worker-Texte verlangen bestehende Prüfaufgaben
+wiederzuverwenden, während Rückwege weiterhin zum Call `Staff` führen. Ein normaler
+Call-Aufruf allein verwendet keine andere laufende Kindinstanz wieder. Verbindlich
+festlegen: exklusive Übernahme vor Call-Eintritt oder ausdrücklicher Ausgang für
+«bereits erledigt / anderer aktueller Pfad zuständig». Keine zweite Aufgabe.
 
-1. **B02/B03:** verbindliche Mitarbeiter-Aktionsfreigabe je Status festlegen. Das
-   begrenzt den Umfang und verhindert weitere ad-hoc Nebenprozesse.
-2. **B04/B05:** Übergabe aus automatischer Verarbeitung bei neuem Prüfbedarf und
-   Analysefehlern vervollständigen.
-3. **B06:** Statusmail-Integration mit BEN-03/SS-002 abgleichen.
-4. **B01/B08:** widersprüchliche Alttexte konsolidieren, ohne Fachregeln neu zu erfinden.
-5. **B07/B09/B10:** Worker-/Ereignisverträge und Konfliktprotokoll definieren,
-   danach einen kleinen ausführbaren Ablauf implementieren und in Camunda testen.
+Das betrifft konkurrierende Mitarbeiteraktionen, Mieternachrichten, Prüfbedarf,
+Timer und normales Call-Ende. `automaticCallRef` und konsumierbare Marker konkretisieren
+die Zuordnung, ersetzen aber noch kein sicheres Transaktions-/Übergabeprotokoll.
+Prüfen: Meldung vor Registrierung, während Abbruch/Call-Ende und nach Wiedereröffnung.
+Keine verlorene Meldung, kein Wiederbeleben eines alten Aufrufs.
 
-## Durchgeführte Prüfung und Grenzen
+**B09 – Rechtebindung:** Die Verträge verlangen bereits Mitarbeiteridentität,
+Fall, führenden Durchlauf, Kind-/Call-Bezug, gegebenenfalls Task-Schlüssel,
+bestätigten Fallstand und Idempotenzkennung. Für statusneutrale Aktionen und
+Aktionen während Reply/Automatic darf keine nicht vorhandene Mitarbeiter-User-Task
+vorausgesetzt werden. Ein frei übergebener Prozessschlüssel autorisiert nichts.
 
-Die fünf XML-Dateien wurden gelesen und ihre Ablaufkanten mit den oben genannten
-Spezifikationsabschnitten verglichen. Aktuell geprüft: XML lesbar, eindeutige
-Element-IDs, auflösbare Sequence-Flow-Endpunkte, passende incoming/outgoing-Referenzen
-und derselbe BPMN-Scope für Quelle, Ziel und Flow. Diese statischen Prüfungen
-bestanden. Keine Deployment-, Worker-, Datenbank-, Berechtigungs- oder
-Nebenläufigkeitstests durchgeführt. Frühere erfolgreiche Modeler-Importprüfungen
-sind keine fachlichen Ausführungstests.
+Restarbeit: gemeinsame technische Auftragsform, serverseitige Auflösung des
+aktuellen Zielscopes und Verhalten bei früher/später Ablehnung inklusive
+HTTP-/UI-Rückmeldung konkretisieren. Unterbrechungen verwenden gespeicherte
+Entscheide, nicht normale Outputs des abgebrochenen Kindes. Keine zusätzliche
+Fachfunktion nötig; Abgleich mit ADR-002/SS-003 und Implementierung erforderlich.
 
-Es wurden nur dieser Bericht erstellt und bestehende Quellen gelesen. Die
-Matrix beschreibt das Ziel-/Entwurfsverhalten, nicht den Implementierungsstand
-von Demo-UI oder produktivem Backend. Eine vollständige Implementierungsprüfung
-und eine Prüfung der konkreten Camunda-Versionsunterstützung sind nicht Teil
-dieses Berichts.
+## B10: Ausführungsreife und Prüfungen
+
+Aktuelle statische Zählung der sieben Dateien am 15.11.2026:
+
+| Merkmal | Anzahl / Stand |
+|---|---|
+| Prozesse | 7, alle `isExecutable=false` |
+| Service Tasks | 69 |
+| Send Tasks | 2 |
+| `zeebe:taskDefinition` | 4 |
+| Sequence-Flow-`conditionExpression` | 3 |
+| BPMN-User-Tasks | 3 |
+| `zeebe:userTask`-Erweiterungen | 0 |
+
+Benannte Gateway-Ausgänge sind überwiegend noch keine ausführbaren Bedingungen.
+Task-Typen, Jobverträge, FEEL-Routing, Message-Korrelation, lokale Variablen,
+Timerbereitstellung und Call-Mappings müssen vollständig gebunden werden.
+Camunda 8.9 unterstützt Conditional Events; daraus folgt keine nachgewiesene
+Ausführbarkeit unserer Dateien. Die konfigurierte Zielversion ist 8.9.19.
+
+Vorherige Strukturprüfungen für 0.31: XML-Schema, eindeutige IDs, Flussreferenzen,
+Scopes und Call-Ziele sowie Modeler-Import/Export ohne Warnungen. Diese Prüfungen
+wurden nicht im Rahmen der jetzigen reinen Berichtskonsolidierung wiederholt.
+Keine Deployment-, Worker-, Datenbank-, Berechtigungs- oder Nebenläufigkeitstests
+für diesen gesamten BPMN-Entwurf nachgewiesen. FALL-AK-34 bis FALL-AK-42 sind
+Prüfpläne, keine erfolgreichen Testläufe.
+
+## Nächste Schritte
+
+1. B01/B08 als Dokumentationsbereinigung erledigen; bestätigte Fachregeln nicht neu öffnen.
+2. B07/B09 für den ersten ausführbaren Ablauf technisch konkretisieren, einschliesslich
+   der festgelegten Nebenaktionsverträge aus B02.
+3. B10 schrittweise implementieren und gegen PostgreSQL/Camunda testen.
+
+Bestehende Entscheidungen bleiben verbindlich: menschlicher Prüfvorrang,
+Nachricht vor Systemabschluss, Mitarbeiterabschluss ohne Nachrichtenpflicht,
+keine Schweigefristen, Wiedereröffnung mit neuer führender Instanz sowie die
+bestätigten Timer- und Wartephasenregeln. Dieser Bericht eröffnet diese Fragen
+nicht erneut.
+
+## Nachführung B02.1 (0.32)
+
+Mieterantwort-Nebenaktion, Spezifikation und Verträge wurden ergänzt. B02.1 ist
+im Entwurf behandelt; B02.2 ist für die Mieterwartephase ebenfalls abgedeckt.
+B02.3 bleibt offen. Diese Nachführung ersetzt die frühere Aussage, der Reply-
+Teilprozess habe keinen Mitarbeiter-Sendeweg. Noch keine Backend-Implementierung.
+
+Statische Prüfung zu 0.32: alle sieben Modelle bestehen XML-Schema-, ID-/
+Flussreferenz-/Scope-Prüfung und Modeler-Import/Export ohne Warnungen.
+Die neue Nebenaktion wurde in der gerenderten Mieterantwort-Ansicht kontrolliert.
+Keine Laufzeittests oder Backend-Änderungen.
+
+## Nachführung B02.2 (0.33)
+
+Bestehende Sendewege für Informationen erweitert, ohne neue grosse Teilprozesse.
+B02.1 und B02.2 sind im Entwurf behandelt; B02.3 bleibt die Anbindungslücke.
+KOM-AK-31 ist ein Prüfplan, kein Laufzeitnachweis. Keine Backend-Logik geändert.
+
+Statische Prüfung zu 0.33: alle sieben BPMN-Dateien bestehen XML-Schema-,
+ID-/Flussreferenz-/Scope-Prüfung und Modeler-Import/Export ohne Warnungen.
+Informationsausgang in der gerenderten Abklärungs-Nebenaktion kontrolliert.
+Keine Ausführungstests für die Sendewege.
+
+## Nachführung B02.3 (0.34)
+
+Gemeinsamer Aktionsvertrag in FALL-06 und CaseDataSide im Hauptmodell ergänzt.
+B02.1, B02.2 und B02.3 sind im Entwurf behandelt. Frühere Nachführungen mit
+«B02.3 bleibt offen» beschreiben ausschliesslich den damaligen Stand.
+FALL-AK-43 bleibt Prüfplan; keine Backend-Logik geändert.
+
+Statische Prüfung zu 0.34: sieben BPMN-Dateien bestehen XML-Schema-,
+ID-/Flussreferenz-/Scope-Prüfung und Modeler-Import/Export ohne Warnungen.
+Detailansicht von CaseDataSide gerendert und kontrolliert. Keine Laufzeittests.

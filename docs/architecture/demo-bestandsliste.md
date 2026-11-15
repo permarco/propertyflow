@@ -90,7 +90,7 @@ Java-Pfade in «Backend-Code» sind relativ zu [`src/main/java/com/pertegato/pro
 
 ### Massgebliche Verträge
 
-- [SS-001 bis SS-006](schnittstellenentwurf-block-3.md) und [HTTP-OpenAPI](openapi/fallannahme.yaml)
+- [SS-001 bis SS-006](schnittstellenentwurf-block-3.md) und [HTTP-OpenAPI](openapi/propertyflow-web.yaml)
 - [ADR-002 zur Prozessführung](adr/ADR-002-camunda8-workflow-orchestrierung.md) und [Modulstruktur](module-structure.md)
 - [ADR-004 zum persönlichen Fall-Link](adr/ADR-004-tokenbasierter-mieterzugriff.md), [ADR-005 zum Zugriffsmodell](adr/ADR-005-zugriffsmodell.md) und [ZUG-04](../specifications/fallzugriff-und-sicherheit.md#zug-04-rechte-und-vertrauensgrenzen)
 - [MCP Guidelines](../specifications/MCP_GUIDELINES.md) und [bestehende Testanleitung](../../src/test/README.md)

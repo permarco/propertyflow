@@ -1,10 +1,11 @@
 <?xml version='1.0' encoding='utf-8'?>
 <bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_PropertyFlow_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+  <bpmn:message id="Message_CaseDataChange" name="Falldaten ergänzen angefordert" />
   <bpmn:message id="Message_StaffTakeover" name="Bearbeitung während Abklärung übernehmen" />
   <bpmn:message id="Message_StaffFollowClarification" name="Direkte Wiedervorlage angefordert" />
   <bpmn:message id="Message_StaffCloseClarification" name="Mitarbeiterabschluss während Abklärung angefordert" />
   <bpmn:escalation id="Escalation_StaffCloseCommitted" name="Mitarbeiterabschluss aus Abklärung gespeichert" escalationCode="STAFF_CLARIFICATION_CLOSURE_COMMITTED" />
-  <bpmn:message id="Message_StaffQuestionClarification" name="Mitarbeiterrückfrage während Abklärung angefordert" />
+  <bpmn:message id="Message_StaffQuestionClarification" name="Mitarbeiternachricht während Abklärung angefordert" />
   <bpmn:message id="Message_ReviewRequired" name="Fachlicher Prüfbedarf festgestellt" />
   <bpmn:message id="Message_StaffCloseReply" name="Mitarbeiterabschluss im Mieterwartepfad angefordert" />
   <bpmn:message id="Message_ClearAnswer" name="Antwortbedarf aufheben angefordert" />
@@ -24,7 +25,7 @@
   <bpmn:error id="Error_AnalysisStale" name="Analysegrundlage überholt" errorCode="ANALYSIS_BASIS_STALE">
     <bpmn:documentation>Fachlicher Platzhalter für Zeilen 1 und 3: Die Auswertung enthält neue relevante gespeicherte Mieternachrichten noch nicht. In Validate führt der Konflikt zur aktuellen Analysegrundlage; in RValidate zur aktuellen Antwortauswertung. Kein technischer Jobfehler und kein Analysefehler. Meldung durch den späteren Prüfdienst, nicht automatisch durch blossen Nachrichteneingang. Keine zweite unabhängige Verarbeitung; aktuelle Mitarbeiterentscheidung und Abschluss schützen. Keine Ausführungsimplementierung.</bpmn:documentation>
   </bpmn:error>
-  <bpmn:process id="PropertyFlow_Case_Draft" name="PropertyFlow · Fallprozess · Fachentwurf 0.29" isExecutable="false">
+  <bpmn:process id="PropertyFlow_Case_Draft" name="PropertyFlow · Fallprozess · Fachentwurf 0.34" isExecutable="false">
     <bpmn:documentation>Fachentwurf 0.13, nicht ausführbar. Individuelle LLM-Nachricht im AutoAnswer-Worker erzeugen, prüfen, speichern und Versand beauftragen; danach Close. Kein Vorlagenkatalog, keine zusätzliche Abschlussmail. Mitarbeiterabschluss ohne Nachricht. Menschliche Priorität, Aktualität, Rückfragen, Wiedervorlage und bisherige Konfliktrückwege bleiben. Technische Fehler: Job-Retries/Incidents. Start-/Kindinstanz-Verträge weiterhin vor Ausführung konkretisieren; keine Backend-Implementierung.
 Fachentwurf 0.15: Wiedereröffnung startet eine neue Instanz für denselben Fall; direkter Mitarbeiterpfad gemäss FALL-07. Keine Backend-Implementierung.</bpmn:documentation>
     <bpmn:subProcess id="ActiveCase" name="Aktiven Fall bearbeiten">
@@ -42,88 +43,6 @@ Nur Erstanlage. Eine Wiedereröffnung darf ausschliesslich ReopenCase zuordnen; 
         <bpmn:incoming>F_Initial</bpmn:incoming>
         <bpmn:outgoing>F02</bpmn:outgoing>
       </bpmn:serviceTask>
-      <bpmn:serviceTask id="Clarification" name="Status speichern:&#10;In Abklärung">
-        <bpmn:documentation>BEN-03 / 0.23: Bei tatsächlicher benachrichtigungspflichtiger Änderung Ereignis und Mailpflicht dauerhaft zusammen sichern. Der dauerhafte Starter startet fallbenachrichtigung-versenden.bpmn mit mailOrderRef; dort beauftragen Camunda-Send-Tasks den Mail-Worker. Hier kein direkter SMTP-Aufruf und kein Warten auf SMTP. Unveränderte Werte und identische Wiederholungen erzeugen keine neue Mailpflicht.
-FALL-06 Übergang 29: Übernommene Mitarbeiterrückfrage sperrt jede weitere automatische Wirkung dieses Abklärungslaufs; verspätete Ergebnisse verwerfen. Status und Übergangsbezug vor jedem Schreiben konsistent prüfen.
-FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklärungslauf seine automatische Schreibfreigabe. Auch vor BPMN-Unterbrechung keine verspäteten Wirkungen speichern.</bpmn:documentation>
-        <bpmn:incoming>F02</bpmn:incoming>
-        <bpmn:outgoing>F03</bpmn:outgoing>
-      </bpmn:serviceTask>
-      <bpmn:serviceTask id="Triage" name="Dringlichkeit&#10;bewerten">
-        <bpmn:documentation>BEN-03 / 0.23: Bei tatsächlicher benachrichtigungspflichtiger Änderung Ereignis und Mailpflicht dauerhaft zusammen sichern. Der dauerhafte Starter startet fallbenachrichtigung-versenden.bpmn mit mailOrderRef; dort beauftragen Camunda-Send-Tasks den Mail-Worker. Hier kein direkter SMTP-Aufruf und kein Warten auf SMTP. Unveränderte Werte und identische Wiederholungen erzeugen keine neue Mailpflicht. Triage über Modell-Port. Vorhandene manuelle Dringlichkeit hat Vorrang. Bei festgestelltem Analysefehler oder ungültiger Modellausgabe meldet der spätere Worker TRIAGE_ANALYSIS_FAILED. Der unterbrechende Fehlerpfad führt unmittelbar zur Mitarbeiterprüfung; Vorgehen bestimmen wird in diesem Durchlauf nicht aufgerufen. Eine vorhandene Einstufung bleibt erhalten, sonst gilt Noch nicht bewertet. Keine erfundene Stufe. Technische Speicherfehler bleiben von dieser fachlichen Analysefehlerreaktion getrennt.
-KOM-03 Zeile 1: Ergebnis vor Übernahme gegen relevante gespeicherte Nachrichten prüfen; keine aktuelle Einstufung durch alte Grundlage überschreiben. Neue Nachrichten berücksichtigt die zentrale Auswertung. Ein überholter Erfolgsstand darf keine Folgeaktion autorisieren; Validate führt zur aktuellen Auswertung zurück. Keine technische Pflicht zum Abbruch laufender Modellaufrufe.
-FALL-06 Übergang 29: Übernommene Mitarbeiterrückfrage sperrt jede weitere automatische Wirkung dieses Abklärungslaufs; verspätete Ergebnisse verwerfen. Status und Übergangsbezug vor jedem Schreiben konsistent prüfen.
-FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklärungslauf seine automatische Schreibfreigabe. Auch vor BPMN-Unterbrechung keine verspäteten Wirkungen speichern.</bpmn:documentation>
-        <bpmn:incoming>F03</bpmn:incoming>
-        <bpmn:outgoing>F04</bpmn:outgoing>
-      </bpmn:serviceTask>
-      <bpmn:boundaryEvent id="TriageFailure" name="KI-Analyse fehlgeschlagen" attachedToRef="Triage">
-        <bpmn:documentation>FALL-05 / FALL-AK-10: normale Fortsetzung F04 unterbrechen und zur bestehenden Mitarbeiterprüfung wechseln. Der Eingang trägt den internen Prüfgrund KI-Analyse fehlgeschlagen. Keine Wartephase bis zum letzten Retry und keine automatische Aufhebung des Prüfbedarfs durch eine spätere Analyse.</bpmn:documentation>
-        <bpmn:outgoing>F_TriageFailure_Staff</bpmn:outgoing>
-        <bpmn:errorEventDefinition id="TriageFailure_definition" errorRef="Error_TriageFailure" />
-      </bpmn:boundaryEvent>
-      <bpmn:serviceTask id="Recommend" name="Vorgehen bestimmen&#10;LLM + Fachkontext">
-        <bpmn:documentation>UC-018/021: erlaubten Fallkontext und freigegebene Fachregeln verwenden. Rückfrage, Antwort mit Systemabschluss oder Mitarbeiterprüfung vorschlagen. Für Rückfragen passende Frage-IDs aus KOM-05 für notwendige fehlende Sachangaben auswählen; keine freien Textzusätze automatisch veröffentlichen. Bekannte Angaben und bisherigen Antwortbedarf berücksichtigen. Keine internen Memos oder Ableitungen daraus an Kommunikations-LLM; auch nicht bei anschliessender menschlicher Prüfung. Für einen vorgeschlagenen Systemabschluss genau einen der bestätigten FALL-07-Gründe mit Belegstellen zur vollständigen Behebung beziehungsweise mit Regelkennung und -version für den gesamten Sachverhalt begründen. Keine unbekannten Tatsachen oder Zuständigkeitsregeln ergänzen. Fehlende Belege und Widersprüche offen ausweisen. Der Vorschlag erteilt keine dauerhafte Abschluss- oder Veröffentlichungsfreigabe; diese werden separat am aktuellen Stand geprüft.
- Die Empfehlung enthält noch keinen zu versendenden Text; AutoAnswer erzeugt später die individuelle LLM-Nachricht und prüft sie im Worker. Empfehlung ist keine Ausführungsfreigabe; Kontextgrenze KOM-02 bleibt verbindlich.
-KOM-03 Zeile 1: Ergebnis vor Übernahme gegen relevante gespeicherte Nachrichten prüfen; keine aktuelle Einstufung durch alte Grundlage überschreiben. Neue Nachrichten berücksichtigt die zentrale Auswertung. Ein überholter Erfolgsstand darf keine Folgeaktion autorisieren; Validate führt zur aktuellen Auswertung zurück. Keine technische Pflicht zum Abbruch laufender Modellaufrufe.
-KOM-06: Abschlussgrund und Belege empfehlen. Individuelle Abschlussnachricht erst im nachgelagerten AutoAnswer-Worker erzeugen und dort prüfen; keine Antwortart-/Vorlagenwahl.
-FALL-06 Übergang 29: Übernommene Mitarbeiterrückfrage sperrt jede weitere automatische Wirkung dieses Abklärungslaufs; verspätete Ergebnisse verwerfen. Status und Übergangsbezug vor jedem Schreiben konsistent prüfen.
-FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklärungslauf seine automatische Schreibfreigabe. Auch vor BPMN-Unterbrechung keine verspäteten Wirkungen speichern.</bpmn:documentation>
-        <bpmn:incoming>F04</bpmn:incoming>
-        <bpmn:outgoing>F05</bpmn:outgoing>
-      </bpmn:serviceTask>
-      <bpmn:serviceTask id="Validate" name="Ausführungsbedingungen&#10;und Abschlussgründe prüfen">
-        <bpmn:documentation>PropertyFlow prüft aktuelle Fallversion, Prozessfreigabe, Katalogfassung und Frage-IDs sowie offene Prüfgründe nach KOM-05. Ein inzwischen auf Mitarbeiterprüfung erforderlich stehender Fall behält Status und dieselbe Aufgabe bis zur bewussten Mitarbeiterentscheidung; keine automatische Fortsetzung oder Schliessung unabhängig vom Ursprung des Prüfbedarfs. Pflichtprüfung nach FALL-10, offene Objektzuordnung, Analysefehler und klärungsbedürftiger Versand haben Vorrang. Keine automatische Rückfrage während Mitarbeiterbearbeitung oder Wiedervorlage. Widersprüchliche Grundlage oder notwendige Frage ausserhalb des Katalogs -&gt; Mitarbeiterprüfung. Bekannte, offene, beantwortete oder bewusst aufgehobene Fragen nicht wiederholen. Überholte Ergebnisse ohne Veröffentlichung verwerfen bzw. aktuell neu bewerten; sie sind kein Default-Prüfgrund. Ein gültiges Schema beweist keine semantische Richtigkeit. Nur FALL-07-Abschlussgründe, kein Abschluss aus niedriger Dringlichkeit allein. Systemabschluss nach den am 15.11.2026 bestätigten Regeln in FALL-07: ausschliesslich gespeicherter Status In Abklärung oder Wartet auf Mieterantwort, aktuelle Prozessfreigabe und keine offenen menschlichen Entscheidungen nach FALL-06/FALL-10, keine offene Objektzuordnung, kein Analysefehler und kein klärungsbedürftiger Versand. Alle relevanten gespeicherten Mieternachrichten müssen berücksichtigt sein; eine neue, noch nicht ausgewertete Nachricht sperrt den Abschluss auf alter Grundlage. Problem behoben verlangt eine gespeicherte eindeutige Bestätigung der bereits eingetretenen Behebung des gesamten offenen Sachverhalts ohne weiteren Hilfebedarf oder aktuellen Widerspruch. Vorläufige Besserung, geplante Massnahmen, Restschäden, Danke, Schweigen oder Bitte schliessen allein genügen nicht. Kein Bearbeitungsbedarf der Verwaltung verlangt eine ausdrücklich für Systemabschluss freigegebene, gültige Regel mit Kennung, Version und passendem Geltungsbereich; alle Voraussetzungen müssen belegt, alle Teilprobleme abgedeckt und Ausnahmen oder Widersprüche ausgeschlossen sein. Fehlende Angaben, unbekannte Regeln, allgemeines Modellwissen oder begründete Mietereinwände geben keinen Abschluss frei. Belege und gegebenenfalls Regelreferenz prüfen und nachvollziehbar halten. Eine hohe Modellsicherheit oder formal gültige Ausgabe ersetzt keine semantische Evaluation. Bei belegter Gesamtbehebung dürfen gegenstandslos gewordene Rückfragen bis zum Abschluss offen bleiben; sie werden nicht als beantwortet erfunden. Unklare oder widersprüchliche fachliche Einordnung benötigt Mitarbeiterprüfung; gezielt erfragbare fehlende Angaben folgen gegebenenfalls KOM-05. Doppelte, überholte oder inzwischen unzulässige Vorschläge dürfen keine andere aktive Bearbeitung verdrängen und erzeugen für sich keine zusätzliche Aufgabe. Ihre technische Fortsetzung ist vor Ausführung festzulegen, kein pauschaler Default-Ausgang zur Mitarbeiterprüfung. Die Freigabe des Abschlussgrundes ersetzt keine Inhaltsprüfung im erzeugenden Worker.
-KOM-06: Individuelle Nachricht erst nach fachlicher Freigabe im AutoAnswer-Worker erzeugen und inhaltlich prüfen. Unzulässiger Inhalt führt zur Mitarbeiterprüfung, technische Generierungsfehler folgen Retries/Incident. Keine feste Textfassung.
-Zeile 1 bestätigt: Neue Nachricht während automatischer Analyse macht die unvollständige Grundlage unzulässig. Bei weiterhin In Abklärung über ANALYSIS_BASIS_STALE zu CurrentAnalysis und danach erneut prüfen. Kein Weg über den Default-Ausgang zur Mitarbeiterprüfung allein wegen veralteter Grundlage. Zeile 2: QuestionStale und AutoAnswerStale führen vor Veröffentlichung ebenfalls über CurrentAnalysis zurück.
-Bei Rückkehr aus Zeile 2 den bisherigen Rückfragenkontext berücksichtigen: Alle zuvor offenen Fragen beantwortet und kein zulässiger Systemabschluss sowie keine vorrangige Wiedervorlage -&gt; Mitarbeiterprüfung nach FALL-05. Dies nicht durch neue Katalogfragen umgehen. Teilantworten lassen übrige Fragen offen; reine Information ohne zuvor offene Fragen löst diesen Übergang nicht allein aus. Kein Statuswechsel zu In Abklärung durch den Rückweg. Fachliche Ergebnis- und Wartewege gelten weiter; technische Koordination bleibt vor Ausführung festzulegen.
-Zeile 3 / KOM-AK-24, am aktuellen Fallstand in dieser Reihenfolge: 1. Pflichtprüfbedarf oder Analysefehler -&gt; Mitarbeiterprüfung. 2. Zulässiger Systemabschluss mit anschliessender LLM-Nachricht -&gt; Antwort veröffentlichen und Abschluss erneut prüfen. 3. Alle zuvor offenen Fragen beantwortet, kein zulässiger Abschluss -&gt; Mitarbeiterprüfung, nicht durch neue Fragen umgehen. 4. Fragen bleiben offen und weitere notwendige Katalogfrage zulässig -&gt; nur diese neue Frage veröffentlichen. 5. Fragen offen und keine weitere Frage nötig -&gt; weiter warten ohne neue Kommunikation. Unzuverlässige Grundlage, fehlende zulässigen Nachrichteninhalt und notwendige Frage ausserhalb des Katalogs folgen den bestehenden Prüfregeln, kein stilles Weiterwarten. Teilantwort allein ist kein Prüfgrund. Kein Status In Abklärung allein durch Antwortauswertung. Zwischenzeitliche Mitarbeiterentscheidung und Abschluss schützen.
-FALL-06 Übergang 29: Übernommene Mitarbeiterrückfrage sperrt jede weitere automatische Wirkung dieses Abklärungslaufs; verspätete Ergebnisse verwerfen. Status und Übergangsbezug vor jedem Schreiben konsistent prüfen.
-FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklärungslauf seine automatische Schreibfreigabe. Auch vor BPMN-Unterbrechung keine verspäteten Wirkungen speichern.</bpmn:documentation>
-        <bpmn:incoming>F05</bpmn:incoming>
-        <bpmn:incoming>F_Current_Validate</bpmn:incoming>
-        <bpmn:outgoing>F06</bpmn:outgoing>
-      </bpmn:serviceTask>
-      <bpmn:boundaryEvent id="AnalysisStale" name="Analysegrundlage&#10;überholt" attachedToRef="Validate" cancelActivity="true">
-        <bpmn:documentation>Nur Zeile 1: Die Ausführungsprüfung erkennt, dass die Auswertung neue relevante Nachrichten während Analyse/Empfehlung noch nicht enthält. Den normalen Ausgang F06 unterbrechen und die aktuelle zentrale Auswertung übernehmen. Der Fehler allein ist kein Mitarbeiterprüfgrund. Aktuelle menschliche Entscheidungen und Abschluss dürfen nicht zurückgesetzt werden.</bpmn:documentation>
-        <bpmn:outgoing>F_AnalysisStale_Current</bpmn:outgoing>
-        <bpmn:errorEventDefinition id="AnalysisStale_definition" errorRef="Error_AnalysisStale" />
-      </bpmn:boundaryEvent>
-      <bpmn:serviceTask id="CurrentAnalysis" name="Aktuelle Auswertung&#10;übernehmen / abwarten">
-        <bpmn:documentation>KOM-03 / KOM-AK-22/23: Bereits vorhandene aktuelle Auswertung aus der zentralen Verarbeitung übernehmen. Eine passende laufende Auswertung abwarten; fehlt sie, ihre Erstellung über dieselbe zentrale Verarbeitung veranlassen. Keine zweite unabhängige Analyse und kein weiterer externer Nachrichtenempfänger. Alle relevanten gespeicherten Nachrichten einbeziehen; bei weiterem Eingang erneut aktuellen Stand verlangen. Vor Rückkehr Fallstand und Prozessfreigabe prüfen. Bei Zeile 1 zunächst In Abklärung beibehalten; bei Zeile 2 den aktuellen zulässigen Status erhalten, insbesondere Wartet auf Mieterantwort nicht durch den Rückweg zurücksetzen; Mitarbeiterentscheidung, Pflichtprüfbedarf und Abschluss haben Vorrang. Tatsächlicher Analysefehler folgt der Fehlerbehandlung, kein endloses Warten auf ein erfolgreiches Ergebnis. Der Task fasst Bereitstellung und Warten fachlich zusammen: ausführbares Warteverfahren, Ergebnisverbrauch, Variablen und Fehlerkoordination noch festzulegen. Kein blockierender Worker-Vertrag vorgeschrieben. Rückkehr ausschliesslich zu Validate, keine Veröffentlichung oder Abschlussfreigabe durch diesen Schritt.
-Rückwege von Katalogrückfrage und automatischer Antwort verwenden dieselbe zentrale Verarbeitung. Bisherige Rückfragen, aktueller Antwortbedarf und bereits berücksichtigte Mitarbeiterentscheidungen bleiben Teil der Prüfung. Kein Verbrauch eines alten Ergebnisses für eine neue Grundlage, keine zweite unabhängige Auswertung, keine Übernahme alter Veröffentlichungsfreigaben.
-Rückweg AUTO_CLOSURE_STALE: bereits veröffentlichte Antwort und ihren Auftragsbezug laden/erhalten; aktuelle Auswertung einschliesslich neuer Nachrichten verwenden. Keine alte Abschlussfreigabe übernehmen. Mitarbeiterentscheidung und Abschluss schützen; keine zweite identische Antwort. KOM-AK-26.
-FALL-06 Übergang 29: Übernommene Mitarbeiterrückfrage sperrt jede weitere automatische Wirkung dieses Abklärungslaufs; verspätete Ergebnisse verwerfen. Status und Übergangsbezug vor jedem Schreiben konsistent prüfen.
-FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklärungslauf seine automatische Schreibfreigabe. Auch vor BPMN-Unterbrechung keine verspäteten Wirkungen speichern.</bpmn:documentation>
-        <bpmn:incoming>F_AnalysisStale_Current</bpmn:incoming>
-        <bpmn:incoming>F_QuestionStale_Current</bpmn:incoming>
-        <bpmn:incoming>F_AutoAnswerStale_Current</bpmn:incoming>
-        <bpmn:incoming>F_AutoCloseStale_Current</bpmn:incoming>
-        <bpmn:outgoing>F_Current_Validate</bpmn:outgoing>
-      </bpmn:serviceTask>
-      <bpmn:exclusiveGateway id="Route" name="Geprüftes Vorgehen" default="F14">
-        <bpmn:documentation>
-Zeile 3 / KOM-AK-24, am aktuellen Fallstand in dieser Reihenfolge: 1. Pflichtprüfbedarf oder Analysefehler -&gt; Mitarbeiterprüfung. 2. Zulässiger Systemabschluss mit anschliessender LLM-Nachricht -&gt; Antwort veröffentlichen und Abschluss erneut prüfen. 3. Alle zuvor offenen Fragen beantwortet, kein zulässiger Abschluss -&gt; Mitarbeiterprüfung, nicht durch neue Fragen umgehen. 4. Fragen bleiben offen und weitere notwendige Katalogfrage zulässig -&gt; nur diese neue Frage veröffentlichen. 5. Fragen offen und keine weitere Frage nötig -&gt; weiter warten ohne neue Kommunikation. Unzuverlässige Grundlage, fehlende zulässigen Nachrichteninhalt und notwendige Frage ausserhalb des Katalogs folgen den bestehenden Prüfregeln, kein stilles Weiterwarten. Teilantwort allein ist kein Prüfgrund. Kein Status In Abklärung allein durch Antwortauswertung. Zwischenzeitliche Mitarbeiterentscheidung und Abschluss schützen.</bpmn:documentation>
-        <bpmn:incoming>F06</bpmn:incoming>
-        <bpmn:outgoing>F07</bpmn:outgoing>
-        <bpmn:outgoing>F10</bpmn:outgoing>
-        <bpmn:outgoing>F14</bpmn:outgoing>
-        <bpmn:outgoing>F_RefreshWait</bpmn:outgoing>
-      </bpmn:exclusiveGateway>
-      <bpmn:serviceTask id="Question" name="Katalogrückfrage&#10;veröffentlichen">
-        <bpmn:documentation>BEN-03 / 0.23: Bei tatsächlicher benachrichtigungspflichtiger Änderung Ereignis und Mailpflicht dauerhaft zusammen sichern. Der dauerhafte Starter startet fallbenachrichtigung-versenden.bpmn mit mailOrderRef; dort beauftragen Camunda-Send-Tasks den Mail-Worker. Hier kein direkter SMTP-Aufruf und kein Warten auf SMTP. Unveränderte Werte und identische Wiederholungen erzeugen keine neue Mailpflicht. KOM-05: Unmittelbar vor Speicherung Fallversion, Prozessfreigabe, Katalog und Antwortbedarf erneut konsistent prüfen. Nur hinterlegten freigegebenen Fragetext veröffentlichen; kein freier LLM-Zusatz. Erst erfolgreiche Veröffentlichung erzeugt Antwortbedarf. Systemherkunft, externe Sichtbarkeit und Entscheidungsbezug festhalten. Idempotente Wiederholungen erzeugen keine zweite Nachricht; keine bereits offene, beantwortete oder bewusst aufgehobene Frage reaktivieren. Vorrang von Mitarbeiterprüfung und Wiedervorlage sowie Abschluss nach KOM-04 wahren. Technische Synchronisierung bleibt festzulegen.
-Zeile 2 bestätigt: Nachrichtenstand prüfen und Veröffentlichung mit konkurrierender Nachrichtenspeicherung konsistent synchronisieren. Neue relevante Nachricht zuerst gespeichert -&gt; vor Speicherung PUBLICATION_BASIS_STALE melden; keine Veröffentlichung und kein normaler Folgeweg. Veröffentlichung zuerst gespeichert -&gt; erhalten, nachfolgende Nachricht gegen aktuellen Verlauf auswerten. Kein rückwirkendes Löschen oder neuer Mailauftrag beim Retry. Die Wiederholung einer schon erfolgreichen Veröffentlichung allein meldet keinen fachlichen Konflikt. Technische DB-Fehler getrennt behandeln.
-FALL-06 Übergang 29: Übernommene Mitarbeiterrückfrage sperrt jede weitere automatische Wirkung dieses Abklärungslaufs; verspätete Ergebnisse verwerfen. Status und Übergangsbezug vor jedem Schreiben konsistent prüfen.
-FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklärungslauf seine automatische Schreibfreigabe. Auch vor BPMN-Unterbrechung keine verspäteten Wirkungen speichern.</bpmn:documentation>
-        <bpmn:incoming>F07</bpmn:incoming>
-        <bpmn:incoming>F18</bpmn:incoming>
-        <bpmn:outgoing>F08</bpmn:outgoing>
-      </bpmn:serviceTask>
-      <bpmn:boundaryEvent id="QuestionStale" name="Veröffentlichungsgrundlage&#10;überholt" attachedToRef="Question" cancelActivity="true">
-        <bpmn:documentation>KOM-03 Zeile 2 / KOM-AK-23: Nur vor Speicherung unterdrückte automatische Veröffentlichung. Normalen Ausgang unterbrechen, aktuelle zentrale Auswertung übernehmen und erneut prüfen. Keine neue Nachricht, kein neuer Antwortbedarf, kein zugehöriger Mailauftrag. War die Veröffentlichung bereits zuerst gespeichert, bleibt sie samt Benachrichtigungspflicht erhalten; spätere Mieternachricht normal auswerten, kein rückwirkender Konfliktpfad. Kein Mitarbeiterprüfgrund allein durch veraltete Grundlage. Mitarbeiterentscheidung und Abschluss schützen.</bpmn:documentation>
-        <bpmn:outgoing>F_QuestionStale_Current</bpmn:outgoing>
-        <bpmn:errorEventDefinition id="QuestionStale_definition" errorRef="Error_PublicationStale" />
-      </bpmn:boundaryEvent>
       <bpmn:callActivity id="Reply" name="Mieterantwort abwarten&#10;und Fortsetzung prüfen">
         <bpmn:documentation>
 Ruft mieterantwort-pruefen.bpmn auf. Vertrag: teilprozess-vertraege.md. Untergeordnete Instanz mit eigenem Scope; führende Fallzuordnung bleibt im Hauptprozess. Eingangsreferenz vor Aktivierung bereitstellen. Nur explizite Outputs übernehmen; aktueller Fallstand bleibt vor Wirkung zu prüfen.
@@ -138,12 +57,11 @@ Ruft mieterantwort-pruefen.bpmn auf. Vertrag: teilprozess-vertraege.md. Untergeo
             <zeebe:output source="= decisionRef" target="replyDecisionRef" />
           </zeebe:ioMapping>
         </bpmn:extensionElements>
-        <bpmn:incoming>F08</bpmn:incoming>
         <bpmn:incoming>F17</bpmn:incoming>
         <bpmn:incoming>F19</bpmn:incoming>
-        <bpmn:incoming>F_RefreshWait</bpmn:incoming>
         <bpmn:incoming>CA06</bpmn:incoming>
-        <bpmn:incoming>SQ08</bpmn:incoming>
+        <bpmn:incoming>AParentWait</bpmn:incoming>
+        <bpmn:incoming>AIWait</bpmn:incoming>
         <bpmn:outgoing>F09</bpmn:outgoing>
       </bpmn:callActivity>
       <bpmn:exclusiveGateway id="ReplyRoute" name="Ergebnis der Antwortprüfung" default="F21">
@@ -151,35 +69,13 @@ Ruft mieterantwort-pruefen.bpmn auf. Vertrag: teilprozess-vertraege.md. Untergeo
 Nur das aktuell geprüfte Fortsetzungsergebnis verwenden; genau einen Ausgang wählen. Keine erneute eigene Klassifikation oder Bewertung. FEEL-Ergebniswerte noch festzulegen.
 Nach Call-Rückkehr ausschliesslich replyOutcome / replyDecisionRef auswerten. Unbekannte oder fehlende Rückgabe ist technischer Vertragsfehler, kein Default-Fachentscheid. Aktuellen Fallstand und Aufrufzuordnung prüfen. Werte und Zuweisungen stehen in teilprozess-vertraege.md; FEEL-Routing weiterhin nicht ausführbar.</bpmn:documentation>
         <bpmn:incoming>F09</bpmn:incoming>
-        <bpmn:outgoing>F18</bpmn:outgoing>
         <bpmn:outgoing>F19</bpmn:outgoing>
-        <bpmn:outgoing>F20</bpmn:outgoing>
         <bpmn:outgoing>F21</bpmn:outgoing>
+        <bpmn:outgoing>F18</bpmn:outgoing>
+        <bpmn:outgoing>F20</bpmn:outgoing>
       </bpmn:exclusiveGateway>
-      <bpmn:serviceTask id="AutoAnswer" name="LLM-Nachricht erstellen&#10;und versenden">
-        <bpmn:documentation>BEN-03 / 0.23: Bei tatsächlicher benachrichtigungspflichtiger Änderung Ereignis und Mailpflicht dauerhaft zusammen sichern. Der dauerhafte Starter startet fallbenachrichtigung-versenden.bpmn mit mailOrderRef; dort beauftragen Camunda-Send-Tasks den Mail-Worker. Hier kein direkter SMTP-Aufruf und kein Warten auf SMTP. Unveränderte Werte und identische Wiederholungen erzeugen keine neue Mailpflicht. KOM-06, vereinfachte Version: Nach zulässiger Systemabschlussentscheidung eine individuelle LLM-Nachricht über den Modell-Port erzeugen. Im selben Worker Inhalt, Fall-/Prozessbezug, aktuelle relevante Nachrichten, Abschlussgrund und Mitarbeiterpriorität prüfen; KOM-02 einhalten. Keine festen Antwortvorlagen oder separate Textfreigabe. Die Nachricht darf den Abschluss mitteilen. Bei inhaltlich unzulässiger Ausgabe CLOSURE_MESSAGE_INVALID melden: nichts veröffentlichen, kein automatischer Abschluss, Mitarbeiterprüfung. Technische Modell-/Speicherfehler über Job-Retries und nach Ausschöpfung Incident, nicht über diesen fachlichen Fehler.
-Vollständige Nachricht extern mit Systemherkunft speichern und E-Mail-Versand zuverlässig beauftragen; kein Warten auf SMTP-Annahme oder Zustellung. Erst danach F11 zu Close. Keine neue Rückfrage und kein vorzeitiges Beenden offenen Antwortbedarfs. Keine Übernahme in das Mitarbeiter-Antwortfeld.
-Vor Veröffentlichung veraltete Grundlage: PUBLICATION_BASIS_STALE, keine alte Nachricht speichern. Bereits erfolgreich veröffentlichter identischer Auftrag wird nicht nochmals generiert, gespeichert oder beauftragt; gespeicherten Bezug verwenden, aktuelle Zulässigkeit und Close trotzdem erneut prüfen. Bei AUTO_CLOSURE_STALE-Rückweg vorhandene Nachricht samt Versandauftrag erhalten. Ein anderer Auftrag braucht neue fachliche Prüfung. Nach Abschluss und für alte Bearbeitungen keine neue Wirkung. Keine zusätzliche Abschlussmail nach Close. Technische Umsetzung steht aus.
-FALL-06 Übergang 29: Übernommene Mitarbeiterrückfrage sperrt jede weitere automatische Wirkung dieses Abklärungslaufs; verspätete Ergebnisse verwerfen. Status und Übergangsbezug vor jedem Schreiben konsistent prüfen.
-FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklärungslauf seine automatische Schreibfreigabe. Auch vor BPMN-Unterbrechung keine verspäteten Wirkungen speichern.</bpmn:documentation>
-        <bpmn:incoming>F10</bpmn:incoming>
-        <bpmn:incoming>F20</bpmn:incoming>
-        <bpmn:outgoing>F11</bpmn:outgoing>
-      </bpmn:serviceTask>
-      <bpmn:boundaryEvent id="AutoAnswerStale" name="Veröffentlichungsgrundlage&#10;überholt" attachedToRef="AutoAnswer" cancelActivity="true">
-        <bpmn:documentation>KOM-03 Zeile 2 / KOM-AK-23: Nur vor Speicherung unterdrückte automatische Veröffentlichung. Normalen Ausgang unterbrechen, aktuelle zentrale Auswertung übernehmen und erneut prüfen. Keine neue Nachricht, kein neuer Antwortbedarf, kein zugehöriger Mailauftrag. War die Veröffentlichung bereits zuerst gespeichert, bleibt sie samt Benachrichtigungspflicht erhalten; spätere Mieternachricht normal auswerten, kein rückwirkender Konfliktpfad. Kein Mitarbeiterprüfgrund allein durch veraltete Grundlage. Mitarbeiterentscheidung und Abschluss schützen.</bpmn:documentation>
-        <bpmn:outgoing>F_AutoAnswerStale_Current</bpmn:outgoing>
-        <bpmn:errorEventDefinition id="AutoAnswerStale_definition" errorRef="Error_PublicationStale" />
-      </bpmn:boundaryEvent>
-      <bpmn:serviceTask id="Close" name="Abschluss prüfen und speichern&#10;Abgeschlossen">
-        <bpmn:documentation>FALL-06/07/10: erlaubten Systemgrund oder aktuelle Mitarbeiterentscheidung prüfen und auditieren. Bei Mitarbeiterprüfung erforderlich ist ausschliesslich der durch eine bewusste Mitarbeiterentscheidung bestätigte Abschluss zulässig, unabhängig von der Herkunft des Prüfbedarfs. Den Statusschutz unmittelbar vor Speicherung erneut prüfen; vorbereiteter Systemabschluss darf keine inzwischen laufende Prüfung übergehen. Offenen Antwortbedarf und Wiedervorlage beenden. Bereits gespeicherte Nachrichten bleiben. Keine Wiedereröffnung durch verspätete Ergebnisse. Vor Abschluss auch neue Eingänge und den aktuellen Auswertungsstand prüfen; keine überholte automatische Abschlussentscheidung. Abschluss und Nachrichtenspeicherung müssen konkurrierende Änderungen synchronisieren. Nach erfolgreichem Commit beendet ActiveEnd die laufenden Nebenpfade; abgebrochene externe Aufrufe dürfen keine späten Ergebnisse mehr wirksam speichern. Bestätigt am 15.11.2026: Eine laufende KI-Auswertung allein blockiert den bewussten Mitarbeiterabschluss am aktuellen Fallstand einschliesslich neuer gespeicherter Nachrichten nicht. Eine fachlich veraltete Mitarbeiterentscheidung verhindert die Speicherung. Dann ausdrücklich STAFF_CLOSURE_STALE melden und über CloseConflict zur erneuten Mitarbeiterprüfung führen. Prüfung und Speicherung gegen konkurrierende Änderungen gemeinsam absichern. Ein technischer Speicherfehler allein bleibt ein technischer Jobfehler; beim Retry die Gültigkeit erneut prüfen. Ein bereits erfolgreich gespeicherter identischer Abschluss wird idempotent bestätigt, nicht als Konflikt behandelt. Für Quelle System unmittelbar bei Speicherung zusätzlich die vollständigen bestätigten FALL-07-Systemabschlussregeln erneut prüfen: nur In Abklärung oder Wartet auf Mieterantwort, aktuelle Freigabe und sämtliche relevanten Nachrichten berücksichtigt, keine offenen Prüfgründe, vollständige Behebung ohne Hilfebedarf und Widerspruch oder ausdrücklich freigegebene, gültige und vollständig anwendbare Fachregel. Belegreferenzen und gegebenenfalls Regelversion nachvollziehbar speichern; keine Reparatur behaupten, wenn nur fehlender Verwaltungsbedarf belegt ist. Die Statusbeschränkung betrifft ausschliesslich Systemabschlüsse, nicht den berechtigten Mitarbeiterweg F16. Ein überholter automatischer Vorschlag löst nicht STAFF_CLOSURE_STALE aus; er wird nicht wirksam und folgt bei veralteter Grundlage nach veröffentlichter Antwort AUTO_CLOSURE_STALE über CurrentAnalysis zurück zu Validate. Gegenstandslos gewordener Antwortbedarf endet erst bei erfolgreichem Abschluss, ohne unbeantwortete Fragen als beantwortet auszugeben.
-KOM-06 für den automatischen Antwortweg F11: Eine veröffentlichte Antwort ersetzt keine erneute Prüfung der aktuellen Abschlussgrundlage. Scheitert die Speicherung oder ist der Abschluss inzwischen unzulässig, bleibt die Antwort einmalig und unverändert im Verlauf. Ohne erfolgreichen Abschluss bleiben der Fall aktiv und noch offene Rückfragen bestehen; kein erfolgreicher Abschlussnachweis und kein Abschlussmailauftrag. Die schon bestehende Benachrichtigungspflicht zur Antwort entfällt nicht. Kein erfolgreicher Übergang zu ActiveEnd bei gescheitertem Abschluss. Beim Retry Antwort nicht erneut veröffentlichen, aktuellen Stand prüfen; bereits erfolgreich gespeicherten identischen Abschluss idempotent bestätigen. Kein pauschaler STAFF_CLOSURE_STALE-Fehler für einen veralteten Systemvorschlag. Technische Koordination der jeweils aktuellen Fortsetzung noch festzulegen.
-Bei veralteter noch nicht gespeicherter Systemabschlussgrundlage nach Antwort ausdrücklich AUTO_CLOSURE_STALE melden. CurrentAnalysis -&gt; Validate; vorhandene Antwort und Veröffentlichungsbezug erhalten. Technischer Fehler bleibt Retry, erfolgreicher identischer Abschluss bleibt Erfolg. KOM-AK-26.
-Vereinfachter Stand: Der Abschluss erzeugt keine Nachricht und keinen Versandauftrag, auch keine generische Statusmail. Beim Systemweg ist Nachricht samt Versandauftrag bereits in AutoAnswer gespeichert. Mitarbeiterweg darf ohne Nachricht abschliessen. Technischer Jobfehler: Retries/Incident; keine doppelte Nachricht. Aktuelle Grundlage erneut prüfen; AUTO_CLOSURE_STALE und STAFF_CLOSURE_STALE bleiben getrennt.
-0.20: Eingang CR06 verwendet den persistierten Mitarbeiterauftrag zum abgebrochenen Reply-Call, nicht dessen Outputs und keine Systemabschlussfreigabe. Keine AutoAnswer-Stufe. Fachlich veraltete übernommene Entscheidung meldet STAFF_CLOSURE_STALE. Keine neue Analyse oder Nachricht als Voraussetzung. Antwortbedarf endet erst mit erfolgreichem Abschlusscommit.
-FALL-06 Übergang 29: Übernommene Mitarbeiterrückfrage sperrt jede weitere automatische Wirkung dieses Abklärungslaufs; verspätete Ergebnisse verwerfen. Status und Übergangsbezug vor jedem Schreiben konsistent prüfen.
-FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklärungslauf seine automatische Schreibfreigabe. Auch vor BPMN-Unterbrechung keine verspäteten Wirkungen speichern.</bpmn:documentation>
-        <bpmn:incoming>F11</bpmn:incoming>
+      <bpmn:serviceTask id="Close" name="Mitarbeiterabschluss prüfen&#10;und speichern">
+        <bpmn:documentation>FALL-07: Ausschliesslich Mitarbeiterabschluss aus aktueller bestätigter Entscheidung. Derselbe fachliche Abschlussvertrag wie AutoClose; keine zweite Domänenlogik. Berechtigung, führenden Durchlauf und aktuellen Fallstand einschliesslich neuer Nachrichten prüfen. Laufende KI allein blockiert den Mitarbeiterabschluss nicht. Ohne Nachrichten- oder Kommentarpflicht. Speicherung konsistent gegen konkurrierende Änderungen prüfen; veraltet -&gt; STAFF_CLOSURE_STALE und CloseConflict zur Mitarbeiterprüfung. Technische Fehler Retry/Incident. Bereits erfolgreicher identischer Auftrag bleibt Erfolg. Antwortbedarf/Wiedervorlage bei Erfolg beenden; keine zusätzliche Abschlussmail, frühere Nachrichten und Mailpflichten erhalten. Nach Commit beendet ActiveEnd den aktiven Bereich; späte Worker dürfen nicht wirken.</bpmn:documentation>
         <bpmn:incoming>F16</bpmn:incoming>
         <bpmn:incoming>CR06</bpmn:incoming>
         <bpmn:outgoing>FActiveClose</bpmn:outgoing>
@@ -204,17 +100,15 @@ Ruft mitarbeiterbearbeitung.bpmn auf. Vertrag: teilprozess-vertraege.md. Unterge
             <zeebe:output source="= decisionRef" target="staffDecisionRef" />
           </zeebe:ioMapping>
         </bpmn:extensionElements>
-        <bpmn:incoming>F_TriageFailure_Staff</bpmn:incoming>
-        <bpmn:incoming>F14</bpmn:incoming>
         <bpmn:incoming>F21</bpmn:incoming>
         <bpmn:incoming>F_CloseConflict_Staff</bpmn:incoming>
-        <bpmn:incoming>F_MessageInvalid_Staff</bpmn:incoming>
         <bpmn:incoming>F_Reopen_Staff</bpmn:incoming>
         <bpmn:incoming>CA05</bpmn:incoming>
         <bpmn:incoming>PN11</bpmn:incoming>
-        <bpmn:incoming>SQ09</bpmn:incoming>
         <bpmn:incoming>SF07</bpmn:incoming>
-        <bpmn:incoming>ST07</bpmn:incoming>
+        <bpmn:incoming>AParentReview</bpmn:incoming>
+        <bpmn:incoming>AutoFail02</bpmn:incoming>
+        <bpmn:incoming>AIStaff</bpmn:incoming>
         <bpmn:outgoing>F15</bpmn:outgoing>
       </bpmn:callActivity>
       <bpmn:exclusiveGateway id="StaffRoute" name="Fortsetzung">
@@ -225,37 +119,13 @@ Nach Call-Rückkehr ausschliesslich staffOutcome / staffDecisionRef auswerten. U
         <bpmn:outgoing>F17</bpmn:outgoing>
       </bpmn:exclusiveGateway>
       <bpmn:sequenceFlow id="F01" sourceRef="Start" targetRef="EntryRoute" />
-      <bpmn:sequenceFlow id="F02" sourceRef="Register" targetRef="Clarification" />
-      <bpmn:sequenceFlow id="F03" sourceRef="Clarification" targetRef="Triage" />
-      <bpmn:sequenceFlow id="F04" sourceRef="Triage" targetRef="Recommend" />
-      <bpmn:sequenceFlow id="F_TriageFailure_Staff" sourceRef="TriageFailure" targetRef="Staff" />
-      <bpmn:sequenceFlow id="F05" sourceRef="Recommend" targetRef="Validate" />
-      <bpmn:sequenceFlow id="F06" sourceRef="Validate" targetRef="Route" />
-      <bpmn:sequenceFlow id="F07" name="Katalogrückfrage zulässig" sourceRef="Route" targetRef="Question" />
-      <bpmn:sequenceFlow id="F08" sourceRef="Question" targetRef="Reply" />
       <bpmn:sequenceFlow id="F09" sourceRef="Reply" targetRef="ReplyRoute" />
-      <bpmn:sequenceFlow id="F10" name="Belegter Systemabschluss&#10;in zulässigem Status" sourceRef="Route" targetRef="AutoAnswer">
-        <bpmn:documentation>Positives Prüfergebnis nur bei sämtlichen Voraussetzungen aus FALL-07: zulässiger Status, kein offener Prüfbedarf und aktueller vollständig belegter Grund. Keine Freigabe allein aus LLM-Vorschlag, Konfidenz, niedriger Dringlichkeit oder dem Wort behoben. Weiterhin Inhaltsprüfung im erzeugenden Worker vor Veröffentlichung und erneute Prüfung bei Abschlussspeicherung erforderlich.
- Vor der tatsächlichen Veröffentlichung erneut am aktuellen Stand prüfen.</bpmn:documentation>
-      </bpmn:sequenceFlow>
-      <bpmn:sequenceFlow id="F11" sourceRef="AutoAnswer" targetRef="Close">
-        <bpmn:documentation>Nur nach gespeicherter individueller Nachricht und zuverlässigem Versandauftrag. Close prüft den aktuellen Fallstand erneut. Keine zusätzliche Abschlussmail.</bpmn:documentation>
-      </bpmn:sequenceFlow>
-      <bpmn:sequenceFlow id="F14" name="Prüfbedarf / unklar / Fehler" sourceRef="Route" targetRef="Staff" />
       <bpmn:sequenceFlow id="F15" sourceRef="Staff" targetRef="StaffRoute" />
       <bpmn:sequenceFlow id="F16" name="Abschluss bestätigt" sourceRef="StaffRoute" targetRef="Close" />
       <bpmn:sequenceFlow id="F17" name="Rückfrage veröffentlicht" sourceRef="StaffRoute" targetRef="Reply" />
-      <bpmn:sequenceFlow id="F18" name="Weitere Katalogfrage zulässig" sourceRef="ReplyRoute" targetRef="Question">
-        <bpmn:documentation>
-Geprüftes Ergebnis Weitere Katalogrückfrage übernehmen; aktuelle Freigabe vor Veröffentlichung erneut prüfen, vorhandene Fragen nicht wiederholen.</bpmn:documentation>
-      </bpmn:sequenceFlow>
       <bpmn:sequenceFlow id="F19" name="Fragen bleiben offen" sourceRef="ReplyRoute" targetRef="Reply">
         <bpmn:documentation>
 Geprüftes Ergebnis Weiter warten übernehmen. Verbrauch dieses Ergebnisstands nachvollziehbar sichern; derselbe Stand darf nicht erneut wecken, ein bereits verfügbarer neuerer Stand darf nicht verloren gehen.</bpmn:documentation>
-      </bpmn:sequenceFlow>
-      <bpmn:sequenceFlow id="F20" name="Systemabschluss&#10;vollständig geprüft" sourceRef="ReplyRoute" targetRef="AutoAnswer">
-        <bpmn:documentation>Positives Prüfergebnis nur bei sämtlichen Voraussetzungen aus FALL-07: zulässiger Status, kein offener Prüfbedarf und aktueller vollständig belegter Grund. Keine Freigabe allein aus LLM-Vorschlag, Konfidenz, niedriger Dringlichkeit oder dem Wort behoben. Weiterhin Inhaltsprüfung im erzeugenden Worker vor Veröffentlichung und erneute Prüfung bei Abschlussspeicherung erforderlich.
- Vor der tatsächlichen Veröffentlichung erneut am aktuellen Stand prüfen.</bpmn:documentation>
       </bpmn:sequenceFlow>
       <bpmn:sequenceFlow id="F21" name="Prüfung erforderlich" sourceRef="ReplyRoute" targetRef="Staff">
         <bpmn:documentation>
@@ -264,6 +134,7 @@ Nur fachliches Prüfergebnis aus RReview: Pflichtprüfbedarf/Analysefehler oder 
       <bpmn:endEvent id="ActiveEnd" name="Aktive Bearbeitung beendet">
         <bpmn:documentation>Erst nach erfolgreichem Close-Commit. Terminiert nur ActiveCase samt laufenden Ereignis-Teilprozessen und Empfang; der äussere Prozess endet danach ohne Abschlussmail. Kein fachlicher Abschluss allein durch ein technisches Endereignis.</bpmn:documentation>
         <bpmn:incoming>FActiveClose</bpmn:incoming>
+        <bpmn:incoming>AParentClosed</bpmn:incoming>
         <bpmn:terminateEventDefinition id="ActiveEnd_definition" />
       </bpmn:endEvent>
       <bpmn:sequenceFlow id="FActiveClose" sourceRef="Close" targetRef="ActiveEnd" />
@@ -293,25 +164,6 @@ Nur fachliches Prüfergebnis aus RReview: Pflichtprüfbedarf/Analysefehler oder 
         <bpmn:sequenceFlow id="NReceive_Call" sourceRef="NStart" targetRef="ProcessTenantMessage" />
         <bpmn:sequenceFlow id="NReceive_End" sourceRef="ProcessTenantMessage" targetRef="NReceptionEnd" />
       </bpmn:subProcess>
-      <bpmn:sequenceFlow id="F_AnalysisStale_Current" sourceRef="AnalysisStale" targetRef="CurrentAnalysis" />
-      <bpmn:sequenceFlow id="F_Current_Validate" sourceRef="CurrentAnalysis" targetRef="Validate" />
-      <bpmn:sequenceFlow id="F_QuestionStale_Current" sourceRef="QuestionStale" targetRef="CurrentAnalysis" />
-      <bpmn:sequenceFlow id="F_AutoAnswerStale_Current" sourceRef="AutoAnswerStale" targetRef="CurrentAnalysis" />
-      <bpmn:sequenceFlow id="F_RefreshWait" sourceRef="Route" targetRef="Reply" name="Nach Rückweg: Fragen offen,&#10;keine weitere Aktion">
-        <bpmn:documentation>
-Nur nach der aktuellen Prüfung eines Rückwegs mit bestehendem Wartestatus und Rückfragenkontext: kein vorrangiger Prüfbedarf, kein zulässiger Systemabschluss, noch offene Fragen, keine weitere notwendige Katalogfrage. Zur Antwortwartephase zurückkehren. Keine neue Nachricht und kein zusätzlicher Mailauftrag; verbrauchte Auswertung nicht nochmals als neuen Eingang verwenden. Nicht als Standardausgang für unzuverlässige Einordnung oder fehlende Freigabe verwenden.</bpmn:documentation>
-      </bpmn:sequenceFlow>
-      <bpmn:boundaryEvent id="AutoCloseStale" name="Automatischer Abschluss&#10;veraltet" attachedToRef="Close" cancelActivity="true">
-        <bpmn:documentation>KOM-AK-26: Nur noch nicht gespeicherter automatischer Abschluss nach veröffentlichter Antwort mit veralteter Grundlage. Antwort erhalten, keine Abschlussmail; aktuelle zentrale Auswertung und erneute Ausführungsprüfung. Kein technischer Retry und kein Mitarbeiterkonflikt.</bpmn:documentation>
-        <bpmn:outgoing>F_AutoCloseStale_Current</bpmn:outgoing>
-        <bpmn:errorEventDefinition id="AutoCloseStale_definition" errorRef="Error_AutoClosureStale" />
-      </bpmn:boundaryEvent>
-      <bpmn:sequenceFlow id="F_AutoCloseStale_Current" sourceRef="AutoCloseStale" targetRef="CurrentAnalysis" name="Antwort bleibt erhalten; erneut prüfen" />
-      <bpmn:boundaryEvent id="ClosureMessageInvalid" name="Nachricht inhaltlich&#10;unzulässig" attachedToRef="AutoAnswer" cancelActivity="true">
-        <bpmn:outgoing>F_MessageInvalid_Staff</bpmn:outgoing>
-        <bpmn:errorEventDefinition id="ClosureMessageInvalid_definition" errorRef="Error_ClosureMessageInvalid" />
-      </bpmn:boundaryEvent>
-      <bpmn:sequenceFlow id="F_MessageInvalid_Staff" sourceRef="ClosureMessageInvalid" targetRef="Staff" />
       <bpmn:exclusiveGateway id="EntryRoute" name="Erstanlage oder&#10;Wiedereröffnung?">
         <bpmn:incoming>F01</bpmn:incoming>
         <bpmn:outgoing>F_Initial</bpmn:outgoing>
@@ -354,7 +206,7 @@ KOM-03: Berechtigung, aktuellen Fall, Nachricht, Antwortbedarf, führende Instan
         <bpmn:sequenceFlow id="CA01" name="" sourceRef="ClearAnswerStart" targetRef="ClearAnswerApply" />
         <bpmn:sequenceFlow id="CA02" name="" sourceRef="ClearAnswerApply" targetRef="ClearAnswerEnd" />
       </bpmn:subProcess>
-      <bpmn:boundaryEvent id="ReplyCleared" name="Letzter Antwortbedarf&#10;aufgehoben" attachedToRef="Reply" cancelActivity="true">
+      <bpmn:boundaryEvent id="ReplyCleared" name="Antwortbedarf aufgehoben" attachedToRef="Reply" cancelActivity="true">
         <bpmn:documentation>
 Nur aktuell freigegebenen Aufhebungsmarker zum aktiven Reply-Call verwenden. Teilaufhebung unterbricht den Call nicht. Marker und Unterbrechung vor Ausführung mit neuen Fragen, Mitarbeiterentscheidung, Fallabschluss und Call-Wechsel koordinieren; alte Marker niemals auf neuere Calls anwenden. Kein normaler Output des abgebrochenen Calls.</bpmn:documentation>
         <bpmn:outgoing>CA03</bpmn:outgoing>
@@ -413,7 +265,7 @@ Persistierten Entscheidungsbezug samt Quelle Mitarbeiter und aktuellem Call-Bezu
         <bpmn:sequenceFlow id="CR04" name="Nein: Konflikt / nicht zulässig" sourceRef="StaffCloseReplyAccepted" targetRef="StaffCloseReplyRejected" />
         <bpmn:sequenceFlow id="CR05" name="" sourceRef="StaffCloseReplySignal" targetRef="StaffCloseReplyReady" />
       </bpmn:subProcess>
-      <bpmn:boundaryEvent id="ReplyStaffClose" name="Mitarbeiterabschluss&#10;übernommen" attachedToRef="Reply" cancelActivity="true">
+      <bpmn:boundaryEvent id="ReplyStaffClose" name="Abschluss bestätigt" attachedToRef="Reply" cancelActivity="true">
         <bpmn:documentation>
 Unterbrechung ausschliesslich für den aktuell gebundenen Reply-Aufruf. Keine normale Call-Rückgabe übernehmen. Close lädt den dauerhaft gespeicherten Mitarbeiterentscheid; Quelle niemals System. Erst nach erfolgreicher Abschlussspeicherung endet Antwortbedarf. Bei früher Ablehnung bleibt der aktuelle Pfad bestehen. Später fachlicher Konflikt nutzt STAFF_CLOSURE_STALE und CloseConflict.</bpmn:documentation>
         <bpmn:outgoing>CR06</bpmn:outgoing>
@@ -431,7 +283,8 @@ Nicht unterbrechender interner Eingang für serverseitig festgestellten fachlich
         </bpmn:startEvent>
         <bpmn:serviceTask id="ReviewNeedCheck" name="Grund und aktuellen&#10;Bearbeitungsstand prüfen">
           <bpmn:documentation>
-FALL-06: Vertrauenswürdige Quelle, Fall, führenden Durchlauf, fachlichen Grund und Erkenntnisversion prüfen. Blosser Retry/Incident ist kein fachlicher Grund. Gleicher bereits berücksichtigter Grund ohne neue Erkenntnis erzeugt keine Prüfung. Wiederholungen idempotent verarbeiten. Neue Gründe dauerhaft erfassen, Entscheidung gegen aktuellen Status und Aufruf prüfen. Bereits abgeschlossener Fall: nur interner Hinweis, keine Statusänderung oder Wiedereröffnung. Lokale Nebenaktionsvariablen; aktuelle Mitarbeiterentscheidung nicht zurücknehmen.</bpmn:documentation>
+FALL-06: Vertrauenswürdige Quelle, Fall, führenden Durchlauf, fachlichen Grund und Erkenntnisversion prüfen. Blosser Retry/Incident ist kein fachlicher Grund. Gleicher bereits berücksichtigter Grund ohne neue Erkenntnis erzeugt keine Prüfung. Wiederholungen idempotent verarbeiten. Neue Gründe dauerhaft erfassen, Entscheidung gegen aktuellen Status und Aufruf prüfen. Bereits abgeschlossener Fall: nur interner Hinweis, keine Statusänderung oder Wiedereröffnung. Lokale Nebenaktionsvariablen; aktuelle Mitarbeiterentscheidung nicht zurücknehmen.
+0.30: Mit dauerhafter Bestätigung neuen zwingenden Prüfbedarfs alte automatische Wirkungsfreigaben sperren, bereits vor BPMN-Unterbrechung. Worker prüfen dies unmittelbar vor jeder Veröffentlichung, Statusänderung oder Abschluss. Gegen bereits wirksamen Abschluss und neuere Mitarbeiterentscheidung koordinieren; bereits veröffentlichte Nachrichten und Mailpflichten erhalten.</bpmn:documentation>
           <bpmn:incoming>PN01</bpmn:incoming>
           <bpmn:outgoing>PN02</bpmn:outgoing>
         </bpmn:serviceTask>
@@ -469,16 +322,15 @@ Nur für aktuellen Reply-Call bei Wartet auf Mieterantwort mit neuem fachlichem 
         <bpmn:sequenceFlow id="PN05" name="Wiederholung / berücksichtigt / abgeschlossen" sourceRef="ReviewNeedRoute" targetRef="ReviewNeedNoAction" />
         <bpmn:sequenceFlow id="PN06" name="" sourceRef="ReviewNeedExisting" targetRef="ReviewNeedDone" />
         <bpmn:sequenceFlow id="PN07" name="" sourceRef="ReviewNeedWakeReply" targetRef="ReviewNeedDone" />
-        <bpmn:serviceTask id="ReviewNeedOther" name="Aktuellen Prüfbedarf an&#10;bestehende Phasensteuerung übergeben">
-          <bpmn:documentation>
-Für andere aktive Phasen neuen Grund erhalten und gezielt in die aktuelle Mitarbeiterinstanz übertragen: SWorkReviewNeeded bei In Bearbeitung, SFollowUpReviewNeeded bei Wiedervorlage, SExternalReview bei externer Wartephase. Aktuellen Aufgaben-/Call-Bezug und Terminversion serverseitig prüfen. Kein zusätzlicher paralleler Staff-Call. Fehlende technische Übergabe darf nicht als erfolgreich verworfen gelten; vor Ausführung phasenspezifisch implementieren. Dieser Entwurf konkretisiert den neuen Mieterwarte-Eingang, nicht alle übrigen Phasen.</bpmn:documentation>
+        <bpmn:serviceTask id="ReviewNeedOther" name="Automatik unterbrechen oder&#10;aktuelle Mitarbeiterphase informieren">
+          <bpmn:documentation>0.31: Bei Automatic bestätigten neuen zwingenden Prüfentscheid für aktuellen automaticCallRef im Elternscope bereitstellen und automaticInterruptionReady setzen. Gemeinsames Randereignis unterbricht auch blockierte Jobs/Incident. Ab Bestätigung alte Wirkungen sperren. Bei In Bearbeitung, Wiedervorlage oder externer Wartephase weiterhin vorhandenen SWorkReviewNeeded/SFollowUpReviewNeeded/SExternalReview bedienen. Aktuellen Scope serverseitig ermitteln, keine parallele Mitarbeiterinstanz, keine verlorene Meldung bei Phasenwechsel; zuverlässig nachholen.</bpmn:documentation>
           <bpmn:incoming>PN08</bpmn:incoming>
           <bpmn:outgoing>PN09</bpmn:outgoing>
         </bpmn:serviceTask>
         <bpmn:sequenceFlow id="PN08" name="Andere aktive Phase" sourceRef="ReviewNeedRoute" targetRef="ReviewNeedOther" />
         <bpmn:sequenceFlow id="PN09" name="" sourceRef="ReviewNeedOther" targetRef="ReviewNeedDone" />
       </bpmn:subProcess>
-      <bpmn:boundaryEvent id="ReplyReviewNeeded" name="Neuer fachlicher&#10;Prüfbedarf" attachedToRef="Reply" cancelActivity="true">
+      <bpmn:boundaryEvent id="ReplyReviewNeeded" name="Neuer Prüfbedarf" attachedToRef="Reply" cancelActivity="true">
         <bpmn:documentation>
 Unterbrechung nur bei geprüftem neuen Grund zum aktuellen Reply-Call. Bereits bereitgestellte Gründe bei Eintritt erkennen. Alter Marker darf keine neuere Bearbeitung unterbrechen. Kein normaler Reply-Output; ReviewNeedPrepare lädt den persistierten Prüfentscheid.</bpmn:documentation>
         <bpmn:outgoing>PN10</bpmn:outgoing>
@@ -494,24 +346,26 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
       </bpmn:serviceTask>
       <bpmn:sequenceFlow id="PN10" name="" sourceRef="ReplyReviewNeeded" targetRef="ReviewNeedPrepare" />
       <bpmn:sequenceFlow id="PN11" name="Aktuelle Mitarbeiterprüfung" sourceRef="ReviewNeedPrepare" targetRef="Staff" />
-      <bpmn:subProcess id="StaffQuestionSide" triggeredByEvent="true" name="Mitarbeiterrückfrage während In Abklärung">
-        <bpmn:documentation>FALL-06 Übergang 29 / FALL-AK-35. Interner nicht unterbrechender Auftragseingang; noch keine Veröffentlichung allein durch Nachrichteneingang. Nur berechtigte Mitarbeiterrückfrage mit Antwortbedarf. Lokale Auftragsvariablen; kein zusätzlicher Empfänger für Mieternachrichten. Abgelehnte Aufträge verändern den laufenden Hauptpfad nicht.</bpmn:documentation>
-        <bpmn:startEvent id="StaffQuestionStart" isInterrupting="false" name="Rückfrage angefordert">
+      <bpmn:subProcess id="StaffQuestionSide" triggeredByEvent="true" name="Nachricht während In Abklärung senden">
+        <bpmn:documentation>0.33 / KOM-AK-31: Bestehender nicht unterbrechender Sendeweg für Informationen und Rückfragen während In Abklärung. Lokale Auftragsdaten, kein neuer Mieternachrichtenempfänger. Eine Information beendet nur die Nebenaktion. Nur eine erfolgreich veröffentlichte Rückfrage mit Antwortbedarf veranlasst Übergang 29 und gemeinsame Automatik-Ablösung. Ablehnung verändert den laufenden Pfad nicht.</bpmn:documentation>
+        <bpmn:startEvent id="StaffQuestionStart" isInterrupting="false" name="Sendeauftrag eingegangen">
           <bpmn:outgoing>SQ01</bpmn:outgoing>
           <bpmn:messageEventDefinition id="StaffQuestionStart_definition" messageRef="Message_StaffQuestionClarification" />
         </bpmn:startEvent>
-        <bpmn:serviceTask id="StaffQuestionPublish" name="Auftrag prüfen und Rückfrage&#10;mit Antwortbedarf veröffentlichen">
-          <bpmn:documentation>FALL-06 ist die zentrale Regel: Berechtigung, Auftrags-ID, Fallversion, führenden Durchlauf und Status In Abklärung prüfen. Pflichtprüfbedarf sperrt diesen Übergang. Veralteten Auftrag ohne Veröffentlichung ablehnen, insbesondere wenn eine konkurrierende automatische Veröffentlichung bereits wirksam ist. Bei Annahme Mitarbeitertext, Antwortbedarf, Status Wartet auf Mieterantwort und Mailpflicht konsistent sichern; keine Katalogpflicht, keine LLM-Textfreigabe. Automatische Schreibfreigaben dabei entziehen. Erfolgreiche Wiederholung liefert den gespeicherten Übergang. BEN-03: dauerhafter Versandauftrag an separaten Mailprozess, kein Warten auf SMTP. Zuverlässige Fortsetzung nach DB-Commit erforderlich; fachliche Ablehnung ist kein technischer Retry-Fehler.</bpmn:documentation>
+        <bpmn:serviceTask id="StaffQuestionPublish" name="Auftrag prüfen und Nachricht&#10;mit optionalem Antwortbedarf speichern">
+          <bpmn:documentation>Berechtigten Mitarbeiter, Auftrags-ID, bestätigte Fallversion, aktuellen führenden Durchlauf und Status In Abklärung prüfen. Text und Antwortbedarf nur aus bestätigtem Auftrag übernehmen. Nachricht und Mailpflicht konsistent speichern; keine Katalogpflicht für Mitarbeitertext. Ohne neuen Antwortbedarf: Status, bestehende Fragen und automatische Bearbeitung erhalten, kein Ablösemarker. Relevante neue Information vor Wirkung alter KI-Ergebnisse berücksichtigen; bestehender Aktualitätsschutz, keine pauschale Unterbrechung. Mit Antwortbedarf: bestehende FALL-06-Regel, zwingender Prüfbedarf sperrt Übergang 29; Nachricht, neuen Bedarf, Wartet auf Mieterantwort und Mailpflicht konsistent sichern, automatische Wirkungsfreigaben entziehen. Gespeichertes Auftragsergebnis unterscheidet INFORMATION, QUESTION und REJECTED; erfolgreiche Wiederholung liest dasselbe Ergebnis ohne erneute Veröffentlichung oder Mailpflicht. Veralteten unveröffentlichten Auftrag ohne Wirkung ablehnen, Eingabe erhalten. Technische Fehler Retry/Incident. Dauerhafter Versandauftrag an eigenständigen Camunda-Mailprozess, kein direkter SMTP-Versand und kein Warten auf SMTP. Neuer zwingender Prüfbedarf bleibt separater Eingang; Information allein erledigt keine Prüfgründe.</bpmn:documentation>
           <bpmn:incoming>SQ01</bpmn:incoming>
           <bpmn:outgoing>SQ02</bpmn:outgoing>
         </bpmn:serviceTask>
-        <bpmn:exclusiveGateway id="StaffQuestionResult" name="Veröffentlicht?">
+        <bpmn:exclusiveGateway id="StaffQuestionResult" name="Gespeichertes Ergebnis">
           <bpmn:incoming>SQ02</bpmn:incoming>
           <bpmn:outgoing>SQ03</bpmn:outgoing>
           <bpmn:outgoing>SQ05</bpmn:outgoing>
+          <bpmn:outgoing>SQInfo</bpmn:outgoing>
         </bpmn:exclusiveGateway>
-        <bpmn:serviceTask id="StaffQuestionSignal" name="Übernahme für aktuellen&#10;Automatikschritt bereitstellen">
-          <bpmn:documentation>Dauerhaften Übergangsbezug zuverlässig an aktuellen automatischen Schritt im führenden Durchlauf vermitteln; Marker staffQuestionTakeoverReady gilt nur für diesen übernommenen Abklärungslauf. Gegen Aktivitätswechsel und verspätete Worker koordinieren. Marker bleibt bis zum Verbrauch wirksam; auch nachfolgend aktivierte automatische Schritte dürfen ihn nicht überlaufen. Kein normaler Output eines abgebrochenen Jobs erforderlich. Technisches Zustell-/Unterbrechungsverfahren vor ausführbarer Fassung festlegen.</bpmn:documentation>
+        <bpmn:serviceTask id="StaffQuestionSignal" name="Bestätigte Ablösung&#10;für Automatik bereitstellen">
+          <bpmn:documentation>0.31: Bestätigten persistierten Entscheid für aktuellen Automatic-Call mit automaticCallRef in dessen Elternscope bereitstellen und automaticInterruptionReady setzen. Keine weitere Flagfamilie je Service Task. Aktuellen Fallstand/Durchlauf prüfen; nachholbar und idempotent. Unveröffentlichte/abgelehnte Aufträge unterbrechen nicht. Marker bis Verbrauch gültig, nicht auf spätere Calls übertragen. Neue zwingende Prüfgründe während Übergabe zuverlässig erhalten; keine Outputs des abgebrochenen Kindes.
+0.33: Ausschliesslich Ergebnis QUESTION darf diesen Schritt erreichen. INFORMATION setzt automaticInterruptionReady nicht und entzieht keine pauschale Automatikfreigabe.</bpmn:documentation>
           <bpmn:incoming>SQ03</bpmn:incoming>
           <bpmn:outgoing>SQ04</bpmn:outgoing>
         </bpmn:serviceTask>
@@ -523,99 +377,14 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
         </bpmn:endEvent>
         <bpmn:sequenceFlow id="SQ01" sourceRef="StaffQuestionStart" targetRef="StaffQuestionPublish" />
         <bpmn:sequenceFlow id="SQ02" sourceRef="StaffQuestionPublish" targetRef="StaffQuestionResult" />
-        <bpmn:sequenceFlow id="SQ03" sourceRef="StaffQuestionResult" targetRef="StaffQuestionSignal" name="Ja / bereits übernommen" />
+        <bpmn:sequenceFlow id="SQ03" sourceRef="StaffQuestionResult" targetRef="StaffQuestionSignal" name="QUESTION: Rückfrage gespeichert" />
         <bpmn:sequenceFlow id="SQ04" sourceRef="StaffQuestionSignal" targetRef="StaffQuestionDone" />
-        <bpmn:sequenceFlow id="SQ05" sourceRef="StaffQuestionResult" targetRef="StaffQuestionRejected" name="Nein" />
+        <bpmn:sequenceFlow id="SQ05" sourceRef="StaffQuestionResult" targetRef="StaffQuestionRejected" name="REJECTED: abgelehnt" />
+        <bpmn:endEvent id="StaffInformationDone" name="Information gespeichert&#10;Automatik bleibt aktiv">
+          <bpmn:incoming>SQInfo</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="SQInfo" sourceRef="StaffQuestionResult" targetRef="StaffInformationDone" name="INFORMATION: ohne Antwortbedarf" />
       </bpmn:subProcess>
-      <bpmn:exclusiveGateway id="StaffQuestionJoin" name="Mitarbeiterrückfrage&#10;übernommen">
-        <bpmn:incoming>SQ_Takeover_Clarification</bpmn:incoming>
-        <bpmn:incoming>SQ_Takeover_Triage</bpmn:incoming>
-        <bpmn:incoming>SQ_Takeover_Recommend</bpmn:incoming>
-        <bpmn:incoming>SQ_Takeover_Validate</bpmn:incoming>
-        <bpmn:incoming>SQ_Takeover_CurrentAnalysis</bpmn:incoming>
-        <bpmn:incoming>SQ_Takeover_Question</bpmn:incoming>
-        <bpmn:incoming>SQ_Takeover_AutoAnswer</bpmn:incoming>
-        <bpmn:incoming>SQ_Takeover_Close</bpmn:incoming>
-        <bpmn:outgoing>SQ06</bpmn:outgoing>
-      </bpmn:exclusiveGateway>
-      <bpmn:serviceTask id="StaffQuestionContinue" name="Aktuellen Warte- oder&#10;Prüfkontext bereitstellen">
-        <bpmn:documentation>Gespeicherte erfolgreiche Mitarbeiterrückfrage verwenden, nicht erneut veröffentlichen. Aktuelle Prozesszuordnung und inzwischen entstandenen zwingenden Prüfbedarf prüfen. Ohne Prüfbedarf replyEntryContextRef für genau einen Reply-Aufruf setzen. Bei neuem Prüfbedarf staffEntryContextRef für Mitarbeiterprüfung setzen; Nachricht und Antwortbedarf erhalten. Marker zuverlässig konsumieren und alte automatische Ergebnisse sperren. Hauptempfang und übrige Nebenaktionen bleiben aktiv.</bpmn:documentation>
-        <bpmn:incoming>SQ06</bpmn:incoming>
-        <bpmn:outgoing>SQ07</bpmn:outgoing>
-      </bpmn:serviceTask>
-      <bpmn:exclusiveGateway id="StaffQuestionNext" name="Zwingender&#10;Prüfbedarf?">
-        <bpmn:incoming>SQ07</bpmn:incoming>
-        <bpmn:outgoing>SQ08</bpmn:outgoing>
-        <bpmn:outgoing>SQ09</bpmn:outgoing>
-      </bpmn:exclusiveGateway>
-      <bpmn:sequenceFlow id="SQ06" sourceRef="StaffQuestionJoin" targetRef="StaffQuestionContinue" />
-      <bpmn:sequenceFlow id="SQ07" sourceRef="StaffQuestionContinue" targetRef="StaffQuestionNext" />
-      <bpmn:sequenceFlow id="SQ08" sourceRef="StaffQuestionNext" targetRef="Reply" name="Nein: Mieterantwort abwarten" />
-      <bpmn:sequenceFlow id="SQ09" sourceRef="StaffQuestionNext" targetRef="Staff" name="Ja: Mitarbeiterprüfung" />
-      <bpmn:boundaryEvent id="StaffQuestionAtClarification" attachedToRef="Clarification" cancelActivity="true">
-        <bpmn:documentation>Fachlicher Unterbrechungsmarker nur für bestätigte Mitarbeiterrückfrage aus In Abklärung im aktuellen Durchlauf. Bedingung und Zustellung sind Entwurf, keine zugesicherte Engine-Ausführung. Nicht für reguläre spätere Mieterwarte- oder Mitarbeiterpfade aktivieren.</bpmn:documentation>
-        <bpmn:outgoing>SQ_Takeover_Clarification</bpmn:outgoing>
-        <bpmn:conditionalEventDefinition id="StaffQuestionAtClarification_definition">
-          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffQuestionTakeoverReady = true</bpmn:condition>
-        </bpmn:conditionalEventDefinition>
-      </bpmn:boundaryEvent>
-      <bpmn:sequenceFlow id="SQ_Takeover_Clarification" sourceRef="StaffQuestionAtClarification" targetRef="StaffQuestionJoin" />
-      <bpmn:boundaryEvent id="StaffQuestionAtTriage" attachedToRef="Triage" cancelActivity="true">
-        <bpmn:documentation>Fachlicher Unterbrechungsmarker nur für bestätigte Mitarbeiterrückfrage aus In Abklärung im aktuellen Durchlauf. Bedingung und Zustellung sind Entwurf, keine zugesicherte Engine-Ausführung. Nicht für reguläre spätere Mieterwarte- oder Mitarbeiterpfade aktivieren.</bpmn:documentation>
-        <bpmn:outgoing>SQ_Takeover_Triage</bpmn:outgoing>
-        <bpmn:conditionalEventDefinition id="StaffQuestionAtTriage_definition">
-          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffQuestionTakeoverReady = true</bpmn:condition>
-        </bpmn:conditionalEventDefinition>
-      </bpmn:boundaryEvent>
-      <bpmn:sequenceFlow id="SQ_Takeover_Triage" sourceRef="StaffQuestionAtTriage" targetRef="StaffQuestionJoin" />
-      <bpmn:boundaryEvent id="StaffQuestionAtRecommend" attachedToRef="Recommend" cancelActivity="true">
-        <bpmn:documentation>Fachlicher Unterbrechungsmarker nur für bestätigte Mitarbeiterrückfrage aus In Abklärung im aktuellen Durchlauf. Bedingung und Zustellung sind Entwurf, keine zugesicherte Engine-Ausführung. Nicht für reguläre spätere Mieterwarte- oder Mitarbeiterpfade aktivieren.</bpmn:documentation>
-        <bpmn:outgoing>SQ_Takeover_Recommend</bpmn:outgoing>
-        <bpmn:conditionalEventDefinition id="StaffQuestionAtRecommend_definition">
-          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffQuestionTakeoverReady = true</bpmn:condition>
-        </bpmn:conditionalEventDefinition>
-      </bpmn:boundaryEvent>
-      <bpmn:sequenceFlow id="SQ_Takeover_Recommend" sourceRef="StaffQuestionAtRecommend" targetRef="StaffQuestionJoin" />
-      <bpmn:boundaryEvent id="StaffQuestionAtValidate" attachedToRef="Validate" cancelActivity="true">
-        <bpmn:documentation>Fachlicher Unterbrechungsmarker nur für bestätigte Mitarbeiterrückfrage aus In Abklärung im aktuellen Durchlauf. Bedingung und Zustellung sind Entwurf, keine zugesicherte Engine-Ausführung. Nicht für reguläre spätere Mieterwarte- oder Mitarbeiterpfade aktivieren.</bpmn:documentation>
-        <bpmn:outgoing>SQ_Takeover_Validate</bpmn:outgoing>
-        <bpmn:conditionalEventDefinition id="StaffQuestionAtValidate_definition">
-          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffQuestionTakeoverReady = true</bpmn:condition>
-        </bpmn:conditionalEventDefinition>
-      </bpmn:boundaryEvent>
-      <bpmn:sequenceFlow id="SQ_Takeover_Validate" sourceRef="StaffQuestionAtValidate" targetRef="StaffQuestionJoin" />
-      <bpmn:boundaryEvent id="StaffQuestionAtCurrentAnalysis" attachedToRef="CurrentAnalysis" cancelActivity="true">
-        <bpmn:documentation>Fachlicher Unterbrechungsmarker nur für bestätigte Mitarbeiterrückfrage aus In Abklärung im aktuellen Durchlauf. Bedingung und Zustellung sind Entwurf, keine zugesicherte Engine-Ausführung. Nicht für reguläre spätere Mieterwarte- oder Mitarbeiterpfade aktivieren.</bpmn:documentation>
-        <bpmn:outgoing>SQ_Takeover_CurrentAnalysis</bpmn:outgoing>
-        <bpmn:conditionalEventDefinition id="StaffQuestionAtCurrentAnalysis_definition">
-          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffQuestionTakeoverReady = true</bpmn:condition>
-        </bpmn:conditionalEventDefinition>
-      </bpmn:boundaryEvent>
-      <bpmn:sequenceFlow id="SQ_Takeover_CurrentAnalysis" sourceRef="StaffQuestionAtCurrentAnalysis" targetRef="StaffQuestionJoin" />
-      <bpmn:boundaryEvent id="StaffQuestionAtQuestion" attachedToRef="Question" cancelActivity="true">
-        <bpmn:documentation>Fachlicher Unterbrechungsmarker nur für bestätigte Mitarbeiterrückfrage aus In Abklärung im aktuellen Durchlauf. Bedingung und Zustellung sind Entwurf, keine zugesicherte Engine-Ausführung. Nicht für reguläre spätere Mieterwarte- oder Mitarbeiterpfade aktivieren.</bpmn:documentation>
-        <bpmn:outgoing>SQ_Takeover_Question</bpmn:outgoing>
-        <bpmn:conditionalEventDefinition id="StaffQuestionAtQuestion_definition">
-          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffQuestionTakeoverReady = true</bpmn:condition>
-        </bpmn:conditionalEventDefinition>
-      </bpmn:boundaryEvent>
-      <bpmn:sequenceFlow id="SQ_Takeover_Question" sourceRef="StaffQuestionAtQuestion" targetRef="StaffQuestionJoin" />
-      <bpmn:boundaryEvent id="StaffQuestionAtAutoAnswer" attachedToRef="AutoAnswer" cancelActivity="true">
-        <bpmn:documentation>Fachlicher Unterbrechungsmarker nur für bestätigte Mitarbeiterrückfrage aus In Abklärung im aktuellen Durchlauf. Bedingung und Zustellung sind Entwurf, keine zugesicherte Engine-Ausführung. Nicht für reguläre spätere Mieterwarte- oder Mitarbeiterpfade aktivieren.</bpmn:documentation>
-        <bpmn:outgoing>SQ_Takeover_AutoAnswer</bpmn:outgoing>
-        <bpmn:conditionalEventDefinition id="StaffQuestionAtAutoAnswer_definition">
-          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffQuestionTakeoverReady = true</bpmn:condition>
-        </bpmn:conditionalEventDefinition>
-      </bpmn:boundaryEvent>
-      <bpmn:sequenceFlow id="SQ_Takeover_AutoAnswer" sourceRef="StaffQuestionAtAutoAnswer" targetRef="StaffQuestionJoin" />
-      <bpmn:boundaryEvent id="StaffQuestionAtClose" attachedToRef="Close" cancelActivity="true">
-        <bpmn:documentation>Fachlicher Unterbrechungsmarker nur für bestätigte Mitarbeiterrückfrage aus In Abklärung im aktuellen Durchlauf. Bedingung und Zustellung sind Entwurf, keine zugesicherte Engine-Ausführung. Nicht für reguläre spätere Mieterwarte- oder Mitarbeiterpfade aktivieren.</bpmn:documentation>
-        <bpmn:outgoing>SQ_Takeover_Close</bpmn:outgoing>
-        <bpmn:conditionalEventDefinition id="StaffQuestionAtClose_definition">
-          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffQuestionTakeoverReady = true</bpmn:condition>
-        </bpmn:conditionalEventDefinition>
-      </bpmn:boundaryEvent>
-      <bpmn:sequenceFlow id="SQ_Takeover_Close" sourceRef="StaffQuestionAtClose" targetRef="StaffQuestionJoin" />
       <bpmn:subProcess id="StaffCloseClarificationSide" triggeredByEvent="true" name="Direkter Mitarbeiterabschluss während In Abklärung">
         <bpmn:documentation>FALL-06 Übergang 30 / FALL-AK-36. Nicht unterbrechender interner Mitarbeitereingang. Erst erfolgreicher Abschlusscommit beendet den aktiven Fallbereich; unberechtigte oder veraltete Aufträge verändern den aktuellen Pfad nicht. Keine offene Mitarbeiter-User-Task erfinden. Auftrag und Ergebnis lokal halten, an Fall und führenden Durchlauf binden.</bpmn:documentation>
         <bpmn:startEvent id="StaffCloseClarificationStart" isInterrupting="false" name="Mitarbeiter bestätigt Abschluss">
@@ -663,7 +432,7 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
           <bpmn:outgoing>SF05</bpmn:outgoing>
         </bpmn:exclusiveGateway>
         <bpmn:serviceTask id="StaffFollowSignal" name="Übernahme für aktuellen&#10;Bearbeitungspfad bereitstellen">
-          <bpmn:documentation>Dauerhaften Terminsetzungsbezug zuverlässig an den aktuellen Bearbeitungspfad vermitteln. staffFollowTakeoverReady gilt ausschliesslich für den abgelösten Abklärungs- oder Mieterwartelauf. Aktivitätswechsel und verzögerte Jobs absichern; Marker bis Verbrauch erhalten, auch neu aktivierte Schritte dürfen ihn nicht überlaufen. Keine Outputs abgebrochener Jobs verwenden. Neue Kontakte und zwingende Prüfgründe seit Terminsetzung versionsgebunden sichern, auch vor Aufruf des Warteprozesses.</bpmn:documentation>
+          <bpmn:documentation>0.31: Gespeicherten Terminauftrag zum aktuellen Aufruf bereitstellen. Bei Automatic: automaticCallRef + automaticInterruptionReady im Elternscope. Bei Reply: bestehenden staffFollowTakeoverReady zum Reply-Aufruf verwenden. Keine zweite Terminversion/Mailpflicht. Kontakte und neue Prüfgründe nach Speicherung auch während Übergabe nachliefern, aufgehobenen Termin nicht wiederherstellen.</bpmn:documentation>
           <bpmn:incoming>SF03</bpmn:incoming>
           <bpmn:outgoing>SF04</bpmn:outgoing>
         </bpmn:serviceTask>
@@ -679,98 +448,21 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
         <bpmn:sequenceFlow id="SF04" sourceRef="StaffFollowSignal" targetRef="StaffFollowDone" />
         <bpmn:sequenceFlow id="SF05" sourceRef="StaffFollowResult" targetRef="StaffFollowRejected" name="Nein" />
       </bpmn:subProcess>
-      <bpmn:exclusiveGateway id="StaffFollowJoin" name="Wiedervorlage&#10;übernommen">
-        <bpmn:incoming>SF_Takeover_Clarification</bpmn:incoming>
-        <bpmn:incoming>SF_Takeover_Triage</bpmn:incoming>
-        <bpmn:incoming>SF_Takeover_Recommend</bpmn:incoming>
-        <bpmn:incoming>SF_Takeover_Validate</bpmn:incoming>
-        <bpmn:incoming>SF_Takeover_CurrentAnalysis</bpmn:incoming>
-        <bpmn:incoming>SF_Takeover_Question</bpmn:incoming>
-        <bpmn:incoming>SF_Takeover_AutoAnswer</bpmn:incoming>
-        <bpmn:incoming>SF_Takeover_Close</bpmn:incoming>
-        <bpmn:incoming>SF_Takeover_Reply</bpmn:incoming>
-        <bpmn:outgoing>SF06</bpmn:outgoing>
-      </bpmn:exclusiveGateway>
       <bpmn:serviceTask id="StaffFollowContinue" name="Aktuellen Wiedervorlage-&#10;Eintritt bereitstellen">
         <bpmn:documentation>FALL-11 Übergang 31. Gespeicherten Terminsetzungsauftrag und aktuelle Terminversion laden, nicht neu berechnen oder erneut speichern. staffEntryContextRef für direkten Eintritt in FollowUp vorbereiten; Marker konsumieren. Neue Mieternachricht oder neuer zwingender Prüfgrund nach Terminsetzung: betroffenen Termin idempotent aufheben und Mitarbeiterprüfung vorbereiten, genau eine Prüfung auch bei gleichzeitigem Timer. Keine Wiederherstellung eines aufgehobenen Termins. Alte automatische Ergebnisse bleiben gesperrt. Übergabekontext und Ereignisse zuverlässig an SEntryCheck übergeben; keine live gemeinsam genutzten Kindvariablen.
 0.27: Auch Übergang 32. Keine Rückgaben des abgebrochenen Reply-Calls verwenden; offene Antwortbedarfe unverändert erhalten. Derselbe geprüfte FollowUp-Eintritt wie bei Übergang 31.</bpmn:documentation>
-        <bpmn:incoming>SF06</bpmn:incoming>
+        <bpmn:incoming>SF_Takeover_Reply</bpmn:incoming>
         <bpmn:outgoing>SF07</bpmn:outgoing>
       </bpmn:serviceTask>
-      <bpmn:sequenceFlow id="SF06" sourceRef="StaffFollowJoin" targetRef="StaffFollowContinue" />
-      <bpmn:boundaryEvent id="StaffFollowAtClarification" attachedToRef="Clarification" cancelActivity="true">
-        <bpmn:documentation>FALL-11 Übergänge 31/32: Unterbrechung nur für bestätigte Terminsetzung aus In Abklärung oder Wartet auf Mieterantwort im aktuellen Durchlauf. Marker und Zustellverfahren sind Fachentwurf. Nach Speicherung keine automatische Wirkung des abgelösten Laufs; technische Umsetzung offen.</bpmn:documentation>
-        <bpmn:outgoing>SF_Takeover_Clarification</bpmn:outgoing>
-        <bpmn:conditionalEventDefinition id="StaffFollowAtClarification_definition">
-          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffFollowTakeoverReady = true</bpmn:condition>
-        </bpmn:conditionalEventDefinition>
-      </bpmn:boundaryEvent>
-      <bpmn:sequenceFlow id="SF_Takeover_Clarification" sourceRef="StaffFollowAtClarification" targetRef="StaffFollowJoin" />
-      <bpmn:boundaryEvent id="StaffFollowAtTriage" attachedToRef="Triage" cancelActivity="true">
-        <bpmn:documentation>FALL-11 Übergänge 31/32: Unterbrechung nur für bestätigte Terminsetzung aus In Abklärung oder Wartet auf Mieterantwort im aktuellen Durchlauf. Marker und Zustellverfahren sind Fachentwurf. Nach Speicherung keine automatische Wirkung des abgelösten Laufs; technische Umsetzung offen.</bpmn:documentation>
-        <bpmn:outgoing>SF_Takeover_Triage</bpmn:outgoing>
-        <bpmn:conditionalEventDefinition id="StaffFollowAtTriage_definition">
-          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffFollowTakeoverReady = true</bpmn:condition>
-        </bpmn:conditionalEventDefinition>
-      </bpmn:boundaryEvent>
-      <bpmn:sequenceFlow id="SF_Takeover_Triage" sourceRef="StaffFollowAtTriage" targetRef="StaffFollowJoin" />
-      <bpmn:boundaryEvent id="StaffFollowAtRecommend" attachedToRef="Recommend" cancelActivity="true">
-        <bpmn:documentation>FALL-11 Übergänge 31/32: Unterbrechung nur für bestätigte Terminsetzung aus In Abklärung oder Wartet auf Mieterantwort im aktuellen Durchlauf. Marker und Zustellverfahren sind Fachentwurf. Nach Speicherung keine automatische Wirkung des abgelösten Laufs; technische Umsetzung offen.</bpmn:documentation>
-        <bpmn:outgoing>SF_Takeover_Recommend</bpmn:outgoing>
-        <bpmn:conditionalEventDefinition id="StaffFollowAtRecommend_definition">
-          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffFollowTakeoverReady = true</bpmn:condition>
-        </bpmn:conditionalEventDefinition>
-      </bpmn:boundaryEvent>
-      <bpmn:sequenceFlow id="SF_Takeover_Recommend" sourceRef="StaffFollowAtRecommend" targetRef="StaffFollowJoin" />
-      <bpmn:boundaryEvent id="StaffFollowAtValidate" attachedToRef="Validate" cancelActivity="true">
-        <bpmn:documentation>FALL-11 Übergänge 31/32: Unterbrechung nur für bestätigte Terminsetzung aus In Abklärung oder Wartet auf Mieterantwort im aktuellen Durchlauf. Marker und Zustellverfahren sind Fachentwurf. Nach Speicherung keine automatische Wirkung des abgelösten Laufs; technische Umsetzung offen.</bpmn:documentation>
-        <bpmn:outgoing>SF_Takeover_Validate</bpmn:outgoing>
-        <bpmn:conditionalEventDefinition id="StaffFollowAtValidate_definition">
-          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffFollowTakeoverReady = true</bpmn:condition>
-        </bpmn:conditionalEventDefinition>
-      </bpmn:boundaryEvent>
-      <bpmn:sequenceFlow id="SF_Takeover_Validate" sourceRef="StaffFollowAtValidate" targetRef="StaffFollowJoin" />
-      <bpmn:boundaryEvent id="StaffFollowAtCurrentAnalysis" attachedToRef="CurrentAnalysis" cancelActivity="true">
-        <bpmn:documentation>FALL-11 Übergänge 31/32: Unterbrechung nur für bestätigte Terminsetzung aus In Abklärung oder Wartet auf Mieterantwort im aktuellen Durchlauf. Marker und Zustellverfahren sind Fachentwurf. Nach Speicherung keine automatische Wirkung des abgelösten Laufs; technische Umsetzung offen.</bpmn:documentation>
-        <bpmn:outgoing>SF_Takeover_CurrentAnalysis</bpmn:outgoing>
-        <bpmn:conditionalEventDefinition id="StaffFollowAtCurrentAnalysis_definition">
-          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffFollowTakeoverReady = true</bpmn:condition>
-        </bpmn:conditionalEventDefinition>
-      </bpmn:boundaryEvent>
-      <bpmn:sequenceFlow id="SF_Takeover_CurrentAnalysis" sourceRef="StaffFollowAtCurrentAnalysis" targetRef="StaffFollowJoin" />
-      <bpmn:boundaryEvent id="StaffFollowAtQuestion" attachedToRef="Question" cancelActivity="true">
-        <bpmn:documentation>FALL-11 Übergänge 31/32: Unterbrechung nur für bestätigte Terminsetzung aus In Abklärung oder Wartet auf Mieterantwort im aktuellen Durchlauf. Marker und Zustellverfahren sind Fachentwurf. Nach Speicherung keine automatische Wirkung des abgelösten Laufs; technische Umsetzung offen.</bpmn:documentation>
-        <bpmn:outgoing>SF_Takeover_Question</bpmn:outgoing>
-        <bpmn:conditionalEventDefinition id="StaffFollowAtQuestion_definition">
-          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffFollowTakeoverReady = true</bpmn:condition>
-        </bpmn:conditionalEventDefinition>
-      </bpmn:boundaryEvent>
-      <bpmn:sequenceFlow id="SF_Takeover_Question" sourceRef="StaffFollowAtQuestion" targetRef="StaffFollowJoin" />
-      <bpmn:boundaryEvent id="StaffFollowAtAutoAnswer" attachedToRef="AutoAnswer" cancelActivity="true">
-        <bpmn:documentation>FALL-11 Übergänge 31/32: Unterbrechung nur für bestätigte Terminsetzung aus In Abklärung oder Wartet auf Mieterantwort im aktuellen Durchlauf. Marker und Zustellverfahren sind Fachentwurf. Nach Speicherung keine automatische Wirkung des abgelösten Laufs; technische Umsetzung offen.</bpmn:documentation>
-        <bpmn:outgoing>SF_Takeover_AutoAnswer</bpmn:outgoing>
-        <bpmn:conditionalEventDefinition id="StaffFollowAtAutoAnswer_definition">
-          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffFollowTakeoverReady = true</bpmn:condition>
-        </bpmn:conditionalEventDefinition>
-      </bpmn:boundaryEvent>
-      <bpmn:sequenceFlow id="SF_Takeover_AutoAnswer" sourceRef="StaffFollowAtAutoAnswer" targetRef="StaffFollowJoin" />
-      <bpmn:boundaryEvent id="StaffFollowAtClose" attachedToRef="Close" cancelActivity="true">
-        <bpmn:documentation>FALL-11 Übergänge 31/32: Unterbrechung nur für bestätigte Terminsetzung aus In Abklärung oder Wartet auf Mieterantwort im aktuellen Durchlauf. Marker und Zustellverfahren sind Fachentwurf. Nach Speicherung keine automatische Wirkung des abgelösten Laufs; technische Umsetzung offen.</bpmn:documentation>
-        <bpmn:outgoing>SF_Takeover_Close</bpmn:outgoing>
-        <bpmn:conditionalEventDefinition id="StaffFollowAtClose_definition">
-          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffFollowTakeoverReady = true</bpmn:condition>
-        </bpmn:conditionalEventDefinition>
-      </bpmn:boundaryEvent>
-      <bpmn:sequenceFlow id="SF_Takeover_Close" sourceRef="StaffFollowAtClose" targetRef="StaffFollowJoin" />
       <bpmn:sequenceFlow id="SF07" sourceRef="StaffFollowContinue" targetRef="Staff" name="Geprüfter Eintritt: Wiedervorlage / neuer Prüfbedarf" />
-      <bpmn:boundaryEvent id="StaffFollowAtReply" attachedToRef="Reply" cancelActivity="true" name="Wiedervorlage&#10;übernommen">
+      <bpmn:boundaryEvent id="StaffFollowAtReply" attachedToRef="Reply" cancelActivity="true" name="Wiedervorlage bestätigt">
         <bpmn:documentation>FALL-11 Übergänge 31/32: Unterbrechung nur für bestätigte Terminsetzung aus In Abklärung oder Wartet auf Mieterantwort im aktuellen Durchlauf. Marker und Zustellverfahren sind Fachentwurf. Nach Speicherung keine automatische Wirkung des abgelösten Laufs; technische Umsetzung offen.</bpmn:documentation>
         <bpmn:outgoing>SF_Takeover_Reply</bpmn:outgoing>
         <bpmn:conditionalEventDefinition id="StaffFollowAtReply_definition">
           <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffFollowTakeoverReady = true</bpmn:condition>
         </bpmn:conditionalEventDefinition>
       </bpmn:boundaryEvent>
-      <bpmn:sequenceFlow id="SF_Takeover_Reply" sourceRef="StaffFollowAtReply" targetRef="StaffFollowJoin" />
+      <bpmn:sequenceFlow id="SF_Takeover_Reply" sourceRef="StaffFollowAtReply" targetRef="StaffFollowContinue" />
       <bpmn:subProcess id="StaffTakeoverSide" triggeredByEvent="true" name="Bearbeitung während In Abklärung übernehmen">
         <bpmn:documentation>FALL-06 Übergang 33 / FALL-AK-40. Nicht unterbrechender interner Auftrag zur direkten Übernahme aus In Abklärung. Ungültige Aufträge lassen den aktuellen Pfad bestehen. Lokale Auftragsreferenz, keine zusätzliche Mieter-Subscription.</bpmn:documentation>
         <bpmn:startEvent id="StaffTakeoverStart" isInterrupting="false" name="Übernahme angefordert">
@@ -787,8 +479,8 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
           <bpmn:outgoing>ST03</bpmn:outgoing>
           <bpmn:outgoing>ST05</bpmn:outgoing>
         </bpmn:exclusiveGateway>
-        <bpmn:serviceTask id="StaffTakeoverSignal" name="Übernahme für aktuellen&#10;Bearbeitungspfad bereitstellen">
-          <bpmn:documentation>Gespeicherten Übernahmeauftrag zuverlässig an den abgelösten Abklärungslauf vermitteln. staffTakeoverReady ist an führenden Durchlauf und Übernahme gebunden; Aktivitätswechsel abdecken, nach Verbrauch nicht weiterwirken lassen. Neuer zwingender Prüfbedarf während Übergabe zuverlässig nachliefern. Keine Outputs abgebrochener Jobs verwenden.</bpmn:documentation>
+        <bpmn:serviceTask id="StaffTakeoverSignal" name="Bestätigte Ablösung&#10;für Automatik bereitstellen">
+          <bpmn:documentation>0.31: Bestätigten persistierten Entscheid für aktuellen Automatic-Call mit automaticCallRef in dessen Elternscope bereitstellen und automaticInterruptionReady setzen. Keine weitere Flagfamilie je Service Task. Aktuellen Fallstand/Durchlauf prüfen; nachholbar und idempotent. Unveröffentlichte/abgelehnte Aufträge unterbrechen nicht. Marker bis Verbrauch gültig, nicht auf spätere Calls übertragen. Neue zwingende Prüfgründe während Übergabe zuverlässig erhalten; keine Outputs des abgebrochenen Kindes.</bpmn:documentation>
           <bpmn:incoming>ST03</bpmn:incoming>
           <bpmn:outgoing>ST04</bpmn:outgoing>
         </bpmn:serviceTask>
@@ -804,132 +496,110 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
         <bpmn:sequenceFlow id="ST04" sourceRef="StaffTakeoverSignal" targetRef="StaffTakeoverDone" />
         <bpmn:sequenceFlow id="ST05" sourceRef="StaffTakeoverResult" targetRef="StaffTakeoverRejected" name="Nein" />
       </bpmn:subProcess>
-      <bpmn:exclusiveGateway id="StaffTakeoverJoin" name="Übernahme&#10;bestätigt">
-        <bpmn:incoming>ST_Takeover_Clarification</bpmn:incoming>
-        <bpmn:incoming>ST_Takeover_Triage</bpmn:incoming>
-        <bpmn:incoming>ST_Takeover_Recommend</bpmn:incoming>
-        <bpmn:incoming>ST_Takeover_Validate</bpmn:incoming>
-        <bpmn:incoming>ST_Takeover_CurrentAnalysis</bpmn:incoming>
-        <bpmn:incoming>ST_Takeover_Question</bpmn:incoming>
-        <bpmn:incoming>ST_Takeover_AutoAnswer</bpmn:incoming>
-        <bpmn:incoming>ST_Takeover_Close</bpmn:incoming>
-        <bpmn:outgoing>ST06</bpmn:outgoing>
-      </bpmn:exclusiveGateway>
-      <bpmn:serviceTask id="StaffTakeoverContinue" name="Aktuellen Mitarbeitereintritt&#10;mit Prüfvorrang bereitstellen">
-        <bpmn:documentation>Aktuellen Stand und gespeicherten Übernahmeauftrag prüfen; staffEntryContextRef bereitstellen, Marker konsumieren. Ohne zwingenden Prüfbedarf direkter Eintritt in SWork, andernfalls SReviewStatus. Neuen Prüfbedarf bis Eintritt zuverlässig übergeben. Keine alten Jobrückgaben; keinen inzwischen weiterbearbeiteten Fall zurücksetzen. Nach Speicherung zuverlässige Fortsetzung ohne doppelte Aufgabe. Technische Synchronisierung noch nicht implementiert.</bpmn:documentation>
-        <bpmn:incoming>ST06</bpmn:incoming>
-        <bpmn:outgoing>ST07</bpmn:outgoing>
+      <bpmn:serviceTask id="PrepareInitialAuto" name="Automatik-Eintritt&#10;INITIAL vorbereiten">
+        <bpmn:documentation>Aktuellen Fallstand, führenden Durchlauf und Herkunft INITIAL prüfen; automaticEntryContextRef bereitstellen. Für QUESTION/CLOSE aktuellen replyDecisionRef verwenden, keine alte Freigabe und kein Statusreset. automaticCallRef für genau diesen Aufruf und Unterbrechungsbezug bereitstellen; nachholbare Registrierung mit offenen Prüfentscheiden koordinieren. Alte konsumierte Marker nicht wiederverwenden, neuen Prüfbedarf nicht löschen.</bpmn:documentation>
+        <bpmn:incoming>F02</bpmn:incoming>
+        <bpmn:outgoing>PrepareInitialAutoFlow</bpmn:outgoing>
       </bpmn:serviceTask>
-      <bpmn:sequenceFlow id="ST06" sourceRef="StaffTakeoverJoin" targetRef="StaffTakeoverContinue" />
-      <bpmn:boundaryEvent id="StaffTakeoverAtClarification" attachedToRef="Clarification" cancelActivity="true">
-        <bpmn:documentation>FALL-06 Übergang 33: Unterbrechung nur nach bestätigter Übernahme aus In Abklärung im aktuellen Durchlauf. Alte Worker ab Speicherung gesperrt. Durchlaufgebundener Marker und lückenlose Zustellung noch technisch umzusetzen.</bpmn:documentation>
-        <bpmn:outgoing>ST_Takeover_Clarification</bpmn:outgoing>
-        <bpmn:conditionalEventDefinition id="StaffTakeoverAtClarification_definition">
-          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffTakeoverReady = true</bpmn:condition>
+      <bpmn:sequenceFlow id="PrepareInitialAutoFlow" sourceRef="PrepareInitialAuto" targetRef="Automatic" name="" />
+      <bpmn:serviceTask id="PrepareQuestionAuto" name="Automatik-Eintritt&#10;QUESTION vorbereiten">
+        <bpmn:documentation>Aktuellen Fallstand, führenden Durchlauf und Herkunft QUESTION prüfen; automaticEntryContextRef bereitstellen. Für QUESTION/CLOSE aktuellen replyDecisionRef verwenden, keine alte Freigabe und kein Statusreset. automaticCallRef für genau diesen Aufruf und Unterbrechungsbezug bereitstellen; nachholbare Registrierung mit offenen Prüfentscheiden koordinieren. Alte konsumierte Marker nicht wiederverwenden, neuen Prüfbedarf nicht löschen.</bpmn:documentation>
+        <bpmn:incoming>F18</bpmn:incoming>
+        <bpmn:outgoing>PrepareQuestionAutoFlow</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="PrepareQuestionAutoFlow" sourceRef="PrepareQuestionAuto" targetRef="Automatic" name="" />
+      <bpmn:serviceTask id="PrepareCloseAuto" name="Automatik-Eintritt&#10;CLOSE vorbereiten">
+        <bpmn:documentation>Aktuellen Fallstand, führenden Durchlauf und Herkunft CLOSE prüfen; automaticEntryContextRef bereitstellen. Für QUESTION/CLOSE aktuellen replyDecisionRef verwenden, keine alte Freigabe und kein Statusreset. automaticCallRef für genau diesen Aufruf und Unterbrechungsbezug bereitstellen; nachholbare Registrierung mit offenen Prüfentscheiden koordinieren. Alte konsumierte Marker nicht wiederverwenden, neuen Prüfbedarf nicht löschen.</bpmn:documentation>
+        <bpmn:incoming>F20</bpmn:incoming>
+        <bpmn:outgoing>PrepareCloseAutoFlow</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="PrepareCloseAutoFlow" sourceRef="PrepareCloseAuto" targetRef="Automatic" name="" />
+      <bpmn:sequenceFlow id="F02" sourceRef="Register" targetRef="PrepareInitialAuto" name="" />
+      <bpmn:sequenceFlow id="F18" sourceRef="ReplyRoute" targetRef="PrepareQuestionAuto" name="Weitere Katalogfrage zulässig" />
+      <bpmn:sequenceFlow id="F20" sourceRef="ReplyRoute" targetRef="PrepareCloseAuto" name="Systemabschluss vorgeschlagen" />
+      <bpmn:callActivity id="Automatic" name="Automatische Abklärung">
+        <bpmn:documentation>Ruft automatische-abklaerung.bpmn auf. Eigener Scope; führende Fallzuordnung bleibt im Elternprozess. Genau eine aktuelle Call-Zuordnung. Normale Outputs nur bei regulärem Ende; bei Unterbrechung aktuellen persistierten Entscheid laden. Unterbrechung beendet auch Kindjobs, nicht zuverlässig bereits gestartete externe Nebenwirkungen. Deshalb Wirkungsprüfung im Dienst ab bestätigtem Prüfbedarf/Mitarbeiterentscheid.</bpmn:documentation>
+        <bpmn:extensionElements>
+          <zeebe:calledElement processId="PropertyFlow_Automatic_Draft" bindingType="deployment" propagateAllParentVariables="false" propagateAllChildVariables="false" />
+          <zeebe:ioMapping>
+            <zeebe:input source="= caseId" target="caseId" />
+            <zeebe:input source="= processInstanceKey" target="leadingProcessInstanceKey" />
+            <zeebe:input source="= automaticEntryContextRef" target="entryContextRef" />
+            <zeebe:input source="= automaticCallRef" target="automaticCallRef" />
+            <zeebe:output source="= outcome" target="automaticOutcome" />
+            <zeebe:output source="= decisionRef" target="automaticDecisionRef" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+        <bpmn:incoming>PrepareInitialAutoFlow</bpmn:incoming>
+        <bpmn:incoming>PrepareQuestionAutoFlow</bpmn:incoming>
+        <bpmn:incoming>PrepareCloseAutoFlow</bpmn:incoming>
+        <bpmn:outgoing>AParent01</bpmn:outgoing>
+      </bpmn:callActivity>
+      <bpmn:serviceTask id="AutomaticResult" name="Aktuelles Automatik-Ergebnis&#10;übernehmen">
+        <bpmn:documentation>automaticOutcome/automaticDecisionRef gegen aktuellen Fallstand und Call prüfen. WAIT_FOR_REPLY: replyEntryContextRef bereitstellen; REVIEW: staffEntryContextRef; CLOSED nur nach gespeichertem Abschluss. Neuen zwingenden Prüfbedarf vor Fortsetzung berücksichtigen. Übergabe am Call-Ende und Unterbrechung atomar/logisch exklusiv koordinieren; keine parallelen Staff-Calls. Unbekannte Rückgabe ist Vertragsfehler, kein fachlicher Default.</bpmn:documentation>
+        <bpmn:incoming>AParent01</bpmn:incoming>
+        <bpmn:outgoing>AParent02</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:exclusiveGateway id="AutomaticRoute" name="Fortsetzung">
+        <bpmn:incoming>AParent02</bpmn:incoming>
+        <bpmn:outgoing>AParentWait</bpmn:outgoing>
+        <bpmn:outgoing>AParentReview</bpmn:outgoing>
+        <bpmn:outgoing>AParentClosed</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+      <bpmn:sequenceFlow id="AParent01" sourceRef="Automatic" targetRef="AutomaticResult" name="" />
+      <bpmn:sequenceFlow id="AParent02" sourceRef="AutomaticResult" targetRef="AutomaticRoute" name="" />
+      <bpmn:sequenceFlow id="AParentWait" sourceRef="AutomaticRoute" targetRef="Reply" name="WAIT_FOR_REPLY" />
+      <bpmn:sequenceFlow id="AParentReview" sourceRef="AutomaticRoute" targetRef="Staff" name="REVIEW" />
+      <bpmn:sequenceFlow id="AParentClosed" sourceRef="AutomaticRoute" targetRef="ActiveEnd" name="CLOSED" />
+      <bpmn:boundaryEvent id="AutomaticInterrupted" name="Bestätigte Ablösung" attachedToRef="Automatic" cancelActivity="true">
+        <bpmn:documentation>Gemeinsamer Unterbrechungspfad für geprüfte Mitarbeiterrückfrage, Terminsetzung, Übernahme oder neuen zwingenden Prüfbedarf. Nur bestätigte persistierte Entscheide zum aktuellen automaticCallRef. Condition sieht Elternvariablen; keine implizite Synchronisierung mit Kind oder Datenbank. Auch Retry/Incident unterbrechen; technische Realisierung und Runtime-Nachweis offen.</bpmn:documentation>
+        <bpmn:outgoing>AI01</bpmn:outgoing>
+        <bpmn:conditionalEventDefinition id="AutomaticInterrupted_definition">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">= automaticInterruptionReady = true</bpmn:condition>
         </bpmn:conditionalEventDefinition>
       </bpmn:boundaryEvent>
-      <bpmn:sequenceFlow id="ST_Takeover_Clarification" sourceRef="StaffTakeoverAtClarification" targetRef="StaffTakeoverJoin" />
-      <bpmn:boundaryEvent id="StaffTakeoverAtTriage" attachedToRef="Triage" cancelActivity="true">
-        <bpmn:documentation>FALL-06 Übergang 33: Unterbrechung nur nach bestätigter Übernahme aus In Abklärung im aktuellen Durchlauf. Alte Worker ab Speicherung gesperrt. Durchlaufgebundener Marker und lückenlose Zustellung noch technisch umzusetzen.</bpmn:documentation>
-        <bpmn:outgoing>ST_Takeover_Triage</bpmn:outgoing>
-        <bpmn:conditionalEventDefinition id="StaffTakeoverAtTriage_definition">
-          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffTakeoverReady = true</bpmn:condition>
-        </bpmn:conditionalEventDefinition>
+      <bpmn:boundaryEvent id="AutomaticFailure" name="Fachlicher Analysefehler" attachedToRef="Automatic" cancelActivity="true">
+        <bpmn:outgoing>AutoFail01</bpmn:outgoing>
+        <bpmn:errorEventDefinition id="AutomaticFailure_definition" errorRef="Error_TriageFailure" />
       </bpmn:boundaryEvent>
-      <bpmn:sequenceFlow id="ST_Takeover_Triage" sourceRef="StaffTakeoverAtTriage" targetRef="StaffTakeoverJoin" />
-      <bpmn:boundaryEvent id="StaffTakeoverAtRecommend" attachedToRef="Recommend" cancelActivity="true">
-        <bpmn:documentation>FALL-06 Übergang 33: Unterbrechung nur nach bestätigter Übernahme aus In Abklärung im aktuellen Durchlauf. Alte Worker ab Speicherung gesperrt. Durchlaufgebundener Marker und lückenlose Zustellung noch technisch umzusetzen.</bpmn:documentation>
-        <bpmn:outgoing>ST_Takeover_Recommend</bpmn:outgoing>
-        <bpmn:conditionalEventDefinition id="StaffTakeoverAtRecommend_definition">
-          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffTakeoverReady = true</bpmn:condition>
-        </bpmn:conditionalEventDefinition>
-      </bpmn:boundaryEvent>
-      <bpmn:sequenceFlow id="ST_Takeover_Recommend" sourceRef="StaffTakeoverAtRecommend" targetRef="StaffTakeoverJoin" />
-      <bpmn:boundaryEvent id="StaffTakeoverAtValidate" attachedToRef="Validate" cancelActivity="true">
-        <bpmn:documentation>FALL-06 Übergang 33: Unterbrechung nur nach bestätigter Übernahme aus In Abklärung im aktuellen Durchlauf. Alte Worker ab Speicherung gesperrt. Durchlaufgebundener Marker und lückenlose Zustellung noch technisch umzusetzen.</bpmn:documentation>
-        <bpmn:outgoing>ST_Takeover_Validate</bpmn:outgoing>
-        <bpmn:conditionalEventDefinition id="StaffTakeoverAtValidate_definition">
-          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffTakeoverReady = true</bpmn:condition>
-        </bpmn:conditionalEventDefinition>
-      </bpmn:boundaryEvent>
-      <bpmn:sequenceFlow id="ST_Takeover_Validate" sourceRef="StaffTakeoverAtValidate" targetRef="StaffTakeoverJoin" />
-      <bpmn:boundaryEvent id="StaffTakeoverAtCurrentAnalysis" attachedToRef="CurrentAnalysis" cancelActivity="true">
-        <bpmn:documentation>FALL-06 Übergang 33: Unterbrechung nur nach bestätigter Übernahme aus In Abklärung im aktuellen Durchlauf. Alte Worker ab Speicherung gesperrt. Durchlaufgebundener Marker und lückenlose Zustellung noch technisch umzusetzen.</bpmn:documentation>
-        <bpmn:outgoing>ST_Takeover_CurrentAnalysis</bpmn:outgoing>
-        <bpmn:conditionalEventDefinition id="StaffTakeoverAtCurrentAnalysis_definition">
-          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffTakeoverReady = true</bpmn:condition>
-        </bpmn:conditionalEventDefinition>
-      </bpmn:boundaryEvent>
-      <bpmn:sequenceFlow id="ST_Takeover_CurrentAnalysis" sourceRef="StaffTakeoverAtCurrentAnalysis" targetRef="StaffTakeoverJoin" />
-      <bpmn:boundaryEvent id="StaffTakeoverAtQuestion" attachedToRef="Question" cancelActivity="true">
-        <bpmn:documentation>FALL-06 Übergang 33: Unterbrechung nur nach bestätigter Übernahme aus In Abklärung im aktuellen Durchlauf. Alte Worker ab Speicherung gesperrt. Durchlaufgebundener Marker und lückenlose Zustellung noch technisch umzusetzen.</bpmn:documentation>
-        <bpmn:outgoing>ST_Takeover_Question</bpmn:outgoing>
-        <bpmn:conditionalEventDefinition id="StaffTakeoverAtQuestion_definition">
-          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffTakeoverReady = true</bpmn:condition>
-        </bpmn:conditionalEventDefinition>
-      </bpmn:boundaryEvent>
-      <bpmn:sequenceFlow id="ST_Takeover_Question" sourceRef="StaffTakeoverAtQuestion" targetRef="StaffTakeoverJoin" />
-      <bpmn:boundaryEvent id="StaffTakeoverAtAutoAnswer" attachedToRef="AutoAnswer" cancelActivity="true">
-        <bpmn:documentation>FALL-06 Übergang 33: Unterbrechung nur nach bestätigter Übernahme aus In Abklärung im aktuellen Durchlauf. Alte Worker ab Speicherung gesperrt. Durchlaufgebundener Marker und lückenlose Zustellung noch technisch umzusetzen.</bpmn:documentation>
-        <bpmn:outgoing>ST_Takeover_AutoAnswer</bpmn:outgoing>
-        <bpmn:conditionalEventDefinition id="StaffTakeoverAtAutoAnswer_definition">
-          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffTakeoverReady = true</bpmn:condition>
-        </bpmn:conditionalEventDefinition>
-      </bpmn:boundaryEvent>
-      <bpmn:sequenceFlow id="ST_Takeover_AutoAnswer" sourceRef="StaffTakeoverAtAutoAnswer" targetRef="StaffTakeoverJoin" />
-      <bpmn:boundaryEvent id="StaffTakeoverAtClose" attachedToRef="Close" cancelActivity="true">
-        <bpmn:documentation>FALL-06 Übergang 33: Unterbrechung nur nach bestätigter Übernahme aus In Abklärung im aktuellen Durchlauf. Alte Worker ab Speicherung gesperrt. Durchlaufgebundener Marker und lückenlose Zustellung noch technisch umzusetzen.</bpmn:documentation>
-        <bpmn:outgoing>ST_Takeover_Close</bpmn:outgoing>
-        <bpmn:conditionalEventDefinition id="StaffTakeoverAtClose_definition">
-          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffTakeoverReady = true</bpmn:condition>
-        </bpmn:conditionalEventDefinition>
-      </bpmn:boundaryEvent>
-      <bpmn:sequenceFlow id="ST_Takeover_Close" sourceRef="StaffTakeoverAtClose" targetRef="StaffTakeoverJoin" />
-      <bpmn:sequenceFlow id="ST07" sourceRef="StaffTakeoverContinue" targetRef="Staff" name="Bearbeitung / zwingender Prüfbedarf" />
-      <bpmn:textAnnotation id="MainDraft">
-        <bpmn:text>FACHENTWURF 0.26 · 15.11.2026
-Nicht ausführbar / kein Deployment.
-Bisheriger Hauptablauf in «Aktiven Fall bearbeiten».
-Nachrichteneingang oben links separat öffnen.</bpmn:text>
-      </bpmn:textAnnotation>
-      <bpmn:textAnnotation id="IntakeNote">
-        <bpmn:text>Vor dem Start: Fall + Folgeaufträge atomar speichern.
-Mieter erhält Bestätigung nach Commit.
-Camunda und SMTP blockieren die Annahme nicht.</bpmn:text>
-      </bpmn:textAnnotation>
-      <bpmn:association id="IntakeNote_association" associationDirection="None" sourceRef="Register" targetRef="IntakeNote" />
-      <bpmn:textAnnotation id="GuardNote">
-        <bpmn:text>Verbindlich: menschlicher Prüfbedarf hat Vorrang (FALL-06/10).
-Systemabschluss nur: In Abklärung oder Wartet auf Mieterantwort.
-Behebung: ganzer Sachverhalt erledigt, keine weitere Hilfe, kein Widerspruch.
-Kein Verwaltungsbedarf: gültige freigegebene Fachregel vollständig belegt.
-Aktueller Nachrichtenstand; keine Zuordnungs-, Analyse- oder Versandprobleme.
-Automatische Rückfragen: nur Katalogtext nach KOM-05.
-Doppelt / überholt: keine neue Nachricht, kein eigener Prüfgrund.
-
-Individuelle LLM-Nachricht im Worker prüfen; Abschlussmitteilung zulässig.
-Nachricht + Versandauftrag speichern, danach Abschluss erneut prüfen.
-Abschluss ausgeblieben: Antwort bleibt einmalig, keine Abschlussmail.</bpmn:text>
-      </bpmn:textAnnotation>
-      <bpmn:textAnnotation id="ScopeNote">
-        <bpmn:text>Ein gemeinsamer Nachrichteneingang gilt für alle aktiven Schritte.
-Mitarbeiterprüfung bleibt bis zur bewussten Mitarbeiterentscheidung bestehen.
-Auswertungen und Hauptpfad müssen denselben aktuellen Fallstand verwenden.
-Wiedereröffnung und externe Wartephase werden separat ausgearbeitet.</bpmn:text>
-      </bpmn:textAnnotation>
-      <bpmn:textAnnotation id="InboxNote">
-        <bpmn:text>Nicht unterbrechender Ereignis-Teilprozess:
-empfängt während der gesamten aktiven Bearbeitung.
-Kein Sequenzpfeil: Start durch gespeicherte Mieternachricht.
-Nachrichten ersetzen keine Mitarbeiterentscheidung.</bpmn:text>
-      </bpmn:textAnnotation>
-      <bpmn:textAnnotation id="CloseConflictNote">
-        <bpmn:text>Mitarbeiterabschluss am aktuellen Stand:
-Laufende KI allein blockiert nicht.
-Veraltete Entscheidung: neue Prüfaufgabe,
-kein Abschluss und keine Abschlussmail.
-Technischer Speicherfehler bleibt getrennt.</bpmn:text>
-      </bpmn:textAnnotation>
+      <bpmn:serviceTask id="AutomaticFailurePrepare" name="Analysefehler und&#10;Prüfkontext sichern">
+        <bpmn:documentation>Tatsächlich gemeldeten fachlichen Analysefehler speichern und staffEntryContextRef zur Mitarbeiterprüfung bereitstellen. Aktuellen Durchlauf/Fallstand prüfen; vorhandene Prüfung wiederverwenden, keinen neueren Entscheid zurücknehmen. Kein Zugriff auf normale Outputs des abgebrochenen Kindes. Technische Retries sind keine fachlichen Fehler.</bpmn:documentation>
+        <bpmn:incoming>AutoFail01</bpmn:incoming>
+        <bpmn:outgoing>AutoFail02</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="AutoFail01" sourceRef="AutomaticFailure" targetRef="AutomaticFailurePrepare" name="" />
+      <bpmn:sequenceFlow id="AutoFail02" sourceRef="AutomaticFailurePrepare" targetRef="Staff" name="" />
+      <bpmn:serviceTask id="AutomaticInterruptionPrepare" name="Bestätigten Entscheid und&#10;aktuellen Fallstand prüfen">
+        <bpmn:documentation>Persistierten Unterbrechungsentscheid gegen automaticCallRef, führenden Durchlauf und aktuellen Fallstand prüfen; automaticInterruptionReady konsumieren. Zwingender neuer Prüfbedarf hat Vorrang -&gt; staffEntryContextRef zur Prüfung. Erfolgreiche Rückfrage ohne Vorrang -&gt; replyEntryContextRef. Übernahme ohne Prüfbedarf -&gt; staffEntryContextRef zu SWork. Gespeicherter Termin -&gt; direkter FollowUp-Kontext, bei Kontakt/neuem Prüfbedarf seit Terminsetzung Termin aufheben und Prüfung vorbereiten. Bestehende Prüfung genau einmal ergänzen. Keine Rückgaben des abgebrochenen Kindes; keine doppelte Veröffentlichung, Terminversion oder Mailpflicht. Neueren Fallstand/Abschluss nicht zurücksetzen. Geschützte Übergabe bis Zielaktivierung zuverlässig nachholen.</bpmn:documentation>
+        <bpmn:incoming>AI01</bpmn:incoming>
+        <bpmn:outgoing>AI02</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:exclusiveGateway id="AutomaticInterruptionRoute" name="Geprüfte Fortsetzung">
+        <bpmn:incoming>AI02</bpmn:incoming>
+        <bpmn:outgoing>AIWait</bpmn:outgoing>
+        <bpmn:outgoing>AIStaff</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+      <bpmn:sequenceFlow id="AI01" sourceRef="AutomaticInterrupted" targetRef="AutomaticInterruptionPrepare" name="" />
+      <bpmn:sequenceFlow id="AI02" sourceRef="AutomaticInterruptionPrepare" targetRef="AutomaticInterruptionRoute" name="" />
+      <bpmn:sequenceFlow id="AIWait" sourceRef="AutomaticInterruptionRoute" targetRef="Reply" name="Veröffentlichte Rückfrage" />
+      <bpmn:sequenceFlow id="AIStaff" sourceRef="AutomaticInterruptionRoute" targetRef="Staff" name="Prüfung / Bearbeitung / Wiedervorlage" />
+      <bpmn:subProcess id="CaseDataSide" name="Falldaten ergänzen – Bearbeitung bleibt bestehen" triggeredByEvent="true">
+        <bpmn:documentation>0.34 / FALL-06 / FALL-AK-43: Ein gemeinsamer nicht unterbrechender Eingang für ADD_MEMO, SET_OBJECT_ASSIGNMENT und SET_MANUAL_URGENCY. Nur autorisierte Mitarbeiteraufträge für einen zugeordneten aktiven Fall. Kein neuer öffentlicher Endpunkt durch dieses Modell und kein Mieternachrichtenempfänger. Keine User-Task-Completion, kein neuer Call und kein Statuswechsel durch die Aktion. Lokale Auftragsreferenz je Ausführung, keine Überschreibung von Hauptpfadvariablen. Bei konkurrierendem Abschluss unveröffentlichte alte Aufträge ohne Wirkung auflösen; bereits gespeicherte Änderungen und Mailpflichten erhalten. Technische Korrelation und Transaktionskoordination noch umzusetzen.</bpmn:documentation>
+        <bpmn:startEvent id="CaseDataStart" name="Änderungsauftrag eingegangen" isInterrupting="false">
+          <bpmn:outgoing>CD01</bpmn:outgoing>
+          <bpmn:messageEventDefinition id="CaseDataStart_definition" messageRef="Message_CaseDataChange" />
+        </bpmn:startEvent>
+        <bpmn:serviceTask id="CaseDataApply" name="Berechtigung und Fallstand prüfen&#10;Falldaten + Änderungsnachweis speichern">
+          <bpmn:documentation>FALL-06 Aktionsvertrag Falldaten ergänzen: authentifizierte Mitarbeiteridentität und Berechtigung, aktuelle führende Instanz, aktiven Status und bestätigte Fallversion serverseitig prüfen. Erreichbares Camunda ist Voraussetzung der Auftragsannahme; erneute Prüfung unmittelbar vor Speicherung. Keine frei übergebene Prozess-ID als Autorisierung, keine Mitarbeiter-User-Task voraussetzen. Fest definierte Aktionsart und deren Payload prüfen, an zuständige Fachlogik delegieren. ADD_MEMO nur intern, keine Mieter-Mail und kein Kommunikations-LLM-Kontext. SET_OBJECT_ASSIGNMENT nur zulässige Zuordnung, relevante alte Auswertungsgrundlage sperren, keine automatische Erledigung einer Mitarbeiterprüfung. SET_MANUAL_URGENCY validiert Stufe und schützt menschlichen Vorrang; wirksame Änderungen nach DRING historisieren/benachrichtigen, bestehende Regeln für unveränderte Werte erhalten. Änderung, erforderlichen Nachweis, Operationsausgang und gegebenenfalls Mailpflicht konsistent sichern. Status/Task/Timer unverändert. Neuer zwingender Prüfbedarf folgt separatem bestehenden Eingang und wird zuverlässig übergeben. Wiederholung desselben erfolgreichen Auftrags ohne zweite Wirkung; gleiche Operations-ID mit geändertem Inhalt ablehnen. Ungültiger/veralteter unverarbeiteter Auftrag ohne Änderung ablehnen, Eingabe erhalten. Technische Fehler Retry/Incident, nicht als fachliche Ablehnung tarnen. Bei Timeout keinen Erfolg behaupten und dieselbe Operations-ID wiederverwenden. Engine-Unterbrechung allein verhindert keine späte DB-Wirkung; Abschluss und Fallversion vor Commit koordinieren. Nur lokale Ergebnisdaten, keine Änderung von outcome/decisionRef des Hauptpfads.</bpmn:documentation>
+          <bpmn:incoming>CD01</bpmn:incoming>
+          <bpmn:outgoing>CD02</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:endEvent id="CaseDataEnd" name="Nur Änderungsauftrag beendet">
+          <bpmn:incoming>CD02</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="CD01" sourceRef="CaseDataStart" targetRef="CaseDataApply" />
+        <bpmn:sequenceFlow id="CD02" sourceRef="CaseDataApply" targetRef="CaseDataEnd" />
+      </bpmn:subProcess>
     </bpmn:subProcess>
     <bpmn:endEvent id="End" name="Durchlauf beendet">
       <bpmn:documentation>
@@ -1013,361 +683,483 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
   </bpmndi:BPMNDiagram>
   <bpmndi:BPMNDiagram id="ActiveCase_diagram" name="02 · Aktiven Fall bearbeiten">
     <bpmndi:BPMNPlane id="ActiveCase_plane" bpmnElement="ActiveCase">
-      <bpmndi:BPMNShape id="Start_di" bpmnElement="Start" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
-        <dc:Bounds x="-600" y="642" width="36" height="36" />
+      <bpmndi:BPMNShape id="Start_di" bpmnElement="Start">
+        <dc:Bounds x="40" y="110" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="-645.0" y="686.0" width="126" height="14" />
+          <dc:Bounds x="-5" y="154" width="126" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Register_di" bpmnElement="Register" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
-        <dc:Bounds x="290" y="615" width="170" height="90" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Clarification_di" bpmnElement="Clarification" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
-        <dc:Bounds x="520" y="615" width="170" height="90" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Triage_di" bpmnElement="Triage" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
-        <dc:Bounds x="750" y="615" width="170" height="90" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Recommend_di" bpmnElement="Recommend" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
-        <dc:Bounds x="980" y="615" width="170" height="90" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Validate_di" bpmnElement="Validate" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
-        <dc:Bounds x="1210" y="615" width="170" height="90" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Route_di" bpmnElement="Route" isMarkerVisible="true" bioc:stroke="#334155" bioc:fill="#f1f5f9">
-        <dc:Bounds x="1440" y="635" width="50" height="50" />
+      <bpmndi:BPMNShape id="EntryRoute_di" bpmnElement="EntryRoute">
+        <dc:Bounds x="130" y="105" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1416" y="693" width="99" height="14" />
+          <dc:Bounds x="85" y="163" width="140" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Question_di" bpmnElement="Question" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
-        <dc:Bounds x="1605" y="465" width="170" height="90" />
+      <bpmndi:BPMNShape id="Register_di" bpmnElement="Register">
+        <dc:Bounds x="240" y="80" width="180" height="95" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Reply_di" bpmnElement="Reply" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
-        <dc:Bounds x="1870" y="465" width="170" height="90" />
+      <bpmndi:BPMNShape id="PrepareInitialAuto_di" bpmnElement="PrepareInitialAuto">
+        <dc:Bounds x="480" y="80" width="180" height="95" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ReplyRoute_di" bpmnElement="ReplyRoute" isMarkerVisible="true" bioc:stroke="#334155" bioc:fill="#f1f5f9">
-        <dc:Bounds x="2100" y="485" width="50" height="50" />
+      <bpmndi:BPMNShape id="Automatic_di" bpmnElement="Automatic" isExpanded="false">
+        <dc:Bounds x="750" y="80" width="240" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AutomaticResult_di" bpmnElement="AutomaticResult">
+        <dc:Bounds x="1100" y="80" width="200" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AutomaticRoute_di" bpmnElement="AutomaticRoute">
+        <dc:Bounds x="1380" y="105" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2159.5" y="503" width="141" height="14" />
+          <dc:Bounds x="1335" y="163" width="140" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="AutoAnswer_di" bpmnElement="AutoAnswer" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
-        <dc:Bounds x="2040" y="615" width="170" height="90" />
+      <bpmndi:BPMNShape id="ReopenCase_di" bpmnElement="ReopenCase">
+        <dc:Bounds x="240" y="320" width="180" height="95" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Close_di" bpmnElement="Close" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
-        <dc:Bounds x="2375" y="615" width="170" height="90" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Staff_di" bpmnElement="Staff" bioc:stroke="#7c2d12" bioc:fill="#ffedd5">
-        <dc:Bounds x="1510" y="200" width="170" height="90" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffRoute_di" bpmnElement="StaffRoute" isMarkerVisible="true" bioc:stroke="#334155" bioc:fill="#f1f5f9">
-        <dc:Bounds x="1765" y="220" width="50" height="50" />
+      <bpmndi:BPMNShape id="ReopenRejected_di" bpmnElement="ReopenRejected">
+        <dc:Bounds x="280" y="397" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1760" y="196" width="59" height="14" />
+          <dc:Bounds x="235" y="441" width="126" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="MainDraft_di" bpmnElement="MainDraft" bioc:stroke="#475569" bioc:fill="#ffffff">
-        <dc:Bounds x="200" y="440" width="540" height="120" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="IntakeNote_di" bpmnElement="IntakeNote" bioc:stroke="#475569" bioc:fill="#ffffff">
-        <dc:Bounds x="230" y="800" width="330" height="57" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="GuardNote_di" bpmnElement="GuardNote" bioc:stroke="#475569" bioc:fill="#ffffff">
-        <dc:Bounds x="960" y="780" width="760" height="220" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ScopeNote_di" bpmnElement="ScopeNote" bioc:stroke="#475569" bioc:fill="#ffffff">
-        <dc:Bounds x="1870" y="860" width="850" height="120" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="TriageFailure_di" bpmnElement="TriageFailure" bioc:stroke="#991b1b" bioc:fill="#fee2e2">
-        <dc:Bounds x="817" y="597" width="36" height="36" />
+      <bpmndi:BPMNShape id="ReopenRejectedEnd_di" bpmnElement="ReopenRejectedEnd">
+        <dc:Bounds x="280" y="510" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="863" y="559" width="150" height="40" />
+          <dc:Bounds x="235" y="554" width="126" height="40" />
         </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AutomaticInterrupted_di" bpmnElement="AutomaticInterrupted">
+        <dc:Bounds x="790" y="162" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="745" y="206" width="126" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AutomaticInterruptionPrepare_di" bpmnElement="AutomaticInterruptionPrepare">
+        <dc:Bounds x="750" y="310" width="240" height="95" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AutomaticInterruptionRoute_di" bpmnElement="AutomaticInterruptionRoute">
+        <dc:Bounds x="1090" y="332" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1045" y="390" width="140" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AutomaticFailure_di" bpmnElement="AutomaticFailure">
+        <dc:Bounds x="920" y="162" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="875" y="206" width="126" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AutomaticFailurePrepare_di" bpmnElement="AutomaticFailurePrepare">
+        <dc:Bounds x="1180" y="500" width="220" height="95" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Reply_di" bpmnElement="Reply" isExpanded="false">
+        <dc:Bounds x="1580" y="80" width="200" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReplyRoute_di" bpmnElement="ReplyRoute">
+        <dc:Bounds x="1880" y="105" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1835" y="163" width="140" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="PrepareQuestionAuto_di" bpmnElement="PrepareQuestionAuto">
+        <dc:Bounds x="1800" y="320" width="200" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="PrepareCloseAuto_di" bpmnElement="PrepareCloseAuto">
+        <dc:Bounds x="1800" y="490" width="200" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Staff_di" bpmnElement="Staff" isExpanded="false">
+        <dc:Bounds x="1520" y="850" width="240" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffRoute_di" bpmnElement="StaffRoute">
+        <dc:Bounds x="1850" y="875" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1805" y="933" width="140" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Close_di" bpmnElement="Close">
+        <dc:Bounds x="1850" y="1100" width="210" height="95" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="CloseConflict_di" bpmnElement="CloseConflict">
+        <dc:Bounds x="1890" y="1177" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1845" y="1221" width="126" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ActiveEnd_di" bpmnElement="ActiveEnd">
+        <dc:Bounds x="2180" y="700" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2135" y="744" width="126" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReplyCleared_di" bpmnElement="ReplyCleared">
+        <dc:Bounds x="1600" y="162" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1480" y="205" width="180" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ClearAnswerContinue_di" bpmnElement="ClearAnswerContinue">
+        <dc:Bounds x="400" y="700" width="220" height="95" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ClearAnswerRoute_di" bpmnElement="ClearAnswerRoute">
+        <dc:Bounds x="700" y="722" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="655" y="780" width="140" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReplyStaffClose_di" bpmnElement="ReplyStaffClose">
+        <dc:Bounds x="1660" y="162" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1630" y="270" width="180" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReplyReviewNeeded_di" bpmnElement="ReplyReviewNeeded">
+        <dc:Bounds x="1720" y="162" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1750" y="205" width="150" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReviewNeedPrepare_di" bpmnElement="ReviewNeedPrepare">
+        <dc:Bounds x="850" y="700" width="220" height="95" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffFollowAtReply_di" bpmnElement="StaffFollowAtReply">
+        <dc:Bounds x="1762" y="105" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1810" y="35" width="170" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffFollowContinue_di" bpmnElement="StaffFollowContinue">
+        <dc:Bounds x="1140" y="700" width="220" height="95" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TenantInbox_di" bpmnElement="TenantInbox" isExpanded="false">
+        <dc:Bounds x="100" y="1450" width="380" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ClearAnswerSide_di" bpmnElement="ClearAnswerSide" isExpanded="false">
+        <dc:Bounds x="620" y="1450" width="380" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffCloseReplySide_di" bpmnElement="StaffCloseReplySide" isExpanded="false">
+        <dc:Bounds x="1140" y="1450" width="380" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReviewNeedSide_di" bpmnElement="ReviewNeedSide" isExpanded="false">
+        <dc:Bounds x="1660" y="1450" width="380" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffQuestionSide_di" bpmnElement="StaffQuestionSide" isExpanded="false">
+        <dc:Bounds x="100" y="1630" width="380" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffCloseClarificationSide_di" bpmnElement="StaffCloseClarificationSide" isExpanded="false">
+        <dc:Bounds x="620" y="1630" width="380" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffFollowSide_di" bpmnElement="StaffFollowSide" isExpanded="false">
+        <dc:Bounds x="1140" y="1630" width="380" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffTakeoverSide_di" bpmnElement="StaffTakeoverSide" isExpanded="false">
+        <dc:Bounds x="1660" y="1630" width="380" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="F01_di" bpmnElement="F01">
-        <di:waypoint x="-564" y="660" />
-        <di:waypoint x="-450" y="660" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="F02_di" bpmnElement="F02">
-        <di:waypoint x="460" y="660" />
-        <di:waypoint x="520" y="660" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="F03_di" bpmnElement="F03">
-        <di:waypoint x="690" y="660" />
-        <di:waypoint x="750" y="660" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="F04_di" bpmnElement="F04">
-        <di:waypoint x="920" y="660" />
-        <di:waypoint x="980" y="660" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="F_TriageFailure_Staff_di" bpmnElement="F_TriageFailure_Staff" bioc:stroke="#991b1b">
-        <di:waypoint x="835" y="597" />
-        <di:waypoint x="835" y="245" />
-        <di:waypoint x="1510" y="245" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="F05_di" bpmnElement="F05">
-        <di:waypoint x="1150" y="660" />
-        <di:waypoint x="1210" y="660" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="F06_di" bpmnElement="F06">
-        <di:waypoint x="1380" y="660" />
-        <di:waypoint x="1440" y="660" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="F07_di" bpmnElement="F07">
-        <di:waypoint x="1465" y="635" />
-        <di:waypoint x="1465" y="510" />
-        <di:waypoint x="1605" y="510" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1499" y="470" width="93" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="F08_di" bpmnElement="F08">
-        <di:waypoint x="1775" y="510" />
-        <di:waypoint x="1870" y="510" />
+        <di:waypoint x="76" y="128.0" />
+        <di:waypoint x="103.0" y="128.0" />
+        <di:waypoint x="103.0" y="130.0" />
+        <di:waypoint x="130" y="130.0" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="F09_di" bpmnElement="F09">
-        <di:waypoint x="2040" y="510" />
-        <di:waypoint x="2100" y="510" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="F10_di" bpmnElement="F10">
-        <di:waypoint x="1490" y="660" />
-        <di:waypoint x="2040" y="660" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1660" y="621" width="270" height="28" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="F11_di" bpmnElement="F11">
-        <di:waypoint x="2210" y="660" />
-        <di:waypoint x="2375" y="660" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="F14_di" bpmnElement="F14">
-        <di:waypoint x="1465" y="635" />
-        <di:waypoint x="1465" y="245" />
-        <di:waypoint x="1510" y="245" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1498" y="402" width="131" height="14" />
-        </bpmndi:BPMNLabel>
+        <di:waypoint x="1780" y="130.0" />
+        <di:waypoint x="1880" y="130.0" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="F15_di" bpmnElement="F15">
-        <di:waypoint x="1680" y="245" />
-        <di:waypoint x="1765" y="245" />
+        <di:waypoint x="1760" y="900.0" />
+        <di:waypoint x="1850" y="900.0" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="F16_di" bpmnElement="F16">
-        <di:waypoint x="1815" y="245" />
-        <di:waypoint x="2240" y="245" />
-        <di:waypoint x="2240" y="660" />
-        <di:waypoint x="2375" y="660" />
+        <di:waypoint x="1875" y="925" />
+        <di:waypoint x="1875" y="1100" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1948" y="210" width="95" height="14" />
+          <dc:Bounds x="1805" y="1058" width="150" height="36" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="F17_di" bpmnElement="F17">
-        <di:waypoint x="1790" y="270" />
-        <di:waypoint x="1790" y="510" />
-        <di:waypoint x="1870" y="510" />
+        <di:waypoint x="1900" y="900" />
+        <di:waypoint x="2100" y="900" />
+        <di:waypoint x="2100" y="-60" />
+        <di:waypoint x="1720" y="-60" />
+        <di:waypoint x="1720" y="80" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1647" y="318" width="116" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="F18_di" bpmnElement="F18">
-        <di:waypoint x="2125" y="485" />
-        <di:waypoint x="2125" y="420" />
-        <di:waypoint x="1690" y="420" />
-        <di:waypoint x="1690" y="465" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1850" y="425" width="134" height="14" />
+          <dc:Bounds x="2030" y="-102" width="150" height="36" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="F19_di" bpmnElement="F19">
-        <di:waypoint x="2125" y="535" />
-        <di:waypoint x="2125" y="580" />
-        <di:waypoint x="1955" y="590" />
-        <di:waypoint x="1955" y="555" />
+        <di:waypoint x="1905" y="105" />
+        <di:waypoint x="1905" y="0" />
+        <di:waypoint x="1680" y="0" />
+        <di:waypoint x="1680" y="80" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1965" y="551" width="101" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="F20_di" bpmnElement="F20">
-        <di:waypoint x="2125" y="535" />
-        <di:waypoint x="2125" y="615" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="2140" y="558" width="95" height="42" />
+          <dc:Bounds x="1610" y="-42" width="150" height="36" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="F21_di" bpmnElement="F21">
-        <di:waypoint x="2125" y="485" />
-        <di:waypoint x="2125" y="120" />
-        <di:waypoint x="1595" y="120" />
-        <di:waypoint x="1595" y="200" />
+        <di:waypoint x="1930" y="130" />
+        <di:waypoint x="2120" y="130" />
+        <di:waypoint x="2120" y="820" />
+        <di:waypoint x="1640" y="820" />
+        <di:waypoint x="1640" y="850" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1932" y="80" width="97" height="14" />
+          <dc:Bounds x="2050" y="778" width="150" height="36" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="IntakeNote_association_di" bpmnElement="IntakeNote_association">
-        <di:waypoint x="382" y="705" />
-        <di:waypoint x="397" y="800" />
+      <bpmndi:BPMNEdge id="FActiveClose_di" bpmnElement="FActiveClose">
+        <di:waypoint x="2060" y="1147" />
+        <di:waypoint x="2198" y="1147" />
+        <di:waypoint x="2198" y="736" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="ActiveEnd_di" bpmnElement="ActiveEnd" bioc:stroke="#14532d" bioc:fill="#dcfce7">
-        <dc:Bounds x="2740" y="642" width="36" height="36" />
+      <bpmndi:BPMNEdge id="F_CloseConflict_Staff_di" bpmnElement="F_CloseConflict_Staff">
+        <di:waypoint x="1908" y="1213" />
+        <di:waypoint x="1908" y="1300" />
+        <di:waypoint x="1600" y="1300" />
+        <di:waypoint x="1600" y="950" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2675" y="690" width="166" height="28" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="FActiveClose_di" bpmnElement="FActiveClose" bioc:stroke="#334155">
-        <di:waypoint x="2545" y="660" />
-        <di:waypoint x="2740" y="660" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="TenantInbox_di" bpmnElement="TenantInbox" bioc:stroke="#4c1d95" bioc:fill="#ede9fe" isExpanded="false">
-        <dc:Bounds x="200" y="200" width="280" height="120" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="InboxNote_di" bpmnElement="InboxNote" bioc:stroke="#334155" bioc:fill="#f1f5f9">
-        <dc:Bounds x="560" y="60" width="650" height="100" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="CloseConflict_di" bpmnElement="CloseConflict" bioc:stroke="#991b1b" bioc:fill="#fee2e2">
-        <dc:Bounds x="2442" y="597" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="2490" y="558" width="160" height="32" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="F_CloseConflict_Staff_di" bpmnElement="F_CloseConflict_Staff" bioc:stroke="#991b1b">
-        <di:waypoint x="2460" y="597" />
-        <di:waypoint x="2460" y="20" />
-        <di:waypoint x="1640" y="20" />
-        <di:waypoint x="1640" y="200" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="2150" y="-15" width="220" height="28" />
+          <dc:Bounds x="1530" y="1258" width="150" height="36" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="CloseConflictNote_di" bpmnElement="CloseConflictNote" bioc:stroke="#991b1b">
-        <dc:Bounds x="2490" y="200" width="350" height="140" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="AnalysisStale_di" bpmnElement="AnalysisStale" bioc:stroke="#9a3412" bioc:fill="#fff7ed">
-        <dc:Bounds x="1280" y="597" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1170" y="570" width="100" height="22" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="CurrentAnalysis_di" bpmnElement="CurrentAnalysis" bioc:stroke="#9a3412" bioc:fill="#fff7ed">
-        <dc:Bounds x="1160" y="430" width="220" height="90" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="F_AnalysisStale_Current_di" bpmnElement="F_AnalysisStale_Current" bioc:stroke="#9a3412">
-        <di:waypoint x="1298" y="597" />
-        <di:waypoint x="1298" y="560" />
-        <di:waypoint x="1120" y="560" />
-        <di:waypoint x="1120" y="475" />
-        <di:waypoint x="1160" y="475" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="F_Current_Validate_di" bpmnElement="F_Current_Validate" bioc:stroke="#9a3412">
-        <di:waypoint x="1380" y="475" />
-        <di:waypoint x="1400" y="475" />
-        <di:waypoint x="1400" y="580" />
-        <di:waypoint x="1340" y="580" />
-        <di:waypoint x="1340" y="615" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="QuestionStale_di" bpmnElement="QuestionStale" bioc:stroke="#9a3412" bioc:fill="#fff7ed">
-        <dc:Bounds x="1587" y="492" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1600" y="565" width="135" height="30" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="F_QuestionStale_Current_di" bpmnElement="F_QuestionStale_Current" bioc:stroke="#9a3412">
-        <di:waypoint x="1587" y="510" />
-        <di:waypoint x="1540" y="510" />
-        <di:waypoint x="1540" y="395" />
-        <di:waypoint x="1270" y="395" />
-        <di:waypoint x="1270" y="430" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="AutoAnswerStale_di" bpmnElement="AutoAnswerStale" bioc:stroke="#9a3412" bioc:fill="#fff7ed">
-        <dc:Bounds x="2060" y="687" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="2100" y="714" width="135" height="30" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="F_AutoAnswerStale_Current_di" bpmnElement="F_AutoAnswerStale_Current" bioc:stroke="#9a3412">
-        <di:waypoint x="2078" y="723" />
-        <di:waypoint x="2078" y="745" />
-        <di:waypoint x="1175" y="745" />
-        <di:waypoint x="1175" y="520" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="F_RefreshWait_di" bpmnElement="F_RefreshWait" bioc:stroke="#9a3412">
-        <di:waypoint x="1490" y="660" />
-        <di:waypoint x="1525" y="660" />
-        <di:waypoint x="1525" y="765" />
-        <di:waypoint x="1830" y="765" />
-        <di:waypoint x="1830" y="580" />
-        <di:waypoint x="1900" y="580" />
-        <di:waypoint x="1900" y="555" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1740" y="785" width="170" height="40" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="AutoCloseStale_di" bpmnElement="AutoCloseStale" bioc:stroke="#9a3412" bioc:fill="#fff7ed">
-        <dc:Bounds x="2442" y="687" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="2485" y="735" width="150" height="48" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="F_AutoCloseStale_Current_di" bpmnElement="F_AutoCloseStale_Current" bioc:stroke="#9a3412">
-        <di:waypoint x="2460" y="723" />
-        <di:waypoint x="2460" y="1040" />
-        <di:waypoint x="1100" y="1040" />
-        <di:waypoint x="1100" y="475" />
-        <di:waypoint x="1160" y="475" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1700" y="1055" width="240" height="45" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="ClosureMessageInvalid_di" bpmnElement="ClosureMessageInvalid" bioc:stroke="#9a3412" bioc:fill="#fff7ed">
-        <dc:Bounds x="2192" y="625" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="2220" y="565" width="145" height="40" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="F_MessageInvalid_Staff_di" bpmnElement="F_MessageInvalid_Staff" bioc:stroke="#9a3412">
-        <di:waypoint x="2228" y="643" />
-        <di:waypoint x="2300" y="643" />
-        <di:waypoint x="2300" y="145" />
-        <di:waypoint x="1650" y="145" />
-        <di:waypoint x="1650" y="200" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="EntryRoute_di" bpmnElement="EntryRoute">
-        <dc:Bounds x="-450" y="635" width="50" height="50" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ReopenCase_di" bpmnElement="ReopenCase" bioc:fill="#e4ecff" bioc:stroke="#203c62">
-        <dc:Bounds x="-520" y="320" width="240" height="100" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ReopenRejected_di" bpmnElement="ReopenRejected">
-        <dc:Bounds x="-418" y="402" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ReopenRejectedEnd_di" bpmnElement="ReopenRejectedEnd">
-        <dc:Bounds x="-418" y="510" width="36" height="36" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="F_Initial_di" bpmnElement="F_Initial">
-        <di:waypoint x="-400" y="660" />
-        <di:waypoint x="290" y="660" />
+        <di:waypoint x="180" y="130.0" />
+        <di:waypoint x="210.0" y="130.0" />
+        <di:waypoint x="210.0" y="127.5" />
+        <di:waypoint x="240" y="127.5" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="140.0" y="85.5" width="150" height="36" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="F_Reopen_di" bpmnElement="F_Reopen">
-        <di:waypoint x="-425" y="635" />
-        <di:waypoint x="-425" y="600" />
-        <di:waypoint x="-650" y="600" />
-        <di:waypoint x="-650" y="370" />
-        <di:waypoint x="-520" y="370" />
+        <di:waypoint x="155" y="155" />
+        <di:waypoint x="155" y="367" />
+        <di:waypoint x="240" y="367" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="85" y="325" width="150" height="36" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="F_Reopen_Staff_di" bpmnElement="F_Reopen_Staff">
-        <di:waypoint x="-280" y="370" />
-        <di:waypoint x="-180" y="370" />
-        <di:waypoint x="-180" y="110" />
-        <di:waypoint x="1595" y="110" />
-        <di:waypoint x="1595" y="200" />
+        <di:waypoint x="420" y="367" />
+        <di:waypoint x="460" y="367" />
+        <di:waypoint x="460" y="1250" />
+        <di:waypoint x="1640" y="1250" />
+        <di:waypoint x="1640" y="950" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="F_ReopenRejected_di" bpmnElement="F_ReopenRejected">
-        <di:waypoint x="-400" y="438" />
-        <di:waypoint x="-400" y="510" />
+        <di:waypoint x="298" y="433" />
+        <di:waypoint x="298" y="510" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="ClearAnswerSide_di" bpmnElement="ClearAnswerSide" isExpanded="true">
-        <dc:Bounds x="200" y="1180" width="950" height="210" />
+      <bpmndi:BPMNEdge id="CA03_di" bpmnElement="CA03">
+        <di:waypoint x="1618" y="198" />
+        <di:waypoint x="1618" y="600" />
+        <di:waypoint x="510" y="600" />
+        <di:waypoint x="510" y="700" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="CA04_di" bpmnElement="CA04">
+        <di:waypoint x="620" y="747.5" />
+        <di:waypoint x="700" y="747.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="CA05_di" bpmnElement="CA05">
+        <di:waypoint x="725" y="772" />
+        <di:waypoint x="725" y="900" />
+        <di:waypoint x="1520" y="900" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="655" y="858" width="150" height="36" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="CA06_di" bpmnElement="CA06">
+        <di:waypoint x="725" y="722" />
+        <di:waypoint x="725" y="680" />
+        <di:waypoint x="1550" y="680" />
+        <di:waypoint x="1550" y="130" />
+        <di:waypoint x="1580" y="130" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1480" y="638" width="150" height="36" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="CR06_di" bpmnElement="CR06">
+        <di:waypoint x="1678" y="198" />
+        <di:waypoint x="1678" y="270" />
+        <di:waypoint x="2160" y="270" />
+        <di:waypoint x="2160" y="1050" />
+        <di:waypoint x="1955" y="1050" />
+        <di:waypoint x="1955" y="1100" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2090" y="1008" width="150" height="36" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="PN10_di" bpmnElement="PN10">
+        <di:waypoint x="1738" y="198" />
+        <di:waypoint x="1738" y="620" />
+        <di:waypoint x="960" y="620" />
+        <di:waypoint x="960" y="700" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="PN11_di" bpmnElement="PN11">
+        <di:waypoint x="1070" y="747" />
+        <di:waypoint x="1100" y="747" />
+        <di:waypoint x="1100" y="920" />
+        <di:waypoint x="1520" y="920" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1030" y="878" width="150" height="36" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF07_di" bpmnElement="SF07">
+        <di:waypoint x="1360" y="747" />
+        <di:waypoint x="1420" y="747" />
+        <di:waypoint x="1420" y="940" />
+        <di:waypoint x="1520" y="940" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1350" y="898" width="150" height="36" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Takeover_Reply_di" bpmnElement="SF_Takeover_Reply">
+        <di:waypoint x="1798" y="123" />
+        <di:waypoint x="2040" y="123" />
+        <di:waypoint x="2040" y="660" />
+        <di:waypoint x="1250" y="660" />
+        <di:waypoint x="1250" y="700" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="PrepareInitialAutoFlow_di" bpmnElement="PrepareInitialAutoFlow">
+        <di:waypoint x="660" y="127.5" />
+        <di:waypoint x="750" y="130.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="PrepareQuestionAutoFlow_di" bpmnElement="PrepareQuestionAutoFlow">
+        <di:waypoint x="1800" y="365" />
+        <di:waypoint x="1740" y="365" />
+        <di:waypoint x="1740" y="-100" />
+        <di:waypoint x="870" y="-100" />
+        <di:waypoint x="870" y="80" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="PrepareCloseAutoFlow_di" bpmnElement="PrepareCloseAutoFlow">
+        <di:waypoint x="1800" y="535" />
+        <di:waypoint x="1700" y="535" />
+        <di:waypoint x="1700" y="-160" />
+        <di:waypoint x="850" y="-160" />
+        <di:waypoint x="850" y="80" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F02_di" bpmnElement="F02">
+        <di:waypoint x="420" y="127.5" />
+        <di:waypoint x="480" y="127.5" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F18_di" bpmnElement="F18">
+        <di:waypoint x="1905" y="155" />
+        <di:waypoint x="1905" y="320" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1835" y="278" width="150" height="36" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F20_di" bpmnElement="F20">
+        <di:waypoint x="1930" y="130" />
+        <di:waypoint x="2080" y="130" />
+        <di:waypoint x="2080" y="535" />
+        <di:waypoint x="2000" y="535" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2010" y="493" width="150" height="36" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="AParent01_di" bpmnElement="AParent01">
+        <di:waypoint x="990" y="130.0" />
+        <di:waypoint x="1100" y="130.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="AParent02_di" bpmnElement="AParent02">
+        <di:waypoint x="1300" y="130.0" />
+        <di:waypoint x="1380" y="130.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="AParentWait_di" bpmnElement="AParentWait">
+        <di:waypoint x="1430" y="130" />
+        <di:waypoint x="1580" y="130" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1510" y="88" width="150" height="36" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="AParentReview_di" bpmnElement="AParentReview">
+        <di:waypoint x="1405" y="155" />
+        <di:waypoint x="1450" y="155" />
+        <di:waypoint x="1450" y="900" />
+        <di:waypoint x="1520" y="900" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1380" y="858" width="150" height="36" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="AParentClosed_di" bpmnElement="AParentClosed">
+        <di:waypoint x="1405" y="105" />
+        <di:waypoint x="1405" y="20" />
+        <di:waypoint x="2198" y="20" />
+        <di:waypoint x="2198" y="700" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2128" y="-22" width="150" height="36" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="AutoFail01_di" bpmnElement="AutoFail01">
+        <di:waypoint x="938" y="198" />
+        <di:waypoint x="1030" y="198" />
+        <di:waypoint x="1030" y="547" />
+        <di:waypoint x="1180" y="547" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="AutoFail02_di" bpmnElement="AutoFail02">
+        <di:waypoint x="1400" y="547" />
+        <di:waypoint x="1470" y="547" />
+        <di:waypoint x="1470" y="860" />
+        <di:waypoint x="1520" y="860" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="AI01_di" bpmnElement="AI01">
+        <di:waypoint x="808" y="198" />
+        <di:waypoint x="808" y="310" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="AI02_di" bpmnElement="AI02">
+        <di:waypoint x="990" y="357.5" />
+        <di:waypoint x="1090" y="357.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="AIWait_di" bpmnElement="AIWait">
+        <di:waypoint x="1115" y="332" />
+        <di:waypoint x="1115" y="250" />
+        <di:waypoint x="1680" y="250" />
+        <di:waypoint x="1680" y="180" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1610" y="208" width="150" height="36" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="AIStaff_di" bpmnElement="AIStaff">
+        <di:waypoint x="1115" y="382" />
+        <di:waypoint x="1115" y="640" />
+        <di:waypoint x="1490" y="640" />
+        <di:waypoint x="1490" y="880" />
+        <di:waypoint x="1520" y="880" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1420" y="598" width="150" height="36" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="CaseDataSide_di" bpmnElement="CaseDataSide" isExpanded="false">
+        <dc:Bounds x="100" y="1810" width="380" height="100" />
       </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="TenantInbox_diagram" name="06 · Durchgängiger Mieternachrichteneingang">
+    <bpmndi:BPMNPlane id="TenantInbox_plane" bpmnElement="TenantInbox">
+      <bpmndi:BPMNShape id="NStart_di" bpmnElement="NStart">
+        <dc:Bounds x="80" y="130" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="20" y="180" width="156" height="45" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ProcessTenantMessage_di" bpmnElement="ProcessTenantMessage">
+        <dc:Bounds x="210" y="105" width="220" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="NReceptionEnd_di" bpmnElement="NReceptionEnd">
+        <dc:Bounds x="530" y="130" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="470" y="180" width="156" height="45" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="NReceive_Call_di" bpmnElement="NReceive_Call">
+        <di:waypoint x="116" y="148" />
+        <di:waypoint x="210" y="148" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="NReceive_End_di" bpmnElement="NReceive_End">
+        <di:waypoint x="430" y="148" />
+        <di:waypoint x="530" y="148" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="ClearAnswerSide_diagram">
+    <bpmndi:BPMNPlane id="ClearAnswerSide_diagram_plane" bpmnElement="ClearAnswerSide">
       <bpmndi:BPMNShape id="ClearAnswerStart_di" bpmnElement="ClearAnswerStart">
         <dc:Bounds x="250" y="1270" width="36" height="36" />
       </bpmndi:BPMNShape>
@@ -1385,43 +1177,10 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
         <di:waypoint x="820" y="1288" />
         <di:waypoint x="1000" y="1288" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="ReplyCleared_di" bpmnElement="ReplyCleared">
-        <dc:Bounds x="1937.0" y="537.0" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ClearAnswerContinue_di" bpmnElement="ClearAnswerContinue">
-        <dc:Bounds x="1700" y="1120" width="280" height="100" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ClearAnswerRoute_di" bpmnElement="ClearAnswerRoute">
-        <dc:Bounds x="2050" y="1145" width="50" height="50" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="CA03_di" bpmnElement="CA03">
-        <di:waypoint x="1955.0" y="573.0" />
-        <di:waypoint x="1955.0" y="1080" />
-        <di:waypoint x="1840" y="1080" />
-        <di:waypoint x="1840" y="1120" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="CA04_di" bpmnElement="CA04">
-        <di:waypoint x="1980" y="1170" />
-        <di:waypoint x="2050" y="1170" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="CA05_di" bpmnElement="CA05">
-        <di:waypoint x="2075" y="1195" />
-        <di:waypoint x="2075" y="1460" />
-        <di:waypoint x="2960" y="1460" />
-        <di:waypoint x="2960" y="-80" />
-        <di:waypoint x="1595" y="-80" />
-        <di:waypoint x="1595" y="200" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="CA06_di" bpmnElement="CA06">
-        <di:waypoint x="2100" y="1170" />
-        <di:waypoint x="2860" y="1170" />
-        <di:waypoint x="2860" y="415.0" />
-        <di:waypoint x="2020.0" y="415.0" />
-        <di:waypoint x="2020.0" y="465.0" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffCloseReplySide_di" bpmnElement="StaffCloseReplySide" isExpanded="true">
-        <dc:Bounds x="200" y="1580" width="1450" height="330" />
-      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="StaffCloseReplySide_diagram">
+    <bpmndi:BPMNPlane id="StaffCloseReplySide_diagram_plane" bpmnElement="StaffCloseReplySide">
       <bpmndi:BPMNShape id="StaffCloseReplyStart_di" bpmnElement="StaffCloseReplyStart">
         <dc:Bounds x="250" y="1662" width="36" height="36" />
       </bpmndi:BPMNShape>
@@ -1460,19 +1219,10 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
         <di:waypoint x="1240" y="1680" />
         <di:waypoint x="1450" y="1680" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="ReplyStaffClose_di" bpmnElement="ReplyStaffClose">
-        <dc:Bounds x="2022.0" y="477.0" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="CR06_di" bpmnElement="CR06">
-        <di:waypoint x="2058.0" y="495.0" />
-        <di:waypoint x="3100" y="495.0" />
-        <di:waypoint x="3100" y="570.0" />
-        <di:waypoint x="2415.0" y="570.0" />
-        <di:waypoint x="2415.0" y="615.0" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="ReviewNeedSide_di" bpmnElement="ReviewNeedSide" isExpanded="true">
-        <dc:Bounds x="200" y="2000" width="1650" height="470" />
-      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="ReviewNeedSide_diagram">
+    <bpmndi:BPMNPlane id="ReviewNeedSide_diagram_plane" bpmnElement="ReviewNeedSide">
       <bpmndi:BPMNShape id="ReviewNeedStart_di" bpmnElement="ReviewNeedStart">
         <dc:Bounds x="250" y="2192" width="36" height="36" />
       </bpmndi:BPMNShape>
@@ -1545,29 +1295,10 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
         <di:waypoint x="1740" y="2210" />
         <di:waypoint x="1676" y="2210" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="ReplyReviewNeeded_di" bpmnElement="ReplyReviewNeeded">
-        <dc:Bounds x="1852.0" y="477.0" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ReviewNeedPrepare_di" bpmnElement="ReviewNeedPrepare">
-        <dc:Bounds x="-450" y="850" width="300" height="90" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="PN10_di" bpmnElement="PN10">
-        <di:waypoint x="1852.0" y="495.0" />
-        <di:waypoint x="1790.0" y="495.0" />
-        <di:waypoint x="1790.0" y="780" />
-        <di:waypoint x="-300" y="780" />
-        <di:waypoint x="-300" y="850" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="PN11_di" bpmnElement="PN11">
-        <di:waypoint x="-150" y="895" />
-        <di:waypoint x="-90" y="895" />
-        <di:waypoint x="-90" y="-150" />
-        <di:waypoint x="1630" y="-150" />
-        <di:waypoint x="1630" y="200" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffQuestionSide_di" bpmnElement="StaffQuestionSide" isExpanded="true">
-        <dc:Bounds x="200" y="2580" width="1650" height="340" />
-      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="StaffQuestionSide_diagram">
+    <bpmndi:BPMNPlane id="StaffQuestionSide_diagram_plane" bpmnElement="StaffQuestionSide">
       <bpmndi:BPMNShape id="StaffQuestionStart_di" bpmnElement="StaffQuestionStart">
         <dc:Bounds x="250" y="2710" width="36" height="36" />
       </bpmndi:BPMNShape>
@@ -1576,6 +1307,9 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffQuestionResult_di" bpmnElement="StaffQuestionResult">
         <dc:Bounds x="740" y="2705" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="625" y="2760" width="150" height="40" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffQuestionSignal_di" bpmnElement="StaffQuestionSignal">
         <dc:Bounds x="880" y="2680" width="290" height="100" />
@@ -1585,6 +1319,9 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StaffQuestionRejected_di" bpmnElement="StaffQuestionRejected">
         <dc:Bounds x="750" y="2840" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="675" y="2890" width="220" height="65" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SQ01_di" bpmnElement="SQ01">
         <di:waypoint x="286" y="2728" />
@@ -1597,6 +1334,9 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
       <bpmndi:BPMNEdge id="SQ03_di" bpmnElement="SQ03">
         <di:waypoint x="790" y="2730" />
         <di:waypoint x="880" y="2730" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="795" y="2650" width="170" height="40" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SQ04_di" bpmnElement="SQ04">
         <di:waypoint x="1170" y="2730" />
@@ -1605,106 +1345,29 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
       <bpmndi:BPMNEdge id="SQ05_di" bpmnElement="SQ05">
         <di:waypoint x="765" y="2755" />
         <di:waypoint x="768" y="2840" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="790" y="2790" width="160" height="40" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffQuestionJoin_di" bpmnElement="StaffQuestionJoin">
-        <dc:Bounds x="3250" y="1025" width="50" height="50" />
+      <bpmndi:BPMNShape id="StaffInformationDone_di" bpmnElement="StaffInformationDone">
+        <dc:Bounds x="750" y="2520" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="690" y="2460" width="200" height="50" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffQuestionContinue_di" bpmnElement="StaffQuestionContinue">
-        <dc:Bounds x="3380" y="1000" width="270" height="100" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffQuestionNext_di" bpmnElement="StaffQuestionNext">
-        <dc:Bounds x="3750" y="1025" width="50" height="50" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="SQ06_di" bpmnElement="SQ06">
-        <di:waypoint x="3300" y="1050" />
-        <di:waypoint x="3380" y="1050" />
+      <bpmndi:BPMNEdge id="SQInfo_di" bpmnElement="SQInfo">
+        <di:waypoint x="765" y="2705" />
+        <di:waypoint x="765" y="2630" />
+        <di:waypoint x="768" y="2630" />
+        <di:waypoint x="768" y="2556" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="790" y="2590" width="220" height="40" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="SQ07_di" bpmnElement="SQ07">
-        <di:waypoint x="3650" y="1050" />
-        <di:waypoint x="3750" y="1050" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="SQ08_di" bpmnElement="SQ08">
-        <di:waypoint x="3775" y="1025" />
-        <di:waypoint x="3775" y="-300" />
-        <di:waypoint x="1955" y="-300" />
-        <di:waypoint x="1955" y="465" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="SQ09_di" bpmnElement="SQ09">
-        <di:waypoint x="3800" y="1050" />
-        <di:waypoint x="3900" y="1050" />
-        <di:waypoint x="3900" y="-400" />
-        <di:waypoint x="1595" y="-400" />
-        <di:waypoint x="1595" y="200" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffQuestionAtClarification_di" bpmnElement="StaffQuestionAtClarification">
-        <dc:Bounds x="580.0" y="687.0" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="SQ_Takeover_Clarification_di" bpmnElement="SQ_Takeover_Clarification">
-        <di:waypoint x="598.0" y="723.0" />
-        <di:waypoint x="598.0" y="1050" />
-        <di:waypoint x="3250" y="1050" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffQuestionAtTriage_di" bpmnElement="StaffQuestionAtTriage">
-        <dc:Bounds x="810.0" y="687.0" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="SQ_Takeover_Triage_di" bpmnElement="SQ_Takeover_Triage">
-        <di:waypoint x="828.0" y="723.0" />
-        <di:waypoint x="828.0" y="1050" />
-        <di:waypoint x="3250" y="1050" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffQuestionAtRecommend_di" bpmnElement="StaffQuestionAtRecommend">
-        <dc:Bounds x="1040.0" y="687.0" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="SQ_Takeover_Recommend_di" bpmnElement="SQ_Takeover_Recommend">
-        <di:waypoint x="1058.0" y="723.0" />
-        <di:waypoint x="1058.0" y="1050" />
-        <di:waypoint x="3250" y="1050" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffQuestionAtValidate_di" bpmnElement="StaffQuestionAtValidate">
-        <dc:Bounds x="1270.0" y="687.0" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="SQ_Takeover_Validate_di" bpmnElement="SQ_Takeover_Validate">
-        <di:waypoint x="1288.0" y="723.0" />
-        <di:waypoint x="1288.0" y="1050" />
-        <di:waypoint x="3250" y="1050" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffQuestionAtCurrentAnalysis_di" bpmnElement="StaffQuestionAtCurrentAnalysis">
-        <dc:Bounds x="1170" y="412" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="SQ_Takeover_CurrentAnalysis_di" bpmnElement="SQ_Takeover_CurrentAnalysis">
-        <di:waypoint x="1188" y="412" />
-        <di:waypoint x="1188" y="350" />
-        <di:waypoint x="3120" y="350" />
-        <di:waypoint x="3120" y="1050" />
-        <di:waypoint x="3250" y="1050" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffQuestionAtQuestion_di" bpmnElement="StaffQuestionAtQuestion">
-        <dc:Bounds x="1665.0" y="537.0" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="SQ_Takeover_Question_di" bpmnElement="SQ_Takeover_Question">
-        <di:waypoint x="1683.0" y="573.0" />
-        <di:waypoint x="1683.0" y="1050" />
-        <di:waypoint x="3250" y="1050" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffQuestionAtAutoAnswer_di" bpmnElement="StaffQuestionAtAutoAnswer">
-        <dc:Bounds x="2100.0" y="687.0" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="SQ_Takeover_AutoAnswer_di" bpmnElement="SQ_Takeover_AutoAnswer">
-        <di:waypoint x="2118.0" y="723.0" />
-        <di:waypoint x="2118.0" y="1050" />
-        <di:waypoint x="3250" y="1050" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffQuestionAtClose_di" bpmnElement="StaffQuestionAtClose">
-        <dc:Bounds x="2435.0" y="687.0" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="SQ_Takeover_Close_di" bpmnElement="SQ_Takeover_Close">
-        <di:waypoint x="2453.0" y="723.0" />
-        <di:waypoint x="2453.0" y="1050" />
-        <di:waypoint x="3250" y="1050" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffCloseClarificationSide_di" bpmnElement="StaffCloseClarificationSide" isExpanded="true">
-        <dc:Bounds x="200" y="3030" width="1650" height="360" />
-      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="StaffCloseClarificationSide_diagram">
+    <bpmndi:BPMNPlane id="StaffCloseClarificationSide_diagram_plane" bpmnElement="StaffCloseClarificationSide">
       <bpmndi:BPMNShape id="StaffCloseClarificationStart_di" bpmnElement="StaffCloseClarificationStart">
         <dc:Bounds x="250" y="3170" width="36" height="36" />
       </bpmndi:BPMNShape>
@@ -1736,9 +1399,10 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
         <di:waypoint x="875" y="3213" />
         <di:waypoint x="875" y="3310" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffFollowSide_di" bpmnElement="StaffFollowSide" isExpanded="true">
-        <dc:Bounds x="200" y="3480.0" width="1650" height="340" />
-      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="StaffFollowSide_diagram">
+    <bpmndi:BPMNPlane id="StaffFollowSide_diagram_plane" bpmnElement="StaffFollowSide">
       <bpmndi:BPMNShape id="StaffFollowStart_di" bpmnElement="StaffFollowStart">
         <dc:Bounds x="250" y="3610.0" width="36" height="36" />
       </bpmndi:BPMNShape>
@@ -1777,101 +1441,10 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
         <di:waypoint x="765" y="3655.0" />
         <di:waypoint x="768" y="3740.0" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffFollowJoin_di" bpmnElement="StaffFollowJoin">
-        <dc:Bounds x="3250" y="1125.0" width="50" height="50" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffFollowContinue_di" bpmnElement="StaffFollowContinue">
-        <dc:Bounds x="3380" y="1100.0" width="270" height="100" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="SF06_di" bpmnElement="SF06">
-        <di:waypoint x="3300" y="1150.0" />
-        <di:waypoint x="3380" y="1150.0" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffFollowAtClarification_di" bpmnElement="StaffFollowAtClarification">
-        <dc:Bounds x="630.0" y="687.0" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="SF_Takeover_Clarification_di" bpmnElement="SF_Takeover_Clarification">
-        <di:waypoint x="648.0" y="723.0" />
-        <di:waypoint x="648.0" y="1150" />
-        <di:waypoint x="3250" y="1150" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffFollowAtTriage_di" bpmnElement="StaffFollowAtTriage">
-        <dc:Bounds x="860.0" y="687.0" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="SF_Takeover_Triage_di" bpmnElement="SF_Takeover_Triage">
-        <di:waypoint x="878.0" y="723.0" />
-        <di:waypoint x="878.0" y="1150" />
-        <di:waypoint x="3250" y="1150" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffFollowAtRecommend_di" bpmnElement="StaffFollowAtRecommend">
-        <dc:Bounds x="1090.0" y="687.0" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="SF_Takeover_Recommend_di" bpmnElement="SF_Takeover_Recommend">
-        <di:waypoint x="1108.0" y="723.0" />
-        <di:waypoint x="1108.0" y="1150" />
-        <di:waypoint x="3250" y="1150" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffFollowAtValidate_di" bpmnElement="StaffFollowAtValidate">
-        <dc:Bounds x="1320.0" y="687.0" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="SF_Takeover_Validate_di" bpmnElement="SF_Takeover_Validate">
-        <di:waypoint x="1338.0" y="723.0" />
-        <di:waypoint x="1338.0" y="1150" />
-        <di:waypoint x="3250" y="1150" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffFollowAtCurrentAnalysis_di" bpmnElement="StaffFollowAtCurrentAnalysis">
-        <dc:Bounds x="1220.0" y="412" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="SF_Takeover_CurrentAnalysis_di" bpmnElement="SF_Takeover_CurrentAnalysis">
-        <di:waypoint x="1238.0" y="412" />
-        <di:waypoint x="1238.0" y="350" />
-        <di:waypoint x="3120" y="350" />
-        <di:waypoint x="3120" y="1150" />
-        <di:waypoint x="3250" y="1150" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffFollowAtQuestion_di" bpmnElement="StaffFollowAtQuestion">
-        <dc:Bounds x="1715.0" y="537.0" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="SF_Takeover_Question_di" bpmnElement="SF_Takeover_Question">
-        <di:waypoint x="1733.0" y="573.0" />
-        <di:waypoint x="1733.0" y="1150" />
-        <di:waypoint x="3250" y="1150" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffFollowAtAutoAnswer_di" bpmnElement="StaffFollowAtAutoAnswer">
-        <dc:Bounds x="2150.0" y="687.0" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="SF_Takeover_AutoAnswer_di" bpmnElement="SF_Takeover_AutoAnswer">
-        <di:waypoint x="2168.0" y="723.0" />
-        <di:waypoint x="2168.0" y="1150" />
-        <di:waypoint x="3250" y="1150" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffFollowAtClose_di" bpmnElement="StaffFollowAtClose">
-        <dc:Bounds x="2485.0" y="687.0" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="SF_Takeover_Close_di" bpmnElement="SF_Takeover_Close">
-        <di:waypoint x="2503.0" y="723.0" />
-        <di:waypoint x="2503.0" y="1150" />
-        <di:waypoint x="3250" y="1150" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="SF07_di" bpmnElement="SF07">
-        <di:waypoint x="3515" y="1100" />
-        <di:waypoint x="3515" y="-480" />
-        <di:waypoint x="1550" y="-480" />
-        <di:waypoint x="1550" y="200" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffFollowAtReply_di" bpmnElement="StaffFollowAtReply">
-        <dc:Bounds x="1980" y="447" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="SF_Takeover_Reply_di" bpmnElement="SF_Takeover_Reply">
-        <di:waypoint x="1998" y="447" />
-        <di:waypoint x="1998" y="380" />
-        <di:waypoint x="3210" y="380" />
-        <di:waypoint x="3210" y="1150" />
-        <di:waypoint x="3250" y="1150" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffTakeoverSide_di" bpmnElement="StaffTakeoverSide" isExpanded="true">
-        <dc:Bounds x="200" y="3920.0" width="1650" height="340" />
-      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="StaffTakeoverSide_diagram">
+    <bpmndi:BPMNPlane id="StaffTakeoverSide_diagram_plane" bpmnElement="StaffTakeoverSide">
       <bpmndi:BPMNShape id="StaffTakeoverStart_di" bpmnElement="StaffTakeoverStart">
         <dc:Bounds x="250" y="4050.0" width="36" height="36" />
       </bpmndi:BPMNShape>
@@ -1910,115 +1483,32 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
         <di:waypoint x="765" y="4095.0" />
         <di:waypoint x="768" y="4180.0" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffTakeoverJoin_di" bpmnElement="StaffTakeoverJoin">
-        <dc:Bounds x="3250" y="1325.0" width="50" height="50" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="StaffTakeoverContinue_di" bpmnElement="StaffTakeoverContinue">
-        <dc:Bounds x="3380" y="1300.0" width="270" height="100" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="ST06_di" bpmnElement="ST06">
-        <di:waypoint x="3300" y="1350.0" />
-        <di:waypoint x="3380" y="1350.0" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffTakeoverAtClarification_di" bpmnElement="StaffTakeoverAtClarification">
-        <dc:Bounds x="585.0" y="687.0" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="ST_Takeover_Clarification_di" bpmnElement="ST_Takeover_Clarification">
-        <di:waypoint x="603.0" y="723.0" />
-        <di:waypoint x="603.0" y="1350.0" />
-        <di:waypoint x="3250" y="1350.0" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffTakeoverAtTriage_di" bpmnElement="StaffTakeoverAtTriage">
-        <dc:Bounds x="815.0" y="687.0" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="ST_Takeover_Triage_di" bpmnElement="ST_Takeover_Triage">
-        <di:waypoint x="833.0" y="723.0" />
-        <di:waypoint x="833.0" y="1350.0" />
-        <di:waypoint x="3250" y="1350.0" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffTakeoverAtRecommend_di" bpmnElement="StaffTakeoverAtRecommend">
-        <dc:Bounds x="1045.0" y="687.0" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="ST_Takeover_Recommend_di" bpmnElement="ST_Takeover_Recommend">
-        <di:waypoint x="1063.0" y="723.0" />
-        <di:waypoint x="1063.0" y="1350.0" />
-        <di:waypoint x="3250" y="1350.0" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffTakeoverAtValidate_di" bpmnElement="StaffTakeoverAtValidate">
-        <dc:Bounds x="1275.0" y="687.0" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="ST_Takeover_Validate_di" bpmnElement="ST_Takeover_Validate">
-        <di:waypoint x="1293.0" y="723.0" />
-        <di:waypoint x="1293.0" y="1350.0" />
-        <di:waypoint x="3250" y="1350.0" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffTakeoverAtCurrentAnalysis_di" bpmnElement="StaffTakeoverAtCurrentAnalysis">
-        <dc:Bounds x="1175.0" y="412" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="ST_Takeover_CurrentAnalysis_di" bpmnElement="ST_Takeover_CurrentAnalysis">
-        <di:waypoint x="1193.0" y="412" />
-        <di:waypoint x="1193.0" y="350" />
-        <di:waypoint x="3120" y="350" />
-        <di:waypoint x="3120" y="1350.0" />
-        <di:waypoint x="3250" y="1350.0" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffTakeoverAtQuestion_di" bpmnElement="StaffTakeoverAtQuestion">
-        <dc:Bounds x="1670.0" y="537.0" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="ST_Takeover_Question_di" bpmnElement="ST_Takeover_Question">
-        <di:waypoint x="1688.0" y="573.0" />
-        <di:waypoint x="1688.0" y="1350.0" />
-        <di:waypoint x="3250" y="1350.0" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffTakeoverAtAutoAnswer_di" bpmnElement="StaffTakeoverAtAutoAnswer">
-        <dc:Bounds x="2105.0" y="687.0" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="ST_Takeover_AutoAnswer_di" bpmnElement="ST_Takeover_AutoAnswer">
-        <di:waypoint x="2123.0" y="723.0" />
-        <di:waypoint x="2123.0" y="1350.0" />
-        <di:waypoint x="3250" y="1350.0" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StaffTakeoverAtClose_di" bpmnElement="StaffTakeoverAtClose">
-        <dc:Bounds x="2440.0" y="687.0" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="ST_Takeover_Close_di" bpmnElement="ST_Takeover_Close">
-        <di:waypoint x="2458.0" y="723.0" />
-        <di:waypoint x="2458.0" y="1350.0" />
-        <di:waypoint x="3250" y="1350.0" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="ST07_di" bpmnElement="ST07">
-        <di:waypoint x="3515" y="1300" />
-        <di:waypoint x="3700" y="1300" />
-        <di:waypoint x="3700" y="-560" />
-        <di:waypoint x="1530" y="-560" />
-        <di:waypoint x="1530" y="200" />
-      </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
-  <bpmndi:BPMNDiagram id="TenantInbox_diagram" name="06 · Durchgängiger Mieternachrichteneingang">
-    <bpmndi:BPMNPlane id="TenantInbox_plane" bpmnElement="TenantInbox">
-      <bpmndi:BPMNShape id="NStart_di" bpmnElement="NStart">
-        <dc:Bounds x="80" y="130" width="36" height="36" />
+  <bpmndi:BPMNDiagram id="CaseDataSide_diagram">
+    <bpmndi:BPMNPlane id="CaseDataSide_diagram_plane" bpmnElement="CaseDataSide">
+      <bpmndi:BPMNShape id="CaseDataStart_di" bpmnElement="CaseDataStart">
+        <dc:Bounds x="100" y="150" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="20" y="180" width="156" height="45" />
+          <dc:Bounds x="30" y="205" width="190" height="50" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ProcessTenantMessage_di" bpmnElement="ProcessTenantMessage">
-        <dc:Bounds x="210" y="105" width="220" height="90" />
+      <bpmndi:BPMNShape id="CaseDataApply_di" bpmnElement="CaseDataApply">
+        <dc:Bounds x="260" y="120" width="360" height="100" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="NReceptionEnd_di" bpmnElement="NReceptionEnd">
-        <dc:Bounds x="530" y="130" width="36" height="36" />
+      <bpmndi:BPMNShape id="CaseDataEnd_di" bpmnElement="CaseDataEnd">
+        <dc:Bounds x="780" y="150" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="470" y="180" width="156" height="45" />
+          <dc:Bounds x="710" y="205" width="190" height="50" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="NReceive_Call_di" bpmnElement="NReceive_Call">
-        <di:waypoint x="116" y="148" />
-        <di:waypoint x="210" y="148" />
+      <bpmndi:BPMNEdge id="CD01_di" bpmnElement="CD01">
+        <di:waypoint x="136" y="168" />
+        <di:waypoint x="260" y="170" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="NReceive_End_di" bpmnElement="NReceive_End">
-        <di:waypoint x="430" y="148" />
-        <di:waypoint x="530" y="148" />
+      <bpmndi:BPMNEdge id="CD02_di" bpmnElement="CD02">
+        <di:waypoint x="620" y="170" />
+        <di:waypoint x="780" y="168" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

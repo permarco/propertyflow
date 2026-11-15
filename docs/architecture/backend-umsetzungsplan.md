@@ -214,7 +214,7 @@ Block 4 vertieft das entstandene Schema: ER-Sicht, mindestens eine weitere Migra
 - [ADR-004: Token-Speicherung](adr/ADR-004-tokenbasierter-mieterzugriff.md)
 - [ADR-005: Zugriff und Delegation](adr/ADR-005-zugriffsmodell.md)
 - [SS-001 bis SS-006](schnittstellenentwurf-block-3.md)
-- [OpenAPI](openapi/fallannahme.yaml)
+- [OpenAPI](openapi/propertyflow-web.yaml)
 - [Fallverwaltung](../specifications/fallverwaltung.md)
 - [Dringlichkeitsbewertung](../specifications/dringlichkeitsbewertung.md)
 - [MCP Guidelines](../specifications/MCP_GUIDELINES.md)

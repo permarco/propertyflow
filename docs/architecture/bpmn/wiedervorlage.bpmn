@@ -1,10 +1,10 @@
 <?xml version='1.0' encoding='utf-8'?>
 <bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_PropertyFlow_FollowUp_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
-  <bpmn:message id="Message_StaffQuestion" name="Mitarbeiterrückfrage veröffentlichen" />
+  <bpmn:message id="Message_StaffQuestion" name="Mitarbeiternachricht während Wiedervorlage angefordert" />
   <bpmn:message id="Message_StaffClose" name="Mitarbeiterabschluss bestätigt" />
   <bpmn:message id="Message_FollowUpDelete" name="Wiedervorlage löschen" />
   <bpmn:message id="Message_FollowUpChange" name="Wiedervorlage ändern" />
-  <bpmn:process id="PropertyFlow_FollowUp_Draft" name="Wiedervorlage verwalten · Fachentwurf 0.27" isExecutable="false">
+  <bpmn:process id="PropertyFlow_FollowUp_Draft" name="Wiedervorlage verwalten · Fachentwurf 0.33" isExecutable="false">
     <bpmn:documentation>
 0.22: Neuer zwingender Prüfbedarf unterbricht diesen gesamten Call über SFollowUpReviewNeeded im Mitarbeiterprozess, einschliesslich Timer und Nebenaktionen. SStopFollowUp entfernt den betroffenen fachlichen Termin und veranlasst genau eine Prüfung. Keine normale Rückgabe bei Abbruch, kein automatisches Wiederherstellen des Termins.
 Dateiaufteilung 0.9: untergeordneter Prozess, nur durch Call Activity starten. Keine eigene führende Fallzuordnung. Eingaben caseId, leadingProcessInstanceKey und entryContextRef; Rückgaben outcome und decisionRef. Explizite instanzübergreifende Aktualisierung gemäss teilprozess-vertraege.md erforderlich; keine live gemeinsam genutzten Elternvariablen. Nicht ausführbar, kein Backend implementiert.</bpmn:documentation>
@@ -112,16 +112,17 @@ Normaler Kindprozessabschluss: outcome=CLOSE und decisionRef zur geprüften Grun
     <bpmn:sequenceFlow id="W17" sourceRef="WDeleteTask" targetRef="WProgressEnd" />
     <bpmn:sequenceFlow id="W18" sourceRef="WClose" targetRef="WCloseTask" />
     <bpmn:sequenceFlow id="W19" sourceRef="WCloseTask" targetRef="WCloseEnd" />
-    <bpmn:subProcess id="WQuestionSide" name="Rückfrage als Nebenaktion · Timer läuft weiter" triggeredByEvent="true">
-      <bpmn:documentation>Nicht unterbrechender Ereignis-Teilprozess. Rückfrage setzt oder verlängert keinen Timer. Dienst prüft vor Veröffentlichung den aktuellen Fallstand. Koordination mit gleichzeitigem Timer-/Nachrichteneingang bleibt vor Ausführung zu konkretisieren.</bpmn:documentation>
-      <bpmn:startEvent id="WQuestionStart" name="Rückfrage angefordert" isInterrupting="false">
+    <bpmn:subProcess id="WQuestionSide" name="Nachricht als Nebenaktion – Timer läuft weiter" triggeredByEvent="true">
+      <bpmn:documentation>0.33 / KOM-AK-31: Nicht unterbrechende Nebenaktion für Information oder Rückfrage. Nachricht setzt, beendet oder verlängert keinen Timer; Terminversion und Wartephase bleiben unverändert. Keine lokalen Hauptpfad-Ergebnisse überschreiben. Aktuellen Fallstand und zuständigen Wiedervorlage-Aufruf prüfen; Konkurrenz mit Timer, Mieterkontakt und Mitarbeiterentscheidung koordinieren.</bpmn:documentation>
+      <bpmn:startEvent id="WQuestionStart" name="Sendeauftrag eingegangen" isInterrupting="false">
         <bpmn:documentation>
 Nach Auslagerung Zielinstanz serverseitig über die aktuelle Wiedervorlage-Zuordnung bestimmen. Keine Korrelation allein an den führenden Hauptprozess. Bestehende Mitarbeiterberechtigungen und Versionsschutz bleiben verbindlich; kein zusätzlicher externer Mieternachrichteneingang.</bpmn:documentation>
         <bpmn:outgoing>W20</bpmn:outgoing>
         <bpmn:messageEventDefinition id="WQuestionStart_definition" messageRef="Message_StaffQuestion" />
       </bpmn:startEvent>
-      <bpmn:serviceTask id="WPublish" name="Rückfrage veröffentlichen&#10;Termin bleibt unverändert">
-        <bpmn:documentation>BEN-03 / 0.23: Bei tatsächlicher benachrichtigungspflichtiger Änderung Ereignis und Mailpflicht dauerhaft zusammen sichern. Der dauerhafte Starter startet fallbenachrichtigung-versenden.bpmn mit mailOrderRef; dort beauftragen Camunda-Send-Tasks den Mail-Worker. Hier kein direkter SMTP-Aufruf und kein Warten auf SMTP. Unveränderte Werte und identische Wiederholungen erzeugen keine neue Mailpflicht. </bpmn:documentation>
+      <bpmn:serviceTask id="WPublish" name="Nachricht mit optionalem Antwortbedarf&#10;veröffentlichen – Termin bleibt">
+        <bpmn:documentation>BEN-03 / 0.23: Bei tatsächlicher benachrichtigungspflichtiger Änderung Ereignis und Mailpflicht dauerhaft zusammen sichern. Der dauerhafte Starter startet fallbenachrichtigung-versenden.bpmn mit mailOrderRef; dort beauftragen Camunda-Send-Tasks den Mail-Worker. Hier kein direkter SMTP-Aufruf und kein Warten auf SMTP. Unveränderte Werte und identische Wiederholungen erzeugen keine neue Mailpflicht.
+0.33: Berechtigung, aktuellen führenden Durchlauf, Wiedervorlage-Call/Kindinstanz, Terminversion, Status und bestätigte Fallversion vor Speicherung prüfen. Text und Antwortbedarf aus bestätigtem Auftrag. Ohne Antwortbedarf nur Information, mit Bedarf zusätzliche offene Rückfrage; bestehende Fragen erhalten. Nachricht, optionalen Bedarf und Mailpflicht konsistent sichern, ohne Status-/Termin-/Timeränderung. Alter unveröffentlichter Auftrag nach Timerablauf, Kontakt oder anderer Fortsetzung ohne Wirkung ablehnen und Text erhalten. Identischer erfolgreicher Retry ohne Duplikat oder neue Mailpflicht. Technische Fehler Retry/Incident; bereits gespeicherter Versand bleibt bei späterer Fortsetzung bestehen. Neue zwingende Prüfgründe über bestehenden separaten Pfad behandeln.</bpmn:documentation>
         <bpmn:incoming>W20</bpmn:incoming>
         <bpmn:outgoing>W21</bpmn:outgoing>
       </bpmn:serviceTask>

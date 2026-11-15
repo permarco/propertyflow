@@ -1,17 +1,68 @@
 # Verträge der ausgelagerten BPMN-Teilprozesse
 
-Stand 15.11.2026 · Fachentwurf 0.10 · nicht ausführbar, keine Backend-Implementierung.
+Stand 15.11.2026 · Fachentwurf 0.31 · nicht ausführbar, keine Backend-Implementierung.
 
 Die Aufteilung in eigene Dateien ist bestätigt. Die folgenden technischen
 Übergaben konkretisieren den Entwurf; sie sind noch kein implementierter
 Java-/HTTP-Vertrag. Die Fachregeln aus KOM-03 bis KOM-06 und FALL-05 bis FALL-11
 bleiben bestehen. Der Hauptprozess behält allein die führende Fallzuordnung.
 
+## Verbindlicher Aufrufvertrag der automatischen Abklärung (0.31)
+
+Dieser Abschnitt ersetzt die technischen Einzelmarker und Randpfade der Abschnitte
+0.24 bis 0.30. Die dort festgehaltenen fachlichen Regeln bleiben bestehen.
+
+- `Automatic` ruft `PropertyFlow_Automatic_Draft` mit `bindingType=deployment` auf.
+  Eingaben: caseId, leadingProcessInstanceKey, entryContextRef, automaticCallRef.
+  Keine automatische Eltern-/Kindvariablenpropagation, nur explizite Mappings.
+- PrepareInitialAuto, PrepareQuestionAuto und PrepareCloseAuto erzeugen geprüfte
+  automaticEntryContextRef und einen aufrufgebundenen automaticCallRef. INITIAL
+  stammt aus registrierter Erstanlage; QUESTION/CLOSE aus aktuellem replyDecisionRef.
+  AEntry prüft und registriert den tatsächlichen Call-/Kindbezug. Fortsetzungen
+  setzen nicht erneut «In Abklärung», sondern prüfen den aktuellen Datenstand.
+- Zentrale Mieternachrichtenverarbeitung stellt auch für die neue Automatik-Kindinstanz
+  passende Auswertungen anhand des registrierten Call-Bezugs bereit. Kein weiterer
+  Nachrichteneingang, keine parallele unabhängige LLM-Auswertung. Meldungen vor der
+  Registrierung werden nachgeliefert. CurrentAnalysis darf nicht auf Elternvariablen
+  als live geteilten Speicher vertrauen.
+- Normales Ende liefert outcome/decisionRef; AutomaticResult prüft den aktuellen
+  Stand und erstellt replyEntryContextRef oder staffEntryContextRef. CLOSED gilt
+  nur nach gespeichertem Abschluss und führt zum vorhandenen ActiveEnd. Unbekannte
+  Rückgabe ist ein technischer Vertragsfehler, keine Default-Fortsetzung.
+- Erfolgreiche Mitarbeiterrückfrage, Übernahme, Terminsetzung und neuer zwingender
+  Prüfbedarf werden als persistierter Entscheid mit Call-/Durchlaufbezug nachgewiesen.
+  Der zuständige Dienst stellt automaticInterruptionReady im **Elternscope** bereit.
+  Die referenzierte Entscheidung muss zum aktiven automaticCallRef passen; ein
+  beliebiges Client-Flag ist weder Berechtigung noch Freigabe. Bedingungen werden
+  von Engine-Variablenänderungen ausgelöst, nicht durch Datenbankänderungen allein.
+- AutomaticInterrupted unterbricht den Call einschliesslich Kindaktivitäten.
+  AutomaticInterruptionPrepare lädt den aktuellen Entscheid aus dem Dienst statt
+  Outputs des abgebrochenen Kindes. Prüfvorrang, offene Fragen, manuelle Dringlichkeit,
+  bereits veröffentlichte Nachrichten und versionsgebundene Termine bleiben erhalten.
+  Für den separaten Reply-Wiedervorlagepfad bleibt staffFollowTakeoverReady bestehen.
+- Wiederholung, Übergabe vor Call-Aktivierung und Rennen mit normalem Call-Ende sind
+  zuverlässig zu koordinieren. Konsumierte Marker wirken nicht auf spätere Calls;
+  offene neue Prüfentscheide dürfen beim Initialisieren eines Calls nicht gelöscht
+  werden. Nach Call-Ende muss die aktuelle Phase die Meldung übernehmen. Bestehende
+  Prüfung ergänzen, niemals einen zweiten parallelen Staff-Call erzeugen.
+- Der gemeinsame Error-Randpfad fängt TRIAGE_ANALYSIS_FAILED von Triage oder Recommend.
+  Ungültige LLM-Empfehlung wird ausdrücklich fachlich gemeldet; technische Fehler
+  bleiben Retry/Incident. Lokale Fehler wegen veralteter Grundlagen bleiben im Kind
+  und führen zu CurrentAnalysis; unzulässiger Nachrichtentext führt zu REVIEW.
+- AutoClose im Kind und Close im Elternmodell verwenden denselben fachlichen
+  Abschlussvertrag. Die getrennten Modellstellen unterscheiden System- und
+  Mitarbeiterfreigabe, nicht zwei Backend-Implementierungen. Der schon bestätigte
+  Mitarbeiterabschluss aus Abklärung beendet weiterhin über Eskalation ActiveCase.
+
+Prüfplan: FALL-AK-42 ergänzt die bisherigen fachlichen Prüffälle. Keine dieser
+Übergabe-/Abbruchgarantien ist durch XML-Import allein zur Laufzeit nachgewiesen.
+
 ## Dateien und Aufrufe
 
 | Datei | Prozess-ID | Aufrufstelle |
 |---|---|---|
 | [propertyflow-fallprozess-entwurf.bpmn](propertyflow-fallprozess-entwurf.bpmn) | `PropertyFlow_Case_Draft` | Asynchroner Fallstart |
+| [automatische-abklaerung.bpmn](automatische-abklaerung.bpmn) | `PropertyFlow_Automatic_Draft` | `Automatic` im Hauptprozess |
 | [mieterantwort-pruefen.bpmn](mieterantwort-pruefen.bpmn) | `PropertyFlow_TenantReply_Draft` | `Reply` im Hauptprozess |
 | [mitarbeiterbearbeitung.bpmn](mitarbeiterbearbeitung.bpmn) | `PropertyFlow_Staff_Draft` | `Staff` im Hauptprozess |
 | [wiedervorlage.bpmn](wiedervorlage.bpmn) | `PropertyFlow_FollowUp_Draft` | `FollowUp` im Mitarbeiterprozess |
@@ -24,7 +75,7 @@ Empfänger für gespeicherte Mieternachrichten und einen führenden Fallprozess.
 Call Activities erzeugen zusätzliche **untergeordnete** Instanzen, keine neuen Fälle.
 
 Die Calls verwenden statische Prozess-IDs und `bindingType="deployment"`.
-Eine spätere ausführbare Fassung muss die fünf Dateien zusammen versioniert
+Eine spätere ausführbare Fassung muss die sechs per Call verbundenen Dateien zusammen versioniert
 bereitstellen. Jetzt sind alle Prozesse `isExecutable="false"`; kein Deployment.
 Die Calls kopieren nur explizite Eingaben und geben nur explizite Ergebnisse zurück.
 [Camunda: Call Activities](https://docs.camunda.io/docs/8.9/components/modeler/bpmn/call-activities/)
@@ -50,12 +101,13 @@ vor `FollowUp` bereit. Das jeweilige Input-Mapping benennt diese Referenz im
 Kindprozess in `entryContextRef` um. Auch bei erneutem Aufruf ist eine aktuelle
 Eintrittsgrundlage erforderlich.
 
-Die drei fachlichen Entscheidungsprozesse liefern `outcome` und `decisionRef`. Die Referenz bezeichnet
+Die vier fachlichen Entscheidungsprozesse liefern `outcome` und `decisionRef`. Die Referenz bezeichnet
 die nachvollziehbar gespeicherte Entscheidungsgrundlage samt Versionen und
 Aufrufzuordnung; sie ist keine dauerhafte Freigabe späterer Aktionen.
 
 | Kindprozess | Erlaubtes `outcome` | Erzeugendes Ende | Zielvariablen beim Aufrufer |
 |---|---|---|---|
+| Automatische Abklärung | `WAIT_FOR_REPLY`, `REVIEW`, `CLOSED` | `AWaitEnd`, `AReviewEnd`, `AClosedEnd` | `automaticOutcome`, `automaticDecisionRef` |
 | Mieterantwort | `CLOSE`, `REVIEW`, `QUESTION`, `WAIT` | `RClose`, `RReview`, `RQuestion`, `RWait` | `replyOutcome`, `replyDecisionRef` |
 | Mitarbeiterbearbeitung | `CLOSE`, `WAIT_FOR_REPLY` | `SCloseEnd`, `SReplyEnd` | `staffOutcome`, `staffDecisionRef` |
 | Wiedervorlage | `REVIEW`, `CONTINUE`, `CLOSE` | `WReviewEnd`, `WProgressEnd`, `WCloseEnd` | `followUpOutcome`, `followUpDecisionRef` |
@@ -479,3 +531,74 @@ muss Aktivitätswechsel abdecken und wird beim Eintritt konsumiert. Ab Commit
 sind alte automatische Wirkungen gesperrt; keine Rückgaben abgebrochener Jobs.
 Keine zweite führende Instanz. Zuverlässige Übergabe, Konflikte und Idempotenz
 sind noch technisch umzusetzen. Quelle: FALL-06, Übergang 33; Prüfplan FALL-AK-40.
+
+## Zwingender Prüfbedarf unterbricht Automatik (0.30)
+
+Der bestehende Eingang `ReviewNeedSide` bestätigt den Grund in `ReviewNeedCheck`.
+`ReviewNeedOther` stellt für den aktuellen automatischen Lauf `reviewNeedAutoReady`
+bereit. Die unterbrechenden Randereignisse `AutoReviewAt…` führen über
+`AutoReviewJoin` und `AutoReviewContinue` zur regulären Mitarbeiterprüfung in `Staff`.
+Sie umfassen Clarification, Triage, Recommend, Validate, CurrentAnalysis, Question,
+AutoAnswer und Close. Auch ein Job mit Retry oder Incident wird abgelöst;
+kein Warten auf LLM-Ergebnis oder Reparatur.
+
+Ab dauerhafter Bestätigung sind alte automatische Wirkungen gesperrt. Der Marker
+ist an Lauf und Prüfentscheid gebunden, deckt Aktivitätswechsel ab und wird
+konsumiert. Bestehende Prüfaufgaben werden ergänzt; kein paralleler Staff-Call.
+Bereits veröffentlichte Nachrichten und Mailpflichten bleiben erhalten.
+Quellen: FALL-06, Übergang 3 und FALL-AK-41. Fachentwurf: zuverlässige Zustellung,
+Abbruch bei Incident und Konkurrenzschutz sind noch zur Laufzeit nachzuweisen.
+
+## Mitarbeiter-Sendeweg im Reply-Aufruf (0.32)
+
+`Message_ReplyStaffSend` startet `RStaffMessageSide` nicht unterbrechend in der
+aktuellen Mieterantwort-Kindinstanz. Der Dienst ermittelt den tatsächlichen
+Call-/Kindbezug zur führenden Instanz; eine frei übergebene Prozess-ID autorisiert
+keine Veröffentlichung. Status, Mitarbeiterberechtigung und bestätigte Fallversion
+werden vor Speicherung geprüft; keine Mitarbeiter-User-Task voraussetzen.
+
+`RStaffMessagePublish` verwendet lokale Auftragsreferenzen und speichert Nachricht,
+optionalen Antwortbedarf und Mailpflicht konsistent. Keine Änderung von outcome
+oder decisionRef, keine Beendigung des Hauptpfads und kein zweiter Reply-Aufruf.
+Neue Antwortbedarfe werden vor Auswertungsfortsetzung geprüft. Alter unveröffentlichter
+Auftrag nach Phasenwechsel wird abgelehnt; erfolgreicher Retry bleibt ohne Duplikat.
+Bewusst neuer Sendeauftrag mit gleichem Text bleibt zulässig. Bei normalem Call-Ende
+laufende Nebenaufträge ohne alte fachliche Wirkung auflösen; ein technischer Incident
+kann die Kindinstanzbeendigung verzögern. Bereits gespeicherter Versand läuft unabhängig.
+Korrelation, Rückmeldung und atomare Konkurrenzbehandlung sind noch zu implementieren.
+Quelle: KOM-03 / KOM-AK-30. Kein zusätzlicher externer Mieternachrichtenempfänger.
+
+## Statusneutraler Informationsversand (0.33)
+
+StaffQuestionSide verarbeitet während In Abklärung jetzt beide Nachrichtenarten.
+StaffQuestionResult unterscheidet INFORMATION, QUESTION und REJECTED. Nur QUESTION
+führt zu StaffQuestionSignal und damit zur gemeinsamen Automatik-Unterbrechung.
+INFORMATION endet in StaffInformationDone ohne Marker oder Statuswechsel.
+
+SMessageSide erlaubt zusätzlich Informationen bei aktueller SWork-Aufgabe;
+Rückfragen mit Antwortbedarf bleiben dort im bestehenden SQuestion-Fortsetzungsweg.
+WQuestionSide erlaubt Informationen und Rückfragen bei unverändertem Timer/Termin.
+Message-IDs bleiben erhalten, die Namen sind erweitert. Keine neue Mieternachrichten-
+Subscription. In allen Wegen aktuelle Zuordnung, Berechtigung und Fallversion prüfen,
+Nachricht/Mailpflicht konsistent sichern und lokale Auftragsdaten verwenden.
+Regeln und geplante Laufzeittests: KOM-AK-31. RStaffMessageSide bleibt Stand 0.32.
+BPMN-Fachentwurf; technische Bindungen, Konfliktschutz und Ausführung noch offen.
+
+## Falldaten ergänzen (0.34)
+
+Im Hauptmodell ist CaseDataSide als zugeklappter nicht unterbrechender Ereignis-
+Teilprozess im ActiveCase sichtbar; über das Navigationssymbol öffnen.
+Message_CaseDataChange → CaseDataStart → CaseDataApply → CaseDataEnd.
+Ein gemeinsamer Worker-Auftrag für Memo, Objektzuordnung und manuelle Dringlichkeit;
+keine drei zusätzlichen Pfade und keine Beendigung der laufenden Bearbeitung.
+
+Verbindlicher Auftragsrahmen: FALL-06 «Gemeinsamer Aktionsvertrag Falldaten ergänzen».
+Der Dienst bestimmt aus authentifizierter Identität und Fall den aktuellen führenden
+Durchlauf; kein Kind-/User-Task-Schlüssel vom Client autorisiert die Aktion.
+Lokale Auftragsreferenz je Nebenaktion, keine Änderung von outcome/decisionRef.
+Neue Eingaben vor Aktivierung/nach Abschluss ablehnen; vor Commit erneut prüfen.
+Ergebnis, Änderung, Nachweis und nötige Mailpflicht konsistent sichern. Kein
+Erfolg ohne Bestätigung; identische Operations-ID erlaubt Wiederholung ohne
+zweite Wirkung. Erforderliche neue Prüfgründe über bestehenden Eingang nachliefern.
+Technische Korrelation, Rückmeldung, atomare Konfliktbehandlung und Worker fehlen
+weiterhin. FALL-AK-43 ist ein Prüfplan. Hauptmodell 0.34 bleibt nicht ausführbar.

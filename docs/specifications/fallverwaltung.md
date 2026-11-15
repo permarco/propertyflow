@@ -164,7 +164,7 @@ Die Pfeilnummern verweisen auf die Übergänge in der Tabelle. Die Anmerkungen i
 |---:|---|---|---|
 | 1 | Eingegangen | Prozessstart | Erfolgreich in Camunda registriert |
 | 2 | Prozessstart | In Abklärung | Erster Bearbeitungsschritt · Entwurf |
-| 3 | In Abklärung | Mitarbeiterprüfung erforderlich | Menschliche Prüfung nötig |
+| 3 | In Abklärung | Mitarbeiterprüfung erforderlich | Menschliche Prüfung nötig; neuer zwingender Prüfbedarf unterbricht auch technisch blockierte Automatik |
 | 4 | In Abklärung | Wartet auf Mieterantwort | Automatische Katalogrückfrage [1] |
 | 5 | Mitarbeiterprüfung erforderlich | In Bearbeitung | Bearbeitung fortsetzen |
 | 6 | In Bearbeitung | Mitarbeiterprüfung erforderlich | Neuer Prüfbedarf, z. B. Statusmail dauerhaft abgelehnt |
@@ -450,10 +450,70 @@ Rückfragen **mit** Antwortbedarf, Antwortbedarf aufheben, Bearbeitung fortsetze
 Wiedervorlage setzen/ändern/löschen, externe Wartephase, Abschluss und Wiedereröffnung
 sind hiervon getrennte Aktionen. Deren bestehende Regeln bleiben bestehen; noch
 nicht bestätigte zusätzliche Übergänge aus der vorgeschlagenen Aktionsmatrix
-werden durch diese Grundregel ausdrücklich nicht freigegeben. BPMN-Anbindung und
-Backend-Umsetzung dieser gemeinsamen Freigabe stehen noch aus.
+werden durch diese Grundregel ausdrücklich nicht freigegeben. Die BPMN-Anbindung ist für Nachrichten in 0.32/0.33 und für die drei übrigen
+Aktionen im folgenden Vertrag 0.34 festgelegt. Backend-Umsetzung bleibt offen.
 
 ### Vorrang einer laufenden Mitarbeiterprüfung
+
+### Gemeinsamer Aktionsvertrag «Falldaten ergänzen»
+
+**Bestätigt am 15.11.2026 – B02.3 / Entwurf 0.34:** Die bestehenden UI-Funktionen
+verwenden einen gemeinsamen Auftragsrahmen mit drei fest definierten Aktionsarten.
+Dies ist ein fachlicher/technischer Entwurfsvertrag, noch kein implementiertes
+Java-DTO oder neuer öffentlicher HTTP-Endpunkt. Die zuständigen Fachregeln bleiben
+in FALL-04, KOM-01 und DRING massgebend.
+
+| Auftragsangabe | Bedeutung |
+|---|---|
+| Fall-ID | Zu ändernder Fall; kein Berechtigungsnachweis |
+| Aktionsart | ADD_MEMO, SET_OBJECT_ASSIGNMENT oder SET_MANUAL_URGENCY |
+| Aktionsdaten | Memotext, Objekt-/Wohnungs-ID beziehungsweise erlaubte Dringlichkeitsstufe; bestehende optionale Begründungen bleiben erhalten |
+| Bestätigte Fallversion | Vom Mitarbeiter bestätigter Stand; Schutz gegen konkurrierende Änderungen |
+| Operations-ID | Wiederholungsschutz für denselben logischen Auftrag |
+
+Mitarbeiteridentität stammt aus der authentifizierten Sitzung bzw. dem autorisierten
+Zugang; aktuelle führende Prozesszuordnung ermittelt der Server. Client-Angaben zu
+Mitarbeiter, Prozess oder Task sind kein Freigabenachweis. Eine Mitarbeiter-User-Task
+ist nicht erforderlich. Der Aktionsrahmen enthält keine frei wählbaren Feldänderungen.
+
+1. Der Dienst prüft Berechtigung und Eingaben und ordnet den Auftrag dem aktuellen
+   führenden, aktiven Fallprozess zu. Camunda muss erreichbar sein.
+2. Der nicht unterbrechende Nebenprozess CaseDataSide im aktiven Fallbereich
+   beauftragt den Worker CaseDataApply über eine interne Auftragsreferenz.
+3. Unmittelbar vor Speicherung prüft der Dienst Berechtigung, aktuellen Status,
+   Durchlauf, Fallversion und aktionsspezifische Regeln erneut. Er delegiert an die
+   zuständige Fachlogik; der gemeinsame Vertrag ersetzt diese nicht.
+4. Änderung, erforderlicher Änderungsnachweis und Operationsausgang werden gemeinsam
+   gesichert; eine erforderliche Mailpflicht gehört in dieselbe konsistente Speicherung.
+5. Nur die Nebenaktion endet. Bestehende Aufgabe, Status, Wartephase und Timer bleiben
+   erhalten. Das Ergebnis wird dem Auftrag zugeordnet, nicht in Hauptpfadvariablen geschrieben.
+
+| Aktion | Besondere Regeln |
+|---|---|
+| ADD_MEMO | Internes Memo, keine Mieterbenachrichtigung, kein Kommunikations-LLM-Kontext. |
+| SET_OBJECT_ASSIGNMENT | Zulässige Zuordnung bestätigen/korrigieren; relevante alte Auswertungen dürfen nicht weiter auf der alten Grundlage wirken. Eine laufende Mitarbeiterprüfung nicht automatisch erledigen. |
+| SET_MANUAL_URGENCY | Erlaubte Stufe prüfen, manuelle Quelle/Vorrang speichern; Nachweis und Benachrichtigung gemäss DRING/BEN. Unveränderte Werte und erstmalige manuelle Bestätigung einer Systemstufe behalten ihre bestehenden Sonderregeln. |
+
+Vor Prozessaktivierung oder nach Abschluss ist eine neue Änderung unzulässig.
+Ein veralteter, noch nicht ausgeführter Auftrag wird ohne Änderung abgelehnt;
+Mitarbeitereingabe bleibt erhalten und der aktuelle Fallstand muss geprüft werden.
+Erfolgreiche Wiederholung derselben Operations-ID mit denselben Daten liefert
+das gespeicherte Ergebnis ohne zweite Änderung, Historie oder Mailpflicht, auch
+wenn der Fall inzwischen weitergeführt wurde. Geänderter Inhalt unter derselben
+Operations-ID ist ein Konflikt. Autorisierung wird weiterhin geprüft; Kennungen
+werden an Auftraggeber und Fall gebunden, nicht benutzerübergreifend wiederverwendet.
+
+Technische Fehler folgen Retry/Incident. Bei fehlender Bestätigung oder Timeout
+wird kein Erfolg behauptet; Wiederholung verwendet dieselbe Operations-ID, weil
+die Änderung bereits gespeichert sein könnte. Konkrete HTTP-Antworten werden im
+technischen Schnittstellenvertrag festgelegt, nicht hier neu erfunden.
+
+Entsteht neuer zwingender Prüfbedarf, wird er zuverlässig über den bestehenden
+Prüfbedarf-Eingang verarbeitet. Die Datenänderung allein beendet keine Bearbeitung
+und erledigt keine Prüfgründe. Eine Engine-Unterbrechung allein schützt nicht vor
+späten Worker-Wirkungen; aktuelle Version und Abschluss sind vor Commit abzusichern.
+Externe Informationsnachrichten bleiben in den bereits festgelegten Sendewegen
+und werden nicht als vierte Aktionsart in diesen Vertrag aufgenommen.
 
 **Bestätigt am 14.11.2026:** Sobald ein Fall **«Mitarbeiterprüfung erforderlich»** erreicht hat, darf das System diesen Bearbeitungsstatus nicht selbstständig verlassen. Nur eine bewusste, berechtigte Mitarbeiterentscheidung zur passenden aktuellen Aufgabe kann die Fortsetzung, eine Wiedervorlage oder den Abschluss veranlassen. Camunda und der PropertyFlow-Dienst führen diese Entscheidung nach Prüfung aus. Das gilt unabhängig davon, ob der Prüfbedarf ursprünglich durch das System oder durch eine menschliche Entscheidung entstanden ist. Eine automatische Ausnahme anhand dieser Herkunft ist für den aktuellen Umfang ausdrücklich nicht vorgesehen.
 
@@ -470,6 +530,39 @@ Bei verfügbarer Prozesssteuerung führen die Fehlerfälle nach FALL-05 über Ca
 Ein technischer Abbruch oder ein beliebiges BPMN-Endereignis ist nicht ohne fachliche Zuordnung mit einem erfolgreichen Fallabschluss gleichzusetzen. Massgeblich ist der im Fachprozess ausdrücklich vorgesehene Abschluss.
 
 **Präzisiert am 13.10.2026 – berücksichtigte Prüfgründe:** Beim bewussten Wechsel auf «In Bearbeitung» wird der bisher offene Prüfgrund dem Statusereignis als interner, berücksichtigter Prüfgrund zugeordnet. Er verschwindet aus der Box «Prüfbedarf», bleibt aber mit Zeitpunkt und Änderungsquelle im internen Verlauf erhalten, unabhängig von einer optionalen Mitarbeiterbegründung. Ohne neue Erkenntnisse löst dieser berücksichtigte Grund keine erneute Prüfung aus. Mieter erhalten weder den Grund noch dessen interne Kennzeichnung. Die Umsetzung der Demo ist im [F01-Nachweis](../ai-usage/block2-oberflaechen-pruefung.md#korrektur-f01--berücksichtigte-prüfgründe) dokumentiert.
+
+### Zwingender Prüfbedarf unterbricht die automatische Abklärung
+
+**Bestätigt am 15.11.2026 – Übergang 3:** Bestätigt der Dienst neuen zwingenden
+Prüfbedarf während der automatischen Abklärung, unterbricht Camunda den aktuellen
+automatischen Schritt und führt zu «Mitarbeiterprüfung erforderlich». Dies gilt
+auch während technischer Retries, bei einem blockierten KI-Job oder einem Incident.
+Es wird weder auf das LLM-Ergebnis noch auf die Reparatur des blockierten Jobs gewartet.
+Ein technischer Fehler allein ist weiterhin kein neuer fachlicher Prüfgrund.
+
+Der bestehende Eingang für Prüfbedarf prüft Quelle, Fall, führenden Durchlauf,
+Erkenntnisversion und aktuellen Bearbeitungsstand. Ab dauerhafter Bestätigung
+des neuen zwingenden Grundes sind alte automatische Wirkungen gesperrt: keine
+neue Nachricht, kein automatischer Statuswechsel und kein Abschluss. Diese
+Prüfung gilt bereits vor dem BPMN-Abbruch und auch für schon gestartete externe
+Worker. Bereits veröffentlichte Nachrichten und ihre Mailpflicht bleiben bestehen.
+
+Die Unterbrechung umfasst Dringlichkeitsbewertung, Vorgehensbestimmung,
+Ausführungsbedingungen, erneute Auswertung sowie automatische Rückfrage,
+Antwort und Abschluss vor deren wirksamer Speicherung. Der Unterbrechungsauftrag
+ist an den betroffenen Lauf gebunden und muss auch Wechsel zwischen diesen
+Schritten abdecken. Die Wiederaufnahme eines alten Jobs darf ihn nicht umgehen.
+Camunda führt genau eine Mitarbeiterprüfung; eine bereits vorhandene Prüfung
+wird um den Grund ergänzt, nicht dupliziert. Offene Rückfragen und manuell
+festgelegte Dringlichkeit bleiben erhalten.
+
+Konkurrierende Mitarbeiterentscheidungen, Veröffentlichungen und Abschluss
+werden gegen den aktuellen Fallstand koordiniert. Ist der Fall bereits wirksam
+abgeschlossen, wird nur ein interner Hinweis gespeichert, ohne Wiedereröffnung.
+Identische oder bereits bewusst berücksichtigte Gründe ohne neue Erkenntnis
+lösen keine erneute Unterbrechung aus. Ein alter Marker darf keinen neueren
+Bearbeitungsdurchlauf unterbrechen. Die Übergabe muss nach technischen Fehlern
+nachholbar sein; der Fachentwurf ist noch kein Laufzeitnachweis dieser Garantien.
 
 ### Neuer Prüfbedarf ohne Mieternachricht
 
@@ -1372,3 +1465,95 @@ Geplante Prüffälle; noch kein ausgeführter Laufzeitnachweis:
   Erfolgreichen Auftrag wiederholen: keine doppelte Wirkung und keine neue Mailpflicht.
 - Offene Rückfragen und manuelle Dringlichkeit erhalten; späteren Fallstand nicht
   mit einem alten Übernahmeauftrag überschreiben.
+
+### FALL-AK-41: Prüfbedarf unterbricht laufende oder blockierte Automatik
+
+Geplante Prüffälle; noch kein ausgeführter Laufzeitnachweis:
+
+- Bei laufendem «Vorgehen bestimmen» neuen zwingenden Prüfbedarf bestätigen:
+  automatische Aktivität abbrechen und genau eine Mitarbeiterprüfung erreichen.
+- Denselben Ablauf bei technischem Retry und bei Incident/blockiertem KI-Job
+  prüfen: kein Warten auf LLM-Ergebnis, Retry oder technische Reparatur.
+- Nach Bestätigung verspätete Worker-Ergebnisse zustellen: keine Veröffentlichung,
+  kein automatischer Statuswechsel oder Abschluss; bereits veröffentlichte
+  Nachrichten und zugehörige Mailpflicht bleiben bestehen.
+- Grund während eines Aktivitätswechsels bestätigen: Unterbrechung geht nicht
+  verloren. Wiederholungen und gleichzeitig eintreffende Gründe ergänzen dieselbe
+  Prüfung; kein zweiter Staff-Call und keine zweite Aufgabe.
+- Bestehende Mitarbeiterprüfung ergänzen; alte/bereits berücksichtigte Erkenntnis
+  ohne neue Grundlage und technischer Fehler allein erzeugen keine neue Prüfung.
+- Konkurrierenden Abschluss prüfen: bestätigt gespeicherter Prüfbedarf sperrt
+  automatischen Abschluss; bereits wirksamer Abschluss bleibt abgeschlossen.
+  Alte Marker wirken nach Wiedereröffnung nicht auf den neuen Durchlauf.
+
+### FALL-AK-42: Gemeinsamer Automatik-Teilprozess und Unterbrechung
+
+Strukturelle Vereinfachung 0.31, keine Änderung fachlicher Statusregeln.
+Geplante Laufzeitprüfungen zusätzlich zu FALL-AK-35 bis FALL-AK-41:
+
+- INITIAL führt nach Registrierung zur Abklärung; erneuter Einstieg nach
+  Mieterantwort (QUESTION/CLOSE) erhält den Status und prüft aktuelle Grundlage.
+- Während jedes automatischen Schritts einschliesslich Publikation und Abschluss
+  bestätigte Rückfrage, Übernahme, Wiedervorlage oder neuen zwingenden Prüfbedarf
+  zustellen: gemeinsames Randereignis beendet genau den zugehörigen Call.
+  Prüfvorrang und bestehende Fortsetzungen gelten auch bei Retry/Incident.
+- Nachrichteneingang bleibt im Hauptprozess aktiv; aktuelle Auswertung wird an
+  die registrierte Kindinstanz geliefert, auch wenn die Nachricht vorher eintraf.
+- Call-Abbruch liefert keine normalen Outputs; Fortsetzung lädt persistierten
+  Entscheid. Bereits gespeicherte Antwort und Mailpflicht bleiben erhalten.
+- Rennen mit Aktivierung und normalem Call-Ende sowie verspätete Marker prüfen:
+  keine verlorene Prüfung, kein zweiter Staff-Call, keine Wirkung auf späteren Lauf.
+- Fachlicher Fehler bei Triage oder Vorgehensbestimmung erreicht gemeinsamen
+  Prüfpfad. Technischer Fehler allein bleibt Retry/Incident. Veraltete Grundlage
+  verwendet weiterhin den lokalen Rückweg; keine automatische Mitarbeiterprüfung
+  allein wegen Versionskonflikt im Systempfad.
+- Erfolgreicher Systemabschluss beendet nach Rückgabe den aktiven Elternbereich;
+  Mitarbeiterabschluss bleibt separat ohne Nachricht möglich. Beide verwenden
+  denselben fachlichen Abschlussvertrag mit unterschiedlichen Freigabequellen.
+
+Die 32 wiederholten bedingten Randereignisse an einzelnen Automatikschritten
+werden durch ein gemeinsames bedingtes Randereignis am Aufruf ersetzt.
+Berechtigungen, Fallversionen und Sperren verspäteter Worker bleiben Dienstregeln;
+der BPMN-Abbruch allein garantiert keine Unterbrechung externer Aufrufe.
+
+### Präzisierung: Manuelles Nachfragen in der Mieterwartephase (0.32)
+
+Eine manuelle Rückfrage oder Information während «Wartet auf Mieterantwort»
+bleibt eine Nebenaktion: kein Statuswechsel, kein Ende oder Neustart des Reply-Aufrufs.
+Neuer bestätigter Antwortbedarf ergänzt die offenen Fragen; eine reine Information
+ändert sie nicht. Die bestehende Nachrichtenfunktion genügt. Versand, Konflikt-
+und Wiederholungsregeln stehen zentral in [KOM-03](fallkommunikation.md#manuelles-nachfragen-während-wartet-auf-mieterantwort),
+geplante Prüfungen in KOM-AK-30. Keine automatische Erinnerung oder Antwortfrist.
+
+### Präzisierung: Informationsversand als Nebenaktion (0.33)
+
+Die bestehende Freigabe «Daten ergänzen» wird für reine externe Informationen
+über die vorhandenen Sendewege angebunden: StaffQuestionSide während Abklärung,
+SMessageSide während Bearbeitung/Prüfung/externer Wartephase, RStaffMessageSide
+während Mieterwartephase und WQuestionSide während Wiedervorlage. Ohne neuen
+Antwortbedarf bleiben Aufgaben, Status und Wartephasen bestehen. Bestehende
+Rückfrageübergänge und separater zwingender Prüfbedarf bleiben unverändert.
+Verbindliche Versand-/Konfliktregeln: [KOM-03-Ergänzung](fallkommunikation.md#reine-informationsnachrichten-über-bestehende-sendewege-033)
+mit Prüfplan KOM-AK-31. Kein neuer fachlicher Statusübergang.
+
+### FALL-AK-43: Gemeinsamer Auftrag «Falldaten ergänzen»
+
+Geplante Laufzeitprüfungen, keine ausgeführten Nachweise:
+
+- Alle drei Aktionsarten in jedem der sechs aktiven Status: zulässige Änderung,
+  gleiche Aufgabe/Status/Wartephase/Timer; keine User-Task-Completion erforderlich.
+- Memo bleibt intern und ausserhalb des Kommunikations-LLM-Kontexts; keine Mail.
+  Zuordnung wird validiert; relevante alte Auswertungen dürfen nicht weiterwirken.
+  Manuelle Dringlichkeit bleibt gegen verspätete Systembewertung geschützt.
+- Fehlende Berechtigung, fremder Fall, ungültige Aktionsdaten, falscher Durchlauf,
+  ausstehende Aktivierung oder abgeschlossener Fall: keine neue Änderung.
+- Veraltete Fallversion/konkurrierender Abschluss: ohne Wirkung ablehnen,
+  Eingabe erhalten. Unveränderte Werte gemäss bestehenden Fachregeln behandeln.
+- Gleichen erfolgreichen Auftrag wiederholen: kein zweiter Nachweis oder Versand;
+  gleiche Operations-ID mit anderen Daten ablehnen. Fremde Identität darf die
+  Operations-ID nicht zur Übernahme oder zum Lesen eines fremden Ergebnisses nutzen.
+- Timeout nach Commit mit identischer ID wiederholen: gespeichertes Ergebnis erkennen;
+  keine falsche Erfolgsmeldung ohne Bestätigung und kein zweiter Schreibvorgang.
+- Neuer zwingender Prüfbedarf und erforderliche Mailpflicht werden zuverlässig
+  über bestehende Wege nachgeholt. Keine globale Variablenüberschreibung und
+  keine Wiederbelebung einer bereits beendeten Bearbeitung durch alte Worker.

@@ -1,14 +1,15 @@
 # PropertyFlow-Fallprozess
 
 [propertyflow-fallprozess-entwurf.bpmn](propertyflow-fallprozess-entwurf.bpmn)
-ist der führende BPMN-Entwurf 0.29 zur gemeinsamen Besprechung, Stand 15.11.2026.
+ist der führende BPMN-Entwurf 0.34 zur gemeinsamen Besprechung, Stand 15.11.2026.
 Er enthält BPMN-Diagrammkoordinaten und kann im Camunda Modeler geöffnet werden.
 
 ## Dateien – hier bearbeiten
 
 | Datei | Inhalt / typische Änderung |
 |---|---|
-| [propertyflow-fallprozess-entwurf.bpmn](propertyflow-fallprozess-entwurf.bpmn) | Hauptablauf, durchgängiger Mieternachrichteneingang, automatische Veröffentlichung, fachlicher Abschluss ohne zusätzliche Abschlussmail |
+| [propertyflow-fallprozess-entwurf.bpmn](propertyflow-fallprozess-entwurf.bpmn) | Hauptablauf, durchgängiger Mieternachrichteneingang, gemeinsame Automatik-Unterbrechung und Mitarbeiterabschluss |
+| [automatische-abklaerung.bpmn](automatische-abklaerung.bpmn) | Automatische Analyse, Ausführungsprüfung, Katalogrückfrage, individuelle Antwort und Systemabschluss; aktuelle Rückwege |
 | [mieterantwort-pruefen.bpmn](mieterantwort-pruefen.bpmn) | Offene Fragen auswerten, Teilantworten, Fortsetzungen nach der Mieterantwort |
 | [mitarbeiterbearbeitung.bpmn](mitarbeiterbearbeitung.bpmn) | Mitarbeiterprüfung, weitere Bearbeitung, Entscheidung und Aufruf der Wiedervorlage |
 | [wiedervorlage.bpmn](wiedervorlage.bpmn) | Termin/Timer, Änderung, Löschung und Mitarbeiterrückfrage während der Wartephase |
@@ -22,11 +23,52 @@ Der bisherige Hauptdateiname bleibt für bestehende Links erhalten.
 
 Die [Teilprozess-Verträge](teilprozess-vertraege.md) beschreiben Call-Hierarchie,
 explizite Eingaben und Rückgaben, laufende Aktualisierungen, Abbruch und Rechtebindung.
-Alle sechs Dateien bleiben **nicht ausführbare Fachentwürfe**. Die Dateiaufteilung
+Alle sieben Dateien bleiben **nicht ausführbare Fachentwürfe**. Die Dateiaufteilung
 ist umgesetzt; die notwendige Übergabe zwischen den Kindinstanzen und die
 Präzisierung von ADR-002/SS-003 sind noch nicht im Backend implementiert.
 
-## Ansichten
+## Aktuelle Struktur und Navigation (0.31)
+
+Im Hauptprozess «Aktiven Fall bearbeiten» öffnen. Der Call **«Automatische
+Abklärung»** verweist auf `automatische-abklaerung.bpmn`. An ihm liegen genau
+zwei Randereignisse: **«Bestätigte Ablösung»** (Conditional) und **«Fachlicher
+Analysefehler»** (Error). Die zuvor 32 einzelnen Conditional-Randereignisse an
+acht automatischen Schritten entfallen. Die bestehenden vier Randereignisse
+am Mieterwarte-Call bleiben erhalten; sie betreffen eine andere Wartephase.
+
+Die Mitarbeiteraufträge und der zentrale Nachrichteneingang sind weiterhin
+im Hauptprozess vorhanden, jetzt als zugeklappte Ereignis-Teilprozesse mit eigenen
+Diagrammansichten. Im Modeler über das Navigationssymbol öffnen. Kein zusätzlicher
+öffentlicher Eingang und keine veränderte fachliche Freigabe.
+
+Die neue Automatik-Datei zeigt die Analyse und anschliessende Handlung. INITIAL
+setzt wie bisher «In Abklärung». Fortsetzungen QUESTION/CLOSE nach Mieterantwort
+steigen über aktuelle Auswertung und Ausführungsprüfung ein, ohne Statusreset.
+Die Prüfung verhindert alte Veröffentlichungs-/Abschlussfreigaben. Die fachlichen
+Ergebnisse WAIT_FOR_REPLY, REVIEW oder CLOSED werden im Elternprozess geprüft.
+Ein Systemabschluss bleibt «Nachricht veröffentlichen, danach Abschluss prüfen
+und speichern». Der Mitarbeiterabschluss bleibt ohne Nachrichtenpflicht im Hauptprozess.
+
+`AutomaticInterrupted` unterbricht den gesamten aktuellen Call, auch bei einem
+blockierten Kindjob. `AutomaticInterruptionPrepare` lädt den gespeicherten Entscheid
+und verzweigt zur Mieterwartephase oder Mitarbeiterbearbeitung; dort zu Prüfung,
+Bearbeitung oder Wiedervorlage. Zwingender Prüfbedarf hat Vorrang. Der bestätigte
+Mitarbeiterabschluss unterbricht weiterhin den gesamten ActiveCase über dessen
+vorhandenes Eskalations-Randereignis.
+
+Camunda 8.9 unterstützt Conditional Boundary Events. Sie beobachten Variablen im
+sichtbaren Engine-Scope, nicht die Datenbank. Die geprüfte Referenz und
+`automaticInterruptionReady` werden ausdrücklich im Elternscope bereitgestellt.
+Die Kindinstanz bekommt keine unkontrollierte Variablenpropagation.
+[Conditional Events](https://docs.camunda.io/docs/8.9/components/modeler/bpmn/conditional-events/),
+[Scope und Auswertung](https://docs.camunda.io/docs/8.9/components/concepts/conditionals/).
+
+Alle sieben Dateien bleiben Fachentwürfe, nicht deploybare Laufzeitnachweise.
+Worker-Schutz, Übergabe während Phasenwechseln und Incident-Unterbrechung benötigen
+Integrationstests. Die nachfolgenden Versionsabschnitte dokumentieren die Entwicklung;
+für Dateizuständigkeit, Elementnamen und Unterbrechungsstruktur gilt dieser Stand 0.31.
+
+## Historische Ansichten und Entscheidungen bis 0.30
 
 Die Hauptansicht zeigt den Rahmen **«Aktiven Fall bearbeiten»** zwischen
 technischer Startvorbereitung und Prozessende. Im Modeler diesen
@@ -737,3 +779,65 @@ muss Aktivitätswechsel abdecken und wird beim Eintritt konsumiert. Ab Commit
 sind alte automatische Wirkungen gesperrt; keine Rückgaben abgebrochener Jobs.
 Keine zweite führende Instanz. Zuverlässige Übergabe, Konflikte und Idempotenz
 sind noch technisch umzusetzen. Quelle: FALL-06, Übergang 33; Prüfplan FALL-AK-40.
+
+## Zwingender Prüfbedarf unterbricht Automatik (0.30)
+
+Der bestehende Eingang `ReviewNeedSide` bestätigt den Grund in `ReviewNeedCheck`.
+`ReviewNeedOther` stellt für den aktuellen automatischen Lauf `reviewNeedAutoReady`
+bereit. Die unterbrechenden Randereignisse `AutoReviewAt…` führen über
+`AutoReviewJoin` und `AutoReviewContinue` zur regulären Mitarbeiterprüfung in `Staff`.
+Sie umfassen Clarification, Triage, Recommend, Validate, CurrentAnalysis, Question,
+AutoAnswer und Close. Auch ein Job mit Retry oder Incident wird abgelöst;
+kein Warten auf LLM-Ergebnis oder Reparatur.
+
+Ab dauerhafter Bestätigung sind alte automatische Wirkungen gesperrt. Der Marker
+ist an Lauf und Prüfentscheid gebunden, deckt Aktivitätswechsel ab und wird
+konsumiert. Bestehende Prüfaufgaben werden ergänzt; kein paralleler Staff-Call.
+Bereits veröffentlichte Nachrichten und Mailpflichten bleiben erhalten.
+Quellen: FALL-06, Übergang 3 und FALL-AK-41. Fachentwurf: zuverlässige Zustellung,
+Abbruch bei Incident und Konkurrenzschutz sind noch zur Laufzeit nachzuweisen.
+
+## Manuell nachfragen während Mieterwartephase (Teilprozess 0.32)
+
+In `mieterantwort-pruefen.bpmn` liegt unter dem bisherigen Hauptpfad die
+nicht unterbrechende Nebenaktion **«Manuell nachfragen / informieren – Mieterwartephase
+bleibt bestehen»** (`RStaffMessageSide`). Senden speichert Nachricht, optionalen
+neuen Antwortbedarf und Mailpflicht; der Reply-Aufruf bleibt bestehen. Alte Fragen
+bleiben offen. Keine automatische Dublettenerkennung gleicher Texte; identische
+Auftragswiederholungen bleiben idempotent. Regeln und Prüfplan: KOM-03 / KOM-AK-30.
+Hauptprozess weiterhin 0.31, Mieterantwort-Teilprozess jetzt 0.32; kein Backend geändert.
+
+## Statusneutraler Informationsversand (0.33)
+
+StaffQuestionSide verarbeitet während In Abklärung jetzt beide Nachrichtenarten.
+StaffQuestionResult unterscheidet INFORMATION, QUESTION und REJECTED. Nur QUESTION
+führt zu StaffQuestionSignal und damit zur gemeinsamen Automatik-Unterbrechung.
+INFORMATION endet in StaffInformationDone ohne Marker oder Statuswechsel.
+
+SMessageSide erlaubt zusätzlich Informationen bei aktueller SWork-Aufgabe;
+Rückfragen mit Antwortbedarf bleiben dort im bestehenden SQuestion-Fortsetzungsweg.
+WQuestionSide erlaubt Informationen und Rückfragen bei unverändertem Timer/Termin.
+Message-IDs bleiben erhalten, die Namen sind erweitert. Keine neue Mieternachrichten-
+Subscription. In allen Wegen aktuelle Zuordnung, Berechtigung und Fallversion prüfen,
+Nachricht/Mailpflicht konsistent sichern und lokale Auftragsdaten verwenden.
+Regeln und geplante Laufzeittests: KOM-AK-31. RStaffMessageSide bleibt Stand 0.32.
+BPMN-Fachentwurf; technische Bindungen, Konfliktschutz und Ausführung noch offen.
+
+## Falldaten ergänzen (0.34)
+
+Im Hauptmodell ist CaseDataSide als zugeklappter nicht unterbrechender Ereignis-
+Teilprozess im ActiveCase sichtbar; über das Navigationssymbol öffnen.
+Message_CaseDataChange → CaseDataStart → CaseDataApply → CaseDataEnd.
+Ein gemeinsamer Worker-Auftrag für Memo, Objektzuordnung und manuelle Dringlichkeit;
+keine drei zusätzlichen Pfade und keine Beendigung der laufenden Bearbeitung.
+
+Verbindlicher Auftragsrahmen: FALL-06 «Gemeinsamer Aktionsvertrag Falldaten ergänzen».
+Der Dienst bestimmt aus authentifizierter Identität und Fall den aktuellen führenden
+Durchlauf; kein Kind-/User-Task-Schlüssel vom Client autorisiert die Aktion.
+Lokale Auftragsreferenz je Nebenaktion, keine Änderung von outcome/decisionRef.
+Neue Eingaben vor Aktivierung/nach Abschluss ablehnen; vor Commit erneut prüfen.
+Ergebnis, Änderung, Nachweis und nötige Mailpflicht konsistent sichern. Kein
+Erfolg ohne Bestätigung; identische Operations-ID erlaubt Wiederholung ohne
+zweite Wirkung. Erforderliche neue Prüfgründe über bestehenden Eingang nachliefern.
+Technische Korrelation, Rückmeldung, atomare Konfliktbehandlung und Worker fehlen
+weiterhin. FALL-AK-43 ist ein Prüfplan. Hauptmodell 0.34 bleibt nicht ausführbar.

@@ -5,7 +5,7 @@
 **Use Case ID:** UC-029  
 **Primary Actor:** Angemeldete Person der Verwaltung mit aktiver Mitarbeiterrolle und dem Zusatzrecht «Mitarbeiterkonten verwalten»\
 **Goal:** Mitarbeitenden bei Bedarf den Zugriff auf den Mitarbeiterbereich entziehen.  
-**Status:** Zielablauf und [HTTP-Vertrag](../architecture/openapi/fallannahme.yaml) spezifiziert. Oberfläche und Umsetzung stehen aus.
+**Status:** Zielablauf und [HTTP-Vertrag](../architecture/openapi/propertyflow-web.yaml) spezifiziert. Oberfläche und Umsetzung stehen aus.
 
 ## Use-Case-Diagramm
 

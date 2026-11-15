@@ -5,7 +5,7 @@
 **Use Case ID:** UC-024  
 **Primary Actor:** Für den administrativen Fallzugang zuständige Person der Verwaltung  
 **Goal:** Einen verlorenen oder kompromittierten Fall-Link durch einen neuen Link zum selben Fall ersetzen.<br>
-**Status:** [HTTP-Zielvertrag](../architecture/openapi/fallannahme.yaml) für atomaren Ersatz mit serverseitigem Prüfnachweis beschrieben. Prüfverfahren, Rechtevergabe, Bedienung und Umsetzung stehen aus.
+**Status:** [HTTP-Zielvertrag](../architecture/openapi/propertyflow-web.yaml) für atomaren Ersatz mit serverseitigem Prüfnachweis beschrieben. Prüfverfahren, Rechtevergabe, Bedienung und Umsetzung stehen aus.
 
 ## Use-Case-Diagramm
 
