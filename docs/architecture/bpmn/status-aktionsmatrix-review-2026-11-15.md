@@ -15,7 +15,11 @@ Siehe [Versandmodell](fallbenachrichtigung-versenden.bpmn) und
 
 B02/B03 sind teilweise geklärt: Daten ergänzen bleibt in allen aktiven Status eine
 Nebenaktion. Übergang 29 (Mitarbeiterrückfrage aus In Abklärung) ist in FALL-06,
-im Zustandsdiagramm und im Hauptmodell 0.24 ergänzt. Weitere markierte
+im Zustandsdiagramm und im Hauptmodell 0.24 ergänzt. Auch Übergang 30
+(direkter Mitarbeiterabschluss aus In Abklärung) ist nun in FALL-06,
+im Zustandsdiagramm und im Hauptmodell 0.25 ergänzt, einschliesslich
+Konfliktpfad und Beendigung der aktiven Bearbeitung nach Speicherung.
+Geplante Prüffälle: FALL-AK-36; Laufzeitnachweis offen. Weitere markierte
 Mitarbeiterübergänge sowie technische Synchronisierung bleiben offen.
 B01, B04/B05 und B07–B10 bleiben offen. Die folgenden Befunde und Zählwerte dokumentieren
 den Stand der Erstprüfung mit fünf Modellen; nun existiert zusätzlich das sechste

@@ -1,7 +1,7 @@
 # PropertyFlow-Fallprozess
 
 [propertyflow-fallprozess-entwurf.bpmn](propertyflow-fallprozess-entwurf.bpmn)
-ist der führende BPMN-Entwurf 0.24 zur gemeinsamen Besprechung, Stand 15.11.2026.
+ist der führende BPMN-Entwurf 0.25 zur gemeinsamen Besprechung, Stand 15.11.2026.
 Er enthält BPMN-Diagrammkoordinaten und kann im Camunda Modeler geöffnet werden.
 
 ## Dateien – hier bearbeiten
@@ -661,3 +661,19 @@ Massgeblich ist [FALL-06](../../specifications/fallverwaltung.md#mitarbeiterrüc
 mit Übergang 29 und FALL-AK-35. Die bedingten Randereignisse beschreiben das
 fachliche Verhalten; Markerzustellung, atomare Koordination und ausführbare
 Camunda-Realisierung bleiben zu implementieren und zu testen.
+
+## Direkter Mitarbeiterabschluss aus Abklärung (0.25)
+
+Unter «Aktiven Fall bearbeiten» liegt der neue Ereignis-Teilprozess
+**«Direkter Mitarbeiterabschluss während In Abklärung»**. Der Camunda-Service-Task
+prüft den bestätigten aktuellen Fallstand und speichert den Abschluss ohne
+Nachricht und ohne Warten auf KI. Bei Ablehnung bleibt der aktuelle Prozesspfad
+bestehen. Nach erfolgreicher Speicherung beendet ein Eskalations-Endereignis
+über das unterbrechende Randereignis am übergeordneten **«Aktiven Fall bearbeiten»**
+die gesamte aktive Bearbeitung. Dieses Randereignis ist in der Hauptansicht sichtbar.
+Die Eskalation bezeichnet hier den erfolgreichen Abschluss, keinen Fehler.
+
+Fachliche Quelle: [FALL-06, Übergang 30](../../specifications/fallverwaltung.md#direkter-mitarbeiterabschluss-während-in-abklärung),
+geplante Prüfungen: FALL-AK-36. Der Entwurf ist weiterhin nicht ausführbar;
+Abschlusscommit, zuverlässige Prozessbeendigung und Sperre verspäteter Worker
+sind noch technisch umzusetzen.

@@ -1,5 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_PropertyFlow_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+  <bpmn:message id="Message_StaffCloseClarification" name="Mitarbeiterabschluss während Abklärung angefordert" />
+  <bpmn:escalation id="Escalation_StaffCloseCommitted" name="Mitarbeiterabschluss aus Abklärung gespeichert" escalationCode="STAFF_CLARIFICATION_CLOSURE_COMMITTED" />
   <bpmn:message id="Message_StaffQuestionClarification" name="Mitarbeiterrückfrage während Abklärung angefordert" />
   <bpmn:message id="Message_ReviewRequired" name="Fachlicher Prüfbedarf festgestellt" />
   <bpmn:message id="Message_StaffCloseReply" name="Mitarbeiterabschluss im Mieterwartepfad angefordert" />
@@ -20,7 +22,7 @@
   <bpmn:error id="Error_AnalysisStale" name="Analysegrundlage überholt" errorCode="ANALYSIS_BASIS_STALE">
     <bpmn:documentation>Fachlicher Platzhalter für Zeilen 1 und 3: Die Auswertung enthält neue relevante gespeicherte Mieternachrichten noch nicht. In Validate führt der Konflikt zur aktuellen Analysegrundlage; in RValidate zur aktuellen Antwortauswertung. Kein technischer Jobfehler und kein Analysefehler. Meldung durch den späteren Prüfdienst, nicht automatisch durch blossen Nachrichteneingang. Keine zweite unabhängige Verarbeitung; aktuelle Mitarbeiterentscheidung und Abschluss schützen. Keine Ausführungsimplementierung.</bpmn:documentation>
   </bpmn:error>
-  <bpmn:process id="PropertyFlow_Case_Draft" name="PropertyFlow · Fallprozess · Fachentwurf 0.24" isExecutable="false">
+  <bpmn:process id="PropertyFlow_Case_Draft" name="PropertyFlow · Fallprozess · Fachentwurf 0.25" isExecutable="false">
     <bpmn:documentation>Fachentwurf 0.13, nicht ausführbar. Individuelle LLM-Nachricht im AutoAnswer-Worker erzeugen, prüfen, speichern und Versand beauftragen; danach Close. Kein Vorlagenkatalog, keine zusätzliche Abschlussmail. Mitarbeiterabschluss ohne Nachricht. Menschliche Priorität, Aktualität, Rückfragen, Wiedervorlage und bisherige Konfliktrückwege bleiben. Technische Fehler: Job-Retries/Incidents. Start-/Kindinstanz-Verträge weiterhin vor Ausführung konkretisieren; keine Backend-Implementierung.
 Fachentwurf 0.15: Wiedereröffnung startet eine neue Instanz für denselben Fall; direkter Mitarbeiterpfad gemäss FALL-07. Keine Backend-Implementierung.</bpmn:documentation>
     <bpmn:subProcess id="ActiveCase" name="Aktiven Fall bearbeiten">
@@ -601,8 +603,37 @@ Prüfentscheid, aktuelle führende Instanz und unterbrochenen Call verifizieren.
         </bpmn:conditionalEventDefinition>
       </bpmn:boundaryEvent>
       <bpmn:sequenceFlow id="SQ_Takeover_Close" sourceRef="StaffQuestionAtClose" targetRef="StaffQuestionJoin" />
+      <bpmn:subProcess id="StaffCloseClarificationSide" triggeredByEvent="true" name="Direkter Mitarbeiterabschluss während In Abklärung">
+        <bpmn:documentation>FALL-06 Übergang 30 / FALL-AK-36. Nicht unterbrechender interner Mitarbeitereingang. Erst erfolgreicher Abschlusscommit beendet den aktiven Fallbereich; unberechtigte oder veraltete Aufträge verändern den aktuellen Pfad nicht. Keine offene Mitarbeiter-User-Task erfinden. Auftrag und Ergebnis lokal halten, an Fall und führenden Durchlauf binden.</bpmn:documentation>
+        <bpmn:startEvent id="StaffCloseClarificationStart" isInterrupting="false" name="Mitarbeiter bestätigt Abschluss">
+          <bpmn:outgoing>SC01</bpmn:outgoing>
+          <bpmn:messageEventDefinition id="StaffCloseClarificationStart_definition" messageRef="Message_StaffCloseClarification" />
+        </bpmn:startEvent>
+        <bpmn:serviceTask id="StaffCloseClarificationApply" name="Mitarbeiterabschluss prüfen&#10;und Abgeschlossen speichern">
+          <bpmn:documentation>FALL-06 Übergang 30: denselben fachlichen Mitarbeiter-Abschlussvertrag wie Close verwenden, keine abweichende Abschlusslogik. Berechtigung, führenden Durchlauf, Status In Abklärung und vom Mitarbeiter bestätigten aktuellen Fallstand einschliesslich neuer Nachrichten und Prüfhinweise prüfen. Prüfung und Speicherung atomar gegen konkurrierende Änderungen absichern. Kein Warten auf LLM, keine Nachricht, kein Kommentar, kein Versandauftrag. Erfolgreicher Commit speichert Abgeschlossen, beendet Antwortbedarf, auditiert die bewusste Entscheidung und entzieht allen alten Jobs die Schreibfreigabe. Bereits gespeicherte Nachrichten samt Mailpflichten erhalten. Bei fachlichem Konflikt Ergebnis ABGELEHNT: keine Speicherung, aktuellen Stand anzeigen, erneute Mitarbeiterentscheidung nötig; keine automatische Aktualisierung der alten Zustimmung. Technischer Fehler bleibt Retry/Incident. Identischer bereits erfolgreicher Auftrag ist Erfolg, muss aber zum ursprünglichen Durchlauf gehören und darf keine Wiedereröffnung beenden. Abschlusscommit und zuverlässige Prozessfortsetzung koordinieren; Runtime noch nicht implementiert.</bpmn:documentation>
+          <bpmn:incoming>SC01</bpmn:incoming>
+          <bpmn:outgoing>SC02</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:exclusiveGateway id="StaffCloseClarificationResult" name="Abschluss&#10;gespeichert?">
+          <bpmn:incoming>SC02</bpmn:incoming>
+          <bpmn:outgoing>SC03</bpmn:outgoing>
+          <bpmn:outgoing>SC04</bpmn:outgoing>
+        </bpmn:exclusiveGateway>
+        <bpmn:endEvent id="StaffCloseClarificationCommitted" name="Gespeichert: aktive&#10;Bearbeitung beenden">
+          <bpmn:documentation>Erfolgssignal, kein fachlicher Fehler. Das unterbrechende Eskalations-Randereignis am umschliessenden ActiveCase beendet dessen Aktivitäten und alle Nebenpfade. Erst nach gesichertem Abschluss auslösen. Zuverlässige Wiederaufnahme nach Commit und vor diesem Ereignis ist vor ausführbarer Fassung nachzuweisen.</bpmn:documentation>
+          <bpmn:incoming>SC03</bpmn:incoming>
+          <bpmn:escalationEventDefinition id="StaffCloseClarificationCommitted_definition" escalationRef="Escalation_StaffCloseCommitted" />
+        </bpmn:endEvent>
+        <bpmn:endEvent id="StaffCloseClarificationRejected" name="Nicht abgeschlossen&#10;Aktuellen Stand erneut entscheiden">
+          <bpmn:incoming>SC04</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="SC01" sourceRef="StaffCloseClarificationStart" targetRef="StaffCloseClarificationApply" />
+        <bpmn:sequenceFlow id="SC02" sourceRef="StaffCloseClarificationApply" targetRef="StaffCloseClarificationResult" />
+        <bpmn:sequenceFlow id="SC03" sourceRef="StaffCloseClarificationResult" targetRef="StaffCloseClarificationCommitted" name="Ja / identischer Erfolg" />
+        <bpmn:sequenceFlow id="SC04" sourceRef="StaffCloseClarificationResult" targetRef="StaffCloseClarificationRejected" name="Nein: Konflikt / nicht zulässig" />
+      </bpmn:subProcess>
       <bpmn:textAnnotation id="MainDraft">
-        <bpmn:text>FACHENTWURF 0.24 · 15.11.2026
+        <bpmn:text>FACHENTWURF 0.25 · 15.11.2026
 Nicht ausführbar / kein Deployment.
 Bisheriger Hauptablauf in «Aktiven Fall bearbeiten».
 Nachrichteneingang oben links separat öffnen.</bpmn:text>
@@ -650,6 +681,7 @@ Technischer Speicherfehler bleibt getrennt.</bpmn:text>
       <bpmn:documentation>
 Technisches Ende: nach regulärem Fallabschluss oder abgelehntem Wiedereröffnungsstart. Dieses Ereignis selbst ändert keinen Status und verschickt keine Nachricht.</bpmn:documentation>
       <bpmn:incoming>F12</bpmn:incoming>
+      <bpmn:incoming>SC05</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="F12" sourceRef="ActiveCase" targetRef="End" />
     <bpmn:startEvent id="ProcessStart" name="Startauftrag übernommen">
@@ -663,8 +695,14 @@ Startart und Auftragsreferenz aus einem serverseitig autorisierten Startauftrag 
     </bpmn:serviceTask>
     <bpmn:sequenceFlow id="P01" sourceRef="ProcessStart" targetRef="PrepareProcessKey" />
     <bpmn:sequenceFlow id="P02" sourceRef="PrepareProcessKey" targetRef="ActiveCase" />
+    <bpmn:boundaryEvent id="StaffClosureCommitted" attachedToRef="ActiveCase" cancelActivity="true" name="Mitarbeiterabschluss&#10;aus Abklärung gespeichert">
+      <bpmn:documentation>Nur Erfolg nach geprüftem und gespeichertem Mitarbeiterabschluss aus In Abklärung. Unterbricht gesamten ActiveCase samt untergeordneten Aktivitäten und Nebenaktionen; danach Durchlaufende. Datenbanksperre gegen verspätete Worker gilt bereits seit Abschlusscommit, nicht erst seit BPMN-Unterbrechung. Bereits gestartete eigenständige Mailprozesse bleiben erhalten.</bpmn:documentation>
+      <bpmn:outgoing>SC05</bpmn:outgoing>
+      <bpmn:escalationEventDefinition id="StaffClosureCommitted_definition" escalationRef="Escalation_StaffCloseCommitted" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="SC05" sourceRef="StaffClosureCommitted" targetRef="End" />
     <bpmn:textAnnotation id="ProcessScopeNote">
-      <bpmn:text>FACHENTWURF 0.24 · nicht ausführbar
+      <bpmn:text>FACHENTWURF 0.25 · nicht ausführbar
 Im Teilprozess «Aktiven Fall bearbeiten» liegen der bisherige Hauptablauf
 und der durchgängige Mieternachrichteneingang.
 Empfang vor fachlicher Aktivierung; Ende erst nach gespeichertem Abschluss.
@@ -705,6 +743,17 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
       <bpmndi:BPMNEdge id="F12_di" bpmnElement="F12" bioc:stroke="#334155">
         <di:waypoint x="690" y="208" />
         <di:waypoint x="1080" y="208.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StaffClosureCommitted_di" bpmnElement="StaffClosureCommitted">
+        <dc:Bounds x="552" y="130" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="480" y="75" width="180" height="42" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SC05_di" bpmnElement="SC05">
+        <di:waypoint x="588" y="148" />
+        <di:waypoint x="1098" y="148" />
+        <di:waypoint x="1098" y="190" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
@@ -1398,6 +1447,40 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
         <di:waypoint x="2453.0" y="723.0" />
         <di:waypoint x="2453.0" y="1050" />
         <di:waypoint x="3250" y="1050" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StaffCloseClarificationSide_di" bpmnElement="StaffCloseClarificationSide" isExpanded="true">
+        <dc:Bounds x="200" y="3030" width="1650" height="360" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffCloseClarificationStart_di" bpmnElement="StaffCloseClarificationStart">
+        <dc:Bounds x="250" y="3170" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffCloseClarificationApply_di" bpmnElement="StaffCloseClarificationApply">
+        <dc:Bounds x="390" y="3138" width="340" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffCloseClarificationResult_di" bpmnElement="StaffCloseClarificationResult">
+        <dc:Bounds x="850" y="3163" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffCloseClarificationCommitted_di" bpmnElement="StaffCloseClarificationCommitted">
+        <dc:Bounds x="1120" y="3170" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StaffCloseClarificationRejected_di" bpmnElement="StaffCloseClarificationRejected">
+        <dc:Bounds x="857" y="3310" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SC01_di" bpmnElement="SC01">
+        <di:waypoint x="286" y="3188" />
+        <di:waypoint x="390" y="3188" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SC02_di" bpmnElement="SC02">
+        <di:waypoint x="730" y="3188" />
+        <di:waypoint x="850" y="3188" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SC03_di" bpmnElement="SC03">
+        <di:waypoint x="900" y="3188" />
+        <di:waypoint x="1120" y="3188" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SC04_di" bpmnElement="SC04">
+        <di:waypoint x="875" y="3213" />
+        <di:waypoint x="875" y="3310" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

@@ -393,3 +393,24 @@ Rückfrage und Mailpflicht werden nicht wiederholt. Publikationssperre, zuverlä
 Übergabe nach Commit, Markerlebensdauer und genau eine Fortsetzung sind vor
 Ausführbarkeit technisch nachzuweisen; ein BPMN-Abbruch allein sperrt keinen
 bereits laufenden externen Worker. Fachliche Quelle: FALL-06, Übergang 29.
+
+## Direkter Mitarbeiterabschluss aus Abklärung (0.25)
+
+`StaffCloseClarificationSide` empfängt intern den Mitarbeiterauftrag im Hauptprozess.
+`StaffCloseClarificationApply` verwendet denselben fachlichen Mitarbeiter-Abschlussvertrag
+wie `Close`; keine zweite fachliche Abschlusslogik. Der Auftrag ist an Mitarbeiter,
+Fall, führenden Durchlauf, bestätigten fachlichen Fallstand und Idempotenzschlüssel
+gebunden. Ein fachlicher Konflikt beendet nur die Nebenaktion ohne Abschluss;
+der Mitarbeiter muss den aktuellen Stand erneut bestätigen.
+
+Erst nach erfolgreichem Commit folgt die Eskalation
+`STAFF_CLARIFICATION_CLOSURE_COMMITTED`. Das unterbrechende Randereignis
+`StaffClosureCommitted` am `ActiveCase` beendet sämtliche darin laufenden
+Aktivitäten und führt zum bestehenden Prozessende. Der abgeschlossene Datenstand
+sperrt alte Worker schon vor dieser BPMN-Unterbrechung. Eigenständige Mailprozesse
+für frühere Nachrichten werden nicht abgebrochen; der Abschluss erzeugt keine neue Mail.
+
+Keine Rückgaben abgebrochener Kindprozesse verwenden. Wiederholungen müssen den
+bereits gespeicherten Erfolg erkennen und die Prozessbeendigung zuverlässig
+nachholen; alte Aufträge dürfen nach Wiedereröffnung keinen neuen Durchlauf
+beenden. Diese Garantien sind noch nicht implementiert oder zur Laufzeit getestet.

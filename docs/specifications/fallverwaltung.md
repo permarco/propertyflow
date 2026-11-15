@@ -129,7 +129,7 @@ flowchart LR
     B -->|"14"| W
     W -->|"15"| W
     W -->|"16"| P
-    A -->|"18"| Z
+    A -->|"18 / 30"| Z
     M -->|"19"| Z
     P -->|"20"| Z
     B -->|"21"| Z
@@ -188,6 +188,7 @@ Die Pfeilnummern verweisen auf die Übergänge in der Tabelle. Die Anmerkungen i
 | 27 | Wartet auf externe Rückmeldung | Mitarbeiterprüfung erforderlich | Neuer zwingender Prüfbedarf [4] |
 | 28 | Wartet auf Mieterantwort | Abgeschlossen | Direkter Mitarbeiterabschluss [3] |
 | 29 | In Abklärung | Wartet auf Mieterantwort | Mitarbeiterrückfrage mit «Mieterantwort erforderlich» veröffentlicht [1]; kontrollierte Ablösung der automatischen Abklärung gemäss FALL-06 |
+| 30 | In Abklärung | Abgeschlossen | Direkter Mitarbeiterabschluss am aktuellen Fallstand [3]; siehe FALL-06 |
 
 - **[1]** Keine laufende Wiedervorlage und kein vorrangiger Mitarbeiterprüfbedarf; automatische Rückfragen benötigen die serverseitig geprüften Ausführungsbedingungen nach [KOM-05](fallkommunikation.md#kom-05-automatische-rueckfragen). Für zulässige Katalogrückfragen ist keine zusätzliche menschliche Einzelfreigabe vorgesehen.
 - **[2]** Kein zulässiger automatischer Abschluss und keine laufende Wiedervorlage.
@@ -287,6 +288,40 @@ Vor dem Prozessstart und bei nicht verfügbarem Camunda bleiben Fälle für bere
 Ergänzungen zu bestehenden Fällen setzen einen laufenden Fallprozess und erreichbares Camunda voraus. Bis dahin bleibt der ungesendete Text im Mieterformular. Die Fallannahme startet Camunda weiterhin asynchron. [UC-009](../use_cases/UC-009-mieteranliegen-ergaenzen.md) · [SS-003](../architecture/schnittstellenentwurf-block-3.md#ss-003--camunda-integrationsvertrag)
 
 Der Prozess gibt die jeweilige Mitarbeiteraktion an der dafür vorgesehenen Stelle frei. Eine Aktion darf keinen Fallstand aus einer bereits abgeschlossenen Aufgabe überschreiben. Während der Mitarbeiterprüfung wartet Camunda auf die fachliche Entscheidung. Verspätete automatische Ergebnisse aus einem früheren Prozessschritt dürfen den Fall in dieser Phase nicht ändern. Beim Fortsetzen prüft PropertyFlow den aktuellen Fallstand und die Zuordnung zur passenden Prozessaufgabe. Bei einem Konflikt wird die Aktion nicht als erfolgreich angezeigt. Eingaben und laufende Formulierung bleiben erhalten.
+
+### Direkter Mitarbeiterabschluss während «In Abklärung»
+
+**Bestätigt am 15.11.2026 – Übergang 30:** Berechtigte Mitarbeitende dürfen
+bereits während «In Abklärung» den Fall bewusst abschliessen. Weder Nachricht
+noch Kommentar noch das Ende einer laufenden KI-Auswertung sind Voraussetzung.
+Wer dem Mieter etwas mitteilen möchte, kann zuvor eine eigene Nachricht senden.
+Der Abschluss selbst erzeugt keine Nachricht und keinen Versandauftrag.
+
+- Camunda beauftragt die Prüfung und Speicherung des Mitarbeiterabschlusses.
+  Der Dienst prüft Berechtigung, aktuellen führenden Durchlauf, Status und den
+  vom Mitarbeiter bestätigten fachlichen Fallstand einschliesslich gespeicherter
+  Nachrichten und Prüfhinweise. Die bestehende Abschlussprüfung nach FALL-07/FALL-10
+  gilt; eine automatische Abschlussfreigabe oder ein LLM-Ergebnis ist nicht nötig.
+- Prüfung und Speicherung werden gegen konkurrierende Änderungen abgesichert.
+  Ist der bestätigte Fallstand inzwischen veraltet, wird nichts abgeschlossen.
+  Der Mitarbeiter muss den aktuellen Stand ansehen und erneut entscheiden;
+  seine alte Bestätigung darf nicht automatisch auf neue Erkenntnisse übertragen werden.
+  Der aktuelle Prozesspfad bleibt bei Ablehnung bestehen.
+- Erst der erfolgreiche Abschlusscommit setzt «Abgeschlossen», beendet offenen
+  Antwortbedarf und entzieht allen bisherigen automatischen Schritten ihre
+  Schreibfreigabe. Camunda beendet danach die aktive Bearbeitung samt Nebenpfaden.
+  Bereits gespeicherte Nachrichten und ihre Versandpflichten bleiben erhalten.
+- Nach Abschluss dürfen verspätete KI-Ergebnisse keine Nachricht veröffentlichen,
+  den Status ändern oder den Fall wieder öffnen. Das gilt auch zwischen dem
+  Datenbankcommit und dem Beenden der Camunda-Aktivitäten. Ein technisch noch
+  laufender Modellaufruf muss dafür nicht physisch abgebrochen werden können.
+- Wiederholungen desselben erfolgreichen Abschlussauftrags bestätigen dessen
+  Ergebnis ohne weitere Wirkung. Technische Fehler folgen Retry/Incident; sie
+  sind kein erfolgreicher Abschluss. Ein alter Auftrag darf nach Wiedereröffnung
+  keinen neuen Durchlauf schliessen.
+
+Die Regel ist fachlich bestätigt. Die atomare Prüfung, zuverlässige Fortsetzung
+nach Speicherung und Sperre verspäteter Worker sind noch zu implementieren.
 
 ### Mitarbeiterrückfrage während «In Abklärung»
 
@@ -1125,3 +1160,19 @@ Geplante Prüfungen, noch kein ausgeführter Backend-Test:
   entgegen der Mitarbeiterpriorität; bereits gespeicherte Nachricht bleibt erhalten.
 - Retry, falsche Berechtigung, alter Durchlauf und konkurrierender Statuswechsel:
   keine doppelten Wirkungen und kein Überschreiben des aktuellen Zustands.
+
+### FALL-AK-36: Direkter Mitarbeiterabschluss aus «In Abklärung»
+
+Geplante Prüfungen, noch keine ausgeführten Backend-Tests:
+
+- Aktuellen Fall ohne Nachricht oder Kommentar während laufender KI-Auswertung
+  abschliessen: «Abgeschlossen», Antwortbedarf beendet, keine zusätzliche Mailpflicht.
+- Neue Mieternachricht, Prüfhinweis, automatische Veröffentlichung oder andere
+  Mitarbeiterentscheidung vor Abschlusscommit: veralteten Auftrag ablehnen,
+  aktuellen Stand anzeigen und erneute bewusste Entscheidung verlangen.
+- Mitarbeiterabschluss zuerst gespeichert: verspätete Analyse-, Veröffentlichungs-
+  und Abschlussjobs bleiben wirkungslos, auch vor Beendigung der Camunda-Aktivitäten.
+- Wiederholung nach erfolgreichem Commit und technischem Übergabefehler: genau ein
+  Abschluss; Prozessbeendigung zuverlässig nachholen, keine Nachricht hinzufügen.
+- Fehlende Berechtigung, falscher Prozessbezug oder alter Auftrag nach Wiedereröffnung:
+  keine Änderung des aktuellen Falls; bestehende Nachrichten und Mailpflichten erhalten.
