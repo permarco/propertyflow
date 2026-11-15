@@ -1,11 +1,27 @@
 # Verträge der ausgelagerten BPMN-Teilprozesse
 
-Stand 15.11.2026 · Fachentwurf 0.31 · nicht ausführbar, keine Backend-Implementierung.
+Stand 15.11.2026 · Gesamtstand 0.34 · nicht ausführbar, keine Backend-Implementierung.
 
 Die Aufteilung in eigene Dateien ist bestätigt. Die folgenden technischen
 Übergaben konkretisieren den Entwurf; sie sind noch kein implementierter
-Java-/HTTP-Vertrag. Die Fachregeln aus KOM-03 bis KOM-06 und FALL-05 bis FALL-11
+Java-/HTTP-Vertrag. Die Fachregeln aus KOM-03 bis KOM-06 und FALL-05 bis FALL-12
 bleiben bestehen. Der Hauptprozess behält allein die führende Fallzuordnung.
+
+## Aktueller Gesamtstand 0.34 und Versionshistorie
+
+Aktuell gelten der Automatik-Aufrufvertrag 0.31, der Reply-Sendeweg 0.32,
+der statusneutrale Informationsversand 0.33 und «Falldaten ergänzen» 0.34.
+CaseDataSide verarbeitet die drei festgelegten Aktionsarten im aktiven Hauptprozess;
+Nachrichten bleiben in den bestehenden Sendewegen. SMessageSide erlaubt bei
+SReview/SExternalWait Nachrichten mit oder ohne Antwortbedarf und bei SWork
+nur Informationen ohne neuen Antwortbedarf. Kein Sende-Nebenweg beendet die Aufgabe.
+
+Ältere Versionsabschnitte bleiben als Entscheidungshistorie erhalten. Die Abschnitte
+«Mitarbeiterrückfrage in der Abklärung (0.24)», «Direkte Wiedervorlage aus Abklärung
+(0.26)», «Direkte Mitarbeiterübernahme aus Abklärung (0.29)» und «Zwingender Prüfbedarf
+unterbricht Automatik (0.30)» beschreiben ersetzte Einzelmarker/-randpfade. Massgeblich
+ist dafür jetzt der gemeinsame AutomaticInterrupted-Pfad aus 0.31. Ihre fachlichen
+Regeln bleiben gültig. Modellstände je Datei sind im Review aufgeführt.
 
 ## Verbindlicher Aufrufvertrag der automatischen Abklärung (0.31)
 
@@ -67,6 +83,7 @@ Prüfplan: FALL-AK-42 ergänzt die bisherigen fachlichen Prüffälle. Keine dies
 | [mitarbeiterbearbeitung.bpmn](mitarbeiterbearbeitung.bpmn) | `PropertyFlow_Staff_Draft` | `Staff` im Hauptprozess |
 | [wiedervorlage.bpmn](wiedervorlage.bpmn) | `PropertyFlow_FollowUp_Draft` | `FollowUp` im Mitarbeiterprozess |
 | [mieternachricht-verarbeiten.bpmn](mieternachricht-verarbeiten.bpmn) | `PropertyFlow_TenantMessage_Draft` | `ProcessTenantMessage` im Ereignis-Teilprozess `TenantInbox` |
+| [fallbenachrichtigung-versenden.bpmn](fallbenachrichtigung-versenden.bpmn) | `PropertyFlow_Mail_Draft` | Eigenständiger Start anhand dauerhafter Mailpflicht, kein Call des Fallprozesses |
 
 `ActiveCase` und der Ereignis-Teilprozess `TenantInbox` bleiben eingebettet im
 Hauptprozess. Die Nebenaktion für Mitarbeiterrückfragen während Wiedervorlage
@@ -237,11 +254,11 @@ Mail-Task und keine zweite Abschlussbenachrichtigung. Technische Fehler folgen
 Job-Retries/Incidents; unzulässiger Nachrichteninhalt führt vor Veröffentlichung
 zur Mitarbeiterprüfung. Aktuelle Grundlage und Wiederholungsschutz bleiben Pflicht.
 
-## Mitarbeiternachricht während Prüfung oder externer Wartephase (Stand 0.28)
+## Mitarbeiternachricht während Prüfung, Bearbeitung oder externer Wartephase (Stand 0.33)
 
 `Message_StaffReviewSend` startet `SMessageSide` nicht unterbrechend in der
 aktuellen Mitarbeiterinstanz. Nur autorisierte Aufträge zur aktuellen offenen
-`SReview`- oder `SExternalWait`-Aufgabe sind zulässig. Die tatsächliche Engine-Korrelation und
+`SReview`- oder `SExternalWait`-Aufgabe sowie reine Informationsaufträge ohne neuen Antwortbedarf zur aktuellen `SWork`-Aufgabe sind zulässig. Rückfragen mit Antwortbedarf aus SWork verwenden weiterhin SQuestion als bewusste Fortsetzung. Die tatsächliche Engine-Korrelation und
 Rückmeldung an den sendenden HTTP-Aufruf sind noch festzulegen; dies ändert
 keinen öffentlichen HTTP-Vertrag. Keine zusätzliche externe Mieter-Subscription.
 
@@ -249,7 +266,7 @@ Die Auftragsreferenz bleibt pro Nebenaktion lokal. Der Worker lädt den bestäti
 Text und Antwortbedarf über den zuständigen Dienst, prüft erneut den aktuellen
 Aufgabenstand und speichert Nachricht/Versandauftrag idempotent. Er schreibt keine
 Hauptpfadvariablen `outcome` oder `decisionRef` und beendet keine User Task.
-Parallele Sendungen überschreiben einander nicht. Beendete Prüf- oder externe Warteaufgabe oder
+Parallele Sendungen überschreiben einander nicht. Beendete Prüf-, Bearbeitungs- oder externe Warteaufgabe oder
 Abschluss verhindert neue Veröffentlichung aus einem alten Auftrag; schon
 veröffentlichte Nachricht bleibt bestehen. Laufende Nebenaktionen müssen bei
 Fortsetzung ohne alte fachliche Wirkung aufgelöst werden; ein Incident kann die
@@ -430,6 +447,9 @@ werden; die bisherigen fünf Call-Modelle behalten ihre Deployment-Bindung.
 
 ## Mitarbeiterrückfrage in der Abklärung (0.24)
 
+**Historischer technischer Stand:** Einzelmarker und Randpfade durch den gemeinsamen
+Automatik-Aufrufvertrag 0.31 ersetzt; fachliche Regeln weiterhin gültig.
+
 `StaffQuestionSide` bleibt im Hauptprozess. Ein erfolgreicher, idempotenter
 Veröffentlichungsauftrag aus «In Abklärung» entzieht dem bisherigen automatischen
 Abklärungslauf die Schreibfreigabe. Der durchlaufgebundene Marker
@@ -468,6 +488,9 @@ nachholen; alte Aufträge dürfen nach Wiedereröffnung keinen neuen Durchlauf
 beenden. Diese Garantien sind noch nicht implementiert oder zur Laufzeit getestet.
 
 ## Direkte Wiedervorlage aus Abklärung (0.26)
+
+**Historischer technischer Stand:** Einzelmarker und Randpfade durch den gemeinsamen
+Automatik-Aufrufvertrag 0.31 ersetzt; fachliche Regeln weiterhin gültig.
 
 `StaffFollowSide` prüft und speichert den Auftrag aus «In Abklärung» am aktuellen
 Fallstand. Termin, Terminversion, berücksichtigte Prüfgründe und Status werden
@@ -519,6 +542,9 @@ Berechtigungs-, Fallstands-, Idempotenz- und Versandregeln gelten unverändert.
 
 ## Direkte Mitarbeiterübernahme aus Abklärung (0.29)
 
+**Historischer technischer Stand:** Einzelmarker und Randpfade durch den gemeinsamen
+Automatik-Aufrufvertrag 0.31 ersetzt; fachliche Regeln weiterhin gültig.
+
 `StaffTakeoverSide` empfängt «Bearbeitung übernehmen». Nach serverseitig geprüfter,
 gespeicherter Übernahme unterbrechen `StaffTakeoverAt…` den aktuellen automatischen
 Schritt. `StaffTakeoverContinue` stellt den geprüften `staffEntryContextRef` bereit.
@@ -533,6 +559,9 @@ Keine zweite führende Instanz. Zuverlässige Übergabe, Konflikte und Idempoten
 sind noch technisch umzusetzen. Quelle: FALL-06, Übergang 33; Prüfplan FALL-AK-40.
 
 ## Zwingender Prüfbedarf unterbricht Automatik (0.30)
+
+**Historischer technischer Stand:** Einzelmarker und Randpfade durch den gemeinsamen
+Automatik-Aufrufvertrag 0.31 ersetzt; fachliche Regeln weiterhin gültig.
 
 Der bestehende Eingang `ReviewNeedSide` bestätigt den Grund in `ReviewNeedCheck`.
 `ReviewNeedOther` stellt für den aktuellen automatischen Lauf `reviewNeedAutoReady`

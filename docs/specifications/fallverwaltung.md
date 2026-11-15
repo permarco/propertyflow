@@ -163,7 +163,7 @@ Die Pfeilnummern verweisen auf die Übergänge in der Tabelle. Die Anmerkungen i
 | Pfeil | Von | Nach | Übergang |
 |---:|---|---|---|
 | 1 | Eingegangen | Prozessstart | Erfolgreich in Camunda registriert |
-| 2 | Prozessstart | In Abklärung | Erster Bearbeitungsschritt · Entwurf |
+| 2 | Prozessstart | In Abklärung | Bestätigter erster aktiver Bearbeitungsstatus |
 | 3 | In Abklärung | Mitarbeiterprüfung erforderlich | Menschliche Prüfung nötig; neuer zwingender Prüfbedarf unterbricht auch technisch blockierte Automatik |
 | 4 | In Abklärung | Wartet auf Mieterantwort | Automatische Katalogrückfrage [1] |
 | 5 | Mitarbeiterprüfung erforderlich | In Bearbeitung | Bearbeitung fortsetzen |
@@ -201,7 +201,7 @@ Die Pfeilnummern verweisen auf die Übergänge in der Tabelle. Die Anmerkungen i
 - **[4]** Externe Wartephase gemäss FALL-12; Nachricht oder Memo allein beendet sie nicht.
 - **[3]** Abschluss gemäss FALL-07/FALL-10 unter Beachtung verpflichtender menschlicher Entscheidungen.
 
-Mit **Entwurf** bezeichnete Übergänge sind noch zu konkretisieren. Insbesondere legt die Registrierung allein noch keinen ersten aktiven Bearbeitungsstatus fest; der dargestellte Einstieg in «In Abklärung» ist ein Vorschlag. Das Diagramm ist kein vollständiger Übergangskatalog: Neue Prüfgründe können auch aus weiteren aktiven Status zur Mitarbeiterprüfung führen; Wiedervorlage und Abschluss sind bei entsprechender Prozessfreigabe ebenfalls aus weiteren aktiven Status möglich. Die nachfolgenden Fachregeln bleiben massgebend. Das Diagramm ersetzt weder BPMN noch schreibt es eine zweite Workflow-Engine in PropertyFlow vor.
+**Bestätigter Einstieg:** Nach Registrierung des führenden Prozesses veranlasst Camunda bei Erstanlage den ersten aktiven Bearbeitungsstatus «In Abklärung». Registrierung und Speicherung dieses Status sind getrennte technische Schritte; der neue Status ist erst nach bestätigter Speicherung wirksam. «Prozessstart» ist kein zusätzlicher fachlicher Status. Wiedereröffnung und Fortsetzung nach einer Mieterantwort folgen ihren eigenen bestätigten Einstiegsregeln und setzen nicht pauschal erneut «In Abklärung». Das Diagramm ist kein vollständiger Übergangskatalog: Neue Prüfgründe können auch aus weiteren aktiven Status zur Mitarbeiterprüfung führen; Wiedervorlage und Abschluss sind bei entsprechender Prozessfreigabe ebenfalls aus weiteren aktiven Status möglich. Die nachfolgenden Fachregeln bleiben massgebend. Das Diagramm ersetzt weder BPMN noch schreibt es eine zweite Workflow-Engine in PropertyFlow vor.
 
 ### Fachliche Bearbeitungsstatus – vereinbart
 

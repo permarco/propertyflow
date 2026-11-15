@@ -5,8 +5,8 @@ Dieser Bericht ersetzt die überholte Erstprüfungs-Matrix. Die Befundkennungen
 B01–B10 bleiben für Nachverfolgung erhalten. Frühere Modellstände sind keine
 zusätzlichen offenen Anforderungen.
 
-**Umfang:** Konsolidierter Abgleich mit Nachführung B02.1 (0.32). Der manuelle
-Sendeweg in der Mieterwartephase ist inzwischen in Spezifikation und BPMN ergänzt.
+**Umfang:** Konsolidierter Abgleich bis Gesamtstand 0.34. B02.1–B02.3 sind im
+Entwurf behandelt; die festgestellten Dokumentationswidersprüche B01/B08 sind bereinigt.
 Backend-Implementierung und Laufzeitnachweise stehen weiterhin aus.
 
 ## Ergebnis und verbleibende Arbeit
@@ -18,19 +18,19 @@ keine ausführbare oder getestete Gesamtlösung.
 
 | Befund | Aktueller Stand | Verbleibende Arbeit |
 |---|---|---|
-| B01 – Erster aktiver Status | Fachlich geklärt, Alttext widersprüchlich | «In Abklärung» als bestätigten Einstieg konsistent dokumentieren. |
-| B02 – Mitarbeiter-Nebenaktionen | Fachlich weitgehend geklärt, Anbindung teilweise offen | B02.1–B02.3 im Entwurf behandelt; technische Umsetzung bei B07/B09/B10. |
+| B01 – Erster aktiver Status | Dokumentation bereinigt | Keine offene Fachentscheidung; technische Umsetzung bei B10. |
+| B02 – Mitarbeiter-Nebenaktionen | Im Entwurf behandelt | B02.1–B02.3 im Entwurf behandelt; technische Umsetzung bei B07/B09/B10. |
 | B03 – Mitarbeiterübergänge | Im Entwurf behandelt | Ausführbare Umsetzung und Prüfung mit B07/B09/B10. Keine erneute Entscheidung über Übergänge 29–33. |
 | B04 – Prüfbedarf unterbricht Automatik | Im Entwurf behandelt | Zuverlässige Zustellung, Abbruch bei blockiertem Job und Konflikte zur Laufzeit prüfen. |
 | B05 – Fehlerpfad der Vorgehensbestimmung | Im Entwurf behandelt | Fachliche Fehler im Worker ausdrücklich melden; technische Fehler getrennt testen. |
 | B06 – Mailanbindung | Im Entwurf behandelt | Dauerhafte Mailpflicht, Start, Wiederholungsschutz und Versandfehler implementieren/testen. |
 | B07 – Gleichzeitige Aktionen und einmalige Fortsetzung | Technisch offen | Exklusive Übernahme und Behandlung bereits überholter/erledigter Aufträge verbindlich ausarbeiten. |
-| B08 – Dokumentationskonsistenz | Teilweise bereinigt | Verbleibende widersprüchliche Kerntexte nachführen; historische Abschnitte nicht als aktuellen Vertrag verwenden. |
+| B08 – Dokumentationskonsistenz | Festgestellte Widersprüche bereinigt | Aktuelle Übersicht 0.34 verwenden; historische technische Stände sind ausdrücklich gekennzeichnet. |
 | B09 – Rechtebindung und Aktionsbezug | Technischer Vertrag teilweise vorhanden | Rechte über führende Instanz, Kind, Call und gegebenenfalls User Task vollständig konkretisieren. |
 | B10 – Ausführbare Bindungen und Tests | Offen | Worker-Typen, Gateway-Bedingungen, Korrelation, Variablen und Integrationstests schrittweise ergänzen. |
 
 **«Im Entwurf behandelt» ist kein Laufzeitnachweis.** Der Anbindungsentscheid für B02.3 ist mit CaseDataSide und dem gemeinsamen
-Aktionsvertrag getroffen. B01/B08 sind Dokumentationsarbeit. B07/B09/B10
+Aktionsvertrag getroffen. B01/B08 sind dokumentarisch erledigt. B07/B09/B10
 sind technische Umsetzungsvoraussetzungen; sie verlangen nicht automatisch neue
 Geschäftsfunktionen oder zusätzliche Diagrammzweige.
 
@@ -156,21 +156,24 @@ Aktion muss ersatzweise eine Aufgabe oder Wartephase beenden. Laufzeitprüfung
 bleibt anschliessend Teil von B09/B10. Dieses Kriterium ist im Entwurf 0.34 für B02.1–B02.3 erfüllt;
 die technische Ausführbarkeit ist weiterhin offen.
 
-## B01 / B08: Verbleibende Dokumentationsbereinigung
+## B01 / B08: Dokumentationsbereinigung abgeschlossen (0.34)
 
-**B01:** In FALL-05 steht Übergang 2 weiterhin als «Erster Bearbeitungsschritt ·
-Entwurf»; der Absatz nach der Übergangstabelle nennt den Einstieg einen Vorschlag.
-Bestätigt und modelliert ist dagegen INITIAL → Clarification → Triage im neuen
-Automatik-Teilprozess. Alttext korrigieren, keine neue Fachentscheidung nötig.
-Registrierung und Status-Commit bleiben getrennte technische Schritte.
+**B01:** Übergang 2 und der Erläuterungstext in FALL-05 benennen «In Abklärung»
+jetzt als bestätigten ersten aktiven Status bei Erstanlage. Registrierung und
+Statusspeicherung bleiben getrennte technische Schritte; Wiedereröffnung und
+Mieterantwort-Fortsetzungen werden nicht pauschal auf diesen Einstieg zurückgesetzt.
 
-**B08:** Die ältere KOM-03-Formulierung zur Aufhebung des letzten Antwortbedarfs
-nennt Wiedervorlage und Prüfbedarf als Ausnahmen, aber nicht die externe Wartephase.
-Der neuere Absatz und FALL-05 schützen diese ausdrücklich. Den Kerntext konsistent
-nachführen. README und Teilprozess-Verträge haben aktuelle 0.31-Abschnitte mit
-Vorrang gegenüber historischen Elementnamen; die alte pauschale Behauptung eines
-unaktuellen Vertragskopfs ist deshalb erledigt. Weitere historische Zahlen und
-Pfade nicht als aktuellen Modellbestand interpretieren.
+**B08:** Der KOM-03-Kerntext zum letzten aufgehobenen Antwortbedarf schützt nun
+auch die externe Wartephase. Der SMessageSide-Vertrag in KOM-01 und den Teilprozess-
+Verträgen enthält die Freigabe für Informationsnachrichten während SWork; Rückfragen
+mit Antwortbedarf bleiben dort im SQuestion-Fortsetzungsweg.
+
+README und Teilprozess-Verträge besitzen aktuelle Gesamtübersichten 0.34 mit allen
+sieben Dateien und den Nebenaktionswegen. Unterschiedliche Modellrevisionen bleiben
+sichtbar. Ersetzte Einzelmarker/-randpfade und alte Zählwerte sind als Historie
+gekennzeichnet. Frühere Review-Nachführungen «B02.3 bleibt offen» stehen unten nur
+noch als damaliger Stand. Keine neue Fachregel, keine BPMN- oder Backend-Änderung
+in dieser Bereinigungsrunde. Laufzeitnachweise sind davon unberührt weiterhin offen.
 
 ## B03–B06: Im Entwurf behandelt
 
@@ -256,10 +259,9 @@ Prüfpläne, keine erfolgreichen Testläufe.
 
 ## Nächste Schritte
 
-1. B01/B08 als Dokumentationsbereinigung erledigen; bestätigte Fachregeln nicht neu öffnen.
-2. B07/B09 für den ersten ausführbaren Ablauf technisch konkretisieren, einschliesslich
+1. B07/B09 für den ersten ausführbaren Ablauf technisch konkretisieren, einschliesslich
    der festgelegten Nebenaktionsverträge aus B02.
-3. B10 schrittweise implementieren und gegen PostgreSQL/Camunda testen.
+2. B10 schrittweise implementieren und gegen PostgreSQL/Camunda testen.
 
 Bestehende Entscheidungen bleiben verbindlich: menschlicher Prüfvorrang,
 Nachricht vor Systemabschluss, Mitarbeiterabschluss ohne Nachrichtenpflicht,
@@ -267,7 +269,10 @@ keine Schweigefristen, Wiedereröffnung mit neuer führender Instanz sowie die
 bestätigten Timer- und Wartephasenregeln. Dieser Bericht eröffnet diese Fragen
 nicht erneut.
 
-## Nachführung B02.1 (0.32)
+## Nachführung B02.1 (0.32) – historischer Zwischenstand
+
+Die folgenden offenen Punkte beziehen sich auf diesen damaligen Stand. Aktuell
+sind B02.1–B02.3 im Entwurf behandelt; siehe Zusammenfassung oben.
 
 Mieterantwort-Nebenaktion, Spezifikation und Verträge wurden ergänzt. B02.1 ist
 im Entwurf behandelt; B02.2 ist für die Mieterwartephase ebenfalls abgedeckt.
@@ -279,7 +284,10 @@ Flussreferenz-/Scope-Prüfung und Modeler-Import/Export ohne Warnungen.
 Die neue Nebenaktion wurde in der gerenderten Mieterantwort-Ansicht kontrolliert.
 Keine Laufzeittests oder Backend-Änderungen.
 
-## Nachführung B02.2 (0.33)
+## Nachführung B02.2 (0.33) – historischer Zwischenstand
+
+Die folgenden offenen Punkte beziehen sich auf diesen damaligen Stand. Aktuell
+sind B02.1–B02.3 im Entwurf behandelt; siehe Zusammenfassung oben.
 
 Bestehende Sendewege für Informationen erweitert, ohne neue grosse Teilprozesse.
 B02.1 und B02.2 sind im Entwurf behandelt; B02.3 bleibt die Anbindungslücke.
@@ -300,3 +308,10 @@ FALL-AK-43 bleibt Prüfplan; keine Backend-Logik geändert.
 Statische Prüfung zu 0.34: sieben BPMN-Dateien bestehen XML-Schema-,
 ID-/Flussreferenz-/Scope-Prüfung und Modeler-Import/Export ohne Warnungen.
 Detailansicht von CaseDataSide gerendert und kontrolliert. Keine Laufzeittests.
+
+## Nachführung B01/B08 (Dokumentation 0.34)
+
+Die benannten Widersprüche wurden in den Kerntexten korrigiert; aktuelle Übersichten
+und historische Stände sind getrennt. Geprüft wurden lokale Dokumentlinks und die
+betroffenen Aussagen. BPMN und Backend wurden in dieser Runde nicht geändert;
+keine erneuten Engine-/Laufzeittests erforderlich oder behauptet.

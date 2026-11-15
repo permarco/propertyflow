@@ -14,6 +14,7 @@ Er enthält BPMN-Diagrammkoordinaten und kann im Camunda Modeler geöffnet werde
 | [mitarbeiterbearbeitung.bpmn](mitarbeiterbearbeitung.bpmn) | Mitarbeiterprüfung, weitere Bearbeitung, Entscheidung und Aufruf der Wiedervorlage |
 | [wiedervorlage.bpmn](wiedervorlage.bpmn) | Termin/Timer, Änderung, Löschung und Mitarbeiterrückfrage während der Wartephase |
 | [mieternachricht-verarbeiten.bpmn](mieternachricht-verarbeiten.bpmn) | Gespeicherten Eingang prüfen, Mitarbeiterprüfung schützen, Wiedervorlage wecken und Nachricht auswerten |
+| [fallbenachrichtigung-versenden.bpmn](fallbenachrichtigung-versenden.bpmn) | Eigenständiger Versandprozess; Camunda beauftragt den Mail-Worker |
 
 Jede Datei ist die einzige bearbeitete Quelle ihres Teilprozesses, keine generierte
 Ansichtskopie. In Camunda Modeler die gewünschte Datei direkt öffnen; der Dateiname
@@ -27,7 +28,7 @@ Alle sieben Dateien bleiben **nicht ausführbare Fachentwürfe**. Die Dateiaufte
 ist umgesetzt; die notwendige Übergabe zwischen den Kindinstanzen und die
 Präzisierung von ADR-002/SS-003 sind noch nicht im Backend implementiert.
 
-## Aktuelle Struktur und Navigation (0.31)
+## Aktuelle Struktur und Navigation (Gesamtstand 0.34)
 
 Im Hauptprozess «Aktiven Fall bearbeiten» öffnen. Der Call **«Automatische
 Abklärung»** verweist auf `automatische-abklaerung.bpmn`. An ihm liegen genau
@@ -66,9 +67,29 @@ Die Kindinstanz bekommt keine unkontrollierte Variablenpropagation.
 Alle sieben Dateien bleiben Fachentwürfe, nicht deploybare Laufzeitnachweise.
 Worker-Schutz, Übergabe während Phasenwechseln und Incident-Unterbrechung benötigen
 Integrationstests. Die nachfolgenden Versionsabschnitte dokumentieren die Entwicklung;
-für Dateizuständigkeit, Elementnamen und Unterbrechungsstruktur gilt dieser Stand 0.31.
+für Dateizuständigkeit, Elementnamen und Unterbrechungsstruktur gilt die aktuelle Übersicht mit Gesamtstand 0.34. Historische Abschnitte sind keine aktuellen Implementierungsverträge.
+
+Die aktuelle Nebenaktions-Anbindung lautet:
+
+| Bereich | Modellstand | Aktueller Weg |
+|---|---|---|
+| Hauptprozess | 0.34 | StaffQuestionSide: Rückfrage oder Information; nur Rückfrage löst Automatik ab. CaseDataSide: Memo, Zuordnung, manuelle Dringlichkeit ohne Aufgabenabschluss. |
+| Automatische Abklärung | 0.31 | Automatic-Call mit gemeinsamer Unterbrechung und fachlichem Fehlerpfad. |
+| Mieterantwort | 0.32 | RStaffMessageSide: manuelles Nachfragen oder Information, bestehender Warteaufruf bleibt. |
+| Mitarbeiterbearbeitung | 0.33 | SMessageSide: Nachrichten bei Prüfung/externer Wartephase; bei SWork nur Information ohne neuen Antwortbedarf. |
+| Wiedervorlage | 0.33 | WQuestionSide: Rückfrage oder Information; Termin und Timer bleiben. |
+| Mieternachrichtenverarbeitung | 0.12 | Ein zentraler Verarbeitungsweg, kein zusätzlicher externer Empfang pro Teilprozess. |
+| Mailversand | 0.23 | Unabhängiger Versand für dauerhafte Mailpflichten. |
+
+Gesamtstand 0.34 bedeutet nicht, dass jede BPMN-Datei dieselbe Revisionsnummer hat.
+Die Fachregeln aus FALL/KOM/DRING bleiben die zentrale Quelle; Details der aktuellen
+Auftragsbindung stehen in den Teilprozess-Verträgen.
 
 ## Historische Ansichten und Entscheidungen bis 0.30
+
+Die folgenden älteren Beschreibungen und Zählwerte dokumentieren die Entwicklung.
+Insbesondere die frühere Anzahl Dateien/Ansichten und inzwischen entfernte
+Einzel-Randereignisse sind nicht der aktuelle Modellbestand.
 
 Die Hauptansicht zeigt den Rahmen **«Aktiven Fall bearbeiten»** zwischen
 technischer Startvorbereitung und Prozessende. Im Modeler diesen
