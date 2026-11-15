@@ -2,6 +2,11 @@
 
 Stand 15.11.2026 · Gesamtstand 0.35 · nicht ausführbar, keine Backend-Implementierung.
 
+**Fachlich definiert und am 15.11.2026 bestätigt.** Die sieben Prozesse und die
+hier festgehaltenen Übergabeverträge bilden die Grundlage der Umsetzung.
+Die Bestätigung bedeutet keine bereits ausführbare oder zur Laufzeit geprüfte
+Anbindung; siehe [Status und Restarbeiten](status-aktionsmatrix-review-2026-11-15.md).
+
 Die Aufteilung in eigene Dateien ist bestätigt. Die folgenden technischen
 Übergaben konkretisieren den Entwurf; sie sind noch kein implementierter
 Java-/HTTP-Vertrag. Die Fachregeln aus KOM-03 bis KOM-06 und FALL-05 bis FALL-12

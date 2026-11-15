@@ -1,5 +1,5 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_PropertyFlow_Staff_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+<?xml version='1.0' encoding='utf-8'?>
+<bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_PropertyFlow_Staff_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
   <bpmn:message id="Message_StaffReviewSend" name="Mitarbeiternachricht als Nebenaktion senden" />
   <bpmn:process id="PropertyFlow_Staff_Draft" name="Mitarbeiterbearbeitung · Fachentwurf 0.35" isExecutable="false">
     <bpmn:documentation>
@@ -282,7 +282,7 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
       <bpmndi:BPMNShape id="SStart_di" bpmnElement="SStart" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
         <dc:Bounds x="190" y="752" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="153" y="800" width="111" height="14" />
+          <dc:Bounds x="136.5" y="800.0" width="143.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="SEntryCheck_di" bpmnElement="SEntryCheck" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
@@ -291,7 +291,7 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
       <bpmndi:BPMNShape id="SEntryRoute_di" bpmnElement="SEntryRoute" isMarkerVisible="true">
         <dc:Bounds x="706" y="745" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="701" y="707.5" width="59" height="27" />
+          <dc:Bounds x="610" y="680" width="95" height="45" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Merge_SReviewStatus_di" bpmnElement="Merge_SReviewStatus" isMarkerVisible="true">
@@ -306,7 +306,7 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
       <bpmndi:BPMNShape id="SDecision_di" bpmnElement="SDecision" isMarkerVisible="true" bioc:stroke="#334155" bioc:fill="#f1f5f9">
         <dc:Bounds x="1566" y="745" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1532" y="807" width="119" height="14" />
+          <dc:Bounds x="1603.0" y="807.0" width="149.5" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Merge_SProgress_di" bpmnElement="Merge_SProgress" isMarkerVisible="true">
@@ -324,7 +324,7 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
       <bpmndi:BPMNShape id="SWorkDecision_di" bpmnElement="SWorkDecision" isMarkerVisible="true" bioc:stroke="#334155" bioc:fill="#f1f5f9">
         <dc:Bounds x="2596" y="745" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2584" y="721" width="74" height="14" />
+          <dc:Bounds x="2575.5" y="807.0" width="91.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="SQuestion_di" bpmnElement="SQuestion" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
@@ -336,7 +336,7 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
       <bpmndi:BPMNShape id="SReplyEnd_di" bpmnElement="SReplyEnd" bioc:stroke="#14532d" bioc:fill="#dcfce7">
         <dc:Bounds x="3293" y="752" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="3250" y="800" width="123" height="14" />
+          <dc:Bounds x="3323.0" y="800.0" width="156.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="SExternalWait_di" bpmnElement="SExternalWait" bioc:stroke="#7c2d12" bioc:fill="#ffedd5">
@@ -345,7 +345,7 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
       <bpmndi:BPMNShape id="SExternalDecision_di" bpmnElement="SExternalDecision" isMarkerVisible="true" bioc:stroke="#1e3a5f" bioc:fill="#f1f5f9">
         <dc:Bounds x="3536" y="975" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="3531" y="937.5" width="59" height="27" />
+          <dc:Bounds x="3518.5" y="1037.0" width="85" height="36" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Merge_FollowUp_di" bpmnElement="Merge_FollowUp" isMarkerVisible="true">
@@ -363,7 +363,7 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
       <bpmndi:BPMNShape id="SFollowResult_di" bpmnElement="SFollowResult" isMarkerVisible="true" bioc:stroke="#334155" bioc:fill="#f1f5f9">
         <dc:Bounds x="4285" y="975" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="4345" y="993" width="112" height="14" />
+          <dc:Bounds x="4322.0" y="1037.0" width="143.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Merge_SCloseEnd_di" bpmnElement="Merge_SCloseEnd" isMarkerVisible="true">
@@ -372,64 +372,64 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
       <bpmndi:BPMNShape id="SCloseEnd_di" bpmnElement="SCloseEnd" bioc:stroke="#14532d" bioc:fill="#dcfce7">
         <dc:Bounds x="4562" y="762" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="4533" y="810" width="95" height="14" />
+          <dc:Bounds x="4518.25" y="810.0" width="123.5" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="SMessageSide_di" bpmnElement="SMessageSide" isExpanded="true" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
-        <dc:Bounds x="810" y="150" width="662" height="235" />
+        <dc:Bounds x="810.0" y="2000.0" width="662" height="235" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="SMessageStart_di" bpmnElement="SMessageStart" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
-        <dc:Bounds x="865" y="267" width="36" height="36" />
+        <dc:Bounds x="865.0" y="2117.0" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="817" y="315" width="133" height="14" />
+          <dc:Bounds x="895.0" y="2198.0" width="156.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="SMessagePublish_di" bpmnElement="SMessagePublish" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
-        <dc:Bounds x="1011" y="235" width="250" height="100" />
+        <dc:Bounds x="1011.0" y="2085.0" width="250" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="SMessageEnd_di" bpmnElement="SMessageEnd" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
-        <dc:Bounds x="1381" y="267" width="36" height="36" />
+        <dc:Bounds x="1381.0" y="2117.0" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1336" y="315" width="126" height="14" />
+          <dc:Bounds x="1237.5" y="2198.0" width="149.5" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SM01_di" bpmnElement="SM01" bioc:stroke="#4c1d95">
-        <di:waypoint x="901" y="285" />
-        <di:waypoint x="1011" y="285" />
+        <di:waypoint x="901.0" y="2135.0" />
+        <di:waypoint x="1011.0" y="2135.0" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SM02_di" bpmnElement="SM02" bioc:stroke="#4c1d95">
-        <di:waypoint x="1261" y="285" />
-        <di:waypoint x="1381" y="285" />
+        <di:waypoint x="1261.0" y="2135.0" />
+        <di:waypoint x="1381.0" y="2135.0" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="SWorkReviewNeeded_di" bpmnElement="SWorkReviewNeeded">
-        <dc:Bounds x="2281" y="802" width="36" height="36" />
+        <dc:Bounds x="2281.0" y="702.0" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2254" y="838" width="90" height="27" />
+          <dc:Bounds x="2311.0" y="654.0" width="104.0" height="36" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="SExternalReview_di" bpmnElement="SExternalReview" bioc:stroke="#1e3a5f" bioc:fill="#ffedd5">
-        <dc:Bounds x="3221" y="1032" width="36" height="36" />
+        <dc:Bounds x="3221.0" y="932.0" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="3194" y="1068" width="90" height="27" />
+          <dc:Bounds x="3251.0" y="871.0" width="104.0" height="36" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="SFollowUpReviewNeeded_di" bpmnElement="SFollowUpReviewNeeded">
-        <dc:Bounds x="4012" y="1032" width="36" height="36" />
+        <dc:Bounds x="4072.0" y="1032.0" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="3985" y="1068" width="90" height="27" />
+          <dc:Bounds x="4102.0" y="1080.0" width="104.0" height="36" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="SContactDuringFollowUp_di" bpmnElement="SContactDuringFollowUp" bioc:stroke="#7c2d12" bioc:fill="#ffedd5">
-        <dc:Bounds x="3960" y="1032" width="36" height="36" />
+        <dc:Bounds x="3908.0" y="1032.0" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="3919" y="1080" width="119" height="27" />
+          <dc:Bounds x="3764.5" y="1080.0" width="149.5" height="36" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="SConcurrencyNote_di" bpmnElement="SConcurrencyNote" bioc:stroke="#475569" bioc:fill="#ffffff">
-        <dc:Bounds x="240" y="80" width="500" height="144" />
+        <dc:Bounds x="240.0" y="2430.0" width="500" height="144" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="SQuestionNote_di" bpmnElement="SQuestionNote" bioc:stroke="#475569" bioc:fill="#ffffff">
-        <dc:Bounds x="250" y="290" width="500" height="140" />
+        <dc:Bounds x="850.0" y="2430.0" width="500" height="140" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="S01_di" bpmnElement="S01">
         <di:waypoint x="226" y="770" />
@@ -443,16 +443,16 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
         <di:waypoint x="756" y="770" />
         <di:waypoint x="806" y="770" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="731" y="715" width="100" height="14" />
+          <dc:Bounds x="865" y="650" width="150" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="S_EntryWork_di" bpmnElement="S_EntryWork">
         <di:waypoint x="731" y="745" />
-        <di:waypoint x="731" y="480" />
-        <di:waypoint x="2151" y="480" />
+        <di:waypoint x="731" y="640" />
+        <di:waypoint x="2151" y="640" />
         <di:waypoint x="2151" y="745" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1304" y="436" width="136" height="27" />
+          <dc:Bounds x="1331.0" y="592.0" width="220" height="36" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="S_EntryFollowUp_di" bpmnElement="S_EntryFollowUp">
@@ -461,49 +461,56 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
         <di:waypoint x="3760" y="1270" />
         <di:waypoint x="3760" y="1025" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="699" y="1026" width="159" height="14" />
+          <dc:Bounds x="2141.5" y="1228.0" width="208.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="S13_di" bpmnElement="S13">
-        <di:waypoint x="2621" y="795" />
-        <di:waypoint x="2621" y="890" />
-        <di:waypoint x="3721" y="890" />
-        <di:waypoint x="3721" y="1810" />
-        <di:waypoint x="831" y="1810" />
-        <di:waypoint x="831" y="795" />
+        <di:waypoint x="2621" y="745" />
+        <di:waypoint x="2621" y="550" />
+        <di:waypoint x="790" y="550" />
+        <di:waypoint x="790" y="770" />
+        <di:waypoint x="806" y="770" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2233" y="1755" width="85" height="14" />
+          <dc:Bounds x="2019.6999999999998" y="508.0" width="104.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="S15_di" bpmnElement="S15">
-        <di:waypoint x="4310" y="1025" />
-        <di:waypoint x="4310" y="1810" />
-        <di:waypoint x="831" y="1810" />
-        <di:waypoint x="831" y="795" />
+        <di:waypoint x="4335" y="1000" />
+        <di:waypoint x="4400" y="1000" />
+        <di:waypoint x="4400" y="150" />
+        <di:waypoint x="760" y="150" />
+        <di:waypoint x="760" y="770" />
+        <di:waypoint x="806" y="770" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2541" y="1755" width="59" height="14" />
+          <dc:Bounds x="2537.5" y="108.0" width="85" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="S21_di" bpmnElement="S21" bioc:stroke="#334155">
-        <di:waypoint x="4030" y="1410" />
-        <di:waypoint x="4030" y="1810" />
-        <di:waypoint x="831" y="1810" />
-        <di:waypoint x="831" y="795" />
+        <di:waypoint x="4155" y="1360" />
+        <di:waypoint x="4245" y="1360" />
+        <di:waypoint x="4245" y="220" />
+        <di:waypoint x="750" y="220" />
+        <di:waypoint x="750" y="705" />
+        <di:waypoint x="800" y="705" />
+        <di:waypoint x="800" y="770" />
+        <di:waypoint x="806" y="770" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SX07_di" bpmnElement="SX07">
-        <di:waypoint x="3239" y="1068" />
-        <di:waypoint x="3239" y="1610" />
-        <di:waypoint x="831" y="1610" />
-        <di:waypoint x="831" y="795" />
+        <di:waypoint x="3239" y="932" />
+        <di:waypoint x="3239" y="290" />
+        <di:waypoint x="770" y="290" />
+        <di:waypoint x="770" y="770" />
+        <di:waypoint x="806" y="770" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="762" y="1330" width="97" height="14" />
+          <dc:Bounds x="1939.5" y="248.0" width="130.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SR01_di" bpmnElement="SR01">
-        <di:waypoint x="2299" y="838" />
-        <di:waypoint x="2299" y="1360" />
-        <di:waypoint x="831" y="1360" />
-        <di:waypoint x="831" y="795" />
+        <di:waypoint x="2299" y="702" />
+        <di:waypoint x="2299" y="360" />
+        <di:waypoint x="780" y="360" />
+        <di:waypoint x="780" y="770" />
+        <di:waypoint x="806" y="770" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_Merge_SReviewStatus_di" bpmnElement="Flow_Merge_SReviewStatus">
         <di:waypoint x="856" y="770" />
@@ -521,7 +528,7 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
         <di:waypoint x="1616" y="770" />
         <di:waypoint x="1686" y="770" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1595" y="715" width="111" height="14" />
+          <dc:Bounds x="1579.5" y="960.0" width="143.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="S07_di" bpmnElement="S07">
@@ -530,34 +537,37 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
         <di:waypoint x="3760" y="920" />
         <di:waypoint x="3760" y="975" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2623" y="865" width="107" height="14" />
+          <dc:Bounds x="2610.5" y="878.0" width="130.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="S08_di" bpmnElement="S08">
         <di:waypoint x="1591" y="745" />
-        <di:waypoint x="1591" y="550" />
-        <di:waypoint x="4310" y="550" />
+        <di:waypoint x="1591" y="610" />
+        <di:waypoint x="4310" y="610" />
         <di:waypoint x="4310" y="755" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1656" y="538" width="65" height="14" />
+          <dc:Bounds x="2908.0" y="568.0" width="85" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="S16_di" bpmnElement="S16">
-        <di:waypoint x="4310" y="1025" />
-        <di:waypoint x="4310" y="1500" />
-        <di:waypoint x="1711" y="1500" />
-        <di:waypoint x="1711" y="795" />
+        <di:waypoint x="4335" y="1000" />
+        <di:waypoint x="4470" y="1000" />
+        <di:waypoint x="4470" y="430" />
+        <di:waypoint x="1660" y="430" />
+        <di:waypoint x="1660" y="770" />
+        <di:waypoint x="1686" y="770" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2972" y="1445" width="78" height="14" />
+          <dc:Bounds x="3016.25" y="388.0" width="97.5" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SX04_di" bpmnElement="SX04">
-        <di:waypoint x="3561" y="1025" />
-        <di:waypoint x="3561" y="1730" />
-        <di:waypoint x="1711" y="1730" />
-        <di:waypoint x="1711" y="795" />
+        <di:waypoint x="3561" y="975" />
+        <di:waypoint x="3561" y="500" />
+        <di:waypoint x="1650" y="500" />
+        <di:waypoint x="1650" y="770" />
+        <di:waypoint x="1686" y="770" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2580" y="1675" width="111" height="14" />
+          <dc:Bounds x="2534.0" y="458.0" width="143.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_Merge_SProgress_di" bpmnElement="Flow_Merge_SProgress">
@@ -580,17 +590,17 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
         <di:waypoint x="2646" y="770" />
         <di:waypoint x="2846" y="770" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2721" y="715" width="51" height="14" />
+          <dc:Bounds x="2743.5" y="640.0" width="85" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="S11_di" bpmnElement="S11">
         <di:waypoint x="2646" y="770" />
-        <di:waypoint x="2716" y="770" />
-        <di:waypoint x="2716" y="380" />
-        <di:waypoint x="4310" y="380" />
+        <di:waypoint x="2770" y="770" />
+        <di:waypoint x="2770" y="680" />
+        <di:waypoint x="4310" y="680" />
         <di:waypoint x="4310" y="755" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2635" y="568" width="65" height="14" />
+          <dc:Bounds x="3805.5" y="638.0" width="85" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="S12_di" bpmnElement="S12">
@@ -600,7 +610,7 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
         <di:waypoint x="3760" y="455" />
         <di:waypoint x="3760" y="975" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2622" y="605" width="71" height="14" />
+          <dc:Bounds x="2979.7" y="467.0" width="85" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SX01_di" bpmnElement="SX01">
@@ -609,7 +619,7 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
         <di:waypoint x="2746" y="1000" />
         <di:waypoint x="2846" y="1000" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2715" y="945" width="163" height="14" />
+          <dc:Bounds x="2758.0" y="870.0" width="195.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="S10_di" bpmnElement="S10">
@@ -628,7 +638,7 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
         <di:waypoint x="3586" y="1000" />
         <di:waypoint x="3735" y="1000" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="3607" y="945" width="107" height="14" />
+          <dc:Bounds x="3595.5" y="958.0" width="130.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SX06_di" bpmnElement="SX06">
@@ -636,7 +646,7 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
         <di:waypoint x="3561" y="780" />
         <di:waypoint x="4285" y="780" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="3609" y="738" width="65" height="14" />
+          <dc:Bounds x="3880.5" y="738.0" width="85" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_Merge_FollowUp_di" bpmnElement="Flow_Merge_FollowUp">
@@ -648,12 +658,14 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
         <di:waypoint x="4285" y="1000" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="S20_di" bpmnElement="S20" bioc:stroke="#334155">
-        <di:waypoint x="3978" y="1068" />
-        <di:waypoint x="3978" y="1230" />
+        <di:waypoint x="3926" y="1068" />
+        <di:waypoint x="3926" y="1230" />
         <di:waypoint x="4005" y="1230" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SR02_di" bpmnElement="SR02">
-        <di:waypoint x="4030" y="1068" />
+        <di:waypoint x="4090" y="1068" />
+        <di:waypoint x="4090" y="1170" />
+        <di:waypoint x="4030" y="1170" />
         <di:waypoint x="4030" y="1205" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_Merge_SStopFollowUp_di" bpmnElement="Flow_Merge_SStopFollowUp">
@@ -664,7 +676,7 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
         <di:waypoint x="4310" y="975" />
         <di:waypoint x="4310" y="805" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="4267" y="922" width="95" height="14" />
+          <dc:Bounds x="4060" y="850" width="150" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_Merge_SCloseEnd_di" bpmnElement="Flow_Merge_SCloseEnd">

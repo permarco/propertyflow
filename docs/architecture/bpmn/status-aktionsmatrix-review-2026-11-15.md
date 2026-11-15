@@ -12,6 +12,14 @@ Backend-Implementierung und Laufzeitnachweise stehen weiterhin aus.
 
 ## Ergebnis und verbleibende Arbeit
 
+**Abschluss der fachlichen Definition – bestätigt am 15.11.2026:** Der
+Projektverantwortliche erklärt alle sieben Prozesse einschliesslich der
+Nebenabläufe als fachlich definiert. Die Entscheidungen und Verträge zu B01–B09
+bilden die bestätigte Umsetzungsgrundlage. Die unten aufgeführten technischen
+Restarbeiten und Laufzeitnachweise bleiben offen; B10 ist nicht abgeschlossen.
+Die visuelle Nachprüfung umfasst 17 Diagrammansichten. Die statischen Prüfungen
+und der Modeler-Import/-Export ersetzen keine Ausführung auf Camunda.
+
 Die bisher markierten Mitarbeiterübergänge sind fachlich entschieden und im
 Entwurf modelliert. Automatische Abklärung, gemeinsame Unterbrechung,
 Analysefehlerpfad und Mailversand sind ebenfalls modelliert. Das bedeutet noch

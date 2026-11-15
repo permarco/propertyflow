@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_PropertyFlow_TenantMessage_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
   <bpmn:error id="Error_TenantEvaluationStale" name="Nachrichtenauswertung veraltet" errorCode="TENANT_EVALUATION_STALE" />
   <bpmn:error id="Error_TriageFailure" name="KI-Analyse fehlgeschlagen" errorCode="TRIAGE_ANALYSIS_FAILED">
@@ -163,7 +163,7 @@ Dateigrenze: aktuelle Kindinstanz gezielt aktualisieren; keine gemeinsamen Call-
       <bpmndi:BPMNShape id="NProcessingStart_di" bpmnElement="NProcessingStart" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
         <dc:Bounds x="240" y="662" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="152" y="613" width="176" height="14" />
+          <dc:Bounds x="26.0" y="710.0" width="220" height="36" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="NIdentify_di" bpmnElement="NIdentify" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
@@ -172,13 +172,13 @@ Dateigrenze: aktuelle Kindinstanz gezielt aktualisieren; keine gemeinsamen Call-
       <bpmndi:BPMNShape id="NAccept_di" bpmnElement="NAccept" isMarkerVisible="true" bioc:stroke="#334155" bioc:fill="#f1f5f9">
         <dc:Bounds x="655" y="655" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="620" y="603" width="100" height="14" />
+          <dc:Bounds x="692.0" y="717.0" width="123.5" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="NState_di" bpmnElement="NState" isMarkerVisible="true" bioc:stroke="#334155" bioc:fill="#f1f5f9">
         <dc:Bounds x="795" y="655" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="779" y="623" width="102" height="14" />
+          <dc:Bounds x="832.0" y="717.0" width="130.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="NWake_di" bpmnElement="NWake" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
@@ -193,13 +193,13 @@ Dateigrenze: aktuelle Kindinstanz gezielt aktualisieren; keine gemeinsamen Call-
       <bpmndi:BPMNShape id="NJoin_di" bpmnElement="NJoin" isMarkerVisible="true" bioc:stroke="#334155" bioc:fill="#f1f5f9">
         <dc:Bounds x="1325" y="655" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1367" y="633" width="86" height="14" />
+          <dc:Bounds x="1362.0" y="717.0" width="104.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="NFailure_di" bpmnElement="NFailure" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
         <dc:Bounds x="1974" y="820" width="250" height="100" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1999" y="932" width="200" height="55" />
+          <dc:Bounds x="2030.75" y="932.0" width="136.5" height="36" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Merge_NApply_di" bpmnElement="Merge_NApply" isMarkerVisible="true">
@@ -214,7 +214,7 @@ Dateigrenze: aktuelle Kindinstanz gezielt aktualisieren; keine gemeinsamen Call-
       <bpmndi:BPMNShape id="NEnd_di" bpmnElement="NEnd" bioc:stroke="#14532d" bioc:fill="#dcfce7">
         <dc:Bounds x="3111" y="662" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="3075" y="710" width="108" height="27" />
+          <dc:Bounds x="3057.5" y="710.0" width="143.0" height="36" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="NCurrentEvaluation_di" bpmnElement="NCurrentEvaluation" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
@@ -223,19 +223,19 @@ Dateigrenze: aktuelle Kindinstanz gezielt aktualisieren; keine gemeinsamen Call-
       <bpmndi:BPMNShape id="NCurrentRoute_di" bpmnElement="NCurrentRoute" isMarkerVisible="true" bioc:stroke="#9a3412" bioc:fill="#fff7ed">
         <dc:Bounds x="2964" y="845" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2931" y="813" width="98" height="14" />
+          <dc:Bounds x="3001.0" y="907.0" width="104.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="NObsoleteEnd_di" bpmnElement="NObsoleteEnd" bioc:stroke="#9a3412" bioc:fill="#fff7ed">
         <dc:Bounds x="3111" y="852" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="3079" y="903" width="100" height="14" />
+          <dc:Bounds x="3141.0" y="900.0" width="117.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="NNoOpEnd_di" bpmnElement="NNoOpEnd" bioc:stroke="#334155" bioc:fill="#f1f5f9">
         <dc:Bounds x="3111" y="1062" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="3079" y="1038" width="100" height="14" />
+          <dc:Bounds x="3070.5" y="1110.0" width="117.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="NAnalyze_di" bpmnElement="NAnalyze" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
@@ -250,19 +250,19 @@ Dateigrenze: aktuelle Kindinstanz gezielt aktualisieren; keine gemeinsamen Call-
       <bpmndi:BPMNShape id="NApplyStale_di" bpmnElement="NApplyStale" bioc:stroke="#9a3412" bioc:fill="#fff7ed">
         <dc:Bounds x="2519" y="712" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2481" y="760" width="98" height="14" />
+          <dc:Bounds x="2549.0" y="760.0" width="123.5" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="NAnalysisFailure_di" bpmnElement="NAnalysisFailure" bioc:stroke="#7f1d1d" bioc:fill="#fee2e2">
         <dc:Bounds x="1510" y="712" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1495" y="760" width="67" height="14" />
+          <dc:Bounds x="1540.0" y="760.0" width="85" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="NRecommendationFailure_di" bpmnElement="NRecommendationFailure" bioc:stroke="#7f1d1d" bioc:fill="#fee2e2">
         <dc:Bounds x="1870" y="712" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1855" y="760" width="67" height="14" />
+          <dc:Bounds x="1900.0" y="760.0" width="85" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="NScope_di" bpmnElement="NScope" bioc:stroke="#334155" bioc:fill="#f1f5f9">
@@ -284,14 +284,14 @@ Dateigrenze: aktuelle Kindinstanz gezielt aktualisieren; keine gemeinsamen Call-
         <di:waypoint x="680" y="1080" />
         <di:waypoint x="3111" y="1080" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="685" y="1066" width="150" height="27" />
+          <dc:Bounds x="1785.5" y="1032.0" width="220" height="36" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="N04_di" bpmnElement="N04" bioc:stroke="#334155">
         <di:waypoint x="705" y="680" />
         <di:waypoint x="795" y="680" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="704" y="663" width="12" height="14" />
+          <dc:Bounds x="707.5" y="605.0" width="85" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="N05_di" bpmnElement="N05" bioc:stroke="#334155">
@@ -299,14 +299,14 @@ Dateigrenze: aktuelle Kindinstanz gezielt aktualisieren; keine gemeinsamen Call-
         <di:waypoint x="820" y="490" />
         <di:waypoint x="985" y="490" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="845" y="463" width="90" height="14" />
+          <dc:Bounds x="832.0" y="557.5" width="117.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="N06_di" bpmnElement="N06" bioc:stroke="#334155">
         <di:waypoint x="845" y="680" />
         <di:waypoint x="985" y="680" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="894" y="663" width="71" height="14" />
+          <dc:Bounds x="872.5" y="638.0" width="85" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="N07_di" bpmnElement="N07" bioc:stroke="#334155">
@@ -314,7 +314,7 @@ Dateigrenze: aktuelle Kindinstanz gezielt aktualisieren; keine gemeinsamen Call-
         <di:waypoint x="820" y="870" />
         <di:waypoint x="985" y="870" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="835" y="853" width="109" height="14" />
+          <dc:Bounds x="832.0" y="772.5" width="136.5" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="N09_di" bpmnElement="N09" bioc:stroke="#334155">
@@ -358,7 +358,7 @@ Dateigrenze: aktuelle Kindinstanz gezielt aktualisieren; keine gemeinsamen Call-
         <di:waypoint x="2399" y="970" />
         <di:waypoint x="2399" y="705" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2423" y="953" width="94" height="14" />
+          <dc:Bounds x="2635.5" y="928.0" width="117.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0t8mepo_di" bpmnElement="Flow_0t8mepo">
@@ -382,7 +382,7 @@ Dateigrenze: aktuelle Kindinstanz gezielt aktualisieren; keine gemeinsamen Call-
         <di:waypoint x="3014" y="870" />
         <di:waypoint x="3111" y="870" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="3018" y="843" width="123" height="14" />
+          <dc:Bounds x="2974.75" y="795.0" width="175.5" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="N12_di" bpmnElement="N12" bioc:stroke="#334155">

@@ -1,8 +1,18 @@
 # PropertyFlow-Fallprozess
 
 [propertyflow-fallprozess-entwurf.bpmn](propertyflow-fallprozess-entwurf.bpmn)
-ist der führende BPMN-Entwurf 0.35 zur gemeinsamen Besprechung, Stand 15.11.2026.
+ist die führende fachliche Prozessdefinition, Gesamtstand 0.35, Stand 15.11.2026.
 Er enthält BPMN-Diagrammkoordinaten und kann im Camunda Modeler geöffnet werden.
+
+**Status: fachlich definiert und am 15.11.2026 vom Projektverantwortlichen bestätigt.**
+Dies gilt für alle sieben unten aufgeführten Prozesse einschliesslich ihrer
+Nebenabläufe, der vereinbarten Status-/Aktionsregeln und der Teilprozess-Verträge.
+Die Prozessdefinition bildet die Grundlage für die technische Umsetzung.
+
+Die Modelle bleiben technisch **nicht ausführbar** (`isExecutable=false`).
+B10 sowie die Implementierung und Laufzeitnachweise zu B07/B09 stehen aus.
+Die Bestätigung ist weder eine Deployment- noch eine produktive Abnahme.
+Die bestehenden Dateinamen und Modellversionsnummern bleiben erhalten.
 
 Die [Camunda Guidelines](../../specifications/CAMUNDA_GUIDELINES.md) bündeln die
 Projektregeln für Modellierung, Integration, Worker, Rechte und Prüfungen.

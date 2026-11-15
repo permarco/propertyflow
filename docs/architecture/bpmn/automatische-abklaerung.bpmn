@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_AutomaticClarification_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
   <bpmn:error id="Error_ClosureMessageInvalid" name="LLM-Nachricht inhaltlich unzulässig" errorCode="CLOSURE_MESSAGE_INVALID" />
   <bpmn:error id="Error_AutoClosureStale" name="Automatischer Abschluss veraltet" errorCode="AUTO_CLOSURE_STALE" />
@@ -225,7 +225,7 @@ FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklär
       <bpmndi:BPMNShape id="AStart_di" bpmnElement="AStart">
         <dc:Bounds x="180" y="322" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="154" y="370" width="88" height="14" />
+          <dc:Bounds x="146.0" y="370.0" width="104.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="AEntry_di" bpmnElement="AEntry" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
@@ -234,7 +234,7 @@ FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklär
       <bpmndi:BPMNShape id="AEntryRoute_di" bpmnElement="AEntryRoute" isMarkerVisible="true">
         <dc:Bounds x="596" y="315" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="582" y="277.5" width="78" height="27" />
+          <dc:Bounds x="572.25" y="267.0" width="97.5" height="36" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Clarification_di" bpmnElement="Clarification" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
@@ -255,7 +255,7 @@ FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklär
       <bpmndi:BPMNShape id="Route_di" bpmnElement="Route" isMarkerVisible="true">
         <dc:Bounds x="2096" y="315" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2071" y="291" width="99" height="14" />
+          <dc:Bounds x="1992.0" y="377.0" width="117.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="AutoClose_di" bpmnElement="AutoClose" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
@@ -267,13 +267,13 @@ FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklär
       <bpmndi:BPMNShape id="AClosedEnd_di" bpmnElement="AClosedEnd">
         <dc:Bounds x="3592" y="552" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="3587" y="600" width="46" height="14" />
+          <dc:Bounds x="3567.5" y="600.0" width="85" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="AWaitEnd_di" bpmnElement="AWaitEnd">
         <dc:Bounds x="3563" y="322" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="3532" y="370" width="98" height="14" />
+          <dc:Bounds x="3535.5" y="370.0" width="91.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="AutoAnswer_di" bpmnElement="AutoAnswer" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
@@ -297,7 +297,7 @@ FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklär
       <bpmndi:BPMNShape id="AReviewEnd_di" bpmnElement="AReviewEnd">
         <dc:Bounds x="3592" y="712" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="3588" y="760" width="44" height="14" />
+          <dc:Bounds x="3567.5" y="760.0" width="85" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_17v9nso_di" bpmnElement="Gateway_17v9nso" isMarkerVisible="true">
@@ -318,31 +318,31 @@ FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklär
       <bpmndi:BPMNShape id="AnalysisStale_di" bpmnElement="AnalysisStale">
         <dc:Bounds x="1771" y="372" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1745" y="420" width="89" height="27" />
+          <dc:Bounds x="1801.0" y="420.0" width="104.0" height="36" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="AutoCloseStale_di" bpmnElement="AutoCloseStale">
         <dc:Bounds x="2850" y="602" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2823" y="650" width="90" height="14" />
+          <dc:Bounds x="2880.0" y="650.0" width="117.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="ClosureMessageInvalid_di" bpmnElement="ClosureMessageInvalid">
         <dc:Bounds x="2433" y="552" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2400" y="600" width="102" height="14" />
+          <dc:Bounds x="2463.0" y="600.0" width="130.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="AutoAnswerStale_di" bpmnElement="AutoAnswerStale">
         <dc:Bounds x="2381" y="552" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2354" y="600" width="91" height="14" />
+          <dc:Bounds x="2270.0" y="600.0" width="117.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="QuestionStale_di" bpmnElement="QuestionStale">
         <dc:Bounds x="2532" y="332" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2505" y="380" width="91" height="14" />
+          <dc:Bounds x="2562.0" y="380.0" width="117.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_Merge_Validate_di" bpmnElement="Flow_Merge_Validate">
@@ -371,7 +371,7 @@ FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklär
         <di:waypoint x="2250" y="300" />
         <di:waypoint x="2346" y="300" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2211" y="353" width="126" height="14" />
+          <dc:Bounds x="2216.75" y="200.0" width="162.5" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="F10_di" bpmnElement="F10">
@@ -380,7 +380,7 @@ FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklär
         <di:waypoint x="2190" y="520" />
         <di:waypoint x="2346" y="520" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2185" y="506" width="130" height="27" />
+          <dc:Bounds x="2202.0" y="412.0" width="156.0" height="36" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="F_AnalysisStale_Current_di" bpmnElement="F_AnalysisStale_Current">
@@ -408,7 +408,7 @@ FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklär
         <di:waypoint x="2868" y="638" />
         <di:waypoint x="2868" y="855" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2800" y="670" width="147" height="27" />
+          <dc:Bounds x="2900" y="770" width="210" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="A_AnswerClose_di" bpmnElement="A_AnswerClose">
@@ -429,7 +429,7 @@ FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklär
         <di:waypoint x="646" y="340" />
         <di:waypoint x="706" y="340" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="657" y="285" width="38" height="14" />
+          <dc:Bounds x="633.5" y="410.0" width="85" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="A04_di" bpmnElement="A04">
@@ -437,7 +437,7 @@ FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklär
         <di:waypoint x="621" y="880" />
         <di:waypoint x="1764" y="880" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1611.000000000003" y="773" width="104" height="14" />
+          <dc:Bounds x="1140.5" y="838.0" width="104.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_Merge_AWait_di" bpmnElement="Flow_Merge_AWait">
@@ -473,7 +473,7 @@ FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklär
         <di:waypoint x="2750" y="180" />
         <di:waypoint x="2750" y="275" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2208" y="83" width="176" height="14" />
+          <dc:Bounds x="2360.0" y="132.0" width="220" height="36" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="A_RouteReview_di" bpmnElement="A_RouteReview">
@@ -481,7 +481,7 @@ FALL-11 Übergang 31: Erfolgreiche direkte Wiedervorlage entzieht diesem Abklär
         <di:waypoint x="2121" y="730" />
         <di:waypoint x="2426" y="730" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2228" y="675" width="91" height="14" />
+          <dc:Bounds x="2133.0" y="532.5" width="123.5" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="A_InvalidReview_di" bpmnElement="A_InvalidReview">

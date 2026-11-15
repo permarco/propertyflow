@@ -1,5 +1,5 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_PropertyFlow_TenantReply_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+<?xml version='1.0' encoding='utf-8'?>
+<bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_PropertyFlow_TenantReply_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
   <bpmn:message id="Message_ReplyStaffSend" name="Mitarbeiternachricht während Mieterwartephase senden" />
   <bpmn:error id="Error_AnalysisStale" name="Analysegrundlage überholt" errorCode="ANALYSIS_BASIS_STALE">
     <bpmn:documentation>Fachlicher Platzhalter für Zeilen 1 und 3: Die Auswertung enthält neue relevante gespeicherte Mieternachrichten noch nicht. In Validate führt der Konflikt zur aktuellen Analysegrundlage; in RValidate zur aktuellen Antwortauswertung. Kein technischer Jobfehler und kein Analysefehler. Meldung durch den späteren Prüfdienst, nicht automatisch durch blossen Nachrichteneingang. Keine zweite unabhängige Verarbeitung; aktuelle Mitarbeiterentscheidung und Abschluss schützen. Keine Ausführungsimplementierung.</bpmn:documentation>
@@ -162,7 +162,7 @@ Mitarbeiteraktionen bleiben möglich; separate Wiedervorlage gilt weiter.</bpmn:
       <bpmndi:BPMNShape id="RStart_di" bpmnElement="RStart" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
         <dc:Bounds x="180" y="722" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="149" y="770" width="99" height="14" />
+          <dc:Bounds x="129.75" y="770.0" width="136.5" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="RStatus_di" bpmnElement="RStatus" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
@@ -171,7 +171,7 @@ Mitarbeiteraktionen bleiben möglich; separate Wiedervorlage gilt weiter.</bpmn:
       <bpmndi:BPMNShape id="RMessage_di" bpmnElement="RMessage" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
         <dc:Bounds x="626" y="722" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="576" y="770" width="137" height="14" />
+          <dc:Bounds x="562.75" y="803.0" width="162.5" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="REvaluate_di" bpmnElement="REvaluate" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
@@ -186,31 +186,31 @@ Mitarbeiteraktionen bleiben möglich; separate Wiedervorlage gilt weiter.</bpmn:
       <bpmndi:BPMNShape id="RResult_di" bpmnElement="RResult" isMarkerVisible="true" bioc:stroke="#334155" bioc:fill="#f1f5f9">
         <dc:Bounds x="1462" y="715" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1365.5" y="692" width="109" height="14" />
+          <dc:Bounds x="1499.0" y="777.0" width="136.5" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="RQuestion_di" bpmnElement="RQuestion" bioc:stroke="#14532d" bioc:fill="#dcfce7">
         <dc:Bounds x="1802" y="572" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1758" y="548" width="124" height="14" />
+          <dc:Bounds x="1742.0" y="620.0" width="156.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="RClose_di" bpmnElement="RClose" bioc:stroke="#14532d" bioc:fill="#dcfce7">
         <dc:Bounds x="1802" y="452" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1777" y="500" width="86" height="27" />
+          <dc:Bounds x="1771.25" y="500.0" width="97.5" height="36" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="RReview_di" bpmnElement="RReview" bioc:stroke="#14532d" bioc:fill="#dcfce7">
         <dc:Bounds x="1802" y="882" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1775" y="930" width="90" height="14" />
+          <dc:Bounds x="1761.5" y="930.0" width="117.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="RWait_di" bpmnElement="RWait" bioc:stroke="#14532d" bioc:fill="#dcfce7">
         <dc:Bounds x="1802" y="722" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1786" y="770" width="68" height="14" />
+          <dc:Bounds x="1777.5" y="770.0" width="85" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="RCurrentAnalysis_di" bpmnElement="RCurrentAnalysis" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
@@ -222,7 +222,7 @@ Mitarbeiteraktionen bleiben möglich; separate Wiedervorlage gilt weiter.</bpmn:
       <bpmndi:BPMNShape id="RStaffMessageStart_di" bpmnElement="RStaffMessageStart" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
         <dc:Bounds x="220" y="1067" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="172" y="1115" width="133" height="14" />
+          <dc:Bounds x="250.0" y="1148.0" width="156.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="RStaffMessagePublish_di" bpmnElement="RStaffMessagePublish" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
@@ -231,7 +231,7 @@ Mitarbeiteraktionen bleiben möglich; separate Wiedervorlage gilt weiter.</bpmn:
       <bpmndi:BPMNShape id="RStaffMessageEnd_di" bpmnElement="RStaffMessageEnd" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
         <dc:Bounds x="666" y="1067" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="621" y="1115" width="126" height="14" />
+          <dc:Bounds x="522.5" y="1148.0" width="149.5" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="RSM01_di" bpmnElement="RSM01" bioc:stroke="#4c1d95">
@@ -245,7 +245,7 @@ Mitarbeiteraktionen bleiben möglich; separate Wiedervorlage gilt weiter.</bpmn:
       <bpmndi:BPMNShape id="RAnalysisStale_di" bpmnElement="RAnalysisStale" bioc:stroke="#9a3412" bioc:fill="#fff7ed">
         <dc:Bounds x="1127" y="772" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1098" y="820" width="95" height="27" />
+          <dc:Bounds x="1157.0" y="820.0" width="110.5" height="36" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_Merge_RValidate_di" bpmnElement="Flow_Merge_RValidate">
@@ -277,7 +277,7 @@ Mitarbeiteraktionen bleiben möglich; separate Wiedervorlage gilt weiter.</bpmn:
         <di:waypoint x="1487" y="470" />
         <di:waypoint x="1802" y="470" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1529" y="456" width="122" height="27" />
+          <dc:Bounds x="1569.75" y="422.0" width="149.5" height="36" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="R08_di" bpmnElement="R08">
@@ -285,7 +285,7 @@ Mitarbeiteraktionen bleiben möglich; separate Wiedervorlage gilt weiter.</bpmn:
         <di:waypoint x="1487" y="900" />
         <di:waypoint x="1802" y="900" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1502" y="886" width="156" height="27" />
+          <dc:Bounds x="1534.5" y="852.0" width="220" height="36" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="R09_di" bpmnElement="R09">
@@ -293,14 +293,14 @@ Mitarbeiteraktionen bleiben möglich; separate Wiedervorlage gilt weiter.</bpmn:
         <di:waypoint x="1487" y="590" />
         <di:waypoint x="1802" y="590" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1527" y="573" width="146" height="14" />
+          <dc:Bounds x="1550.25" y="548.0" width="188.5" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="R10_di" bpmnElement="R10">
         <di:waypoint x="1512" y="740" />
         <di:waypoint x="1802" y="740" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1528" y="726" width="124" height="27" />
+          <dc:Bounds x="1575.75" y="692.0" width="162.5" height="36" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="R_Stale_Current_di" bpmnElement="R_Stale_Current" bioc:stroke="#9a3412">

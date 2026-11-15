@@ -1,5 +1,5 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_PropertyFlow_FollowUp_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+<?xml version='1.0' encoding='utf-8'?>
+<bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_PropertyFlow_FollowUp_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
   <bpmn:message id="Message_StaffQuestion" name="Mitarbeiternachricht während Wiedervorlage angefordert" />
   <bpmn:message id="Message_StaffClose" name="Mitarbeiterabschluss bestätigt" />
   <bpmn:message id="Message_FollowUpDelete" name="Wiedervorlage löschen" />
@@ -151,7 +151,7 @@ Atomare Koordination vor Ausführung implementieren (FALL-11 / FALL-AK-27).</bpm
       <bpmndi:BPMNShape id="WChange_di" bpmnElement="WChange" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
         <dc:Bounds x="1002" y="242" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="958" y="290" width="125" height="14" />
+          <dc:Bounds x="942.0" y="290.0" width="156.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="WUpdate_di" bpmnElement="WUpdate" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
@@ -160,7 +160,7 @@ Atomare Koordination vor Ausführung implementieren (FALL-11 / FALL-AK-27).</bpm
       <bpmndi:BPMNShape id="WStart_di" bpmnElement="WStart" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
         <dc:Bounds x="190" y="532" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="152" y="580" width="112" height="14" />
+          <dc:Bounds x="139.75" y="580.0" width="136.5" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="WSave_di" bpmnElement="WSave" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
@@ -172,19 +172,19 @@ Atomare Koordination vor Ausführung implementieren (FALL-11 / FALL-AK-27).</bpm
       <bpmndi:BPMNShape id="WEvents_di" bpmnElement="WEvents" bioc:stroke="#334155" bioc:fill="#f1f5f9">
         <dc:Bounds x="756" y="525" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="716" y="585" width="129" height="14" />
+          <dc:Bounds x="696.5" y="587.0" width="169.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="WTimer_di" bpmnElement="WTimer" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
         <dc:Bounds x="1002" y="402" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="948" y="450" width="145" height="27" />
+          <dc:Bounds x="925.75" y="450.0" width="188.5" height="36" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="WClose_di" bpmnElement="WClose" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
         <dc:Bounds x="1002" y="632" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="973" y="680" width="95" height="14" />
+          <dc:Bounds x="958.25" y="680.0" width="123.5" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="WClearTimer_di" bpmnElement="WClearTimer" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
@@ -196,19 +196,19 @@ Atomare Koordination vor Ausführung implementieren (FALL-11 / FALL-AK-27).</bpm
       <bpmndi:BPMNShape id="WCloseEnd_di" bpmnElement="WCloseEnd" bioc:stroke="#14532d" bioc:fill="#dcfce7">
         <dc:Bounds x="1482" y="632" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1436" y="680" width="128" height="14" />
+          <dc:Bounds x="1422.0" y="680.0" width="156.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="WReviewEnd_di" bpmnElement="WReviewEnd" bioc:stroke="#14532d" bioc:fill="#dcfce7">
         <dc:Bounds x="1482" y="402" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1446" y="450" width="109" height="14" />
+          <dc:Bounds x="1428.5" y="450.0" width="143.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="WDelete_di" bpmnElement="WDelete" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
         <dc:Bounds x="1002" y="812" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="959" y="860" width="122" height="14" />
+          <dc:Bounds x="942.0" y="860.0" width="156.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="WDeleteTask_di" bpmnElement="WDeleteTask" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
@@ -217,7 +217,7 @@ Atomare Koordination vor Ausführung implementieren (FALL-11 / FALL-AK-27).</bpm
       <bpmndi:BPMNShape id="WProgressEnd_di" bpmnElement="WProgressEnd" bioc:stroke="#14532d" bioc:fill="#dcfce7">
         <dc:Bounds x="1492" y="812" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1455" y="860" width="111" height="14" />
+          <dc:Bounds x="1438.5" y="860.0" width="143.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="WQuestionSide_di" bpmnElement="WQuestionSide" isExpanded="true" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
@@ -226,7 +226,7 @@ Atomare Koordination vor Ausführung implementieren (FALL-11 / FALL-AK-27).</bpm
       <bpmndi:BPMNShape id="WQuestionStart_di" bpmnElement="WQuestionStart" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
         <dc:Bounds x="245" y="867" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="197" y="915" width="133" height="14" />
+          <dc:Bounds x="275.0" y="948.0" width="156.0" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="WPublish_di" bpmnElement="WPublish" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
@@ -235,7 +235,7 @@ Atomare Koordination vor Ausführung implementieren (FALL-11 / FALL-AK-27).</bpm
       <bpmndi:BPMNShape id="WQuestionEnd_di" bpmnElement="WQuestionEnd" bioc:stroke="#14532d" bioc:fill="#dcfce7">
         <dc:Bounds x="691" y="867" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="657" y="915" width="105" height="14" />
+          <dc:Bounds x="647.25" y="915.0" width="123.5" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="W20_di" bpmnElement="W20">
@@ -317,7 +317,7 @@ Atomare Koordination vor Ausführung implementieren (FALL-11 / FALL-AK-27).</bpm
         <di:waypoint x="1482" y="650" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="WRule_di" bpmnElement="WRule" bioc:stroke="#475569" bioc:fill="#ffffff">
-        <dc:Bounds x="190" y="2020" width="500" height="144" />
+        <dc:Bounds x="190.0" y="1120.0" width="500" height="144" />
       </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
