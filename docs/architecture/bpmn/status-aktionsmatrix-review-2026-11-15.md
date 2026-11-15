@@ -26,6 +26,9 @@ Geplante Prüffälle: FALL-AK-37; technische Übergabe und Laufzeitnachweis offe
 Terminlöschung führt auch bei offenen Rückfragen zu In Bearbeitung (Übergang 17).
 Geplante Prüffälle: FALL-AK-38; Laufzeitnachweis offen. Weitere markierte
 Mitarbeiterübergänge sowie technische Synchronisierung bleiben offen.
+B02/B03: Die Mitarbeiterrückfrage während externer Wartephase ist in FALL-12
+und Mitarbeiterprozess 0.28 geklärt: Status und offene Aufgabe bleiben bestehen,
+auch mit Antwortbedarf. SMessageSide ist erweitert; FALL-AK-39 bleibt ein Prüfplan.
 B01, B04/B05 und B07–B10 bleiben offen. Die folgenden Befunde und Zählwerte dokumentieren
 den Stand der Erstprüfung mit fünf Modellen; nun existiert zusätzlich das sechste
 Versandmodell mit Jobtypen und Routingbedingungen. B10 bleibt für die

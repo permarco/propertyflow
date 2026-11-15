@@ -185,11 +185,11 @@ Mail-Task und keine zweite Abschlussbenachrichtigung. Technische Fehler folgen
 Job-Retries/Incidents; unzulässiger Nachrichteninhalt führt vor Veröffentlichung
 zur Mitarbeiterprüfung. Aktuelle Grundlage und Wiederholungsschutz bleiben Pflicht.
 
-## Mitarbeiternachricht während Prüfung (Stand 0.14)
+## Mitarbeiternachricht während Prüfung oder externer Wartephase (Stand 0.28)
 
 `Message_StaffReviewSend` startet `SMessageSide` nicht unterbrechend in der
 aktuellen Mitarbeiterinstanz. Nur autorisierte Aufträge zur aktuellen offenen
-`SReview`-Aufgabe sind zulässig. Die tatsächliche Engine-Korrelation und
+`SReview`- oder `SExternalWait`-Aufgabe sind zulässig. Die tatsächliche Engine-Korrelation und
 Rückmeldung an den sendenden HTTP-Aufruf sind noch festzulegen; dies ändert
 keinen öffentlichen HTTP-Vertrag. Keine zusätzliche externe Mieter-Subscription.
 
@@ -197,7 +197,7 @@ Die Auftragsreferenz bleibt pro Nebenaktion lokal. Der Worker lädt den bestäti
 Text und Antwortbedarf über den zuständigen Dienst, prüft erneut den aktuellen
 Aufgabenstand und speichert Nachricht/Versandauftrag idempotent. Er schreibt keine
 Hauptpfadvariablen `outcome` oder `decisionRef` und beendet keine User Task.
-Parallele Sendungen überschreiben einander nicht. Beendete Prüfaufgabe oder
+Parallele Sendungen überschreiben einander nicht. Beendete Prüf- oder externe Warteaufgabe oder
 Abschluss verhindert neue Veröffentlichung aus einem alten Auftrag; schon
 veröffentlichte Nachricht bleibt bestehen. Laufende Nebenaktionen müssen bei
 Fortsetzung ohne alte fachliche Wirkung aufgelöst werden; ein Incident kann die
@@ -456,3 +456,11 @@ FALL-11 zur Mitarbeiterprüfung. Bei gültiger Terminlöschung führt `WDeleteTa
 offenen Fragen. Kein automatischer Rücksprung in den alten Mieterwartepfad.
 Geplante Prüfungen: FALL-AK-38. Die Modelle bleiben nicht ausführbare Fachentwürfe;
 zuverlässige Übergabe und Konfliktbehandlung sind noch zur Laufzeit nachzuweisen.
+
+## Rückfrage während externer Wartephase (0.28)
+
+Der vorhandene `SMessageSide`-Eingang ist auf die offene `SExternalWait`-Aufgabe
+erweitert. Keine neue Subscription für Mieternachrichten und kein zusätzlicher
+Hauptpfad. Auch mit Antwortbedarf bleiben Status und Aufgabe bestehen.
+Fachliche Quelle: FALL-12; geplante Prüffälle FALL-AK-39. Die bestehenden
+Berechtigungs-, Fallstands-, Idempotenz- und Versandregeln gelten unverändert.

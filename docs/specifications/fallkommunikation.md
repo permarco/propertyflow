@@ -72,7 +72,7 @@ Im Mitarbeiter-BPMN bildet ein nicht unterbrechender Ereignis-Teilprozess
 `SMessageSide` diese Nebenaktion ab. Sein internes Sendeereignis gehört zu einem
 berechtigten Mitarbeiterauftrag, nicht zum öffentlichen Mieternachrichteneingang.
 Weil der Empfang im Mitarbeiterprozess liegt, muss der Dienst ausdrücklich auf
-die aktuelle offene Prüfaufgabe begrenzen: Mitarbeiterberechtigung, Fall,
+die aktuelle offene Prüfaufgabe (oder externe Warteaufgabe nach FALL-12) begrenzen: Mitarbeiterberechtigung, Fall,
 führende Bearbeitung, Kindinstanz und User-Task-Zuordnung sowie den aktuellen
 Fallstand vor Veröffentlichung prüfen. Kein blosser Client-Prozessschlüssel als
 Autorisierung. Text, Absender und Antwortbedarf stammen aus dem bestätigten
@@ -706,3 +706,13 @@ Abklärung kontrolliert ab und eröffnet «Wartet auf Mieterantwort». Eine rein
 Information tut dies nicht. Mitarbeitertext braucht keine automatische Katalogfreigabe.
 Die bereits festgelegten Regeln für Fragen während Mitarbeiterprüfung oder
 Wiedervorlage bleiben bestehen.
+
+### Mitarbeiterrückfrage während externer Wartephase
+
+**Bestätigt am 15.11.2026:** Der nicht unterbrechende Mitarbeiter-Sendeweg gilt
+auch während «Wartet auf externe Rückmeldung». Eine Rückfrage speichert den
+bestätigten Antwortbedarf, beendet aber weder Status noch Warteaufgabe.
+Die verbindlichen Status-, Fortsetzungs- und Konfliktregeln stehen zentral in
+[FALL-12](fallverwaltung.md#fall-12-warten-auf-externe-rückmeldung);
+geplante Prüffälle: FALL-AK-39. `SMessageSide` prüft dafür die aktuelle
+`SExternalWait`-Zuordnung statt einer offenen `SReview`-Aufgabe.

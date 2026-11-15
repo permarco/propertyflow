@@ -230,7 +230,7 @@ Eine veröffentlichte Rückfrage mit ausstehender Mieterantwort ist fachliches W
 
 Die Zuordnung ist keine feste lineare Reihenfolge. Der Workflow kann Abklärungen und Rückfragen wiederholen. Solche Schleifen behalten die Case-ID bei und öffnen keine neue Fallanlage.
 
-**Mitarbeiter-Rückfragen:** Beim Veröffentlichen einer externen Nachricht mit ausdrücklich gesetztem Mieterantwortbedarf veranlasst Camunda «Wartet auf Mieterantwort», sofern keine Wiedervorlage läuft und kein vorrangiger Prüfbedarf nach FALL-05/FALL-10 «Mitarbeiterprüfung erforderlich» verlangt. Die veröffentlichte Rückfrage bleibt auch in diesen Fällen als offen nachvollziehbar. Der Wartestatus wird nicht allein durch die Auswahl im Browser oder die KI-Formulierung gesetzt.
+**Mitarbeiter-Rückfragen:** Beim Veröffentlichen einer externen Nachricht mit ausdrücklich gesetztem Mieterantwortbedarf veranlasst Camunda «Wartet auf Mieterantwort», sofern keine Wiedervorlage oder externe Wartephase läuft und kein vorrangiger Prüfbedarf nach FALL-05/FALL-10 «Mitarbeiterprüfung erforderlich» verlangt. Die veröffentlichte Rückfrage bleibt auch in diesen Fällen als offen nachvollziehbar. Der Wartestatus wird nicht allein durch die Auswahl im Browser oder die KI-Formulierung gesetzt.
 
 **Vereinbart am 13.11.2026:** Veröffentlicht ein Mitarbeiter während einer laufenden Wiedervorlage eine Rückfrage, bleibt der Fall auf «Wartet auf Wiedervorlage» und der Termin gilt weiter. Geht die Mieterantwort vor dem Termin ein, hebt Camunda die Wiedervorlage nach Speicherung der Antwort auf und veranlasst sofort «Mitarbeiterprüfung erforderlich». Ohne vorherige Mieternachricht löst der wirksame Termin die Mitarbeiterprüfung aus. [FALL-11](#fall-11-wiedervorlage) · [UC-010](../use_cases/UC-010-externe-fallnachricht-veroeffentlichen.md)
 
@@ -938,8 +938,29 @@ separat erfassbar und kein Pflichtfeld. Es beendet die Wartephase nicht.
 | Mitarbeiter setzt eine Wiedervorlage | «Wartet auf Wiedervorlage»; bestehende Terminregeln nach FALL-11. |
 | Mitarbeiter bestätigt Abschluss | «Abgeschlossen» nach FALL-07/FALL-10; ohne Nachrichtenpflicht. |
 | Neuer zwingender Prüfbedarf | «Mitarbeiterprüfung erforderlich»; bewusste Mitarbeiterentscheidung nötig. |
+| Mitarbeiter veröffentlicht Rückfrage mit Mieterantwortbedarf | Nachricht und offenen Antwortbedarf speichern; externe Wartephase und dieselbe Aufgabe bleiben bestehen. |
 | Externe Rückmeldung oder internes Memo allein | Keine Statusänderung; Mitarbeiter entscheidet über die Fortsetzung. |
 | Neue Mieternachricht ohne neuen zwingenden Prüfbedarf | Nachricht verarbeiten; externe Wartephase bleibt bestehen. |
+
+**Mitarbeiterrückfrage als Nebenaktion:** Auch mit «Mieterantwort erforderlich»
+bleibt der Status «Wartet auf externe Rückmeldung». Nachricht und Antwortbedarf
+werden gespeichert, ohne die offene Warteaufgabe zu beenden oder eine neue Aufgabe
+anzulegen. Reine Informationsnachrichten bleiben ebenfalls Nebenaktionen.
+Eine eingehende Mieterantwort beendet diese Wartephase nicht automatisch;
+neuer zwingender Prüfbedarf führt weiterhin zur Mitarbeiterprüfung.
+
+Will der Mitarbeiter stattdessen auf den Mieter warten, wählt er zuerst
+«Bearbeitung fortsetzen» und veröffentlicht anschliessend aus «In Bearbeitung»
+die Rückfrage mit Antwortbedarf. Es gibt keinen automatischen Wechsel allein
+aufgrund einer bereits offenen Rückfrage.
+
+Vor Veröffentlichung prüft der Dienst Berechtigung, führenden Durchlauf,
+Kindinstanz, aktuelle Warteaufgabe und bestätigten Fallstand. Ein inzwischen
+überholter, noch unveröffentlichter Auftrag wird ohne Wirkung abgelehnt.
+Eine identische Wiederholung einer bereits gespeicherten Nachricht erzeugt
+weder ein Duplikat noch eine zweite Mailpflicht. Nachricht und Mailpflicht
+werden dauerhaft gemeinsam gesichert; Camunda beauftragt den Mail-Worker im
+bestehenden Versandprozess. Technische Fehler folgen Retry/Incident.
 
 Externe Kommunikation erfolgt weiterhin ausserhalb von PropertyFlow. Es gibt
 keinen automatischen Handwerker-Eingang. Mieternachrichten werden über den
@@ -1287,3 +1308,19 @@ Geplante Prüffälle; noch kein ausgeführter Laufzeitnachweis:
 - Auswertung vor Terminsetzung starten und erst danach beenden: keine alte
   Publikation, kein Statuswechsel und kein Abschluss. Ereignisse zwischen Commit
   und Ablösung des Reply-Calls dürfen weder verloren gehen noch den Termin erneuern.
+
+### FALL-AK-39: Mitarbeiterrückfrage während externer Wartephase
+
+Geplante Prüffälle; noch kein ausgeführter Laufzeitnachweis:
+
+- Rückfrage mit Antwortbedarf veröffentlichen: Nachricht und Antwortbedarf sind
+  gespeichert; Status, Schlüssel und offene externe Warteaufgabe bleiben erhalten.
+- Reine Information senden: kein neuer Antwortbedarf und keine Statusänderung.
+- Mieter antwortet ohne neuen zwingenden Prüfbedarf: externe Wartephase bleibt.
+  Neuer zwingender Prüfbedarf führt über den bestehenden Weg zur Mitarbeiterprüfung.
+- Bewusst «Bearbeitung fortsetzen», danach Rückfrage veröffentlichen:
+  «In Bearbeitung» und anschliessend «Wartet auf Mieterantwort», sofern kein
+  vorrangiger Prüfbedarf besteht. Alte offene Fragen allein lösen keinen Wechsel aus.
+- Konkurrierende Fortsetzung oder Abschluss: alten unveröffentlichten Auftrag
+  ablehnen; eine zuvor gespeicherte Nachricht erhalten. Wiederholung ohne Duplikat
+  oder zusätzliche Mailpflicht. Kein Abschluss der Warteaufgabe durch Senden.

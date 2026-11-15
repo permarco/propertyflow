@@ -710,3 +710,15 @@ FALL-11 zur Mitarbeiterprüfung. Bei gültiger Terminlöschung führt `WDeleteTa
 offenen Fragen. Kein automatischer Rücksprung in den alten Mieterwartepfad.
 Geplante Prüfungen: FALL-AK-38. Die Modelle bleiben nicht ausführbare Fachentwürfe;
 zuverlässige Übergabe und Konfliktbehandlung sind noch zur Laufzeit nachzuweisen.
+
+## Rückfrage während externer Wartephase (Mitarbeiterprozess 0.28)
+
+In `mitarbeiterbearbeitung.bpmn` heisst die bestehende Nebenaktion jetzt
+**«Nachricht senden – Prüfung oder externe Wartephase bleibt offen»**.
+`SMessageSide` nimmt auch Aufträge zur aktuellen `SExternalWait`-Aufgabe entgegen.
+Senden mit Antwortbedarf beendet weder die Warteaufgabe noch ihren Status.
+Für einen Wechsel zum Mieterwartepfad: zuerst «Bearbeitung fortsetzen», danach
+Rückfrage aus «In Bearbeitung» veröffentlichen. Neuer zwingender Prüfbedarf
+verwendet weiterhin `SExternalReview`. Fachregeln: FALL-12, Prüfplan FALL-AK-39.
+Kein neuer Statusübergang durch die Nebenaktion; das Zustandsdiagramm bleibt
+unverändert. Fachentwurf, noch kein ausgeführter Laufzeitnachweis.
