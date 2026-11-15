@@ -93,6 +93,8 @@ Der gespeicherte fachliche Abschluss löst auch dann eine Abschlussmail aus, wen
 
 Dies gilt gleichermassen für einen Mitarbeiterabschluss und für die vereinbarten Systemabschlüsse nach FALL-07. Ein Abschluss wegen mieterseitiger Eigenverantwortung darf in der Information nicht als vom System bestätigte Reparatur dargestellt werden. Die Abschlussmail bestätigt den fachlichen Abschluss; der zugrunde liegende Fall bleibt lesbar.
 
+**Präzisiert am 15.11.2026:** Automatische fachliche Antworten vor dem Abschluss folgen [KOM-06](fallkommunikation.md#kom-06-automatische-antworten-vor-fallabschluss). Sie behaupten keinen bereits erfolgten Abschluss. Bleibt nach ihrer Veröffentlichung der Abschluss aus, bleibt ihre eigene Benachrichtigungspflicht bestehen; ein Abschlussmailauftrag entsteht erst nach erfolgreicher fachlicher Abschlussspeicherung. Antwortveröffentlichung und Abschluss bleiben getrennte Auslöser mit jeweils einmaliger logischer Wirkung. Eine Zusammenlegung ihrer E-Mails ist nicht vereinbart.
+
 Ein gültiger Link öffnet den abgeschlossenen Fall lesend. Der Abschluss widerruft den Token nicht. Die Abschlussmail behauptet deshalb weder Schreibrechte noch einen erneuten Prozessstart. Da mit dem Abschluss noch offener Mieterantwortbedarf gemäss KOM-04 endet, fordert die Abschlussmail keine Antwort auf bisherige Rückfragen an.
 
 Versandaufträge und Fehlerdaten unterliegen den Token- und Datenschutzregeln aus ZUG-06. Der Token wird nur durch die berechtigte Versandfunktion entschlüsselt. Er gehört weder in normale Protokolle noch in Camunda-Variablen oder KI-Kontexte. Interne Memos und deren Metadaten dürfen keine Benachrichtigung beeinflussen oder darin erscheinen.

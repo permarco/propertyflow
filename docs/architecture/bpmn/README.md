@@ -1,7 +1,7 @@
 # PropertyFlow-Fallprozess
 
 [propertyflow-fallprozess-entwurf.bpmn](propertyflow-fallprozess-entwurf.bpmn)
-ist der fachliche BPMN-Entwurf zur gemeinsamen Besprechung, Stand 15.11.2026.
+ist der fachliche BPMN-Entwurf 0.7 zur gemeinsamen Besprechung, Stand 15.11.2026.
 Er enthält BPMN-Diagrammkoordinaten und kann im Camunda Modeler geöffnet werden.
 
 ## Ansichten
@@ -102,6 +102,53 @@ Steuerinformationen werden dagegen ausdrücklich im gemeinsamen
 `ActiveCase`-Bereich bereitgestellt. Ein unversioniertes «neue Nachricht»-Flag
 genügt nicht: Ein alter Eingang darf keine später neu gesetzte Wiedervorlage
 aufheben und keine Auswertung zweimal auslösen.
+
+### Rückweg bei neuer Nachricht während automatischer Analyse
+
+**Bestätigt am 15.11.2026 – Zeile 1:** Die Regel steht in
+[KOM-03](../../specifications/fallkommunikation.md#neue-mieternachricht-während-automatischer-analyse),
+der spätere Prüfnachweis in KOM-AK-22. Neue Nachrichten während Analyse oder
+Empfehlung machen eine sie noch nicht berücksichtigende Grundlage unzulässig.
+Der Status bleibt zunächst «In Abklärung»; ältere Ergebnisse lösen keine Aktion aus.
+
+An `Validate` liegt das unterbrechende Fehler-Randereignis `AnalysisStale`.
+Der fachliche Platzhalter `ANALYSIS_BASIS_STALE` führt zu `CurrentAnalysis`:
+**«Aktuelle Auswertung übernehmen / abwarten»**. Vorhandenes aktuelles Ergebnis
+nutzen, laufende zentrale Auswertung abwarten oder eine fehlende über dieselbe
+zentrale Verarbeitung veranlassen. Danach zurück zu `Validate`, niemals direkt
+zur Veröffentlichung. Alle relevanten gespeicherten Nachrichten müssen enthalten
+sein; weitere Eingänge können den Stand erneut überholen.
+
+Der Rückweg erzeugt keine zweite Nachrichtenkorrelation und keinen unabhängigen
+LLM-Entscheidungsweg. Mitarbeiterentscheidungen, aktueller Pflichtprüfbedarf und
+Abschluss bleiben geschützt. Ein tatsächlicher Analysefehler ist kein
+`ANALYSIS_BASIS_STALE`. Worker, Warteverfahren und Variablenvertrag sind noch
+nicht implementiert. Zeile 2 ergänzt denselben Rückweg wie nachfolgend beschrieben.
+
+### Rückwege vor automatischer Veröffentlichung
+
+**Bestätigt am 15.11.2026 – Zeile 2:**
+[KOM-03](../../specifications/fallkommunikation.md#neue-mieternachricht-vor-automatischer-veröffentlichung)
+und KOM-AK-23 regeln die letzte Prüfung gemeinsam mit der Veröffentlichung.
+An `Question` und `AutoAnswer` liegen die unterbrechenden Fehler-Randereignisse
+`QuestionStale` und `AutoAnswerStale`. Der fachliche Platzhalter
+`PUBLICATION_BASIS_STALE` führt jeweils zu `CurrentAnalysis` und danach erneut
+zu `Validate`. Die normale Fortsetzung zu Antwortwarten beziehungsweise Abschluss
+wird bei dieser unterdrückten Veröffentlichung nicht genommen.
+
+Dieser Rückweg behandelt eine neue, bereits gespeicherte Mieternachricht, die
+die Veröffentlichungsgrundlage überholt: keine neue Nachricht, kein neuer Antwortbedarf,
+kein zugehöriger Mailauftrag. Vorhandene Daten bleiben bestehen. Die gemeinsame
+Prüfung behält den bisherigen Status und berücksichtigt alle bisherigen Rückfragen;
+vollständige Beantwortung darf nicht durch neue Fragen umgangen werden.
+Eine inzwischen getroffene Mitarbeiterentscheidung bleibt vorrangig.
+
+Ist dagegen die Veröffentlichung zuerst gespeichert, bleibt sie erhalten;
+der spätere Eingang wird gegen den aktuellen Verlauf ausgewertet. Kein rückwirkender
+Fehlerpfad, kein Löschen und keine doppelte Veröffentlichung beim Retry.
+Technische Speicherfehler und bereits erfolgreiche Wiederholungen sind von diesem
+fachlichen Konflikt getrennt. Die Transaktions- und Versionsbindung ist vor
+Ausführung auszuarbeiten. Der Entwurf enthält keine Backend-Implementierung.
 
 ### Start und Abschluss des Empfangsbereichs
 
@@ -230,9 +277,60 @@ Belegstellen und gegebenenfalls die gültige Regelversion bleiben nachvollziehba
 Die inhaltliche Erkennung benötigt eine Evaluation gemäss FALL-AK-23 bis
 FALL-AK-26; Struktur- und Schema-Prüfung allein belegen ihre Richtigkeit nicht.
 
-Die Regeln geben noch keinen konkreten Zuständigkeitskatalog frei. Ebenso bleiben
-die Veröffentlichung automatischer Antworttexte und der Fehlerfall zwischen
-gespeicherter Antwort und gescheitertem Abschluss separat auszuarbeiten.
+Die Regeln geben noch keinen konkreten Zuständigkeitskatalog frei. Die fachlichen
+Regeln für Antworttexte und einen ausgebliebenen Abschluss sind in KOM-06
+festgelegt und nachfolgend im Modell eingeordnet.
+
+## Automatische Antworten vor Fallabschluss
+
+**Bestätigt am 15.11.2026:**
+[KOM-06](../../specifications/fallkommunikation.md#kom-06-automatische-antworten-vor-fallabschluss)
+enthält die vollständigen Texte und Veröffentlichungsbedingungen:
+
+- **AT-001:** Behebung des ganzen Anliegens laut gespeicherter Mieterrückmeldung,
+  ohne weiteren Hilfebedarf. Der Text behauptet keine eigene Kontrolle oder Reparatur.
+- **AT-002:** Kein Bearbeitungsbedarf nach einer passenden freigegebenen Fachregel.
+  Das Muster benötigt den zur konkreten Regelversion freigegebenen Erklärungstext.
+  Ohne diesen Text oder die konkrete Regel bleibt diese Antwortart gesperrt.
+
+`Recommend` und `NRecommend` empfehlen Antwortart und Belege. `Validate` und
+`RValidate` prüfen zusätzlich zum Abschlussgrund die passende Textfreigabe.
+`AutoAnswer` heisst jetzt **«Antwortvorlage prüfen und veröffentlichen»** und
+prüft unmittelbar vor Speicherung erneut Status, aktuelle Nachrichten,
+Prozessfreigabe, Prüfgründe und Textfassung. Veröffentlicht wird ausschliesslich
+die hinterlegte Vorlage, ohne freie LLM-Ergänzungen und unter Wahrung von KOM-02.
+Die Systemantwort setzt keinen neuen Antwortbedarf und hebt bestehende Fragen
+nicht vorzeitig auf. Fehlende geeignete Textfreigabe benötigt Mitarbeiterprüfung;
+überholte oder doppelte Ergebnisse allein erzeugen weiterhin keine neue Aufgabe.
+
+Der Ablauf bleibt **Antwort veröffentlichen → Abschluss erneut prüfen und
+speichern → Abschlussbenachrichtigung**. Ein Text vor der Abschlussspeicherung
+darf weder «Ihr Fall ist abgeschlossen» behaupten noch den Abschluss zusagen.
+Die vollständigen Antwortvorlagen stehen zusätzlich in der Dokumentation von
+`AutoAnswer`; die sichtbaren Prüfhinweise erläutern die Beschränkung nach KOM-06.
+
+Ist die Antwort bereits gespeichert, aber `Close` scheitert oder erkennt eine
+inzwischen unzulässige Grundlage, bleibt sie einmalig im Verlauf. Ohne erfolgreichen
+Abschluss bleiben Fall und noch offener Antwortbedarf aktiv; der normale Weg zu
+`ActiveEnd` und `MailOrder` wird nicht als erfolgreich durchlaufen. Ein Retry
+veröffentlicht keine zweite Antwort und prüft die aktuellen Abschlussbedingungen
+erneut. Scheitert bereits `AutoAnswer`, darf der automatische Weg nicht ohne
+erfolgreiche Veröffentlichung zu `Close` fortgesetzt werden. Technische Fehler
+allein erzeugen keine neue Mitarbeiterprüfung. Bereits erfolgreich gespeicherte
+identische Abschlüsse bleiben idempotent erfolgreich.
+
+`STAFF_CLOSURE_STALE` bleibt der gesonderte Konfliktpfad für bestätigte
+Mitarbeiterabschlüsse. Es wird kein pauschaler neuer Fehlerpfad für veraltete
+automatische Ergebnisse eingeführt. Die technische Koordination nach einem
+unterdrückten Ergebnis und die Wiederholungsbedingungen sind vor Ausführung
+noch zu konkretisieren. Die fachlichen Folgen sind jetzt festgelegt.
+
+`MailOrder` bestätigt erst den gespeicherten Abschluss. Die Veröffentlichung
+der Antwort besitzt ihre eigene Benachrichtigungspflicht nach BEN-01; sie fällt
+bei ausbleibendem Abschluss nicht weg. Eine Zusammenlegung mit der Abschlussmail
+ist nicht vereinbart. KOM-AK-18 bis KOM-AK-21 beschreiben die späteren Tests zu
+Vorlagen, Statusschutz, konkurrierenden Änderungen und Wiederholungen. Sie sind
+kein Nachweis bereits ausgeführter Backend- oder Camunda-Laufzeittests.
 
 ## Automatische Rückfragen
 
@@ -280,9 +378,10 @@ Fortsetzung nach verworfenen, fehlerhaften oder neu zu bewertenden Ergebnissen
 an jeder aktiven Hauptprozessposition; diese ist durch die sichtbaren
 Hauptausgänge noch nicht vollständig modelliert. Für automatische Rückfragen sind die Fachregeln in
 KOM-05 vereinbart; die beiden Systemabschlussgründe samt Statusgrenzen und
-Nachweisanforderungen sind in FALL-07 bestätigt. Konkreter Zuständigkeitskatalog,
-Veröffentlichungsregeln für automatische Antworten und Fehlerbehandlung zwischen
-Antwort und Abschluss bleiben separat zu präzisieren. Wiedereröffnung und externe
+Nachweisanforderungen sind in FALL-07 bestätigt. KOM-06 legt Antwortvorlagen,
+Veröffentlichungsbedingungen und die fachlichen Folgen eines ausgebliebenen
+Abschlusses fest. Konkrete Zuständigkeitsregeln mit Erklärungstexten sowie die
+technische Fehler- und Wiederholungskoordination bleiben auszuarbeiten. Wiedereröffnung und externe
 Wartephasen gehören noch nicht zum hier gemeinsam besprochenen Prozessabschnitt.
 
 Die BPMN-Datei ist unter `docs` abgelegt und wird nicht als Prozessressource

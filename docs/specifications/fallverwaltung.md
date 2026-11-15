@@ -94,48 +94,50 @@ Der gemeinsame Grundzustand unterscheidet **noch keinen Fall**, **eingegangenen,
 | Abgeschlossen | Fachlich vorgesehener Abschluss nach FALL-07 konsistent übernommen | Berechtigtes Lesen bleibt möglich; die Nachrichtensperre aus KOM-04 gilt. Eine neue Meldung ist ein separater Fall. |
 
 ```mermaid
-%%{init: {"theme": "base", "themeVariables": {"darkMode": true, "background": "#0f172a", "primaryColor": "#1e3a5f", "primaryTextColor": "#f1f5f9", "primaryBorderColor": "#60a5fa", "lineColor": "#94a3b8", "textColor": "#f1f5f9", "edgeLabelBackground": "#1e293b", "clusterBkg": "#1e293b", "clusterBorder": "#64748b"}}}%%
+%%{init: {"flowchart":{"curve":"basis","nodeSpacing":42,"rankSpacing":55},"layout":"elk","theme": "base", "themeVariables": {"darkMode": true, "background": "#0f172a", "primaryColor": "#1e3a5f", "primaryTextColor": "#f1f5f9", "primaryBorderColor": "#60a5fa", "lineColor": "#94a3b8", "textColor": "#f1f5f9", "edgeLabelBackground": "#1e293b", "clusterBkg": "#1e293b", "clusterBorder": "#64748b"}}}%%
 flowchart LR
     E["Eingegangen<br/>Gespeichert, noch nicht in Camunda registriert"]
-
     subgraph Aktiv["Aktiver Fall – in Camunda registriert"]
-        direction TB
+        direction LR
         Start(("Prozessstart"))
         A["In Abklärung"]
-        P["Mitarbeiterprüfung erforderlich"]
+        M["Wartet auf<br/>Mieterantwort"]
+        X["Wartet auf<br/>externe Rückmeldung"]
+        W["Wartet auf<br/>Wiedervorlage"]
         B["In Bearbeitung"]
-        M["Wartet auf Mieterantwort"]
-        X["Wartet auf externe Rückmeldung"]
-        W["Wartet auf Wiedervorlage"]
-
-        Start -->|"Erster Bearbeitungsschritt · Entwurf"| A
-        A -->|"Menschliche Prüfung nötig"| P
-        A -->|"Freigegebene Rückfrage [1]"| M
-        P -->|"Bearbeitung fortsetzen"| B
-        B -->|"Neuer Prüfbedarf, z. B.<br/>Statusmail dauerhaft abgelehnt"| P
-        B -->|"Rückfrage veröffentlicht [1]"| M
-        M -->|"Alle Antworten verarbeitet [2]"| P
-        M -->|"Letzten Antwortbedarf aufgehoben [1]"| B
-        M -->|"Antwortbedarf bleibt offen"| M
-        B -->|"Externe Rückmeldung nötig · Entwurf"| X
-        X -->|"Rückmeldung auswerten · Entwurf"| A
-        P -->|"Termin setzen"| W
-        B -->|"Termin setzen"| W
-        W -->|"Termin ändern oder Rückfrage veröffentlichen"| W
-        W -->|"Termin erreicht oder Mieternachricht gespeichert"| P
-        W -->|"Termin löschen"| B
+        P["Mitarbeiterprüfung<br/>erforderlich"]
     end
-
     Z["Abgeschlossen"]
-    E -->|"Erfolgreich in Camunda registriert"| Start
-    A -->|"Geprüfter Systemabschluss [3]"| Z
-    M -->|"Geprüfter Systemabschluss [3]"| Z
-    P -->|"Mitarbeiter bestätigt Abschluss [3]"| Z
-    B -->|"Zulässiger Abschluss [3]"| Z
-    W -->|"Zulässiger Abschluss [3]"| Z
-    Z -->|"Wiedereröffnung ohne Prüfbedarf"| B
-    Z -->|"Wiedereröffnung mit Prüfbedarf"| P
-
+    E -->|"1"| Start
+    Start -->|"2"| A
+    A -->|"4"| M
+    M -->|"9"| B
+    W -->|"17"| B
+    B -->|"6"| P
+    A -->|"3"| P
+    P -->|"5"| B
+    B -->|"7"| M
+    M -->|"8"| P
+    M -->|"10"| M
+    B -->|"11"| X
+    X -->|"12"| A
+    P -->|"13"| W
+    B -->|"14"| W
+    W -->|"15"| W
+    W -->|"16"| P
+    A -->|"18"| Z
+    M -->|"19"| Z
+    P -->|"20"| Z
+    B -->|"21"| Z
+    W -->|"22"| Z
+    Z -->|"23"| B
+    Z -->|"24"| P
+    %% Unsichtbare Verbindungen richten die Wartezustände aus.
+    A ~~~ X
+    A ~~~ W
+    X ~~~ B
+    M ~~~ B
+    W ~~~ B
     classDef processing fill:#1e3a5f,stroke:#60a5fa,color:#f1f5f9
     classDef waiting fill:#3b2f63,stroke:#a78bfa,color:#f5f3ff
     classDef review fill:#713f12,stroke:#fbbf24,color:#fffbeb
@@ -147,7 +149,36 @@ flowchart LR
     style Aktiv fill:#1e293b,stroke:#64748b,color:#f1f5f9
 ```
 
-Das Diagramm zeigt alle acht Bearbeitungsstatus. «Eingegangen» steht ausserhalb der aktiven Phase am Eingang links, «Abgeschlossen» ausserhalb am Ausgang rechts; die genaue vertikale Platzierung steuert der Mermaid-Renderer. «Prozessstart» ist ein Verbindungspunkt und kein zusätzlicher Bearbeitungsstatus.
+«Eingegangen» und «Abgeschlossen» liegen ausserhalb der aktiven Phase. «Prozessstart» ist ein Verbindungspunkt und kein zusätzlicher Bearbeitungsstatus.
+
+Die Pfeilnummern verweisen auf die Übergänge in der Tabelle. Die Anmerkungen in eckigen Klammern gelten wie angegeben.
+
+| Pfeil | Von | Nach | Übergang |
+|---:|---|---|---|
+| 1 | Eingegangen | Prozessstart | Erfolgreich in Camunda registriert |
+| 2 | Prozessstart | In Abklärung | Erster Bearbeitungsschritt · Entwurf |
+| 3 | In Abklärung | Mitarbeiterprüfung erforderlich | Menschliche Prüfung nötig |
+| 4 | In Abklärung | Wartet auf Mieterantwort | Freigegebene Rückfrage [1] |
+| 5 | Mitarbeiterprüfung erforderlich | In Bearbeitung | Bearbeitung fortsetzen |
+| 6 | In Bearbeitung | Mitarbeiterprüfung erforderlich | Neuer Prüfbedarf, z. B. Statusmail dauerhaft abgelehnt |
+| 7 | In Bearbeitung | Wartet auf Mieterantwort | Rückfrage veröffentlicht [1] |
+| 8 | Wartet auf Mieterantwort | Mitarbeiterprüfung erforderlich | Alle Antworten verarbeitet [2] |
+| 9 | Wartet auf Mieterantwort | In Bearbeitung | Letzten Antwortbedarf aufgehoben [1] |
+| 10 | Wartet auf Mieterantwort | Wartet auf Mieterantwort | Antwortbedarf bleibt offen |
+| 11 | In Bearbeitung | Wartet auf externe Rückmeldung | Externe Rückmeldung nötig · Entwurf |
+| 12 | Wartet auf externe Rückmeldung | In Abklärung | Rückmeldung auswerten · Entwurf |
+| 13 | Mitarbeiterprüfung erforderlich | Wartet auf Wiedervorlage | Termin setzen |
+| 14 | In Bearbeitung | Wartet auf Wiedervorlage | Termin setzen |
+| 15 | Wartet auf Wiedervorlage | Wartet auf Wiedervorlage | Termin ändern oder Rückfrage veröffentlichen |
+| 16 | Wartet auf Wiedervorlage | Mitarbeiterprüfung erforderlich | Termin erreicht oder Mieternachricht gespeichert |
+| 17 | Wartet auf Wiedervorlage | In Bearbeitung | Termin löschen |
+| 18 | In Abklärung | Abgeschlossen | Geprüfter Systemabschluss [3] |
+| 19 | Wartet auf Mieterantwort | Abgeschlossen | Geprüfter Systemabschluss [3] |
+| 20 | Mitarbeiterprüfung erforderlich | Abgeschlossen | Mitarbeiter bestätigt Abschluss [3] |
+| 21 | In Bearbeitung | Abgeschlossen | Zulässiger Abschluss [3] |
+| 22 | Wartet auf Wiedervorlage | Abgeschlossen | Zulässiger Abschluss [3] |
+| 23 | Abgeschlossen | In Bearbeitung | Wiedereröffnung ohne Prüfbedarf |
+| 24 | Abgeschlossen | Mitarbeiterprüfung erforderlich | Wiedereröffnung mit Prüfbedarf |
 
 - **[1]** Keine laufende Wiedervorlage und kein vorrangiger Mitarbeiterprüfbedarf; automatische Rückfragen benötigen die serverseitig geprüften Ausführungsbedingungen nach [KOM-05](fallkommunikation.md#kom-05-automatische-rueckfragen). Für zulässige Katalogrückfragen ist keine zusätzliche menschliche Einzelfreigabe vorgesehen.
 - **[2]** Kein zulässiger automatischer Abschluss und keine laufende Wiedervorlage.
@@ -349,7 +380,7 @@ Beim erfolgreichen Systemabschluss bleiben Grund, Belegbezug, geprüfter Fallsta
 
 Ohne belegten Grund erfolgt kein automatischer Abschluss. Unklare oder widersprüchliche fachliche Einordnung benötigt Mitarbeiterprüfung. Für gezielt erfragbare fehlende Sachangaben bleiben die bestehenden Katalogrückfrageregeln aus KOM-05 anwendbar; die vollständige Beantwortung früherer Rückfragen folgt weiterhin FALL-05. Ein anderer aktueller Status, eine doppelte Verarbeitung oder ein bloss veraltetes Ergebnis darf nicht pauschal eine zusätzliche Mitarbeiteraufgabe erzeugen. Die technische Koordination der Fortsetzung bleibt vor der ausführbaren Umsetzung festzulegen.
 
-Die Freigabe eines Abschlussgrundes ist noch keine Freigabe beliebiger automatisch erzeugter Antworttexte. Konkrete Veröffentlichungsregeln und die Behandlung eines Fehlers zwischen gespeicherter Antwort und fachlichem Abschluss werden gesondert ausgearbeitet.
+Die Freigabe eines Abschlussgrundes ist keine Freigabe beliebiger automatisch erzeugter Antworttexte. [KOM-06](fallkommunikation.md#kom-06-automatische-antworten-vor-fallabschluss) legt die beiden Antwortarten, ihre Textvorlagen und Veröffentlichungsvoraussetzungen fest. Der automatische Antwortzweig veröffentlicht zuerst die geprüfte Vorlage und prüft danach den Abschluss erneut am aktuellen Fallstand. Eine bereits gespeicherte Antwort bleibt bei gescheitertem oder inzwischen unzulässigem Abschluss im Verlauf; ohne erfolgreichen Abschluss bleibt der Fall aktiv, und es entsteht keine Abschlussmail. Wiederholungen veröffentlichen die Antwort nicht nochmals und ersetzen keine erneute Abschlussprüfung. Die technische Koordination bleibt vor Ausführung festzulegen.
 
 ### Mitarbeiterabschluss während laufender KI-Auswertung
 
