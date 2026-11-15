@@ -242,6 +242,22 @@ Auch nach dem Rückweg einer unterdrückten Veröffentlichung aus Zeile 2 gelten
 
 Beispiel: Offen sind «Seit wann besteht die Störung?» und «In welchem Raum tritt sie auf?». Die Antwort «Seit gestern» erledigt nur die erste Frage. Ohne zusätzlichen Prüfbedarf, zulässigen Abschluss oder weitere notwendige Katalogfrage bleibt «Wartet auf Mieterantwort» bestehen. Die Raumfrage wird nicht nochmals gesendet. Beantwortet der Mieter später auch diese Frage, folgt ohne zulässigen Systemabschluss die Mitarbeiterprüfung.
 
+### Ausbleibende Mieterantwort in Version 1
+
+**Bestätigt am 15.11.2026:** Version 1 kennt keine automatischen Erinnerungen,
+keine Antwortfristen und keine zeitgesteuerte Eskalation wegen einer ausbleibenden
+Mieterantwort. Ohne sonstigen fachlichen Auslöser bleibt der Fall auf
+«Wartet auf Mieterantwort»; offener Antwortbedarf bleibt bestehen.
+Schweigen ist weder eine Antwort noch ein Beleg für die Behebung und löst keinen
+Fallabschluss aus. Das gilt auch für unbeantwortete Restfragen nach Teilantworten.
+
+Der Mitarbeiter kann selbst nachfragen oder nicht mehr benötigten Antwortbedarf
+bewusst aufheben. Dafür gelten die bestehenden Fortsetzungsregeln; ein zulässiger
+Mitarbeiterabschluss bleibt möglich. Neue zwingende Prüfgründe und andere bereits
+vereinbarte Mitarbeiteraktionen werden durch das Warten nicht blockiert.
+Der ausdrücklich gesetzte Wiedervorlagetermin nach FALL-11 bleibt davon getrennt:
+Sein Timer gilt weiterhin und ist keine automatische Mieterantwortfrist.
+
 ### Antwortbedarf durch Mitarbeiter aufheben
 
 **Bestätigt am 10.10.2026:** Ein Mitarbeiter kann in UI3 bei einer veröffentlichten externen Rückfrage mit noch offenem Antwortbedarf die Aktion «Antwortbedarf aufheben» wählen. Die Aktion beendet ausschliesslich den Antwortbedarf der gewählten Nachricht. Andere Nachrichten mit offenem Antwortbedarf bleiben unberührt. Die ursprüngliche Nachricht und ihre ursprüngliche Kennzeichnung bleiben erhalten; ohne passende Antwort wird die Rückfrage nicht als inhaltlich beantwortet ausgegeben. UI1 und UI3 zeigen den gespeicherten aktuellen Antwortbedarf und fordern für die betreffende Nachricht keine weitere Antwort mehr an. Es entsteht kein zusätzlicher Fall- oder Rückfragestatus.
@@ -612,6 +628,17 @@ noch unveröffentlichter Auftrag bleibt ohne Wirkung. Technischer Fehler lässt
 Prüfung offen; Wiederholung prüft erneut. Kein Überschreiben der Hauptpfad-
 Entscheidung durch Nebenpfadvariablen. Diese Kriterien sind spätere
 Integrationstests, keine bereits ausgeführten Laufzeitnachweise.
+
+### KOM-AK-28: Keine Antwortfrist oder automatische Erinnerung
+
+Zeitablauf allein bei vollständig ausbleibender Antwort und nach Teilantwort
+prüfen: keine Erinnerung, Eskalation, Antwortbedarfsaufhebung oder Schliessung;
+Status und verbleibender Antwortbedarf bleiben unverändert. Späte Mieterantworten
+werden bei weiterhin aktivem Fall nach den normalen Regeln verarbeitet.
+Manuelles Nachfragen, bewusstes Aufheben des Antwortbedarfs und zulässiger
+Mitarbeiterabschluss bleiben möglich. Eine separat gesetzte Wiedervorlage wird
+weiterhin zum vereinbarten Termin fällig. Dies sind geplante Integrationsprüfungen,
+keine ausgeführten Laufzeittests.
 
 ## Abgleich mit bestehenden Dokumenten
 

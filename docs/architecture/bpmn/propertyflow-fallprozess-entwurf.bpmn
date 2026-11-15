@@ -1,5 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_PropertyFlow_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+  <bpmn:error id="Error_ReopenRejected" name="Wiedereröffnung abgelehnt" errorCode="REOPEN_REJECTED" />
   <bpmn:error id="Error_ClosureMessageInvalid" name="LLM-Nachricht inhaltlich unzulässig" errorCode="CLOSURE_MESSAGE_INVALID" />
   <bpmn:error id="Error_AutoClosureStale" name="Automatischer Abschluss veraltet" errorCode="AUTO_CLOSURE_STALE" />
   <bpmn:message id="Message_TenantMessage" name="Mieternachricht gespeichert" />
@@ -15,19 +16,22 @@
   <bpmn:error id="Error_AnalysisStale" name="Analysegrundlage überholt" errorCode="ANALYSIS_BASIS_STALE">
     <bpmn:documentation>Fachlicher Platzhalter für Zeilen 1 und 3: Die Auswertung enthält neue relevante gespeicherte Mieternachrichten noch nicht. In Validate führt der Konflikt zur aktuellen Analysegrundlage; in RValidate zur aktuellen Antwortauswertung. Kein technischer Jobfehler und kein Analysefehler. Meldung durch den späteren Prüfdienst, nicht automatisch durch blossen Nachrichteneingang. Keine zweite unabhängige Verarbeitung; aktuelle Mitarbeiterentscheidung und Abschluss schützen. Keine Ausführungsimplementierung.</bpmn:documentation>
   </bpmn:error>
-  <bpmn:process id="PropertyFlow_Case_Draft" name="PropertyFlow · Fallprozess · Fachentwurf 0.13" isExecutable="false">
-    <bpmn:documentation>Fachentwurf 0.13, nicht ausführbar. Individuelle LLM-Nachricht im AutoAnswer-Worker erzeugen, prüfen, speichern und Versand beauftragen; danach Close. Kein Vorlagenkatalog, keine zusätzliche Abschlussmail. Mitarbeiterabschluss ohne Nachricht. Menschliche Priorität, Aktualität, Rückfragen, Wiedervorlage und bisherige Konfliktrückwege bleiben. Technische Fehler: Job-Retries/Incidents. Start-/Kindinstanz-Verträge weiterhin vor Ausführung konkretisieren; keine Backend-Implementierung.</bpmn:documentation>
+  <bpmn:process id="PropertyFlow_Case_Draft" name="PropertyFlow · Fallprozess · Fachentwurf 0.15" isExecutable="false">
+    <bpmn:documentation>Fachentwurf 0.13, nicht ausführbar. Individuelle LLM-Nachricht im AutoAnswer-Worker erzeugen, prüfen, speichern und Versand beauftragen; danach Close. Kein Vorlagenkatalog, keine zusätzliche Abschlussmail. Mitarbeiterabschluss ohne Nachricht. Menschliche Priorität, Aktualität, Rückfragen, Wiedervorlage und bisherige Konfliktrückwege bleiben. Technische Fehler: Job-Retries/Incidents. Start-/Kindinstanz-Verträge weiterhin vor Ausführung konkretisieren; keine Backend-Implementierung.
+Fachentwurf 0.15: Wiedereröffnung startet eine neue Instanz für denselben Fall; direkter Mitarbeiterpfad gemäss FALL-07. Keine Backend-Implementierung.</bpmn:documentation>
     <bpmn:subProcess id="ActiveCase" name="Aktiven Fall bearbeiten">
       <bpmn:documentation>Empfangsbereich der führenden Fallprozessinstanz. Der Prozessschlüssel ist beim Eintritt bereits als Korrelationswert verfügbar. Der einzige Empfänger für Mieternachrichten bleibt über Analyse, Rückfrage, Mitarbeiterprüfung und Wiedervorlage hinweg aktiv. Register bestätigt die führende Zuordnung erst innerhalb dieses Bereichs. Das terminierende Ende wird ausschliesslich nach erfolgreichem fachlichem Abschluss erreicht und beendet nur diesen Bereich samt seinen laufenden Nachrichtenauswertungen. Späte externe Ergebnisse bleiben zusätzlich durch fachliche Versions- und Statusprüfungen gesperrt.
-Die Calls Reply und Staff sowie verschachtelte Calls gehören zum aktiven Ausführungsbaum. Fachlichen Abschluss zuerst speichern, dann aktiven Bereich samt untergeordneten Ausführungen beenden. Späte Worker bleiben durch serverseitige Prüfung gesperrt. Call-Abbruch darf keine normale Abschlussentscheidung liefern.</bpmn:documentation>
+Die Calls Reply und Staff sowie verschachtelte Calls gehören zum aktiven Ausführungsbaum. Fachlichen Abschluss zuerst speichern, dann aktiven Bereich samt untergeordneten Ausführungen beenden. Späte Worker bleiben durch serverseitige Prüfung gesperrt. Call-Abbruch darf keine normale Abschlussentscheidung liefern.
+Wiedereröffnung: Der Empfang wird ebenfalls vor der bestätigten neuen Zuordnung vorbereitet. ReopenRejectedEnd beendet ausschliesslich einen abgelehnten neuen Start ohne fachlichen Abschluss oder Statusänderung. Der bisherige Abschluss bleibt dann bestehen.</bpmn:documentation>
       <bpmn:incoming>P02</bpmn:incoming>
       <bpmn:outgoing>F12</bpmn:outgoing>
       <bpmn:startEvent id="Start" name="Empfangsbereich aktiv">
         <bpmn:outgoing>F01</bpmn:outgoing>
       </bpmn:startEvent>
       <bpmn:serviceTask id="Register" name="Führenden Prozess&#10;dem Fall zuordnen">
-        <bpmn:documentation>ADR-002: processInstanceKey und Erledigung des Startauftrags gemeinsam speichern. Gleiche Instanz idempotent bestätigen, abweichende Instanz nicht weiterbearbeiten. Bis zum Commit bleibt Eingegangen. Die zentrale Nachrichten-Subscription ist beim Start dieses Jobs bereits aktiv. Die vorgelagerte Bereitstellung des Korrelationswerts allein aktiviert den Fall nicht.</bpmn:documentation>
-        <bpmn:incoming>F01</bpmn:incoming>
+        <bpmn:documentation>ADR-002: processInstanceKey und Erledigung des Startauftrags gemeinsam speichern. Gleiche Instanz idempotent bestätigen, abweichende Instanz nicht weiterbearbeiten. Bis zum Commit bleibt Eingegangen. Die zentrale Nachrichten-Subscription ist beim Start dieses Jobs bereits aktiv. Die vorgelagerte Bereitstellung des Korrelationswerts allein aktiviert den Fall nicht.
+Nur Erstanlage. Eine Wiedereröffnung darf ausschliesslich ReopenCase zuordnen; keine allgemeine Erlaubnis zum Überschreiben einer führenden Instanz.</bpmn:documentation>
+        <bpmn:incoming>F_Initial</bpmn:incoming>
         <bpmn:outgoing>F02</bpmn:outgoing>
       </bpmn:serviceTask>
       <bpmn:serviceTask id="Clarification" name="Status speichern:&#10;In Abklärung">
@@ -173,6 +177,7 @@ Ruft mitarbeiterbearbeitung.bpmn auf. Vertrag: teilprozess-vertraege.md. Unterge
         <bpmn:incoming>F21</bpmn:incoming>
         <bpmn:incoming>F_CloseConflict_Staff</bpmn:incoming>
         <bpmn:incoming>F_MessageInvalid_Staff</bpmn:incoming>
+        <bpmn:incoming>F_Reopen_Staff</bpmn:incoming>
         <bpmn:outgoing>F15</bpmn:outgoing>
       </bpmn:callActivity>
       <bpmn:exclusiveGateway id="StaffRoute" name="Fortsetzung">
@@ -182,7 +187,7 @@ Nach Call-Rückkehr ausschliesslich staffOutcome / staffDecisionRef auswerten. U
         <bpmn:outgoing>F16</bpmn:outgoing>
         <bpmn:outgoing>F17</bpmn:outgoing>
       </bpmn:exclusiveGateway>
-      <bpmn:sequenceFlow id="F01" sourceRef="Start" targetRef="Register" />
+      <bpmn:sequenceFlow id="F01" sourceRef="Start" targetRef="EntryRoute" />
       <bpmn:sequenceFlow id="F02" sourceRef="Register" targetRef="Clarification" />
       <bpmn:sequenceFlow id="F03" sourceRef="Clarification" targetRef="Triage" />
       <bpmn:sequenceFlow id="F04" sourceRef="Triage" targetRef="Recommend" />
@@ -270,8 +275,31 @@ Nur nach der aktuellen Prüfung eines Rückwegs mit bestehendem Wartestatus und 
         <bpmn:errorEventDefinition id="ClosureMessageInvalid_definition" errorRef="Error_ClosureMessageInvalid" />
       </bpmn:boundaryEvent>
       <bpmn:sequenceFlow id="F_MessageInvalid_Staff" sourceRef="ClosureMessageInvalid" targetRef="Staff" />
+      <bpmn:exclusiveGateway id="EntryRoute" name="Erstanlage oder&#10;Wiedereröffnung?">
+        <bpmn:incoming>F01</bpmn:incoming>
+        <bpmn:outgoing>F_Initial</bpmn:outgoing>
+        <bpmn:outgoing>F_Reopen</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+      <bpmn:serviceTask id="ReopenCase" name="Wiedereröffnung prüfen&#10;Neuen Durchlauf zuordnen">
+        <bpmn:documentation>
+FALL-07 / ADR-002 Ergänzung 15.11.2026: Autorisierten Wiedereröffnungsauftrag, abgeschlossenen Fall, beendete Vorgängerinstanz und aktuelle Generation prüfen. Neue führende Instanz, Generation, Zielstatus, Mitarbeiter und Auftragserledigung konsistent speichern. Ohne offenen Prüfbedarf In Bearbeitung, sonst Mitarbeiterprüfung erforderlich. Geprüften staffEntryContextRef bereitstellen. Bis Commit bleibt der Fall abgeschlossen und gesperrt. Identischen erfolgreichen Auftrag mit derselben Instanz idempotent bestätigen; fremde oder überholte Instanz niemals übernehmen. Fachliche Ablehnung ausdrücklich REOPEN_REJECTED; technische Fehler bleiben Job-Retries/Incidents. Keine neue Fallanlage, Ersttriage oder Reaktivierung alter Aufgaben.</bpmn:documentation>
+        <bpmn:incoming>F_Reopen</bpmn:incoming>
+        <bpmn:outgoing>F_Reopen_Staff</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="F_Initial" name="Erstanlage" sourceRef="EntryRoute" targetRef="Register" />
+      <bpmn:sequenceFlow id="F_Reopen" name="Wiedereröffnung" sourceRef="EntryRoute" targetRef="ReopenCase" />
+      <bpmn:sequenceFlow id="F_Reopen_Staff" name="" sourceRef="ReopenCase" targetRef="Staff" />
+      <bpmn:boundaryEvent id="ReopenRejected" name="Auftrag nicht mehr gültig" attachedToRef="ReopenCase">
+        <bpmn:outgoing>F_ReopenRejected</bpmn:outgoing>
+        <bpmn:errorEventDefinition id="ReopenRejected_definition" errorRef="Error_ReopenRejected" />
+      </bpmn:boundaryEvent>
+      <bpmn:endEvent id="ReopenRejectedEnd" name="Start abgelehnt&#10;Keine Falländerung">
+        <bpmn:incoming>F_ReopenRejected</bpmn:incoming>
+        <bpmn:terminateEventDefinition id="ReopenRejectedEnd_definition" />
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="F_ReopenRejected" name="" sourceRef="ReopenRejected" targetRef="ReopenRejectedEnd" />
       <bpmn:textAnnotation id="MainDraft">
-        <bpmn:text>FACHENTWURF 0.13 · 15.11.2026
+        <bpmn:text>FACHENTWURF 0.15 · 15.11.2026
 Nicht ausführbar / kein Deployment.
 Bisheriger Hauptablauf in «Aktiven Fall bearbeiten».
 Nachrichteneingang oben links separat öffnen.</bpmn:text>
@@ -315,7 +343,9 @@ kein Abschluss und keine Abschlussmail.
 Technischer Speicherfehler bleibt getrennt.</bpmn:text>
       </bpmn:textAnnotation>
     </bpmn:subProcess>
-    <bpmn:endEvent id="End" name="Fall abgeschlossen">
+    <bpmn:endEvent id="End" name="Durchlauf beendet">
+      <bpmn:documentation>
+Technisches Ende: nach regulärem Fallabschluss oder abgelehntem Wiedereröffnungsstart. Dieses Ereignis selbst ändert keinen Status und verschickt keine Nachricht.</bpmn:documentation>
       <bpmn:incoming>F12</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="F12" sourceRef="ActiveCase" targetRef="End" />
@@ -323,14 +353,15 @@ Technischer Speicherfehler bleibt getrennt.</bpmn:text>
       <bpmn:outgoing>P01</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:serviceTask id="PrepareProcessKey" name="Prozessschlüssel&#10;bereitstellen">
-      <bpmn:documentation>Technische Vorstufe des Entwurfs: processInstanceKey aus den Jobmetadaten als String im Prozess bereitstellen, bevor der Empfangsbereich aktiviert wird. Noch keine führende Fallzuordnung, kein Erledigen des Startauftrags und keine fachliche Aktivierung. Derselbe Schlüssel wird anschliessend von Register in der bestehenden Zuordnungstransaktion gespeichert. Implementierung und Präzisierung gegenüber dem ersten Zuordnungsjob in ADR-002/SS-003 sind noch offen.</bpmn:documentation>
+      <bpmn:documentation>Technische Vorstufe des Entwurfs: processInstanceKey aus den Jobmetadaten als String im Prozess bereitstellen, bevor der Empfangsbereich aktiviert wird. Noch keine führende Fallzuordnung, kein Erledigen des Startauftrags und keine fachliche Aktivierung. Derselbe Schlüssel wird anschliessend von Register in der bestehenden Zuordnungstransaktion gespeichert. Implementierung und Präzisierung gegenüber dem ersten Zuordnungsjob in ADR-002/SS-003 sind noch offen.
+Startart und Auftragsreferenz aus einem serverseitig autorisierten Startauftrag prüfen. INITIAL oder REOPEN sind keine frei wählbaren Clientwerte. Ungültige Aufträge stoppen vor fachlicher Wirkung. Prozessschlüsselbereitstellung allein ersetzt niemals die führende Zuordnung.</bpmn:documentation>
       <bpmn:incoming>P01</bpmn:incoming>
       <bpmn:outgoing>P02</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:sequenceFlow id="P01" sourceRef="ProcessStart" targetRef="PrepareProcessKey" />
     <bpmn:sequenceFlow id="P02" sourceRef="PrepareProcessKey" targetRef="ActiveCase" />
     <bpmn:textAnnotation id="ProcessScopeNote">
-      <bpmn:text>FACHENTWURF 0.13 · nicht ausführbar
+      <bpmn:text>FACHENTWURF 0.15 · nicht ausführbar
 Im Teilprozess «Aktiven Fall bearbeiten» liegen der bisherige Hauptablauf
 und der durchgängige Mieternachrichteneingang.
 Empfang vor fachlicher Aktivierung; Ende erst nach gespeichertem Abschluss.
@@ -377,9 +408,9 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
   <bpmndi:BPMNDiagram id="ActiveCase_diagram" name="02 · Aktiven Fall bearbeiten">
     <bpmndi:BPMNPlane id="ActiveCase_plane" bpmnElement="ActiveCase">
       <bpmndi:BPMNShape id="Start_di" bpmnElement="Start" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
-        <dc:Bounds x="200" y="642" width="36" height="36" />
+        <dc:Bounds x="-600" y="642" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="155" y="686" width="126" height="14" />
+          <dc:Bounds x="-645.0" y="686.0" width="126" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Register_di" bpmnElement="Register" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
@@ -449,8 +480,8 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="F01_di" bpmnElement="F01">
-        <di:waypoint x="236" y="660" />
-        <di:waypoint x="290" y="660" />
+        <di:waypoint x="-564" y="660" />
+        <di:waypoint x="-450" y="660" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="F02_di" bpmnElement="F02">
         <di:waypoint x="460" y="660" />
@@ -693,6 +724,40 @@ Technische Startpräzisierung mit ADR-002 / SS-003 noch abzustimmen.</bpmn:text>
         <di:waypoint x="2300" y="145" />
         <di:waypoint x="1650" y="145" />
         <di:waypoint x="1650" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EntryRoute_di" bpmnElement="EntryRoute">
+        <dc:Bounds x="-450" y="635" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReopenCase_di" bpmnElement="ReopenCase" bioc:fill="#e4ecff" bioc:stroke="#203c62">
+        <dc:Bounds x="-520" y="320" width="240" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReopenRejected_di" bpmnElement="ReopenRejected">
+        <dc:Bounds x="-418" y="402" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReopenRejectedEnd_di" bpmnElement="ReopenRejectedEnd">
+        <dc:Bounds x="-418" y="510" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="F_Initial_di" bpmnElement="F_Initial">
+        <di:waypoint x="-400" y="660" />
+        <di:waypoint x="290" y="660" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_Reopen_di" bpmnElement="F_Reopen">
+        <di:waypoint x="-425" y="635" />
+        <di:waypoint x="-425" y="600" />
+        <di:waypoint x="-650" y="600" />
+        <di:waypoint x="-650" y="370" />
+        <di:waypoint x="-520" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_Reopen_Staff_di" bpmnElement="F_Reopen_Staff">
+        <di:waypoint x="-280" y="370" />
+        <di:waypoint x="-180" y="370" />
+        <di:waypoint x="-180" y="110" />
+        <di:waypoint x="1595" y="110" />
+        <di:waypoint x="1595" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F_ReopenRejected_di" bpmnElement="F_ReopenRejected">
+        <di:waypoint x="-400" y="438" />
+        <di:waypoint x="-400" y="510" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

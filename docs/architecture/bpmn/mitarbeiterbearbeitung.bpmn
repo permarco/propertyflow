@@ -1,20 +1,23 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_PropertyFlow_Staff_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
   <bpmn:message id="Message_StaffReviewSend" name="Mitarbeiternachricht während Prüfung senden" />
-  <bpmn:process id="PropertyFlow_Staff_Draft" name="Mitarbeiterprüfung und weitere Bearbeitung · Fachentwurf 0.14" isExecutable="false">
+  <bpmn:process id="PropertyFlow_Staff_Draft" name="Mitarbeiterprüfung und weitere Bearbeitung · Fachentwurf 0.16" isExecutable="false">
     <bpmn:documentation>
-Dateiaufteilung 0.9: untergeordneter Prozess, nur durch Call Activity starten. Keine eigene führende Fallzuordnung. Eingaben caseId, leadingProcessInstanceKey und entryContextRef; Rückgaben outcome und decisionRef. Explizite instanzübergreifende Aktualisierung gemäss teilprozess-vertraege.md erforderlich; keine live gemeinsam genutzten Elternvariablen. Nicht ausführbar, kein Backend implementiert.</bpmn:documentation>
-    <bpmn:startEvent id="SStart" name="Prüfbedarf">
+Dateiaufteilung 0.9: untergeordneter Prozess, nur durch Call Activity starten. Keine eigene führende Fallzuordnung. Eingaben caseId, leadingProcessInstanceKey und entryContextRef; Rückgaben outcome und decisionRef. Explizite instanzübergreifende Aktualisierung gemäss teilprozess-vertraege.md erforderlich; keine live gemeinsam genutzten Elternvariablen. Nicht ausführbar, kein Backend implementiert.
+Fachentwurf 0.15: Wiedereröffnung ohne Prüfbedarf steigt nach geprüfter Registrierung direkt in SWork ein, ohne eine frühere Prüfung oder Entscheidung zu reaktivieren. Wiedereröffnung mit Prüfbedarf verwendet SReviewStatus und SReview.
+Fachentwurf 0.16: Externe Wartephase gemäss FALL-12. Fachliche Übergänge bestätigt; Routing, Markerübertragung und Worker weiterhin nicht ausführbar.</bpmn:documentation>
+    <bpmn:startEvent id="SStart" name="Mitarbeiterbearbeitung">
       <bpmn:outgoing>S01</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:serviceTask id="SReviewStatus" name="Prüfgrund festhalten&#10;Mitarbeiterprüfung erforderlich">
       <bpmn:documentation>Aktuellen Prüfbedarf und Quelle nachvollziehbar speichern. Beim Eintritt über TriageFailure den internen Grund KI-Analyse fehlgeschlagen ergänzen; andere Eintrittsgründe und bereits gespeicherte Prüfgründe bleiben erhalten. Danach Status Mitarbeiterprüfung erforderlich speichern und die Mitarbeiteraufgabe bereitstellen. Beim Rückweg über CloseConflict lautet der interne Grund Fallstand seit Abschlussbestätigung geändert. Alte Abschlussfreigabe verwerfen und aktuellen Fallstand bereitstellen. Die vorherige User Task ist bereits erledigt; genau eine neue Aufgabe mit neuem Schlüssel für die bewusste Entscheidung bereitstellen. Alte Browseraktionen und wiederholte Konfliktmeldungen dürfen weder diese Aufgabe abschliessen noch weitere Aufgaben erzeugen. Bleibt eine Aufgabe wegen früher Ablehnung der Aktion bereits offen, wird dieser Rückweg nicht zusätzlich gestartet.
 Dateiaufteilung 0.9: Beim Eintritt den eigenen Kindinstanz- und Call-Bezug aus Engine-Metadaten zur unveränderten leadingProcessInstanceKey prüfen/registrieren. Aktuellen Stand aus PropertyFlow laden und lokale Steuerstände initialisieren. Registrierung und Nachlieferung müssen ohne Lücke zusammenwirken, auch bei vorher eingegangenen Nachrichten. Diese Instanz wird nicht als neuer führender Fallprozess gespeichert. Umsetzung gemäss teilprozess-vertraege.md noch offen.
 FALL-AK-27: Beim Einstieg aus Kontakt- oder Timerweg dieselbe versionsgebundene Prüfzuordnung verwenden. Eine bereits offene zugehörige Prüfung ergänzen, keine weitere User Task anlegen. Keine neue Prüfung nach Abschluss oder aus einem alten Bearbeitungszyklus. Eine zwischenzeitliche Mitarbeiterentscheidung nicht durch verspätete Wiederholung zurücknehmen.</bpmn:documentation>
-      <bpmn:incoming>S01</bpmn:incoming>
       <bpmn:incoming>S13</bpmn:incoming>
       <bpmn:incoming>S15</bpmn:incoming>
       <bpmn:incoming>S21</bpmn:incoming>
+      <bpmn:incoming>S_EntryReview</bpmn:incoming>
+      <bpmn:incoming>SX07</bpmn:incoming>
       <bpmn:outgoing>S02</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:userTask id="SReview" name="Fall prüfen und&#10;Vorgehen entscheiden">
@@ -34,12 +37,14 @@ SMessageSide veröffentlicht Mitarbeiternachrichten als Nebenaktion. Senden been
       <bpmn:documentation>Berücksichtigte Gründe bleiben nachvollziehbar und lösen ohne neue Erkenntnis keinen sofortigen Rückwechsel aus. Keine pauschale Kosten- oder Abschlussfreigabe.</bpmn:documentation>
       <bpmn:incoming>S04</bpmn:incoming>
       <bpmn:incoming>S16</bpmn:incoming>
+      <bpmn:incoming>SX04</bpmn:incoming>
       <bpmn:outgoing>S05</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:userTask id="SWork" name="Weiteres Vorgehen umsetzen&#10;Nächste Aktion wählen">
       <bpmn:documentation>Verwaltung organisiert allfällige externe Massnahmen ausserhalb von PropertyFlow. Keine automatische Technikerbeauftragung. Technischer Zuschnitt dieser Arbeitsphase ist noch Entwurf.
 Bei Call-Aufteilung gehört diese User Task zur Mitarbeiter-Kindinstanz. Autorisierung anhand serverseitig verifizierter Zuordnung von userTaskKey, aktueller Kindinstanz, Call-Aufruf, führender Instanz und Fall prüfen. Keine Freigabe allein durch frei übergebenen Prozessschlüssel. ADR-002/SS-003 vor ausführbarer Umsetzung präzisieren.</bpmn:documentation>
       <bpmn:incoming>S05</bpmn:incoming>
+      <bpmn:incoming>S_EntryWork</bpmn:incoming>
       <bpmn:outgoing>S06</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:exclusiveGateway id="SWorkDecision" name="Nächste Aktion">
@@ -48,6 +53,7 @@ Bei Call-Aufteilung gehört diese User Task zur Mitarbeiter-Kindinstanz. Autoris
       <bpmn:outgoing>S11</bpmn:outgoing>
       <bpmn:outgoing>S12</bpmn:outgoing>
       <bpmn:outgoing>S13</bpmn:outgoing>
+      <bpmn:outgoing>SX01</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:serviceTask id="SQuestion" name="Mitarbeiterrückfrage&#10;veröffentlichen">
       <bpmn:incoming>S09</bpmn:incoming>
@@ -64,6 +70,7 @@ Normaler Kindprozessabschluss: outcome=CLOSE und decisionRef zur geprüften Grun
       <bpmn:incoming>S08</bpmn:incoming>
       <bpmn:incoming>S11</bpmn:incoming>
       <bpmn:incoming>S17</bpmn:incoming>
+      <bpmn:incoming>SX06</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:callActivity id="FollowUp" name="Wiedervorlage&#10;verwalten">
       <bpmn:documentation>
@@ -80,6 +87,7 @@ Ruft wiedervorlage.bpmn auf. Vertrag: teilprozess-vertraege.md. Untergeordnete I
       </bpmn:extensionElements>
       <bpmn:incoming>S07</bpmn:incoming>
       <bpmn:incoming>S12</bpmn:incoming>
+      <bpmn:incoming>SX05</bpmn:incoming>
       <bpmn:outgoing>S14</bpmn:outgoing>
     </bpmn:callActivity>
     <bpmn:exclusiveGateway id="SFollowResult" name="Ergebnis der Wartezeit">
@@ -90,7 +98,7 @@ Nach Call-Rückkehr ausschliesslich followUpOutcome / followUpDecisionRef auswer
       <bpmn:outgoing>S16</bpmn:outgoing>
       <bpmn:outgoing>S17</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:sequenceFlow id="S01" sourceRef="SStart" targetRef="SReviewStatus" />
+    <bpmn:sequenceFlow id="S01" sourceRef="SStart" targetRef="SEntryCheck" />
     <bpmn:sequenceFlow id="S02" sourceRef="SReviewStatus" targetRef="SReview" />
     <bpmn:sequenceFlow id="S03" sourceRef="SReview" targetRef="SDecision" />
     <bpmn:sequenceFlow id="S04" name="Bearbeitung fortsetzen" sourceRef="SDecision" targetRef="SProgress" />
@@ -141,6 +149,53 @@ FALL-11 Zeile 5: Dieselbe Erledigungs- und Prüfzuordnung wie Timerweg WClearTim
       <bpmn:sequenceFlow id="SM01" sourceRef="SMessageStart" targetRef="SMessagePublish" />
       <bpmn:sequenceFlow id="SM02" sourceRef="SMessagePublish" targetRef="SMessageEnd" />
     </bpmn:subProcess>
+    <bpmn:serviceTask id="SEntryCheck" name="Eintritt prüfen&#10;Fallstand laden">
+      <bpmn:documentation>
+Kindinstanz und Call-Bezug aus Engine-Metadaten zur aktuellen führenden Instanz prüfen/registrieren und aktuellen Fallstand laden. Nur geprüfter entryContextRef eines erfolgreichen Wiedereröffnungsauftrags ohne offenen Prüfbedarf erlaubt direkten Eintritt in SWork. Sonst reguläre Mitarbeiterprüfung; neue Prüfgründe haben Vorrang. Ungültige oder überholte Generation nicht weiterbearbeiten. Keine führende Zuordnung durch diesen Kindprozess. Technische Umsetzung bleibt offen.</bpmn:documentation>
+      <bpmn:incoming>S01</bpmn:incoming>
+      <bpmn:outgoing>S_EntryChecked</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="SEntryRoute" name="Offene Prüfung&#10;erforderlich?">
+      <bpmn:incoming>S_EntryChecked</bpmn:incoming>
+      <bpmn:outgoing>S_EntryReview</bpmn:outgoing>
+      <bpmn:outgoing>S_EntryWork</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="S_EntryChecked" name="" sourceRef="SEntryCheck" targetRef="SEntryRoute" />
+    <bpmn:sequenceFlow id="S_EntryReview" name="Ja / regulärer Eintritt" sourceRef="SEntryRoute" targetRef="SReviewStatus" />
+    <bpmn:sequenceFlow id="S_EntryWork" name="Wiedereröffnet ohne Prüfbedarf" sourceRef="SEntryRoute" targetRef="SWork" />
+    <bpmn:serviceTask id="SExternalStatus" name="Status speichern:&#10;Wartet auf externe Rückmeldung">
+      <bpmn:documentation>
+FALL-12: Nur bewusste berechtigte Aktion aus In Bearbeitung, aktuelle User Task, Fallversion und führende Instanz prüfen. Keine externe Beauftragung oder Kommunikationsnachricht durch diese Aktion; bestehende Statusbenachrichtigungen nach BEN-01 bleiben unberührt. Memo optional und separat. Neuen zwingenden Prüfbedarf nicht überschreiben. Auftrag und Wartephase idempotent binden; technische Konfliktkoordination vor Ausführung festlegen.</bpmn:documentation>
+      <bpmn:incoming>SX01</bpmn:incoming>
+      <bpmn:outgoing>SX02</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="SExternalWait" name="Externe Rückmeldung abwarten&#10;Fortsetzung entscheiden">
+      <bpmn:documentation>
+FALL-12: Mitarbeiter wählt Fortsetzen, Wiedervorlage oder Abschluss. Externer Kontakt und internes Memo allein erledigen diese Aufgabe nicht. Mieternachrichten bleiben zulässig und werden zentral ausgewertet, ohne die Wartephase allein durch Eingang zu beenden. Keine automatische Rückfrage, Rückkehr in Abklärung oder automatischer Abschluss. Aktionen an aktuelle Aufgabe, Fallstand, Kindinstanz und führende Instanz binden; Abschluss ohne Nachrichtenpflicht nach bestehenden Regeln.</bpmn:documentation>
+      <bpmn:incoming>SX02</bpmn:incoming>
+      <bpmn:outgoing>SX03</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="SExternalDecision" name="Bestätigte&#10;Fortsetzung">
+      <bpmn:incoming>SX03</bpmn:incoming>
+      <bpmn:outgoing>SX04</bpmn:outgoing>
+      <bpmn:outgoing>SX05</bpmn:outgoing>
+      <bpmn:outgoing>SX06</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:boundaryEvent id="SExternalReview" name="Neuer zwingender&#10;Prüfbedarf" attachedToRef="SExternalWait" cancelActivity="true">
+      <bpmn:documentation>
+Nur serverseitig festgestellter neuer zwingender Prüfbedarf zur aktuellen Wartephase unterbricht die Aufgabe. Keine direkte Korrelation externer Handwerkernachrichten. Marker ausdrücklich in diese Kindinstanz übertragen; bereits vorhandenen Prüfbedarf beim Eintritt berücksichtigen. Atomare Abstimmung mit Mitarbeiteraktion, Abschluss und Wiedereröffnung vor Ausführung konkretisieren; alte Marker dürfen keine neuere Aufgabe abbrechen. Genau eine wirksame Fortsetzung.</bpmn:documentation>
+      <bpmn:outgoing>SX07</bpmn:outgoing>
+      <bpmn:conditionalEventDefinition id="SExternalReview_definition">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">= externalWaitReviewRequired = true and reviewWaitRef = activeExternalWaitRef</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="SX01" name="Auf externe Rückmeldung warten" sourceRef="SWorkDecision" targetRef="SExternalStatus" />
+    <bpmn:sequenceFlow id="SX02" name="" sourceRef="SExternalStatus" targetRef="SExternalWait" />
+    <bpmn:sequenceFlow id="SX03" name="" sourceRef="SExternalWait" targetRef="SExternalDecision" />
+    <bpmn:sequenceFlow id="SX04" name="Bearbeitung fortsetzen" sourceRef="SExternalDecision" targetRef="SProgress" />
+    <bpmn:sequenceFlow id="SX05" name="Wiedervorlage setzen" sourceRef="SExternalDecision" targetRef="FollowUp" />
+    <bpmn:sequenceFlow id="SX06" name="Abschliessen" sourceRef="SExternalDecision" targetRef="SCloseEnd" />
+    <bpmn:sequenceFlow id="SX07" name="Prüfung erforderlich" sourceRef="SExternalReview" targetRef="SReviewStatus" />
     <bpmn:textAnnotation id="SQuestionNote">
       <bpmn:text>Nachrichten während offener Mitarbeiterprüfung:
 Senden als nicht unterbrechende Nebenaktion (unten).
@@ -159,9 +214,9 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
   <bpmndi:BPMNDiagram id="Staff_diagram" name="04 · Mitarbeiterprüfung und Bearbeitung">
     <bpmndi:BPMNPlane id="Staff_plane" bpmnElement="PropertyFlow_Staff_Draft">
       <bpmndi:BPMNShape id="SStart_di" bpmnElement="SStart" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
-        <dc:Bounds x="70" y="162" width="36" height="36" />
+        <dc:Bounds x="-600" y="162" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="13" y="206" width="150" height="48" />
+          <dc:Bounds x="-657.0" y="206.0" width="150" height="48" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="SReviewStatus_di" bpmnElement="SReviewStatus" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
@@ -219,8 +274,8 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
         <dc:Bounds x="950" y="740" width="850" height="140" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="S01_di" bpmnElement="S01">
-        <di:waypoint x="106" y="180" />
-        <di:waypoint x="170" y="180" />
+        <di:waypoint x="-564" y="180" />
+        <di:waypoint x="-480" y="180" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="S02_di" bpmnElement="S02">
         <di:waypoint x="340" y="180" />
@@ -380,6 +435,78 @@ Versions-/Aufrufbindung vor Call-Abbruch koordinieren (FALL-11 / FALL-AK-27).</b
       <bpmndi:BPMNEdge id="SM02_di" bpmnElement="SM02" bioc:stroke="#4c1d95">
         <di:waypoint x="750" y="1038" />
         <di:waypoint x="1030" y="1038" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="SEntryCheck_di" bpmnElement="SEntryCheck" bioc:fill="#e4ecff" bioc:stroke="#203c62">
+        <dc:Bounds x="-480" y="135" width="200" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SEntryRoute_di" bpmnElement="SEntryRoute">
+        <dc:Bounds x="-200" y="155" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="S_EntryChecked_di" bpmnElement="S_EntryChecked">
+        <di:waypoint x="-280" y="180" />
+        <di:waypoint x="-200" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="S_EntryReview_di" bpmnElement="S_EntryReview">
+        <di:waypoint x="-150" y="180" />
+        <di:waypoint x="170" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="S_EntryWork_di" bpmnElement="S_EntryWork">
+        <di:waypoint x="-175" y="155" />
+        <di:waypoint x="-175" y="-100" />
+        <di:waypoint x="1165" y="-100" />
+        <di:waypoint x="1165" y="135" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="SExternalStatus_di" bpmnElement="SExternalStatus" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="300" y="-500" width="230" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SExternalWait_di" bpmnElement="SExternalWait" bioc:stroke="#1e3a5f" bioc:fill="#ffedd5">
+        <dc:Bounds x="650" y="-500" width="250" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SExternalDecision_di" bpmnElement="SExternalDecision" bioc:stroke="#1e3a5f" bioc:fill="#f1f5f9">
+        <dc:Bounds x="1030" y="-475" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SExternalReview_di" bpmnElement="SExternalReview" bioc:stroke="#1e3a5f" bioc:fill="#ffedd5">
+        <dc:Bounds x="757" y="-418" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SX01_di" bpmnElement="SX01">
+        <di:waypoint x="1375" y="155" />
+        <di:waypoint x="1375" y="-620" />
+        <di:waypoint x="415" y="-620" />
+        <di:waypoint x="415" y="-500" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SX02_di" bpmnElement="SX02">
+        <di:waypoint x="530" y="-450" />
+        <di:waypoint x="650" y="-450" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SX03_di" bpmnElement="SX03">
+        <di:waypoint x="900" y="-450" />
+        <di:waypoint x="1030" y="-450" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SX04_di" bpmnElement="SX04">
+        <di:waypoint x="1055" y="-425" />
+        <di:waypoint x="1055" y="80" />
+        <di:waypoint x="915" y="80" />
+        <di:waypoint x="915" y="135" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SX05_di" bpmnElement="SX05">
+        <di:waypoint x="1080" y="-450" />
+        <di:waypoint x="1900" y="-450" />
+        <di:waypoint x="1900" y="400" />
+        <di:waypoint x="945" y="400" />
+        <di:waypoint x="945" y="445" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SX06_di" bpmnElement="SX06">
+        <di:waypoint x="1055" y="-475" />
+        <di:waypoint x="1055" y="-550" />
+        <di:waypoint x="2000" y="-550" />
+        <di:waypoint x="2000" y="280" />
+        <di:waypoint x="1796" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SX07_di" bpmnElement="SX07">
+        <di:waypoint x="775" y="-382" />
+        <di:waypoint x="775" y="-250" />
+        <di:waypoint x="255" y="-250" />
+        <di:waypoint x="255" y="135" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

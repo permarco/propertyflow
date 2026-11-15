@@ -35,7 +35,7 @@ style PF fill:#1e293b,stroke:#006fbb,stroke-width:2px,color:#ffffff
 
 1. Der Mitarbeiter öffnet den abgeschlossenen Fall und wählt «Fall wiedereröffnen» in UI3.
 2. Er bestätigt die Aktion im Dialog. PropertyFlow prüft die Rolle und den aktuellen Fallstand und übermittelt die Aktion an Camunda.
-3. Camunda veranlasst die Wiedereröffnung. PropertyFlow speichert den bestätigten Status mit Zeitpunkt und handelnder Person. Der neue Status lautet «In Bearbeitung». Bei offenem Prüfbedarf erhält der Fall «Mitarbeiterprüfung erforderlich».
+3. Ein Wiedereröffnungsauftrag startet eine neue Camunda-Prozessinstanz für denselben Fall; die alte Instanz bleibt beendet. Der neue Durchlauf prüft und veranlasst die Wiedereröffnung. PropertyFlow speichert den bestätigten Status mit Zeitpunkt und handelnder Person. Der neue Status lautet «In Bearbeitung». Bei offenem Prüfbedarf erhält der Fall «Mitarbeiterprüfung erforderlich».
 4. Berechtigte Mieter und Mitarbeitende können wieder externe Nachrichten erfassen. Die Mieteransicht zeigt nach ihrer nächsten Aktualisierung die leere Nachrichteneingabe. Der Mitarbeiter kann bei Bedarf ein internes Memo mit der Begründung ergänzen.
 
 ## Alternative Flows
@@ -51,6 +51,6 @@ style PF fill:#1e293b,stroke:#006fbb,stroke-width:2px,color:#ffffff
 ## Business Rules und Prüfkriterien
 
 - **UC-015-BR-001** Die Wiedereröffnung setzt eine ausdrückliche, berechtigte Mitarbeiteraktion voraus. Camunda veranlasst die Wiedereröffnung auf dieser Grundlage. [FALL-07](../specifications/fallverwaltung.md#fall-07-abschluss-und-zeit-danach)
-- **UC-015-BR-002** Nach bestätigter Wiedereröffnung gelten die aktiven Fachregeln und der Vorrang manueller Dringlichkeit. Die technische Camunda-Fortsetzung wird im Prozessentwurf konkretisiert. [FALL-07](../specifications/fallverwaltung.md#verspätete-automatische-ergebnisse-nach-wiedereröffnung)
+- **UC-015-BR-002** Nach bestätigter Wiedereröffnung gelten die aktiven Fachregeln und der Vorrang manueller Dringlichkeit. Ein neuer Prozessdurchlauf steigt direkt in die passende Mitarbeiterbearbeitung ein; keine neue Fallanlage oder automatische Erstprüfung. [Neuer Durchlauf](../specifications/fallverwaltung.md#neuer-prozessdurchlauf-bei-wiedereröffnung). [FALL-07](../specifications/fallverwaltung.md#verspätete-automatische-ergebnisse-nach-wiedereröffnung)
 - **UC-015-AK-01** Der Mitarbeiter bestätigt die Wiedereröffnung. Case-ID und Historie bleiben erhalten. Die Mieteransicht zeigt nach Aktualisierung den aktiven Status und die Nachrichteneingabe.
 - **UC-015-AK-02** Ein direkter Versuch durch einen Mieter oder eine Systemkomponente wird abgelehnt. Ein später eintreffender alter Timer, Abschlussvorschlag oder Bewertungsjob verändert den wiedereröffneten Fall nicht.

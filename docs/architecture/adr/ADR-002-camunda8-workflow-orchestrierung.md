@@ -788,3 +788,22 @@ Folgende Entscheidungen werden separat getroffen:
 - detaillierte Job-Worker-Struktur
 - technische Ausgestaltung des dauerhaften Startauftrags und allfälliger
   weiterer transaktionaler Folgeaufträge
+
+## Ergänzung vom 15.11.2026: Wiedereröffnung nach beendetem Fallprozess
+
+**Fachlich bestätigt, technische Umsetzung ausstehend:** Eine berechtigte
+Wiedereröffnung startet eine neue Prozessinstanz für denselben Fall. Die alte
+Instanz bleibt beendet und historisch erhalten. Die Erststartregel, dass eine
+abweichende Instanz die führende Zuordnung nicht überschreiben darf, gilt weiter.
+Die einzige hier bestätigte Ausnahme ist der separat geprüfte und idempotente
+Wiedereröffnungsauftrag für den abgeschlossenen Durchlauf. Genau eine neue
+Instanz darf mit Zielstatus und Auftragsnachweis als aktuell führend gespeichert
+werden; konkurrierende Starts werden nicht zusätzlich aktiv.
+
+[FALL-07](../../specifications/fallverwaltung.md#neuer-prozessdurchlauf-bei-wiedereröffnung)
+definiert Übergänge und Schutzregeln. Erst nach bestätigter Übernahme sind neue
+Nachrichten zulässig. Ohne Prüfbedarf direkter Einstieg in Mitarbeiterbearbeitung,
+mit Prüfbedarf in Mitarbeiterprüfung; keine neue Fallanlage oder Erstklassifikation.
+Alte Worker-/Timer-/User-Task-Aktionen bleiben durch ihre frühere Zuordnung gesperrt.
+Startschnittstelle, Transaktionsbindung und Engine-Bestätigung sind vor einer
+ausführbaren Fassung zu konkretisieren; diese Ergänzung ändert keine Backend-Logik.

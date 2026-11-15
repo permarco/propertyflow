@@ -202,3 +202,61 @@ Abschluss verhindert neue Veröffentlichung aus einem alten Auftrag; schon
 veröffentlichte Nachricht bleibt bestehen. Laufende Nebenaktionen müssen bei
 Fortsetzung ohne alte fachliche Wirkung aufgelöst werden; ein Incident kann die
 technische Kindinstanzbeendigung verzögern. Fachliche Regeln: KOM-01, Tests: KOM-AK-27.
+
+## Wiedereröffnung: neuer führender Durchlauf (0.15)
+
+Der autorisierte Wiedereröffnungsauftrag gehört zum bestehenden Fall und referenziert
+seinen abgeschlossenen Durchlauf. Er startet eine neue Hauptinstanz; erst deren
+geprüfter Zuordnungs-Worker ersetzt die führende Zuordnung gemäss FALL-07 und der
+Ergänzung in ADR-002. Ein anderer laufender oder bereits erfolgreich zugeordneter
+Durchlauf darf dabei nicht überschrieben werden. Doppelte Starts erzeugen keine
+zweite aktive Bearbeitung; technische Start- und Deduplizierungsverträge sind vor
+Ausführung zu konkretisieren.
+
+Für alle neuen Calls gilt der neue `leadingProcessInstanceKey`; innerhalb eines
+Calls bleibt dieser unveränderlich. Alte Kindinstanzen, Timer und Ergebnisse
+werden nicht übernommen. `entryContextRef` im Mitarbeiterprozess referenziert den
+serverseitig geprüften Wiedereröffnungsentscheid und den aktuellen Prüfbedarf.
+Es ist keine frei wählbare Status- oder Berechtigungsvariable.
+
+`SEntryCheck` registriert und prüft den Kind-/Call-Bezug vor **beiden** Eintrittswegen.
+Ohne Prüfbedarf darf der erfolgreiche Wiedereröffnungseintritt direkt `SWork`
+verwenden. Reguläre Eintritte und Wiedereröffnung mit Prüfbedarf führen über
+`SReviewStatus` zu `SReview`. Neue Prüfgründe haben Vorrang. Der direkte Weg erzeugt
+keine erfundene frühere Mitarbeiterentscheidung und hebt keine Prüfgründe auf.
+Rückgaben und die bestehende Nachrichten-Nebenaktion bleiben unverändert.
+
+## Externe Wartephase (0.16)
+
+`SExternalStatus` und `SExternalWait` gehören zur bestehenden Mitarbeiterinstanz;
+keine zusätzliche führende Instanz und kein neuer öffentlicher Nachrichteneingang.
+Die bewusste Mitarbeiteraktion wird gegen aktuelle Aufgabe und Fallstand geprüft.
+`SExternalDecision` verwendet die vorhandenen Fortsetzungs-, Wiedervorlage- und
+Abschlusswege; die bisherigen Call-Ein-/Ausgaben bleiben bestehen.
+
+Der zentrale Nachrichtenauswerter stellt einen serverseitig festgestellten neuen
+zwingenden Prüfbedarf zur aktuellen externen Wartephase ausdrücklich für die
+Mitarbeiterinstanz bereit. `SExternalReview` unterbricht nur diese passende Aufgabe.
+Die Bedingung mit `activeExternalWaitRef`, `reviewWaitRef` und
+`externalWaitReviewRequired` ist ein fachlicher Platzhalter, kein implementierter
+Variablenvertrag. Bereits vor Aufgabenaktivierung entstandene Gründe müssen beim
+Eintritt erkannt werden. Keine stillschweigend gemeinsam genutzten Elternvariablen.
+Markerübertragung und Abbruch sind vor Ausführung mit Mitarbeiterentscheidung,
+Abschluss und Wiedereröffnung zu koordinieren; ein nachträglicher Worker-Check
+allein schützt nicht vor dem Abbruch einer neueren Aufgabe. Wiederholungen dürfen
+keine zweite Mitarbeiterprüfung erzeugen. Normale Mieternachrichten ergänzen nur
+den Fallstand; sie sind keine externe Rückmeldung und kein Abbruchsignal.
+
+## Wiedervorlagetermin (0.17)
+
+`followUpDueAt` ist der gespeicherte absolute Termin der aktuellen Wiedervorlage-
+Version, als ISO-8601-Zeitpunkt mit Offset oder UTC. `WSave` beziehungsweise
+`WUpdate` muss ihn vor Aktivierung von `WEvents`/`WTimer` ausdrücklich in der
+Wiedervorlage-Instanz bereitstellen. Kein neues Call-Eingabefeld: der Dienst lädt
+den bestätigten Auftrag über den bestehenden Kontext. Berechnung und Annahmeprüfung
+folgen FALL-11; N Kalendertage, 08:00 Uhr Europe/Zurich, keine relative 24h-Dauer.
+Bereits angenommene Termine werden bei Wiederholung nicht neu berechnet und bei
+verzögerter Verarbeitung nicht nachträglich als ungültige Eingabe behandelt.
+Eine abgelehnte neue Terminänderung darf die laufende Wartephase nicht beenden;
+sie muss vor Bestätigung/Korrelation der Änderung geprüft werden. Technische
+Koordination und Worker sind weiterhin nicht implementiert.

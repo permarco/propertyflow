@@ -1,10 +1,10 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_PropertyFlow_FollowUp_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+<bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_PropertyFlow_FollowUp_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
   <bpmn:message id="Message_StaffQuestion" name="Mitarbeiterrückfrage veröffentlichen" />
   <bpmn:message id="Message_StaffClose" name="Mitarbeiterabschluss bestätigt" />
   <bpmn:message id="Message_FollowUpDelete" name="Wiedervorlage löschen" />
   <bpmn:message id="Message_FollowUpChange" name="Wiedervorlage ändern" />
-  <bpmn:process id="PropertyFlow_FollowUp_Draft" name="Wiedervorlage&#10;verwalten · Fachentwurf 0.12" isExecutable="false">
+  <bpmn:process id="PropertyFlow_FollowUp_Draft" name="Wiedervorlage&#10;verwalten · Fachentwurf 0.17" isExecutable="false">
     <bpmn:documentation>
 Dateiaufteilung 0.9: untergeordneter Prozess, nur durch Call Activity starten. Keine eigene führende Fallzuordnung. Eingaben caseId, leadingProcessInstanceKey und entryContextRef; Rückgaben outcome und decisionRef. Explizite instanzübergreifende Aktualisierung gemäss teilprozess-vertraege.md erforderlich; keine live gemeinsam genutzten Elternvariablen. Nicht ausführbar, kein Backend implementiert.</bpmn:documentation>
     <bpmn:startEvent id="WStart" name="Wiedervorlage gewählt">
@@ -13,7 +13,8 @@ Dateiaufteilung 0.9: untergeordneter Prozess, nur durch Call Activity starten. K
     <bpmn:serviceTask id="WSave" name="Termin speichern&#10;Wartet auf Wiedervorlage">
       <bpmn:documentation>
 Dateiaufteilung 0.9: Beim Eintritt den eigenen Kindinstanz- und Call-Bezug aus Engine-Metadaten zur unveränderten leadingProcessInstanceKey prüfen/registrieren. Aktuellen Stand aus PropertyFlow laden und lokale Steuerstände initialisieren. Registrierung und Nachlieferung müssen ohne Lücke zusammenwirken, auch bei vorher eingegangenen Nachrichten. Diese Instanz wird nicht als neuer führender Fallprozess gespeichert. Umsetzung gemäss teilprozess-vertraege.md noch offen.
-Wiedervorlage-Version in PropertyFlow sichern und im zuständigen Mitarbeiterbereich bereitstellen, bevor dort auf Kontakt reagiert wird. activeFollowUpVersion und pendingTenantContactFollowUpVersion müssen denselben aktuellen Termin/Aufruf bezeichnen. Nicht auf normale Call-Rückgabe warten. Die lückenlose interne Übergabe ist vor Ausführung zu implementieren.</bpmn:documentation>
+Wiedervorlage-Version in PropertyFlow sichern und im zuständigen Mitarbeiterbereich bereitstellen, bevor dort auf Kontakt reagiert wird. activeFollowUpVersion und pendingTenantContactFollowUpVersion müssen denselben aktuellen Termin/Aufruf bezeichnen. Nicht auf normale Call-Rückgabe warten. Die lückenlose interne Übergabe ist vor Ausführung zu implementieren.
+FALL-11 / FALL-AK-30: Bestätigten Termin als absoluten followUpDueAt mit Offset oder UTC in diesem Scope bereitstellen. Kalendertage ab lokalem Datum der erstmaligen Annahme, 08:00 Uhr Europe/Zurich am Zieldatum, keine Wochenend-/Feiertagsverschiebung. Neue Eingabe serverseitig nur mit Zeitpunkt in der Zukunft annehmen; ungültige Eingabe verändert keine bestehende Wartephase. Wiederholung eines angenommenen Auftrags übernimmt denselben gespeicherten Zeitpunkt und berechnet keine neuen Tage. Bei verzögerter Verarbeitung darf ein inzwischen fälliger gültiger Auftrag nicht als ungültige Neueingabe verworfen werden. Variablenbereitstellung und atomare Versionskoordination sind noch nicht implementiert.</bpmn:documentation>
       <bpmn:incoming>W01</bpmn:incoming>
       <bpmn:outgoing>W02</bpmn:outgoing>
     </bpmn:serviceTask>
@@ -25,10 +26,14 @@ Wiedervorlage-Version in PropertyFlow sichern und im zuständigen Mitarbeiterber
       <bpmn:outgoing>W06</bpmn:outgoing>
       <bpmn:outgoing>W07</bpmn:outgoing>
     </bpmn:eventBasedGateway>
-    <bpmn:intermediateCatchEvent id="WTimer" name="Gespeicherter Termin erreicht">
+    <bpmn:intermediateCatchEvent id="WTimer" name="Gespeicherter Termin erreicht&#10;08:00 Uhr Schweizer Zeit">
+      <bpmn:documentation>
+FALL-11: Absoluter, zuvor geprüfter und gespeicherter Zeitpunkt. followUpDueAt enthält ISO-8601 mit Offset oder UTC für 08:00 Europe/Zurich am Zieldatum, inklusive Sommer-/Winterzeit. Kein PnD-Timer und keine Neuberechnung bei Retry. Bei verspäteter Aktivierung nach gültiger Annahme ohne weiteren Aufschub fällig; vor Wirkung prüft WClearTimer die aktuelle Terminversion und den Fallstatus. Die Zeitreferenz ist modelliert, ihre Bereitstellung durch Worker bleibt offen; Fachentwurf weiterhin nicht ausführbar.</bpmn:documentation>
       <bpmn:incoming>W03</bpmn:incoming>
       <bpmn:outgoing>W09</bpmn:outgoing>
-      <bpmn:timerEventDefinition id="WTimer_definition" />
+      <bpmn:timerEventDefinition id="WTimer_definition">
+        <bpmn:timeDate xsi:type="bpmn:tFormalExpression">= followUpDueAt</bpmn:timeDate>
+      </bpmn:timerEventDefinition>
     </bpmn:intermediateCatchEvent>
     <bpmn:intermediateCatchEvent id="WChange" name="Terminänderung bestätigt">
       <bpmn:documentation>
@@ -65,7 +70,8 @@ Normaler Kindprozessabschluss: outcome=REVIEW und decisionRef zur geprüften Gru
     <bpmn:serviceTask id="WUpdate" name="Neuen Termin speichern&#10;Alten Timer ersetzen">
       <bpmn:documentation>
 Wiedervorlage-Version in PropertyFlow sichern und im zuständigen Mitarbeiterbereich bereitstellen, bevor dort auf Kontakt reagiert wird. activeFollowUpVersion und pendingTenantContactFollowUpVersion müssen denselben aktuellen Termin/Aufruf bezeichnen. Nicht auf normale Call-Rückgabe warten. Die lückenlose interne Übergabe ist vor Ausführung zu implementieren.
-FALL-11 Zeile 5: Neue bewusste Terminentscheidung gegen aktuellen Fallstand inklusive gespeicherter Nachrichten prüfen. Neue Terminversion konsistent mit Mitarbeiterinstanz und Timer bereitstellen. Alte Kontakt-/Timermarker dürfen neuen Call/Timer nicht beenden; Race zwischen Versionswechsel und Randereignis vor Umsetzung technisch auflösen.</bpmn:documentation>
+FALL-11 Zeile 5: Neue bewusste Terminentscheidung gegen aktuellen Fallstand inklusive gespeicherter Nachrichten prüfen. Neue Terminversion konsistent mit Mitarbeiterinstanz und Timer bereitstellen. Alte Kontakt-/Timermarker dürfen neuen Call/Timer nicht beenden; Race zwischen Versionswechsel und Randereignis vor Umsetzung technisch auflösen.
+FALL-11 / FALL-AK-30: Bestätigten Termin als absoluten followUpDueAt mit Offset oder UTC in diesem Scope bereitstellen. Kalendertage ab lokalem Datum der erstmaligen Annahme, 08:00 Uhr Europe/Zurich am Zieldatum, keine Wochenend-/Feiertagsverschiebung. Neue Eingabe serverseitig nur mit Zeitpunkt in der Zukunft annehmen; ungültige Eingabe verändert keine bestehende Wartephase. Wiederholung eines angenommenen Auftrags übernimmt denselben gespeicherten Zeitpunkt und berechnet keine neuen Tage. Bei verzögerter Verarbeitung darf ein inzwischen fälliger gültiger Auftrag nicht als ungültige Neueingabe verworfen werden. Variablenbereitstellung und atomare Versionskoordination sind noch nicht implementiert.</bpmn:documentation>
       <bpmn:incoming>W14</bpmn:incoming>
       <bpmn:outgoing>W15</bpmn:outgoing>
     </bpmn:serviceTask>

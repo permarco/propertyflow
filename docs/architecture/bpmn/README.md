@@ -1,7 +1,7 @@
 # PropertyFlow-Fallprozess
 
 [propertyflow-fallprozess-entwurf.bpmn](propertyflow-fallprozess-entwurf.bpmn)
-ist der führende BPMN-Entwurf 0.13 zur gemeinsamen Besprechung, Stand 15.11.2026.
+ist der führende BPMN-Entwurf 0.15 zur gemeinsamen Besprechung, Stand 15.11.2026.
 Er enthält BPMN-Diagrammkoordinaten und kann im Camunda Modeler geöffnet werden.
 
 ## Dateien – hier bearbeiten
@@ -451,8 +451,8 @@ KOM-05 vereinbart; die beiden Systemabschlussgründe samt Statusgrenzen und
 Nachweisanforderungen sind in FALL-07 bestätigt. KOM-06 legt individuelle LLM-Nachrichten,
 Veröffentlichungsbedingungen und die fachlichen Folgen eines ausgebliebenen
 Abschlusses fest. Konkrete freigegebene Zuständigkeitsregeln sowie die
-technische Fehler- und Wiederholungskoordination bleiben auszuarbeiten. Wiedereröffnung und externe
-Wartephasen gehören noch nicht zum hier gemeinsam besprochenen Prozessabschnitt.
+technische Fehler- und Wiederholungskoordination bleiben auszuarbeiten. Wiedereröffnung und externe Wartephase sind in den Abschnitten 0.15 und 0.16
+fachlich ergänzt; die technische Ausführung bleibt offen.
 
 Die fünf BPMN-Dateien sind unter `docs` abgelegt und werden nicht als
 Prozessressourcen der Anwendung ausgeliefert. Dieser Auftrag ergänzt keine Backend-Logik.
@@ -502,3 +502,64 @@ und KOM-AK-27 definieren Wiederholungsschutz und konkurrierende Entscheidungen.
 Laufende Nebenaufträge müssen beendet beziehungsweise als ungültig aufgelöst
 werden; ein Incident kann die technische Beendigung der Kindinstanz verzögern.
 Keine Backend-Implementierung oder Änderung des HTTP-Vertrags.
+
+## Wiedereröffnung · Entwurf 0.15
+
+Eine Wiedereröffnung startet **eine neue führende Prozessinstanz für denselben
+Fall**. Die bisherige Instanz bleibt beendet; Fall-ID und Historie bleiben erhalten.
+Im Hauptmodell «Aktiven Fall bearbeiten» öffnen: Am Gateway «Erstanlage oder
+Wiedereröffnung?» führt der neue Weg zu «Wiedereröffnung prüfen / Neuen Durchlauf
+zuordnen» und anschliessend direkt in die Mitarbeiterbearbeitung. Die erste
+Dringlichkeitsbewertung und automatische Vorgehensbestimmung werden übersprungen.
+
+In `mitarbeiterbearbeitung.bpmn` prüft «Eintritt prüfen / Fallstand laden» den
+serverseitigen Eintrittskontext. Ohne offenen Prüfbedarf führt der Weg bei
+«In Bearbeitung» direkt zu «Weiteres Vorgehen umsetzen / Nächste Aktion wählen».
+Mit Prüfbedarf bleibt der reguläre Weg über «Mitarbeiterprüfung erforderlich»
+und «Fall prüfen und Vorgehen entscheiden» bestehen.
+
+Ein abgelehnter oder überholter Wiedereröffnungsauftrag beendet nur seinen neuen
+Startversuch, ohne den Fall zu verändern. Das äussere «Durchlauf beendet» ist
+kein zusätzlicher fachlicher Abschluss. Technische Fehler bleiben am Job.
+Die Regeln stehen in [FALL-07](../../specifications/fallverwaltung.md#neuer-prozessdurchlauf-bei-wiedereröffnung)
+und der ausdrücklichen Ergänzung in [ADR-002](../adr/ADR-002-camunda8-workflow-orchestrierung.md).
+Dies ist ein Fachentwurf; Startverträge und Worker sind noch nicht implementiert.
+
+## Externe Wartephase · Mitarbeiterentwurf 0.16
+
+In [mitarbeiterbearbeitung.bpmn](mitarbeiterbearbeitung.bpmn) führt «Nächste Aktion»
+über «Auf externe Rückmeldung warten» zur Statusspeicherung und zur Aufgabe
+«Externe Rückmeldung abwarten / Fortsetzung entscheiden». Deren drei Ausgänge
+verwenden die bestehenden Wege: Fortsetzen → `SProgress`, Wiedervorlage →
+`FollowUp`, Abschluss → `SCloseEnd` und anschliessend die Abschlussprüfung im
+Hauptprozess. Der Randpfad `SExternalReview` führt bei neuem zwingendem Prüfbedarf
+zu `SReviewStatus`. Der neue Abschnitt liegt oberhalb des bisherigen Ablaufs.
+
+Ein Memo oder eine normale Mieternachricht beendet das Warten nicht. Keine
+automatische externe Anbindung, Rückkehr zur Erstabklärung oder Systemabschluss.
+[FALL-12](../../specifications/fallverwaltung.md#fall-12-warten-auf-externe-rückmeldung)
+ist die fachliche Quelle; FALL-AK-29 beschreibt spätere Integrationsprüfungen.
+Alle Modelle bleiben nicht ausführbare Fachentwürfe ohne Backend-Änderung.
+
+## Wiedervorlagetermin · Entwurf 0.17
+
+In [wiedervorlage.bpmn](wiedervorlage.bpmn) verwendet `WTimer` nun ein absolutes
+`timeDate` mit `= followUpDueAt`. Der gespeicherte Termin entspricht **08:00 Uhr
+Europe/Zurich** am Zieldatum, inklusive Sommer-/Winterzeit. «In N Tagen» zählt
+Kalendertage; Wochenenden und Feiertage verschieben den Termin nicht.
+Neue vergangene oder bereits erreichte Termine werden abgelehnt. Ein gültig
+angenommener, erst verzögert verarbeiteter Termin bleibt dagegen wirksam und wird
+nicht neu berechnet. [FALL-11](../../specifications/fallverwaltung.md#terminberechnung-kalendertage-und-schweizer-zeit)
+und FALL-AK-30 beschreiben die Regeln und geplanten Prüfungen. Variablenbereitstellung
+und Laufzeitverhalten sind noch nicht implementiert; das Modell bleibt Fachentwurf.
+
+## Ausbleibende Mieterantwort · Entwurf 0.18
+
+[mieterantwort-pruefen.bpmn](mieterantwort-pruefen.bpmn) kennzeichnet das Warten
+in Version 1 ausdrücklich ohne Antwortfrist, automatische Erinnerung oder
+zeitgesteuerte Eskalation wegen Schweigens. Es gibt dafür keinen Timer und keinen
+zeitgesteuerten Abschlussweg. Ohne anderen fachlichen Auslöser bleiben Wartestatus
+und Antwortbedarf bestehen. Manuelle Aktionen folgen den bisherigen Regeln;
+der separate Wiedervorlage-Timer bleibt unverändert. Siehe
+[KOM-03](../../specifications/fallkommunikation.md#ausbleibende-mieterantwort-in-version-1)
+und KOM-AK-28. Nur Fachentwurf, keine Backend-Implementierung.

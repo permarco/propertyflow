@@ -3,7 +3,7 @@
   <bpmn:error id="Error_AnalysisStale" name="Analysegrundlage überholt" errorCode="ANALYSIS_BASIS_STALE">
     <bpmn:documentation>Fachlicher Platzhalter für Zeilen 1 und 3: Die Auswertung enthält neue relevante gespeicherte Mieternachrichten noch nicht. In Validate führt der Konflikt zur aktuellen Analysegrundlage; in RValidate zur aktuellen Antwortauswertung. Kein technischer Jobfehler und kein Analysefehler. Meldung durch den späteren Prüfdienst, nicht automatisch durch blossen Nachrichteneingang. Keine zweite unabhängige Verarbeitung; aktuelle Mitarbeiterentscheidung und Abschluss schützen. Keine Ausführungsimplementierung.</bpmn:documentation>
   </bpmn:error>
-  <bpmn:process id="PropertyFlow_TenantReply_Draft" name="Mieterantwort abwarten&#10;und Fortsetzung prüfen · Fachentwurf 0.9" isExecutable="false">
+  <bpmn:process id="PropertyFlow_TenantReply_Draft" name="Mieterantwort abwarten&#10;und Fortsetzung prüfen · Fachentwurf 0.18" isExecutable="false">
     <bpmn:documentation>
 Dateiaufteilung 0.9: untergeordneter Prozess, nur durch Call Activity starten. Keine eigene führende Fallzuordnung. Eingaben caseId, leadingProcessInstanceKey und entryContextRef; Rückgaben outcome und decisionRef. Explizite instanzübergreifende Aktualisierung gemäss teilprozess-vertraege.md erforderlich; keine live gemeinsam genutzten Elternvariablen. Nicht ausführbar, kein Backend implementiert.</bpmn:documentation>
     <bpmn:startEvent id="RStart" name="Warteschritt erreicht">
@@ -18,7 +18,8 @@ Dateiaufteilung 0.9: Beim Eintritt den eigenen Kindinstanz- und Call-Bezug aus E
     <bpmn:intermediateCatchEvent id="RMessage" name="Neue Auswertung verfügbar">
       <bpmn:documentation>Interner bedingter Wartepunkt, keine zweite Nachrichtenkorrelation. Bereits vor Eintritt bereitgestellte Auswertungen müssen sofort erkannt werden. Beispielbedingung verwendet zentralen Auswertungsstand und den für diesen Wartepfad bereits verbrauchten Stand. Initialisierung, Sichtbarkeit, Verbrauch und Versionsbezug sind vor Ausführung festzulegen.
 Zeile 3: Bereits wirksam entschiedenen Stand nicht erneut konsumieren. Früh bereitgestellte neuere Auswertung erkennen. Konkrete Initialisierung/Versions- und Verbrauchsbedingungen sind noch ein technischer Vertrag.
-Instanzgrenze: tenantEvaluationVersion und consumedTenantEvaluationVersion gehören jetzt zum Antwort-Kindprozess. Der zentrale Dienst muss den gültigen Bereitschaftsstand ausdrücklich dorthin übertragen; eine Variable im Hauptprozess genügt nicht. Früh fertige Ergebnisse und Aufrufwechsel berücksichtigen; keine neue externe Mieter-Subscription.</bpmn:documentation>
+Instanzgrenze: tenantEvaluationVersion und consumedTenantEvaluationVersion gehören jetzt zum Antwort-Kindprozess. Der zentrale Dienst muss den gültigen Bereitschaftsstand ausdrücklich dorthin übertragen; eine Variable im Hauptprozess genügt nicht. Früh fertige Ergebnisse und Aufrufwechsel berücksichtigen; keine neue externe Mieter-Subscription.
+KOM-03 / KOM-AK-28, Version 1: Keine Antwortfrist, automatische Erinnerung oder zeitgesteuerte Eskalation wegen ausbleibender Antwort. Schweigen erzeugt weder Auswertung noch Abschlussfreigabe. Ohne anderen fachlichen Auslöser weiter warten; offene Restfragen bleiben offen. Bewusste Mitarbeiteraktionen und neuer zwingender Prüfbedarf folgen bestehenden Regeln. Ein separat gesetzter Wiedervorlagetermin bleibt wirksam.</bpmn:documentation>
       <bpmn:incoming>R02</bpmn:incoming>
       <bpmn:outgoing>R03</bpmn:outgoing>
       <bpmn:conditionalEventDefinition id="RMessage_definition">
@@ -77,7 +78,8 @@ Normaler Kindprozessabschluss: outcome=QUESTION und decisionRef zur geprüften G
     </bpmn:endEvent>
     <bpmn:endEvent id="RWait" name="Weiter warten">
       <bpmn:documentation>
-Normaler Kindprozessabschluss: outcome=WAIT und decisionRef zur geprüften Grundlage an den Aufrufer zurückgeben. Der vorgelagerte entscheidende Dienst muss diese Werte setzen; noch nicht implementiert. Dieses Ende schliesst den Fall nicht fachlich ab. Keine pauschale Rückgabe übriger Kindvariablen.</bpmn:documentation>
+Normaler Kindprozessabschluss: outcome=WAIT und decisionRef zur geprüften Grundlage an den Aufrufer zurückgeben. Der vorgelagerte entscheidende Dienst muss diese Werte setzen; noch nicht implementiert. Dieses Ende schliesst den Fall nicht fachlich ab. Keine pauschale Rückgabe übriger Kindvariablen.
+KOM-03 / KOM-AK-28, Version 1: Keine Antwortfrist, automatische Erinnerung oder zeitgesteuerte Eskalation wegen ausbleibender Antwort. Schweigen erzeugt weder Auswertung noch Abschlussfreigabe. Ohne anderen fachlichen Auslöser weiter warten; offene Restfragen bleiben offen. Bewusste Mitarbeiteraktionen und neuer zwingender Prüfbedarf folgen bestehenden Regeln. Ein separat gesetzter Wiedervorlagetermin bleibt wirksam.</bpmn:documentation>
       <bpmn:incoming>R10</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="R01" sourceRef="RStart" targetRef="RStatus" />
@@ -122,6 +124,12 @@ Dieser Wartepfad übernimmt dessen aktuellen Ergebnisstand; frühe Ergebnisse ge
 Interner bedingter Empfang statt zweiter externer Nachrichten-Subscription.
 Endereignisse liefern eine Fortsetzung, keinen Fallabschluss.
 Dateigrenze: aktuelle Kindinstanz gezielt aktualisieren; keine gemeinsamen Call-Variablen.</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:textAnnotation id="RNoDeadlineNote">
+      <bpmn:text>Version 1: Keine Antwortfrist und keine automatische Erinnerung.
+Schweigen beendet weder Antwortbedarf noch Fall.
+Ohne anderen fachlichen Auslöser weiter warten.
+Mitarbeiteraktionen bleiben möglich; separate Wiedervorlage gilt weiter.</bpmn:text>
     </bpmn:textAnnotation>
   </bpmn:process>
   <bpmndi:BPMNDiagram id="Reply_diagram" name="03 · Mieterantwort und Fortsetzung">
@@ -257,6 +265,9 @@ Dateigrenze: aktuelle Kindinstanz gezielt aktualisieren; keine gemeinsamen Call-
         <di:waypoint x="1050" y="120" />
         <di:waypoint x="1050" y="145" />
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="RNoDeadlineNote_di" bpmnElement="RNoDeadlineNote">
+        <dc:Bounds x="200" y="735.0" width="620" height="100" />
+      </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>
