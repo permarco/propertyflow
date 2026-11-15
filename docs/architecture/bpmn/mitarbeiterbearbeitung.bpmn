@@ -1,0 +1,338 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_PropertyFlow_Staff_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+  <bpmn:process id="PropertyFlow_Staff_Draft" name="Mitarbeiterprüfung&#10;und weitere Bearbeitung · Fachentwurf 0.9" isExecutable="false">
+    <bpmn:documentation>
+Dateiaufteilung 0.9: untergeordneter Prozess, nur durch Call Activity starten. Keine eigene führende Fallzuordnung. Eingaben caseId, leadingProcessInstanceKey und entryContextRef; Rückgaben outcome und decisionRef. Explizite instanzübergreifende Aktualisierung gemäss teilprozess-vertraege.md erforderlich; keine live gemeinsam genutzten Elternvariablen. Nicht ausführbar, kein Backend implementiert.</bpmn:documentation>
+    <bpmn:startEvent id="SStart" name="Prüfbedarf">
+      <bpmn:outgoing>S01</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="SReviewStatus" name="Prüfgrund festhalten&#10;Mitarbeiterprüfung erforderlich">
+      <bpmn:documentation>Aktuellen Prüfbedarf und Quelle nachvollziehbar speichern. Beim Eintritt über TriageFailure den internen Grund KI-Analyse fehlgeschlagen ergänzen; andere Eintrittsgründe und bereits gespeicherte Prüfgründe bleiben erhalten. Danach Status Mitarbeiterprüfung erforderlich speichern und die Mitarbeiteraufgabe bereitstellen. Beim Rückweg über CloseConflict lautet der interne Grund Fallstand seit Abschlussbestätigung geändert. Alte Abschlussfreigabe verwerfen und aktuellen Fallstand bereitstellen. Die vorherige User Task ist bereits erledigt; genau eine neue Aufgabe mit neuem Schlüssel für die bewusste Entscheidung bereitstellen. Alte Browseraktionen und wiederholte Konfliktmeldungen dürfen weder diese Aufgabe abschliessen noch weitere Aufgaben erzeugen. Bleibt eine Aufgabe wegen früher Ablehnung der Aktion bereits offen, wird dieser Rückweg nicht zusätzlich gestartet.
+Dateiaufteilung 0.9: Beim Eintritt den eigenen Kindinstanz- und Call-Bezug aus Engine-Metadaten zur unveränderten leadingProcessInstanceKey prüfen/registrieren. Aktuellen Stand aus PropertyFlow laden und lokale Steuerstände initialisieren. Registrierung und Nachlieferung müssen ohne Lücke zusammenwirken, auch bei vorher eingegangenen Nachrichten. Diese Instanz wird nicht als neuer führender Fallprozess gespeichert. Umsetzung gemäss teilprozess-vertraege.md noch offen.</bpmn:documentation>
+      <bpmn:incoming>S01</bpmn:incoming>
+      <bpmn:incoming>S13</bpmn:incoming>
+      <bpmn:incoming>S15</bpmn:incoming>
+      <bpmn:incoming>S21</bpmn:incoming>
+      <bpmn:outgoing>S02</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="SReview" name="Fall prüfen und&#10;Vorgehen entscheiden">
+      <bpmn:documentation>UC-012 / FALL-06: dieselbe aktuelle User Task an geprüften Fallstand binden. Nur bewusste Mitarbeiterentscheidungen veranlassen Fortsetzen, Wiedervorlage oder Abschluss. Neue Mieternachrichten und ihre zulässige Neubewertung ergänzen diese Aufgabe, ohne sie zu beenden. Auch eine Behebungsbestätigung oder der Wegfall eines ursprünglich systemseitigen Prüfgrundes erlaubt keinen automatischen Statuswechsel. Internes Memo allein beendet keine Prüfung. Nach Abschlusskonflikt ist dies eine neue Aufgabe zum aktuellen Fallstand. Sie übernimmt keine alte Abschlussentscheidung. Ein bewusster Abschluss auf aktueller Grundlage darf auch bei noch laufender KI-Auswertung bestätigt werden.
+Bei Call-Aufteilung gehört diese User Task zur Mitarbeiter-Kindinstanz. Autorisierung anhand serverseitig verifizierter Zuordnung von userTaskKey, aktueller Kindinstanz, Call-Aufruf, führender Instanz und Fall prüfen. Keine Freigabe allein durch frei übergebenen Prozessschlüssel. ADR-002/SS-003 vor ausführbarer Umsetzung präzisieren.</bpmn:documentation>
+      <bpmn:incoming>S02</bpmn:incoming>
+      <bpmn:outgoing>S03</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="SDecision" name="Bestätigte Entscheidung">
+      <bpmn:incoming>S03</bpmn:incoming>
+      <bpmn:outgoing>S04</bpmn:outgoing>
+      <bpmn:outgoing>S07</bpmn:outgoing>
+      <bpmn:outgoing>S08</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="SProgress" name="Entscheidung nachweisen&#10;In Bearbeitung">
+      <bpmn:documentation>Berücksichtigte Gründe bleiben nachvollziehbar und lösen ohne neue Erkenntnis keinen sofortigen Rückwechsel aus. Keine pauschale Kosten- oder Abschlussfreigabe.</bpmn:documentation>
+      <bpmn:incoming>S04</bpmn:incoming>
+      <bpmn:incoming>S16</bpmn:incoming>
+      <bpmn:outgoing>S05</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="SWork" name="Weiteres Vorgehen umsetzen&#10;Nächste Aktion wählen">
+      <bpmn:documentation>Verwaltung organisiert allfällige externe Massnahmen ausserhalb von PropertyFlow. Keine automatische Technikerbeauftragung. Technischer Zuschnitt dieser Arbeitsphase ist noch Entwurf.
+Bei Call-Aufteilung gehört diese User Task zur Mitarbeiter-Kindinstanz. Autorisierung anhand serverseitig verifizierter Zuordnung von userTaskKey, aktueller Kindinstanz, Call-Aufruf, führender Instanz und Fall prüfen. Keine Freigabe allein durch frei übergebenen Prozessschlüssel. ADR-002/SS-003 vor ausführbarer Umsetzung präzisieren.</bpmn:documentation>
+      <bpmn:incoming>S05</bpmn:incoming>
+      <bpmn:outgoing>S06</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="SWorkDecision" name="Nächste Aktion">
+      <bpmn:incoming>S06</bpmn:incoming>
+      <bpmn:outgoing>S09</bpmn:outgoing>
+      <bpmn:outgoing>S11</bpmn:outgoing>
+      <bpmn:outgoing>S12</bpmn:outgoing>
+      <bpmn:outgoing>S13</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="SQuestion" name="Mitarbeiterrückfrage&#10;veröffentlichen">
+      <bpmn:incoming>S09</bpmn:incoming>
+      <bpmn:outgoing>S10</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="SReplyEnd" name="Auf Mieterantwort warten">
+      <bpmn:documentation>
+Normaler Kindprozessabschluss: outcome=WAIT_FOR_REPLY und decisionRef zur geprüften Grundlage an den Aufrufer zurückgeben. Der vorgelagerte entscheidende Dienst muss diese Werte setzen; noch nicht implementiert. Dieses Ende schliesst den Fall nicht fachlich ab. Keine pauschale Rückgabe übriger Kindvariablen.</bpmn:documentation>
+      <bpmn:incoming>S10</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="SCloseEnd" name="Abschluss bestätigt">
+      <bpmn:documentation>
+Normaler Kindprozessabschluss: outcome=CLOSE und decisionRef zur geprüften Grundlage an den Aufrufer zurückgeben. Der vorgelagerte entscheidende Dienst muss diese Werte setzen; noch nicht implementiert. Dieses Ende schliesst den Fall nicht fachlich ab. Keine pauschale Rückgabe übriger Kindvariablen.</bpmn:documentation>
+      <bpmn:incoming>S08</bpmn:incoming>
+      <bpmn:incoming>S11</bpmn:incoming>
+      <bpmn:incoming>S17</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:callActivity id="FollowUp" name="Wiedervorlage&#10;verwalten">
+      <bpmn:documentation>
+Ruft wiedervorlage.bpmn auf. Vertrag: teilprozess-vertraege.md. Untergeordnete Instanz mit eigenem Scope; führende Fallzuordnung bleibt im Hauptprozess. Eingangsreferenz vor Aktivierung bereitstellen. Nur explizite Outputs übernehmen; aktueller Fallstand bleibt vor Wirkung zu prüfen.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="PropertyFlow_FollowUp_Draft" bindingType="deployment" propagateAllParentVariables="false" propagateAllChildVariables="true" />
+        <zeebe:ioMapping>
+          <zeebe:input source="= caseId" target="caseId" />
+          <zeebe:input source="= leadingProcessInstanceKey" target="leadingProcessInstanceKey" />
+          <zeebe:input source="= followUpEntryContextRef" target="entryContextRef" />
+          <zeebe:output source="= outcome" target="followUpOutcome" />
+          <zeebe:output source="= decisionRef" target="followUpDecisionRef" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>S07</bpmn:incoming>
+      <bpmn:incoming>S12</bpmn:incoming>
+      <bpmn:outgoing>S14</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:exclusiveGateway id="SFollowResult" name="Ergebnis der Wartezeit">
+      <bpmn:documentation>
+Nach Call-Rückkehr ausschliesslich followUpOutcome / followUpDecisionRef auswerten. Unbekannte oder fehlende Rückgabe ist technischer Vertragsfehler, kein Default-Fachentscheid. Aktuellen Fallstand und Aufrufzuordnung prüfen. Werte und Zuweisungen stehen in teilprozess-vertraege.md; FEEL-Routing weiterhin nicht ausführbar.</bpmn:documentation>
+      <bpmn:incoming>S14</bpmn:incoming>
+      <bpmn:outgoing>S15</bpmn:outgoing>
+      <bpmn:outgoing>S16</bpmn:outgoing>
+      <bpmn:outgoing>S17</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="S01" sourceRef="SStart" targetRef="SReviewStatus" />
+    <bpmn:sequenceFlow id="S02" sourceRef="SReviewStatus" targetRef="SReview" />
+    <bpmn:sequenceFlow id="S03" sourceRef="SReview" targetRef="SDecision" />
+    <bpmn:sequenceFlow id="S04" name="Bearbeitung fortsetzen" sourceRef="SDecision" targetRef="SProgress" />
+    <bpmn:sequenceFlow id="S05" sourceRef="SProgress" targetRef="SWork" />
+    <bpmn:sequenceFlow id="S06" sourceRef="SWork" targetRef="SWorkDecision" />
+    <bpmn:sequenceFlow id="S07" name="Wiedervorlage setzen" sourceRef="SDecision" targetRef="FollowUp" />
+    <bpmn:sequenceFlow id="S08" name="Abschliessen" sourceRef="SDecision" targetRef="SCloseEnd" />
+    <bpmn:sequenceFlow id="S09" name="Rückfrage" sourceRef="SWorkDecision" targetRef="SQuestion" />
+    <bpmn:sequenceFlow id="S10" sourceRef="SQuestion" targetRef="SReplyEnd" />
+    <bpmn:sequenceFlow id="S11" name="Abschliessen" sourceRef="SWorkDecision" targetRef="SCloseEnd" />
+    <bpmn:sequenceFlow id="S12" name="Wiedervorlage" sourceRef="SWorkDecision" targetRef="FollowUp" />
+    <bpmn:sequenceFlow id="S13" name="Neuer Prüfbedarf" sourceRef="SWorkDecision" targetRef="SReviewStatus" />
+    <bpmn:sequenceFlow id="S14" sourceRef="FollowUp" targetRef="SFollowResult" />
+    <bpmn:sequenceFlow id="S15" name="Termin fällig" sourceRef="SFollowResult" targetRef="SReviewStatus" />
+    <bpmn:sequenceFlow id="S16" name="Termin gelöscht" sourceRef="SFollowResult" targetRef="SProgress" />
+    <bpmn:sequenceFlow id="S17" name="Abschluss bestätigt" sourceRef="SFollowResult" targetRef="SCloseEnd" />
+    <bpmn:boundaryEvent id="SContactDuringFollowUp" name="Neuer Kontakt zur&#10;aktuellen Wiedervorlage" attachedToRef="FollowUp" cancelActivity="true">
+      <bpmn:documentation>Interner, unterbrechender bedingter Empfang. Der zentrale Nachrichteneingang stellt den Kontakt zur betroffenen Wiedervorlage-Version vor der KI-Auswertung bereit. Bei Aktivierung bereits vorhandene neue Kontakte ebenfalls erkennen. Alte Marker dürfen einen später bewusst neu gesetzten Termin nicht aufheben. Unterbricht den gesamten FollowUp-Scope einschliesslich seiner Timer und Nebenaktionen.
+Das Ereignis liegt jetzt an einer Call Activity in der Mitarbeiterinstanz. Passender Kontakt unterbricht die aufgerufene Wiedervorlage samt Timer/Nebenaktion. Der Fehler-/Abbruchpfad verwendet persistente aktuelle Daten und erwartet keine normalen Outputs des abgebrochenen Calls. Marker werden gemäss teilprozess-vertraege.md ausdrücklich in diesen Scope übertragen.</bpmn:documentation>
+      <bpmn:outgoing>S20</bpmn:outgoing>
+      <bpmn:conditionalEventDefinition id="SContactDuringFollowUp_definition">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">= pendingTenantContactFollowUpVersion != null and pendingTenantContactFollowUpVersion = activeFollowUpVersion</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:serviceTask id="SStopFollowUp" name="Termin aufheben&#10;Mitarbeiterprüfung veranlassen">
+      <bpmn:documentation>FALL-11: sofort nach dem neuen Kontakt, ohne auf KI-Auswertung zu warten. Aktuelle Wiedervorlage-Version prüfen, Termin idempotent erledigen und Prüfgrund festhalten. Timer wurde durch das unterbrechende Ereignis beendet. Gleichzeitig fälliger Timer, Kontakt oder Mitarbeiterentscheidung darf weder doppelte Aufgabe noch Rücknahme einer neueren Entscheidung erzeugen. Konkrete technische Konfliktbehandlung bleibt vor Ausführung festzulegen.</bpmn:documentation>
+      <bpmn:incoming>S20</bpmn:incoming>
+      <bpmn:outgoing>S21</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="S20" sourceRef="SContactDuringFollowUp" targetRef="SStopFollowUp" />
+    <bpmn:sequenceFlow id="S21" sourceRef="SStopFollowUp" targetRef="SReviewStatus" />
+    <bpmn:textAnnotation id="SQuestionNote">
+      <bpmn:text>Rückfrage während offener Mitarbeiterprüfung:
+Als zulässige Nebenaktion veröffentlichen; die aktuelle Aufgabe
+und vorrangiger Prüfbedarf bleiben bestehen. Kein automatischer
+Wechsel in den Wartestatus. Technische Nebenaktion noch offen.</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:textAnnotation id="SConcurrencyNote">
+      <bpmn:text>Mieternachrichten werden zentral empfangen, nicht an dieser User Task.
+Bei Mitarbeiterprüfung bleibt dieselbe Aufgabe bis zur bewussten Entscheidung offen.
+Das Randereignis an der Wiedervorlage reagiert auf einen intern bereitgestellten Kontakt.
+Es beendet nur die Wartephase und führt ohne Warten auf KI zur Prüfung.
+Nur die rechten Endereignisse liefern eine Fortsetzung an den Hauptprozess.
+Dateigrenze: aktuelle Kindinstanz gezielt aktualisieren; keine gemeinsamen Call-Variablen.</bpmn:text>
+    </bpmn:textAnnotation>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Staff_diagram" name="04 · Mitarbeiterprüfung und Bearbeitung">
+    <bpmndi:BPMNPlane id="Staff_plane" bpmnElement="PropertyFlow_Staff_Draft">
+      <bpmndi:BPMNShape id="SStart_di" bpmnElement="SStart" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="70" y="162" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="13" y="206" width="150" height="48" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SReviewStatus_di" bpmnElement="SReviewStatus" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="170" y="135" width="170" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SReview_di" bpmnElement="SReview" bioc:stroke="#7c2d12" bioc:fill="#ffedd5">
+        <dc:Bounds x="420" y="135" width="170" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SDecision_di" bpmnElement="SDecision" isMarkerVisible="true" bioc:stroke="#334155" bioc:fill="#f1f5f9">
+        <dc:Bounds x="690" y="155" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="640" y="213" width="150" height="48" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SProgress_di" bpmnElement="SProgress" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="830" y="135" width="170" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SWork_di" bpmnElement="SWork" bioc:stroke="#7c2d12" bioc:fill="#ffedd5">
+        <dc:Bounds x="1080" y="135" width="170" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SWorkDecision_di" bpmnElement="SWorkDecision" isMarkerVisible="true" bioc:stroke="#334155" bioc:fill="#f1f5f9">
+        <dc:Bounds x="1350" y="155" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1300" y="213" width="150" height="48" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SQuestion_di" bpmnElement="SQuestion" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="1500" y="35" width="170" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SReplyEnd_di" bpmnElement="SReplyEnd" bioc:stroke="#14532d" bioc:fill="#dcfce7">
+        <dc:Bounds x="1760" y="62" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1703" y="106" width="150" height="48" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SCloseEnd_di" bpmnElement="SCloseEnd" bioc:stroke="#14532d" bioc:fill="#dcfce7">
+        <dc:Bounds x="1760" y="262" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1703" y="306" width="150" height="48" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="FollowUp_di" bpmnElement="FollowUp" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
+        <dc:Bounds x="850" y="445" width="170" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SFollowResult_di" bpmnElement="SFollowResult" isMarkerVisible="true" bioc:stroke="#334155" bioc:fill="#f1f5f9">
+        <dc:Bounds x="1110" y="465" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1060" y="523" width="150" height="48" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SQuestionNote_di" bpmnElement="SQuestionNote" bioc:stroke="#475569" bioc:fill="#ffffff">
+        <dc:Bounds x="70" y="740" width="760" height="120" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SConcurrencyNote_di" bpmnElement="SConcurrencyNote" bioc:stroke="#475569" bioc:fill="#ffffff">
+        <dc:Bounds x="950" y="740" width="850" height="140" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="S01_di" bpmnElement="S01">
+        <di:waypoint x="106" y="180" />
+        <di:waypoint x="170" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="S02_di" bpmnElement="S02">
+        <di:waypoint x="340" y="180" />
+        <di:waypoint x="420" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="S03_di" bpmnElement="S03">
+        <di:waypoint x="590" y="180" />
+        <di:waypoint x="690" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="S04_di" bpmnElement="S04">
+        <di:waypoint x="740" y="180" />
+        <di:waypoint x="830" y="180" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="735" y="110" width="110" height="45" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="S05_di" bpmnElement="S05">
+        <di:waypoint x="1000" y="180" />
+        <di:waypoint x="1080" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="S06_di" bpmnElement="S06">
+        <di:waypoint x="1250" y="180" />
+        <di:waypoint x="1350" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="S07_di" bpmnElement="S07">
+        <di:waypoint x="715" y="205" />
+        <di:waypoint x="715" y="490" />
+        <di:waypoint x="850" y="490" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="725" y="370" width="130" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="S08_di" bpmnElement="S08">
+        <di:waypoint x="715" y="205" />
+        <di:waypoint x="715" y="300" />
+        <di:waypoint x="1720" y="300" />
+        <di:waypoint x="1720" y="280" />
+        <di:waypoint x="1760" y="280" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1100" y="265" width="120" height="30" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="S09_di" bpmnElement="S09">
+        <di:waypoint x="1375" y="155" />
+        <di:waypoint x="1375" y="80" />
+        <di:waypoint x="1500" y="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1380" y="40" width="110" height="30" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="S10_di" bpmnElement="S10">
+        <di:waypoint x="1670" y="80" />
+        <di:waypoint x="1760" y="80" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="S11_di" bpmnElement="S11">
+        <di:waypoint x="1400" y="180" />
+        <di:waypoint x="1450" y="180" />
+        <di:waypoint x="1450" y="280" />
+        <di:waypoint x="1760" y="280" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1490" y="245" width="130" height="30" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="S12_di" bpmnElement="S12">
+        <di:waypoint x="1375" y="205" />
+        <di:waypoint x="1375" y="390" />
+        <di:waypoint x="935" y="390" />
+        <di:waypoint x="935" y="445" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1080" y="350" width="140" height="30" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="S13_di" bpmnElement="S13">
+        <di:waypoint x="1375" y="205" />
+        <di:waypoint x="1375" y="670" />
+        <di:waypoint x="255" y="670" />
+        <di:waypoint x="255" y="225" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="750" y="635" width="150" height="30" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="S14_di" bpmnElement="S14">
+        <di:waypoint x="1020" y="490" />
+        <di:waypoint x="1110" y="490" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="S15_di" bpmnElement="S15">
+        <di:waypoint x="1135" y="515" />
+        <di:waypoint x="1135" y="620" />
+        <di:waypoint x="295" y="620" />
+        <di:waypoint x="295" y="225" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1160" y="585" width="120" height="20" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="S16_di" bpmnElement="S16">
+        <di:waypoint x="1135" y="465" />
+        <di:waypoint x="1135" y="420" />
+        <di:waypoint x="1010" y="420" />
+        <di:waypoint x="1010" y="250" />
+        <di:waypoint x="915" y="250" />
+        <di:waypoint x="915" y="225" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1005" y="375" width="130" height="30" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="S17_di" bpmnElement="S17">
+        <di:waypoint x="1160" y="490" />
+        <di:waypoint x="1710" y="490" />
+        <di:waypoint x="1710" y="280" />
+        <di:waypoint x="1760" y="280" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1400" y="455" width="180" height="30" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="SContactDuringFollowUp_di" bpmnElement="SContactDuringFollowUp" bioc:stroke="#7c2d12" bioc:fill="#ffedd5">
+        <dc:Bounds x="900" y="517" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="950" y="565" width="150" height="42" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SStopFollowUp_di" bpmnElement="SStopFollowUp" bioc:stroke="#7c2d12" bioc:fill="#ffedd5">
+        <dc:Bounds x="420" y="420" width="190" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="S20_di" bpmnElement="S20" bioc:stroke="#334155">
+        <di:waypoint x="918" y="553" />
+        <di:waypoint x="918" y="590" />
+        <di:waypoint x="515" y="590" />
+        <di:waypoint x="515" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="S21_di" bpmnElement="S21" bioc:stroke="#334155">
+        <di:waypoint x="420" y="470" />
+        <di:waypoint x="255" y="470" />
+        <di:waypoint x="255" y="225" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

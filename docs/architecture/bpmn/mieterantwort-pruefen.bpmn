@@ -1,0 +1,262 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_PropertyFlow_TenantReply_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+  <bpmn:error id="Error_AnalysisStale" name="Analysegrundlage überholt" errorCode="ANALYSIS_BASIS_STALE">
+    <bpmn:documentation>Fachlicher Platzhalter für Zeilen 1 und 3: Die Auswertung enthält neue relevante gespeicherte Mieternachrichten noch nicht. In Validate führt der Konflikt zur aktuellen Analysegrundlage; in RValidate zur aktuellen Antwortauswertung. Kein technischer Jobfehler und kein Analysefehler. Meldung durch den späteren Prüfdienst, nicht automatisch durch blossen Nachrichteneingang. Keine zweite unabhängige Verarbeitung; aktuelle Mitarbeiterentscheidung und Abschluss schützen. Keine Ausführungsimplementierung.</bpmn:documentation>
+  </bpmn:error>
+  <bpmn:process id="PropertyFlow_TenantReply_Draft" name="Mieterantwort abwarten&#10;und Fortsetzung prüfen · Fachentwurf 0.9" isExecutable="false">
+    <bpmn:documentation>
+Dateiaufteilung 0.9: untergeordneter Prozess, nur durch Call Activity starten. Keine eigene führende Fallzuordnung. Eingaben caseId, leadingProcessInstanceKey und entryContextRef; Rückgaben outcome und decisionRef. Explizite instanzübergreifende Aktualisierung gemäss teilprozess-vertraege.md erforderlich; keine live gemeinsam genutzten Elternvariablen. Nicht ausführbar, kein Backend implementiert.</bpmn:documentation>
+    <bpmn:startEvent id="RStart" name="Warteschritt erreicht">
+      <bpmn:outgoing>R01</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="RStatus" name="Wartestatus prüfen&#10;Wartet auf Mieterantwort">
+      <bpmn:documentation>Kein vorrangiger Mitarbeiterprüfbedarf und keine laufende Wiedervorlage. Kein erneutes In Abklärung allein durch Nachrichteneingang.
+Dateiaufteilung 0.9: Beim Eintritt den eigenen Kindinstanz- und Call-Bezug aus Engine-Metadaten zur unveränderten leadingProcessInstanceKey prüfen/registrieren. Aktuellen Stand aus PropertyFlow laden und lokale Steuerstände initialisieren. Registrierung und Nachlieferung müssen ohne Lücke zusammenwirken, auch bei vorher eingegangenen Nachrichten. Diese Instanz wird nicht als neuer führender Fallprozess gespeichert. Umsetzung gemäss teilprozess-vertraege.md noch offen.</bpmn:documentation>
+      <bpmn:incoming>R01</bpmn:incoming>
+      <bpmn:outgoing>R02</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:intermediateCatchEvent id="RMessage" name="Neue Auswertung verfügbar">
+      <bpmn:documentation>Interner bedingter Wartepunkt, keine zweite Nachrichtenkorrelation. Bereits vor Eintritt bereitgestellte Auswertungen müssen sofort erkannt werden. Beispielbedingung verwendet zentralen Auswertungsstand und den für diesen Wartepfad bereits verbrauchten Stand. Initialisierung, Sichtbarkeit, Verbrauch und Versionsbezug sind vor Ausführung festzulegen.
+Zeile 3: Bereits wirksam entschiedenen Stand nicht erneut konsumieren. Früh bereitgestellte neuere Auswertung erkennen. Konkrete Initialisierung/Versions- und Verbrauchsbedingungen sind noch ein technischer Vertrag.
+Instanzgrenze: tenantEvaluationVersion und consumedTenantEvaluationVersion gehören jetzt zum Antwort-Kindprozess. Der zentrale Dienst muss den gültigen Bereitschaftsstand ausdrücklich dorthin übertragen; eine Variable im Hauptprozess genügt nicht. Früh fertige Ergebnisse und Aufrufwechsel berücksichtigen; keine neue externe Mieter-Subscription.</bpmn:documentation>
+      <bpmn:incoming>R02</bpmn:incoming>
+      <bpmn:outgoing>R03</bpmn:outgoing>
+      <bpmn:conditionalEventDefinition id="RMessage_definition">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">= tenantEvaluationVersion != null and consumedTenantEvaluationVersion != null and tenantEvaluationVersion &gt; consumedTenantEvaluationVersion</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:serviceTask id="REvaluate" name="Aktuelle Auswertung&#10;und Antwortbedarf laden">
+      <bpmn:documentation>Die zentrale Nachrichtenauswertung liefert Antworten, Dringlichkeit und Empfehlung bzw. Analysefehler. Keine zweite unabhängige Auswertung derselben Nachricht starten. Nur aktuellen, noch nicht konsumierten Stand laden und den Verbrauch nachvollziehbar führen; überholte Ergebnisse nicht als neue Antwort verwenden.
+Zeile 3: Jede offene Frage einzeln prüfen lassen. Nur eindeutig beantwortete Fragen erledigen. Ergebnisverbrauch an die wirksame Entscheidung binden; ein bloss geladenes und dann überholtes Ergebnis darf keinen aktuellen Stand verdecken.</bpmn:documentation>
+      <bpmn:incoming>R03</bpmn:incoming>
+      <bpmn:outgoing>R04</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="RValidate" name="Ausführungsbedingungen&#10;und Abschlussgründe prüfen">
+      <bpmn:documentation>KOM-05: aktuelle Fallversion, Prozessfreigabe, Katalog und offenen Antwortbedarf prüfen. Eine bereits laufende Mitarbeiterprüfung bleibt unabhängig von ihrer Herkunft bestehen; zulässige Auswertung ergänzt dieselbe Aufgabe, kein Systemabschluss und keine automatische Statusfortsetzung. Pflichtprüfung und aktueller Fall-/Aufgabenstand haben Vorrang. Alle zuvor offenen Fragen beantwortet + kein erlaubter Systemabschluss -&gt; Mitarbeiterprüfung, nicht durch neue Fragen umgehen. Nicht auf reine Information ohne frühere Fragen anwenden. Teilantworten lassen andere Fragen offen; ohne weiteren zulässigen Bedarf weiter warten. Keine starre Fragerundengrenze. Doppelte, überholte oder nach Abschluss eintreffende Ergebnisse veröffentlichen nichts und lösen für sich keine Mitarbeiterprüfung aus; technische Koordination vor Ausführung konkretisieren. Systemabschluss nach den am 15.11.2026 bestätigten Regeln in FALL-07: ausschliesslich gespeicherter Status In Abklärung oder Wartet auf Mieterantwort, aktuelle Prozessfreigabe und keine offenen menschlichen Entscheidungen nach FALL-06/FALL-10, keine offene Objektzuordnung, kein Analysefehler und kein klärungsbedürftiger Versand. Alle relevanten gespeicherten Mieternachrichten müssen berücksichtigt sein; eine neue, noch nicht ausgewertete Nachricht sperrt den Abschluss auf alter Grundlage. Problem behoben verlangt eine gespeicherte eindeutige Bestätigung der bereits eingetretenen Behebung des gesamten offenen Sachverhalts ohne weiteren Hilfebedarf oder aktuellen Widerspruch. Vorläufige Besserung, geplante Massnahmen, Restschäden, Danke, Schweigen oder Bitte schliessen allein genügen nicht. Kein Bearbeitungsbedarf der Verwaltung verlangt eine ausdrücklich für Systemabschluss freigegebene, gültige Regel mit Kennung, Version und passendem Geltungsbereich; alle Voraussetzungen müssen belegt, alle Teilprobleme abgedeckt und Ausnahmen oder Widersprüche ausgeschlossen sein. Fehlende Angaben, unbekannte Regeln, allgemeines Modellwissen oder begründete Mietereinwände geben keinen Abschluss frei. Belege und gegebenenfalls Regelreferenz prüfen und nachvollziehbar halten. Eine hohe Modellsicherheit oder formal gültige Ausgabe ersetzt keine semantische Evaluation. Bei belegter Gesamtbehebung dürfen gegenstandslos gewordene Rückfragen bis zum Abschluss offen bleiben; sie werden nicht als beantwortet erfunden. Unklare oder widersprüchliche fachliche Einordnung benötigt Mitarbeiterprüfung; gezielt erfragbare fehlende Angaben folgen gegebenenfalls KOM-05. Doppelte, überholte oder inzwischen unzulässige Vorschläge dürfen keine andere aktive Bearbeitung verdrängen und erzeugen für sich keine zusätzliche Aufgabe. Ihre technische Fortsetzung ist vor Ausführung festzulegen, kein pauschaler Default-Ausgang zur Mitarbeiterprüfung. Die Freigabe des Abschlussgrundes ersetzt keine gesonderte Freigabe des automatisch veröffentlichten Antworttextes.
+KOM-06 zusätzlich prüfen: Abschlussgrund passt zur Antwortart und freigegebenen Textfassung. AT-001 unverändert; AT-002 benötigt neben gültiger, vollständig anwendbarer Fachregel einen ausdrücklich zugehörigen freigegebenen Erklärungstext. Kein ungelöster Platzhalter, kein freier LLM-Zusatz und keine Abschlussbehauptung oder Abschlusszusage. Fehlt eine geeignete Textfreigabe, ist Mitarbeiterprüfung erforderlich, kein Ersatztext und kein automatischer Abschluss auf diesem Antwortweg. Bereits laufende Prüfung erhalten; doppelte oder überholte Ergebnisse allein erzeugen keine neue Aufgabe. Vor Veröffentlichung erneut prüfen. Inhaltliche Zuordnung gemäss KOM-AK-18 bis KOM-AK-21 evaluieren; feste Texte beweisen keine semantische Richtigkeit.
+Zeile 3 / KOM-AK-24, am aktuellen Fallstand in dieser Reihenfolge: 1. Pflichtprüfbedarf oder Analysefehler -&gt; Mitarbeiterprüfung. 2. Zulässiger Systemabschluss samt Textfreigabe -&gt; Antwort veröffentlichen und Abschluss erneut prüfen. 3. Alle zuvor offenen Fragen beantwortet, kein zulässiger Abschluss -&gt; Mitarbeiterprüfung, nicht durch neue Fragen umgehen. 4. Fragen bleiben offen und weitere notwendige Katalogfrage zulässig -&gt; nur diese neue Frage veröffentlichen. 5. Fragen offen und keine weitere Frage nötig -&gt; weiter warten ohne neue Kommunikation. Unzuverlässige Grundlage, fehlende passende Textfreigabe und notwendige Frage ausserhalb des Katalogs folgen den bestehenden Prüfregeln, kein stilles Weiterwarten. Teilantwort allein ist kein Prüfgrund. Kein Status In Abklärung allein durch Antwortauswertung. Zwischenzeitliche Mitarbeiterentscheidung und Abschluss schützen.
+Überholte Antwortauswertung wegen weiterer relevanter Nachricht über ANALYSIS_BASIS_STALE zu RCurrentAnalysis und erneut prüfen. Doppelte/verbrauchte Ergebnisse werden nicht als neue Entscheidung gewertet und dürfen nicht den Default-Mitarbeiterpfad auslösen.</bpmn:documentation>
+      <bpmn:incoming>R04</bpmn:incoming>
+      <bpmn:incoming>R_Current_Validate</bpmn:incoming>
+      <bpmn:outgoing>R06</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:boundaryEvent id="RAnalysisStale" name="Antwortauswertung&#10;überholt" attachedToRef="RValidate" cancelActivity="true">
+      <bpmn:documentation>KOM-03 Zeile 3 / KOM-AK-24: Vor Entscheidung wird eine weitere relevante gespeicherte Nachricht festgestellt. Alten Stand nicht verwenden, normalen Ausgang R06 unterbrechen; aktuelle zentrale Auswertung übernehmen und erneut prüfen. Kein Prüfgrund allein durch Überholung. Mitarbeiterentscheidung und Abschluss schützen. Fachlicher Fehlerplatzhalter; keine ausführbare Worker-Implementierung.</bpmn:documentation>
+      <bpmn:outgoing>R_Stale_Current</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="RAnalysisStale_definition" errorRef="Error_AnalysisStale" />
+    </bpmn:boundaryEvent>
+    <bpmn:serviceTask id="RCurrentAnalysis" name="Aktuelle zentrale&#10;Auswertung übernehmen">
+      <bpmn:documentation>KOM-03 Zeile 3: aktuelle zentrale Auswertung verwenden; eine passende laufende abwarten, fehlende über dieselbe Verarbeitung veranlassen. Keine zweite unabhängige Analyse oder externe Nachrichtenkorrelation. Alle relevanten Nachrichten und bisherigen Rückfragen berücksichtigen. Verbrauch erst an die wirksame Entscheidung binden; keine Endlosschleife mit einem alten verfügbaren Ergebnis. Status zunächst Wartet auf Mieterantwort erhalten. Zwischenzeitliche Mitarbeiterentscheidung, Wiedervorlage, Abschluss und tatsächlichen Analysefehler gemäss ihren Regeln berücksichtigen. Ausführbares Warteverfahren und atomare Versionsbindung bleiben festzulegen.</bpmn:documentation>
+      <bpmn:incoming>R_Stale_Current</bpmn:incoming>
+      <bpmn:outgoing>R_Current_Validate</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="RResult" name="Zulässige Fortsetzung" default="R08">
+      <bpmn:documentation>
+Zeile 3 / KOM-AK-24, am aktuellen Fallstand in dieser Reihenfolge: 1. Pflichtprüfbedarf oder Analysefehler -&gt; Mitarbeiterprüfung. 2. Zulässiger Systemabschluss samt Textfreigabe -&gt; Antwort veröffentlichen und Abschluss erneut prüfen. 3. Alle zuvor offenen Fragen beantwortet, kein zulässiger Abschluss -&gt; Mitarbeiterprüfung, nicht durch neue Fragen umgehen. 4. Fragen bleiben offen und weitere notwendige Katalogfrage zulässig -&gt; nur diese neue Frage veröffentlichen. 5. Fragen offen und keine weitere Frage nötig -&gt; weiter warten ohne neue Kommunikation. Unzuverlässige Grundlage, fehlende passende Textfreigabe und notwendige Frage ausserhalb des Katalogs folgen den bestehenden Prüfregeln, kein stilles Weiterwarten. Teilantwort allein ist kein Prüfgrund. Kein Status In Abklärung allein durch Antwortauswertung. Zwischenzeitliche Mitarbeiterentscheidung und Abschluss schützen.
+Die vier benannten Ausgänge entsprechen exklusiven fachlichen Ergebnissen, nicht der Reihenfolge ihrer XML-Elemente. R08 ist ausschliesslich fachlicher Prüfbedarf einschliesslich vollständiger Beantwortung ohne zulässigen Abschluss. Uninitialisierte, überholte oder doppelte Ergebnisse dürfen diesen Default nicht erreichen. Ergebniswerte und FEEL-Bedingungen vor ausführbarer Umsetzung festlegen.</bpmn:documentation>
+      <bpmn:incoming>R06</bpmn:incoming>
+      <bpmn:outgoing>R07</bpmn:outgoing>
+      <bpmn:outgoing>R08</bpmn:outgoing>
+      <bpmn:outgoing>R09</bpmn:outgoing>
+      <bpmn:outgoing>R10</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="RClose" name="Systemabschluss&#10;geprüft">
+      <bpmn:documentation>Positives Prüfergebnis nur bei sämtlichen Voraussetzungen aus FALL-07: zulässiger Status, kein offener Prüfbedarf und aktueller vollständig belegter Grund. Keine Freigabe allein aus LLM-Vorschlag, Konfidenz, niedriger Dringlichkeit oder dem Wort behoben. Weiterhin gesonderte Textfreigabe vor automatischer Veröffentlichung und erneute Prüfung bei Abschlussspeicherung erforderlich.
+Normaler Kindprozessabschluss: outcome=CLOSE und decisionRef zur geprüften Grundlage an den Aufrufer zurückgeben. Der vorgelagerte entscheidende Dienst muss diese Werte setzen; noch nicht implementiert. Dieses Ende schliesst den Fall nicht fachlich ab. Keine pauschale Rückgabe übriger Kindvariablen.</bpmn:documentation>
+      <bpmn:incoming>R07</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="RReview" name="Mitarbeiterprüfung">
+      <bpmn:documentation>
+Normaler Kindprozessabschluss: outcome=REVIEW und decisionRef zur geprüften Grundlage an den Aufrufer zurückgeben. Der vorgelagerte entscheidende Dienst muss diese Werte setzen; noch nicht implementiert. Dieses Ende schliesst den Fall nicht fachlich ab. Keine pauschale Rückgabe übriger Kindvariablen.</bpmn:documentation>
+      <bpmn:incoming>R08</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="RQuestion" name="Weitere Katalogrückfrage">
+      <bpmn:documentation>
+Normaler Kindprozessabschluss: outcome=QUESTION und decisionRef zur geprüften Grundlage an den Aufrufer zurückgeben. Der vorgelagerte entscheidende Dienst muss diese Werte setzen; noch nicht implementiert. Dieses Ende schliesst den Fall nicht fachlich ab. Keine pauschale Rückgabe übriger Kindvariablen.</bpmn:documentation>
+      <bpmn:incoming>R09</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="RWait" name="Weiter warten">
+      <bpmn:documentation>
+Normaler Kindprozessabschluss: outcome=WAIT und decisionRef zur geprüften Grundlage an den Aufrufer zurückgeben. Der vorgelagerte entscheidende Dienst muss diese Werte setzen; noch nicht implementiert. Dieses Ende schliesst den Fall nicht fachlich ab. Keine pauschale Rückgabe übriger Kindvariablen.</bpmn:documentation>
+      <bpmn:incoming>R10</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="R01" sourceRef="RStart" targetRef="RStatus" />
+    <bpmn:sequenceFlow id="R02" sourceRef="RStatus" targetRef="RMessage" />
+    <bpmn:sequenceFlow id="R03" sourceRef="RMessage" targetRef="REvaluate" />
+    <bpmn:sequenceFlow id="R04" sourceRef="REvaluate" targetRef="RValidate" />
+    <bpmn:sequenceFlow id="R06" sourceRef="RValidate" targetRef="RResult" />
+    <bpmn:sequenceFlow id="R07" name="Zulässiger Status +&#10;belegter Abschlussgrund" sourceRef="RResult" targetRef="RClose">
+      <bpmn:documentation>Positives Prüfergebnis nur bei sämtlichen Voraussetzungen aus FALL-07: zulässiger Status, kein offener Prüfbedarf und aktueller vollständig belegter Grund. Keine Freigabe allein aus LLM-Vorschlag, Konfidenz, niedriger Dringlichkeit oder dem Wort behoben. Weiterhin gesonderte Textfreigabe vor automatischer Veröffentlichung und erneute Prüfung bei Abschlussspeicherung erforderlich.
+Zusätzlich passende Antwortvorlage nach KOM-06 freigegeben; AT-002 nur mit konkreter Regel und zugehörigem Erklärungstext. Vor der tatsächlichen Veröffentlichung erneut am aktuellen Stand prüfen.
+Priorität 2: Kein vorrangiger Prüfbedarf; sämtliche Systemabschluss- und Textbedingungen erfüllt. RClose ist nur Fortsetzungsvorschlag, kein gespeicherter Abschluss.</bpmn:documentation>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="R08" name="Prüfbedarf / Fehler / alle Fragen beantwortet" sourceRef="RResult" targetRef="RReview">
+      <bpmn:documentation>
+Priorität 1 oder 3: Pflichtprüfbedarf/Analysefehler oder alle zuvor offenen Fragen beantwortet ohne zulässigen Abschluss. Keine Umgehung durch neue Fragen. Kein Default für bloss überholte oder doppelte Ergebnisse.</bpmn:documentation>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="R09" name="Weitere Katalogfrage zulässig" sourceRef="RResult" targetRef="RQuestion">
+      <bpmn:documentation>
+Priorität 4: Kein vorrangiger Prüfbedarf oder zulässiger Abschluss; bisherige Fragen nicht vollständig beantwortet und weitere notwendige Katalogfrage nach KOM-05 zulässig. Nur neue notwendige Frage, keine Wiederholung.</bpmn:documentation>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="R10" name="Fragen offen;&#10;keine weitere Frage nötig" sourceRef="RResult" targetRef="RWait">
+      <bpmn:documentation>
+Priorität 5: Noch offene Fragen; keine weitere Frage nötig, kein Prüfbedarf und kein zulässiger Abschluss. Teilantwort allein erzeugt keinen Prüfgrund. Status erhalten, keine neue Nachricht oder Benachrichtigung.</bpmn:documentation>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="R_Stale_Current" sourceRef="RAnalysisStale" targetRef="RCurrentAnalysis" />
+    <bpmn:sequenceFlow id="R_Current_Validate" sourceRef="RCurrentAnalysis" targetRef="RValidate" />
+    <bpmn:textAnnotation id="RRule">
+      <bpmn:text>Bestätigte Reihenfolge (KOM-03 Zeile 3):
+1. Pflichtprüfbedarf / Analysefehler -&gt; Mitarbeiterprüfung.
+2. Zulässiger Systemabschluss + Textfreigabe -&gt; Antwort, Abschluss erneut prüfen.
+3. Alle bisherigen Fragen beantwortet, kein Abschluss -&gt; Mitarbeiterprüfung.
+4. Fragen offen + weitere notwendige Katalogfrage zulässig -&gt; nur neue Frage.
+5. Fragen offen, keine weitere Frage nötig -&gt; weiter warten, keine Nachricht.
+Teilantwort erledigt nur die beantwortete Frage; offene Fragen nicht wiederholen.
+Überholte Grundlage -&gt; aktuelle zentrale Auswertung, danach erneut prüfen.
+Mitarbeiterentscheidung hat Vorrang; keine Rücksetzung auf In Abklärung.
+Enden liefern Fortsetzungen, keinen fachlichen Fallabschluss.</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:textAnnotation id="RScope">
+      <bpmn:text>Mieternachricht wird ausschliesslich im zentralen Ereignis-Teilprozess empfangen und ausgewertet.
+Dieser Wartepfad übernimmt dessen aktuellen Ergebnisstand; frühe Ergebnisse gehen nicht verloren.
+Interner bedingter Empfang statt zweiter externer Nachrichten-Subscription.
+Endereignisse liefern eine Fortsetzung, keinen Fallabschluss.
+Dateigrenze: aktuelle Kindinstanz gezielt aktualisieren; keine gemeinsamen Call-Variablen.</bpmn:text>
+    </bpmn:textAnnotation>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Reply_diagram" name="03 · Mieterantwort und Fortsetzung">
+    <bpmndi:BPMNPlane id="Reply_plane" bpmnElement="PropertyFlow_TenantReply_Draft">
+      <bpmndi:BPMNShape id="RStart_di" bpmnElement="RStart" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="70" y="172" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="13" y="216" width="150" height="48" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="RStatus_di" bpmnElement="RStatus" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="170" y="145" width="170" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="RMessage_di" bpmnElement="RMessage" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
+        <dc:Bounds x="410" y="172" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="353" y="216" width="150" height="48" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="REvaluate_di" bpmnElement="REvaluate" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="530" y="145" width="170" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="RValidate_di" bpmnElement="RValidate" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="1010" y="145" width="170" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="RResult_di" bpmnElement="RResult" isMarkerVisible="true" bioc:stroke="#334155" bioc:fill="#f1f5f9">
+        <dc:Bounds x="1260" y="165" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1070" y="250" width="140" height="35" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="RClose_di" bpmnElement="RClose" bioc:stroke="#14532d" bioc:fill="#dcfce7">
+        <dc:Bounds x="1470" y="42" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1413" y="86" width="150" height="48" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="RReview_di" bpmnElement="RReview" bioc:stroke="#14532d" bioc:fill="#dcfce7">
+        <dc:Bounds x="1470" y="202" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1413" y="246" width="150" height="48" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="RQuestion_di" bpmnElement="RQuestion" bioc:stroke="#14532d" bioc:fill="#dcfce7">
+        <dc:Bounds x="1470" y="362" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1413" y="406" width="150" height="48" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="RWait_di" bpmnElement="RWait" bioc:stroke="#14532d" bioc:fill="#dcfce7">
+        <dc:Bounds x="1470" y="522" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1413" y="566" width="150" height="48" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="RRule_di" bpmnElement="RRule" bioc:stroke="#475569" bioc:fill="#ffffff">
+        <dc:Bounds x="170" y="370" width="830" height="200" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="RScope_di" bpmnElement="RScope" bioc:stroke="#475569" bioc:fill="#ffffff">
+        <dc:Bounds x="170" y="585" width="1050" height="105" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="R01_di" bpmnElement="R01">
+        <di:waypoint x="106" y="190" />
+        <di:waypoint x="170" y="190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="R02_di" bpmnElement="R02">
+        <di:waypoint x="340" y="190" />
+        <di:waypoint x="410" y="190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="R03_di" bpmnElement="R03">
+        <di:waypoint x="446" y="190" />
+        <di:waypoint x="530" y="190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="R04_di" bpmnElement="R04">
+        <di:waypoint x="700.0" y="190.0" />
+        <di:waypoint x="1010.0" y="190.0" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="R06_di" bpmnElement="R06">
+        <di:waypoint x="1180" y="190" />
+        <di:waypoint x="1260" y="190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="R07_di" bpmnElement="R07">
+        <di:waypoint x="1285" y="165" />
+        <di:waypoint x="1285" y="60" />
+        <di:waypoint x="1470" y="60" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1285" y="15" width="185" height="42" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="R08_di" bpmnElement="R08">
+        <di:waypoint x="1310" y="190" />
+        <di:waypoint x="1390" y="190" />
+        <di:waypoint x="1390" y="220" />
+        <di:waypoint x="1470" y="220" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1290" y="235" width="170" height="55" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="R09_di" bpmnElement="R09">
+        <di:waypoint x="1285" y="215" />
+        <di:waypoint x="1285" y="380" />
+        <di:waypoint x="1470" y="380" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1295" y="325" width="165" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="R10_di" bpmnElement="R10">
+        <di:waypoint x="1285" y="215" />
+        <di:waypoint x="1230" y="215" />
+        <di:waypoint x="1230" y="540" />
+        <di:waypoint x="1470" y="540" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1250" y="495" width="210" height="35" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="RAnalysisStale_di" bpmnElement="RAnalysisStale" bioc:stroke="#9a3412" bioc:fill="#fff7ed">
+        <dc:Bounds x="1082" y="127" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1105" y="92" width="130" height="30" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="RCurrentAnalysis_di" bpmnElement="RCurrentAnalysis" bioc:stroke="#9a3412" bioc:fill="#fff7ed">
+        <dc:Bounds x="770" y="20" width="200" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="R_Stale_Current_di" bpmnElement="R_Stale_Current" bioc:stroke="#9a3412">
+        <di:waypoint x="1100" y="127" />
+        <di:waypoint x="1100" y="60" />
+        <di:waypoint x="970" y="60" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="R_Current_Validate_di" bpmnElement="R_Current_Validate" bioc:stroke="#9a3412">
+        <di:waypoint x="870" y="100" />
+        <di:waypoint x="870" y="120" />
+        <di:waypoint x="1050" y="120" />
+        <di:waypoint x="1050" y="145" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

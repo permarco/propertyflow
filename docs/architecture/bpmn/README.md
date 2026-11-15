@@ -1,8 +1,30 @@
 # PropertyFlow-Fallprozess
 
 [propertyflow-fallprozess-entwurf.bpmn](propertyflow-fallprozess-entwurf.bpmn)
-ist der fachliche BPMN-Entwurf 0.7 zur gemeinsamen Besprechung, Stand 15.11.2026.
+ist der führende BPMN-Entwurf 0.10 zur gemeinsamen Besprechung, Stand 15.11.2026.
 Er enthält BPMN-Diagrammkoordinaten und kann im Camunda Modeler geöffnet werden.
+
+## Dateien – hier bearbeiten
+
+| Datei | Inhalt / typische Änderung |
+|---|---|
+| [propertyflow-fallprozess-entwurf.bpmn](propertyflow-fallprozess-entwurf.bpmn) | Hauptablauf, durchgängiger Mieternachrichteneingang, automatische Veröffentlichung, fachlicher Abschluss und Abschlussmail |
+| [mieterantwort-pruefen.bpmn](mieterantwort-pruefen.bpmn) | Offene Fragen auswerten, Teilantworten, Fortsetzungen nach der Mieterantwort |
+| [mitarbeiterbearbeitung.bpmn](mitarbeiterbearbeitung.bpmn) | Mitarbeiterprüfung, weitere Bearbeitung, Entscheidung und Aufruf der Wiedervorlage |
+| [wiedervorlage.bpmn](wiedervorlage.bpmn) | Termin/Timer, Änderung, Löschung und Mitarbeiterrückfrage während der Wartephase |
+| [mieternachricht-verarbeiten.bpmn](mieternachricht-verarbeiten.bpmn) | Gespeicherten Eingang prüfen, Mitarbeiterprüfung schützen, Wiedervorlage wecken und Nachricht auswerten |
+
+Jede Datei ist die einzige bearbeitete Quelle ihres Teilprozesses, keine generierte
+Ansichtskopie. In Camunda Modeler die gewünschte Datei direkt öffnen; der Dateiname
+steht auch in der Dokumentation der aufrufenden Call Activity. Der Dateipfad ist
+kein BPMN-Aufrufschlüssel: Die Verknüpfung verwendet die Prozess-ID.
+Der bisherige Hauptdateiname bleibt für bestehende Links erhalten.
+
+Die [Teilprozess-Verträge](teilprozess-vertraege.md) beschreiben Call-Hierarchie,
+explizite Eingaben und Rückgaben, laufende Aktualisierungen, Abbruch und Rechtebindung.
+Alle fünf Dateien bleiben **nicht ausführbare Fachentwürfe**. Die Dateiaufteilung
+ist umgesetzt; die notwendige Übergabe zwischen den Kindinstanzen und die
+Präzisierung von ADR-002/SS-003 sind noch nicht im Backend implementiert.
 
 ## Ansichten
 
@@ -26,28 +48,32 @@ wartet nicht auf ausgeschöpfte Analyse-Retries. Das entspricht der
 [Camunda-Fehlerereignis-Semantik](https://docs.camunda.io/docs/8.9/components/modeler/bpmn/error-events/)
 und der fachlichen Vorgabe aus FALL-05.
 
-Die eingebetteten Teilprozesse lassen sich im Modeler über ihr
-Navigationssymbol öffnen:
+Im Hauptmodell lassen sich «Aktiven Fall bearbeiten» und der darin eingebettete
+Nachrichteneingang über ihr Navigationssymbol öffnen. Die ausgelagerten Prozesse
+werden in ihren eigenen Dateien bearbeitet:
 
 1. **Aktiven Fall bearbeiten:** bisheriger Hauptablauf und ein durchgängiger
    Mieternachrichteneingang, der während der gesamten aktiven Bearbeitung gilt.
-2. **Mieterantwort abwarten und Fortsetzung prüfen:** auf eine aktuelle
+2. **Mieterantwort abwarten und Fortsetzung prüfen** (`mieterantwort-pruefen.bpmn`): auf eine aktuelle
    Auswertung aus dem zentralen Nachrichteneingang warten und die zulässige
    Fortsetzung prüfen. Dieselbe Nachricht wird hier nicht nochmals empfangen
    oder unabhängig neu ausgewertet.
-3. **Mitarbeiterprüfung und weitere Bearbeitung:** Fortsetzen, Rückfrage,
+3. **Mitarbeiterprüfung und weitere Bearbeitung** (`mitarbeiterbearbeitung.bpmn`): Fortsetzen, Rückfrage,
    Wiedervorlage oder bestätigter Abschluss. Neue Nachrichten während der
    Prüfung ergänzen dieselbe Aufgabe.
-4. **Wiedervorlage verwalten:** Termin, Änderung, Löschung und Abschluss.
+4. **Wiedervorlage verwalten** (`wiedervorlage.bpmn`): Termin, Änderung, Löschung und Abschluss.
    Ein unterbrechendes Randereignis im übergeordneten Mitarbeiterpfad reagiert
    auf einen zentral empfangenen Mieterkontakt. Eine Mitarbeiterrückfrage ist
    weiterhin eine nicht unterbrechende Nebenaktion; sie verändert den Termin nicht.
 5. **Mieternachrichten durchgängig verarbeiten:** der neue Ereignis-Teilprozess
-   oben links in «Aktiven Fall bearbeiten». Er ordnet den Eingang zu, berücksichtigt
-   die aktuelle Bearbeitung und stellt eine geschützte Neubewertung bereit.
+   oben links in «Aktiven Fall bearbeiten». Er empfängt die Nachricht und ruft
+   die Verarbeitung in `mieternachricht-verarbeiten.bpmn` auf. Dort liegen
+   Zuordnung, Auswertung und geschützte Bereitstellung.
 
-Damit liegen sechs Diagrammansichten in einer Datei. Die Teilprozesse
-gehören zu derselben führenden Fallprozessinstanz. Der fachliche Abschluss
+Damit liegen sieben Diagrammansichten in fünf Dateien: drei im Hauptmodell,
+je eine in den vier ausgelagerten Dateien. Call Activities erzeugen untergeordnete
+Instanzen mit eigenen Variablenbereichen; sie gehören zum Ausführungsbaum des
+einen führenden Fallprozesses. Der fachliche Abschluss
 erfolgt ausschliesslich im Service Task **«Abschluss prüfen und speichern»**.
 Erst danach beendet das terminierende Ende den Bereich «Aktiven Fall bearbeiten»
 einschliesslich laufender Nachrichtenauswertungen und Empfang. Der äussere
@@ -96,10 +122,15 @@ es hängt nicht als weiterer Ausgang am ereignisbasierten Gateway.
 Die Beispielbedingungen `tenantEvaluationVersion`,
 `consumedTenantEvaluationVersion`, `pendingTenantContactFollowUpVersion` und
 `activeFollowUpVersion` erläutern die nötige Versionsbindung. Sie sind **noch
-kein freigegebener Variablenvertrag**. Eingangs-ID und Auswertungskontext müssen
-je Ereignispfad lokal bleiben. Die für Hauptpfad und Warteereignisse nötigen
-Steuerinformationen werden dagegen ausdrücklich im gemeinsamen
-`ActiveCase`-Bereich bereitgestellt. Ein unversioniertes «neue Nachricht»-Flag
+kein ausführbarer Variablenvertrag**. Eingangs-ID und Auswertungskontext müssen
+je Ereignispfad lokal bleiben. Seit der Dateiaufteilung müssen die nötigen
+Steuerinformationen ausdrücklich an die aktuelle Kindinstanz und den dort
+zuständigen Bereich übergeben werden. Der Antwort-Wartepunkt liegt in der
+Antwortinstanz; das Randereignis für Mieterkontakt zur Wiedervorlage liegt in
+der Mitarbeiterinstanz. Eine Änderung nur im `ActiveCase`-Bereich weckt diese
+Kindinstanzen nicht. Die Registrierung und lückenlose Nachlieferung beschreibt
+der [Teilprozess-Vertrag](teilprozess-vertraege.md#laufende-aktualisierungen-über-instanzgrenzen).
+Ein unversioniertes «neue Nachricht»-Flag
 genügt nicht: Ein alter Eingang darf keine später neu gesetzte Wiedervorlage
 aufheben und keine Auswertung zweimal auslösen.
 
@@ -149,6 +180,41 @@ Fehlerpfad, kein Löschen und keine doppelte Veröffentlichung beim Retry.
 Technische Speicherfehler und bereits erfolgreiche Wiederholungen sind von diesem
 fachlichen Konflikt getrennt. Die Transaktions- und Versionsbindung ist vor
 Ausführung auszuarbeiten. Der Entwurf enthält keine Backend-Implementierung.
+
+### Fortsetzungen nach der Mieterantwort
+
+**Bestätigt am 15.11.2026 – Zeile 3:**
+[KOM-03](../../specifications/fallkommunikation.md#fortsetzung-nach-einer-mieterantwort-im-wartestatus)
+und KOM-AK-24 legen die Reihenfolge fest. `RValidate` prüft den aktuellen Stand;
+`RResult` gibt genau eine fachliche Fortsetzung zurück:
+
+| Priorität | Bedingung | Modellweg |
+|---|---|---|
+| 1 | Pflichtprüfbedarf oder Analysefehler | `R08` → `RReview` → `F21` → Mitarbeiterprüfung |
+| 2 | Zulässiger Systemabschluss samt Textfreigabe | `R07` → `RClose` → `F20` → Antwort veröffentlichen, Abschluss erneut prüfen |
+| 3 | Alle bisherigen Fragen beantwortet, kein zulässiger Abschluss | Ebenfalls `R08` → `RReview` → `F21`; keine Umgehung durch neue Fragen |
+| 4 | Fragen offen, weitere notwendige Katalogfrage zulässig | `R09` → `RQuestion` → `F18` → Katalogfrage veröffentlichen |
+| 5 | Fragen offen, keine weitere Frage nötig | `R10` → `RWait` → `F19` → weiter auf Antworten warten |
+
+Fehlende geeignete Textfreigabe, unzuverlässige Grundlage oder notwendige Fragen
+ausserhalb des Katalogs folgen weiterhin den bestehenden Prüfregeln. Ein
+überholtes Ergebnis ist kein Default-Grund für Mitarbeiterprüfung: Das neue
+Randereignis `RAnalysisStale` an `RValidate` führt über `RCurrentAnalysis` zur
+aktuellen zentralen Auswertung und danach erneut zur Antwortprüfung. Es verwendet
+den fachlichen Platzhalter `ANALYSIS_BASIS_STALE`, keinen zweiten externen Empfang.
+
+Der Hauptpfad erhält zusätzlich `F_RefreshWait`: Nach dem gemeinsamen Rückweg
+aus Zeile 2 führt «Fragen offen, keine weitere Aktion» von `Route` zurück zu
+`Reply`. Dadurch fällt dieser Fall nicht versehentlich in die Mitarbeiterprüfung.
+Die gemeinsame Prüfung erhält den Rückfragenkontext und den bestehenden Wartestatus.
+Ein verbrauchtes Ergebnis weckt den Wartepfad nicht erneut; ein bereits verfügbares
+neueres Ergebnis darf nicht verloren gehen. Die Endereignisse im Antwortteilprozess
+liefern nur eine Fortsetzung, keinen fachlichen Fallabschluss.
+
+Der bestehende Status bleibt während der Auswertung zunächst «Wartet auf Mieterantwort».
+Mitarbeiterentscheidungen, Wiedervorlage und Abschluss bleiben geschützt.
+Ausführbare Ergebniswerte, FEEL-Bedingungen, Fehler- und Warteverfahren sind weiterhin
+festzulegen; die gezeichneten fachlichen Wege sind kein Laufzeitnachweis.
 
 ### Start und Abschluss des Empfangsbereichs
 
@@ -384,8 +450,21 @@ Abschlusses fest. Konkrete Zuständigkeitsregeln mit Erklärungstexten sowie die
 technische Fehler- und Wiederholungskoordination bleiben auszuarbeiten. Wiedereröffnung und externe
 Wartephasen gehören noch nicht zum hier gemeinsam besprochenen Prozessabschnitt.
 
-Die BPMN-Datei ist unter `docs` abgelegt und wird nicht als Prozessressource
-der Anwendung ausgeliefert. Dieser Auftrag ergänzt keine Backend-Logik.
+Die fünf BPMN-Dateien sind unter `docs` abgelegt und werden nicht als
+Prozessressourcen der Anwendung ausgeliefert. Dieser Auftrag ergänzt keine Backend-Logik.
+
+Strukturprüfung zur ersten Aufteilung (Stand 0.9) vom 15.11.2026: Alle fünf Dateien bestehen die
+BPMN-2.0-Schemaprüfung sowie Import, Export und erneuten Import mit `bpmn-js`
+einschliesslich Zeebe-Erweiterungen ohne Warnungen. Die drei Call-Verknüpfungen
+und ihre Mappings sind erhalten; alle 94 bisherigen Sequenzverbindungen und
+Element-IDs bleiben vorhanden. Die sechs Diagrammansichten wurden gerendert und
+visuell geprüft. Das ist kein Camunda-Laufzeit- oder Deploymentnachweis.
+
+Ergänzende Prüfung zu Stand 0.10: fünf Dateien, vier aufgelöste Call-Aufrufe
+und sieben Diagrammansichten; Schema und Import/Export mit Zeebe-Mappings ohne
+Warnungen. Der externe Nachrichtenempfang bleibt genau einmal im Hauptmodell.
+Die Verarbeitung behält ihre bisherigen Wege; nur ihr Start liegt jetzt hinter
+dem Call. Nachrichteneingang und ausgelagerte Verarbeitung wurden visuell geprüft.
 
 Grundlagen: [Fallverwaltung](../../specifications/fallverwaltung.md),
 [Fallkommunikation](../../specifications/fallkommunikation.md),

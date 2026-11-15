@@ -194,6 +194,18 @@ Details:
 
 ### 6.4 Workflow-Orchestrierung
 
+- Der [BPMN-Fachentwurf](architecture/bpmn/README.md) ist seit Stand 0.9 in
+  Hauptprozess, Mieterantwortprüfung, Mitarbeiterbearbeitung und Wiedervorlage
+  aufgeteilt. Die drei ausgelagerten Dateien werden über Call Activities
+  aufgerufen. Der Hauptprozess behält führende Fallzuordnung und Mieternachrichteneingang.
+  [Teilprozess-Verträge](architecture/bpmn/teilprozess-vertraege.md) regeln den
+  Entwurf für Eingaben/Rückgaben, Instanzzuordnung und laufende Aktualisierungen.
+  Seit Stand 0.10 liegt auch die Nachrichtenverarbeitung in
+  `mieternachricht-verarbeiten.bpmn`; der nicht unterbrechende Eingang bleibt
+  im Hauptprozess und ruft sie je gespeicherter Nachricht ohne Outputs auf.
+  Keine live gemeinsamen Variablen über Call-Grenzen annehmen. Die Modelle sind
+  nicht ausführbar; Backend-Übergaben und die Rechtebindung aus ADR-002/SS-003
+  an untergeordnete Aufgaben sind vor Ausführung zu konkretisieren.
 - PropertyFlow speichert neue Anliegen als «Eingegangen» und startet den
   Camunda-Fallprozess asynchron. Für anschliessende Statuswechsel ist
   ausschliesslich Camunda zuständig. Mitarbeitende lösen nur Aktionen aus,

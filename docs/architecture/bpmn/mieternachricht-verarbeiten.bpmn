@@ -1,0 +1,294 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_PropertyFlow_TenantMessage_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+  <bpmn:error id="Error_TriageFailure" name="KI-Analyse fehlgeschlagen" errorCode="TRIAGE_ANALYSIS_FAILED">
+    <bpmn:documentation>Fachliche Fehlerreaktion des Entwurfs. Der spätere Worker meldet eine festgestellte fehlgeschlagene Analyse oder ungültige Modellausgabe ausdrücklich als diesen BPMN-Fehler. Ein technischer Jobfehler allein aktiviert den Fehlerpfad nicht. Die Mitarbeiterprüfung wartet nicht auf das Ausschöpfen automatischer Wiederholungen.</bpmn:documentation>
+  </bpmn:error>
+  <bpmn:process id="PropertyFlow_TenantMessage_Draft" name="Mieternachricht verarbeiten · Fachentwurf 0.10" isExecutable="false">
+    <bpmn:documentation>Nur per Call Activity aus dem zentralen Nachrichteneingang starten. Eingaben caseId, leadingProcessInstanceKey und tenantMessageId; keine Rückgabe von Variablen. Pro Nachricht eigener Aufruf. NIdentify prüft Fall, führende Instanz, Aufrufzuordnung und gespeicherte Nachricht. NApply/NWake liefern aktuelle Steuerinformationen ausdrücklich an den richtigen fremden Instanzbereich; keine impliziten gemeinsamen Variablen. Kein eigener Mieterempfang, keine führende Fallzuordnung. teilprozess-vertraege.md; keine Backend-Implementierung.</bpmn:documentation>
+    <bpmn:startEvent id="NProcessingStart" name="Nachrichtenverarbeitung aufgerufen">
+      <bpmn:outgoing>N01</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="NIdentify" name="Gespeicherten Eingang&#10;und Fallstand prüfen">
+      <bpmn:documentation>Gespeicherte Eingangs-ID, Fall- und Prozesszuordnung prüfen. Einmalige fachliche Wirkung dauerhaft über Eingangs-ID und Auswertungsstand sichern; Broker-Korrelation allein ist keine fachliche Idempotenz. Geschlossenen Fall und falsche/alte Instanz ausschliessen. Gleichzeitige Wiederholungen koordinieren. Neue ältere Nachrichten nicht pauschal verwerfen: nur bereits verarbeitete Eingänge sind Duplikate; aktuelle Auswertung berücksichtigt alle noch offenen Eingänge.</bpmn:documentation>
+      <bpmn:incoming>N01</bpmn:incoming>
+      <bpmn:outgoing>N02</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="NAccept" name="Neu zu verarbeiten?" default="N03">
+      <bpmn:incoming>N02</bpmn:incoming>
+      <bpmn:outgoing>N03</bpmn:outgoing>
+      <bpmn:outgoing>N04</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="NNoOpEnd" name="Keine neue Wirkung">
+      <bpmn:incoming>N03</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:exclusiveGateway id="NState" name="Aktuelle Bearbeitung" default="N07">
+      <bpmn:incoming>N04</bpmn:incoming>
+      <bpmn:outgoing>N05</bpmn:outgoing>
+      <bpmn:outgoing>N06</bpmn:outgoing>
+      <bpmn:outgoing>N07</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="NKeepReview" name="Dieselbe Mitarbeiteraufgabe&#10;um Nachricht ergänzen">
+      <bpmn:documentation>Mitarbeiterprüfung erforderlich bleibt unabhängig vom Ursprung bestehen. Auch eine Behebungsbestätigung schliesst weder Fall noch Aufgabe. Keine zweite Aufgabe. Eine inzwischen erfolgte Mitarbeiterentscheidung hat Vorrang; dieser Nebenpfad darf keine alte Aufgabe reaktivieren.
+Die aktuelle Mitarbeiteraufgabe gehört zur verifizierten Kindinstanz. Persistente neue Grundlage bereitstellen; keine Kopie alter Statusvariablen in die Kindinstanz und keine neue Aufgabe nur durch Nachrichteneingang.</bpmn:documentation>
+      <bpmn:incoming>N05</bpmn:incoming>
+      <bpmn:outgoing>N08</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="NWake" name="Kontakt für aktuelle&#10;Wiedervorlage bereitstellen">
+      <bpmn:documentation>Vor jedem LLM-Aufruf den neuen Kontakt mit der betroffenen Wiedervorlage-Version ausdrücklich im zuständigen Bereich der aktuellen Mitarbeiterinstanz bereitstellen. Das unterbrechende bedingte Randereignis an FollowUp hebt den Wartevorgang auf und führt sofort zur Mitarbeiterprüfung. Ändert ein Mitarbeiter inzwischen bewusst den Termin, darf ein verspäteter Kontaktmarker keine neue Wiedervorlage aufheben. Eingang, Wiedervorlage-Version und Verbrauch müssen dauerhaft nachvollziehbar sein; keine unversionierte Reset-Flag.
+Dateiaufteilung: Der Kontaktmarker muss ausdrücklich in der aktuellen Mitarbeiter-Kindinstanz ankommen, die den Call FollowUp und sein Randereignis besitzt. Vor dem LLM-Aufruf. Versionen und aktueller Aufruf werden serverseitig geprüft; nur im Hauptprozess gespeicherte Marker wecken das Kind nicht.</bpmn:documentation>
+      <bpmn:incoming>N06</bpmn:incoming>
+      <bpmn:outgoing>N09</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="NRefresh" name="Neuen Eingang für laufende&#10;Bearbeitung vormerken">
+      <bpmn:documentation>Auch während Analyse, Mitarbeiterbearbeitung oder zwischen zwei Schritten wird angenommen. Den neuen Fallstand im laufenden Prozess berücksichtigen; eine bereits berechnete Empfehlung ist vor Wirkung gegen diesen Stand zu prüfen. Der Nebenpfad entscheidet keinen Statuswechsel eigenmächtig.</bpmn:documentation>
+      <bpmn:incoming>N07</bpmn:incoming>
+      <bpmn:outgoing>N10</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="NJoin" name="Weiter auswerten">
+      <bpmn:incoming>N08</bpmn:incoming>
+      <bpmn:incoming>N09</bpmn:incoming>
+      <bpmn:incoming>N10</bpmn:incoming>
+      <bpmn:outgoing>N11</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="NAnalyze" name="Antwortbedarf und&#10;Dringlichkeit neu bewerten">
+      <bpmn:documentation>KOM-03 / DRING-05/06: jede offene Frage einzeln gegen den aktuellen Nachrichtenstand prüfen. Teilantworten lassen andere Fragen offen. Nachricht ohne offene Rückfrage ebenfalls auswerten. Manuelle Dringlichkeit nicht überschreiben. Modellaufruf über Port; Datenschutz und nachvollziehbare Herkunft beachten. Fachlicher Analysefehler meldet TRIAGE_ANALYSIS_FAILED; kein stiller Erfolgsdefault.</bpmn:documentation>
+      <bpmn:incoming>N11</bpmn:incoming>
+      <bpmn:outgoing>N12</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="NRecommend" name="Vorgehen neu empfehlen&#10;LLM + Fachkontext">
+      <bpmn:documentation>UC-018/021: Empfehlung aus aktuellem freigegebenem Fallkontext, auch als Ergänzung der Mitarbeiterprüfung. Keine internen Memos oder Ableitungen daraus ans Kommunikations-LLM. Katalogregeln KOM-05 beachten. Eine Empfehlung ist keine Ausführungsfreigabe. Fehlgeschlagene oder ungültige Analyse meldet TRIAGE_ANALYSIS_FAILED. Für einen vorgeschlagenen Systemabschluss genau einen der bestätigten FALL-07-Gründe mit Belegstellen zur vollständigen Behebung beziehungsweise mit Regelkennung und -version für den gesamten Sachverhalt begründen. Keine unbekannten Tatsachen oder Zuständigkeitsregeln ergänzen. Fehlende Belege und Widersprüche offen ausweisen. Der Vorschlag erteilt keine Abschluss- oder Textfreigabe; diese werden separat am aktuellen Stand geprüft.
+KOM-06: Antwortart AT-001 oder AT-002 mit Belegreferenzen empfehlen, bei AT-002 zusätzlich passende Fachregelkennung und -version. Das LLM liefert keinen automatisch zu veröffentlichenden freien Text. Der Dienst übernimmt ausschliesslich die freigegebene Vorlage beziehungsweise den zur Regelversion freigegebenen Erklärungstext. Empfehlung ist keine Ausführungsfreigabe; Kontextgrenze KOM-02 bleibt verbindlich.</bpmn:documentation>
+      <bpmn:incoming>N12</bpmn:incoming>
+      <bpmn:outgoing>N13</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:boundaryEvent id="NAnalysisFailure" name="Analysefehler" attachedToRef="NAnalyze" cancelActivity="true">
+      <bpmn:outgoing>N15</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="NAnalysisFailure_definition" errorRef="Error_TriageFailure" />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="NRecommendationFailure" name="Analysefehler" attachedToRef="NRecommend" cancelActivity="true">
+      <bpmn:outgoing>N16</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="NRecommendationFailure_definition" errorRef="Error_TriageFailure" />
+    </bpmn:boundaryEvent>
+    <bpmn:serviceTask id="NFailure" name="Analysefehler als&#10;Prüfbedarf festhalten">
+      <bpmn:documentation>FALL-05: vorhandene Einstufung erhalten, keine erfundene Dringlichkeit. Fehlerergebnis für die aktuelle Bearbeitung bereitstellen; keine erneute LLM-Empfehlung in diesem Durchlauf. Bestehende Mitarbeiterprüfung ergänzen statt neue Aufgabe erzeugen. Ausführbare Koordination zum jeweils aktiven Hauptpfad noch zu konkretisieren.</bpmn:documentation>
+      <bpmn:incoming>N15</bpmn:incoming>
+      <bpmn:incoming>N16</bpmn:incoming>
+      <bpmn:outgoing>N17</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="NApply" name="Aktuelle Auswertung&#10;geschützt bereitstellen">
+      <bpmn:documentation>Vor Speicherung Fallversion, Nachrichtensatz, Prozess, Aufgabenstand und manuelle Dringlichkeit erneut prüfen. Aktuelle Auswertung bzw. Fehlerergebnis dauerhaft speichern; überholte Ergebnisse verwerfen oder mit neuem Stand neu bewerten. Mitarbeiterprüfung erforderlich bleibt geschützt, auch wenn die Auswertung alles erledigt empfiehlt. Versionierten Bereitschaftsstand für den Hauptpfad im ActiveCase-Bereich bereitstellen und an die aktuelle Antwort-Kindinstanz ausdrücklich nachliefern; eine lokale Variable im Ereignispfad genügt nicht. Eine bereits vor Beginn des Antwortwartens fertige Auswertung bleibt konsumierbar. Idempotente Wiederholung repariert gegebenenfalls die Bereitstellung, erzeugt aber keine zweite fachliche Wirkung. Genaue Variablen, atomare Aktualisierung und Reaktionswege vor Ausführung festlegen. Eine hier gespeicherte Empfehlung für einen Systemabschluss ist nur Entscheidungsgrundlage. Sie umgeht weder die beiden zulässigen Status noch die Grund- und Belegprüfung in Validate/RValidate und Close. Während Mitarbeiterprüfung bleibt der Statusschutz erhalten. Neue Nachrichten müssen in den geprüften Stand eingehen; ein älteres Ergebnis darf diesen Stand nicht als aktuell markieren.
+Dateiaufteilung: Ergebnis in PropertyFlow dauerhaft sichern und die aktuelle Antwort-Kindinstanz gezielt mit versionierter Bereitschaft versorgen. Mitarbeiteraufgaben lesen den aktuellen Fallstand. Nachlieferung und Registrierung ohne Lücke, keine ungültige alte Kindinstanz überschreiben. Kein automatischer Variablendurchgriff über Call Activities.</bpmn:documentation>
+      <bpmn:incoming>N13</bpmn:incoming>
+      <bpmn:incoming>N17</bpmn:incoming>
+      <bpmn:outgoing>N14</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="NEnd" name="Eingang verarbeitet;&#10;Hauptpfad läuft weiter">
+      <bpmn:incoming>N14</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="N01" sourceRef="NProcessingStart" targetRef="NIdentify" />
+    <bpmn:sequenceFlow id="N02" sourceRef="NIdentify" targetRef="NAccept" />
+    <bpmn:sequenceFlow id="N03" sourceRef="NAccept" targetRef="NNoOpEnd" name="Bereits verarbeitet / nicht mehr zulässig" />
+    <bpmn:sequenceFlow id="N04" sourceRef="NAccept" targetRef="NState" name="Ja" />
+    <bpmn:sequenceFlow id="N05" sourceRef="NState" targetRef="NKeepReview" name="Mitarbeiterprüfung" />
+    <bpmn:sequenceFlow id="N06" sourceRef="NState" targetRef="NWake" name="Wiedervorlage" />
+    <bpmn:sequenceFlow id="N07" sourceRef="NState" targetRef="NRefresh" name="Sonstige aktive Phase" />
+    <bpmn:sequenceFlow id="N08" sourceRef="NKeepReview" targetRef="NJoin" />
+    <bpmn:sequenceFlow id="N09" sourceRef="NWake" targetRef="NJoin" />
+    <bpmn:sequenceFlow id="N10" sourceRef="NRefresh" targetRef="NJoin" />
+    <bpmn:sequenceFlow id="N11" sourceRef="NJoin" targetRef="NAnalyze" />
+    <bpmn:sequenceFlow id="N12" sourceRef="NAnalyze" targetRef="NRecommend" />
+    <bpmn:sequenceFlow id="N13" sourceRef="NRecommend" targetRef="NApply" />
+    <bpmn:sequenceFlow id="N14" sourceRef="NApply" targetRef="NEnd" />
+    <bpmn:sequenceFlow id="N15" sourceRef="NAnalysisFailure" targetRef="NFailure" />
+    <bpmn:sequenceFlow id="N16" sourceRef="NRecommendationFailure" targetRef="NFailure" />
+    <bpmn:sequenceFlow id="N17" sourceRef="NFailure" targetRef="NApply" />
+    <bpmn:textAnnotation id="NRule">
+      <bpmn:text>Ein Eingang pro gespeicherter Nachricht; keine zweite Fallprozessinstanz.
+Mitarbeiterprüfung: dieselbe Aufgabe bleibt offen, kein automatischer Abschluss.
+Wiedervorlage: Hauptpfad sofort wecken; KI-Auswertung läuft danach parallel.
+Doppelte oder überholte Ergebnisse ändern keine menschliche Entscheidung.</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:textAnnotation id="NScope">
+      <bpmn:text>Entwurf, nicht ausführbar: lokale Eingangs-ID je Ereignispfad;
+Versionen im Hauptprozess; explizite Übergabe an zuständigen Kind-Scope.
+Hauptpfad prüft aktuelle Eingänge vor Veröffentlichung oder Abschluss.
+Ein normales Ende hier beendet nur diese Nachrichtenauswertung.
+Dateigrenze: aktuelle Kindinstanz gezielt aktualisieren; keine gemeinsamen Call-Variablen.</bpmn:text>
+    </bpmn:textAnnotation>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="TenantMessage_diagram" name="07 · Mieternachricht verarbeiten">
+    <bpmndi:BPMNPlane id="TenantMessage_plane" bpmnElement="PropertyFlow_TenantMessage_Draft">
+      <bpmndi:BPMNShape id="NProcessingStart_di" bpmnElement="NProcessingStart" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="80" y="208" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="28" y="256" width="140" height="42" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="NIdentify_di" bpmnElement="NIdentify" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="170" y="180" width="190" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="NAccept_di" bpmnElement="NAccept" bioc:stroke="#334155" bioc:fill="#f1f5f9" isMarkerVisible="true">
+        <dc:Bounds x="420" y="200" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="368" y="262" width="154" height="42" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="NNoOpEnd_di" bpmnElement="NNoOpEnd" bioc:stroke="#334155" bioc:fill="#f1f5f9">
+        <dc:Bounds x="427" y="508" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="375" y="556" width="140" height="42" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="NState_di" bpmnElement="NState" bioc:stroke="#334155" bioc:fill="#f1f5f9" isMarkerVisible="true">
+        <dc:Bounds x="565" y="200" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="513" y="262" width="154" height="42" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="NKeepReview_di" bpmnElement="NKeepReview" bioc:stroke="#7c2d12" bioc:fill="#ffedd5">
+        <dc:Bounds x="690" y="40" width="210" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="NWake_di" bpmnElement="NWake" bioc:stroke="#7c2d12" bioc:fill="#ffedd5">
+        <dc:Bounds x="690" y="180" width="210" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="NRefresh_di" bpmnElement="NRefresh" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="690" y="320" width="210" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="NJoin_di" bpmnElement="NJoin" bioc:stroke="#334155" bioc:fill="#f1f5f9" isMarkerVisible="true">
+        <dc:Bounds x="970" y="200" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="918" y="262" width="154" height="42" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="NAnalyze_di" bpmnElement="NAnalyze" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="1090" y="180" width="210" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="NRecommend_di" bpmnElement="NRecommend" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="1350" y="180" width="210" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="NApply_di" bpmnElement="NApply" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="1620" y="180" width="210" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="NEnd_di" bpmnElement="NEnd" bioc:stroke="#14532d" bioc:fill="#dcfce7">
+        <dc:Bounds x="1910" y="208" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1858" y="256" width="140" height="42" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="NAnalysisFailure_di" bpmnElement="NAnalysisFailure" bioc:stroke="#7f1d1d" bioc:fill="#fee2e2">
+        <dc:Bounds x="1177" y="252" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1219" y="282" width="90" height="20" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="NRecommendationFailure_di" bpmnElement="NRecommendationFailure" bioc:stroke="#7f1d1d" bioc:fill="#fee2e2">
+        <dc:Bounds x="1437" y="252" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1479" y="282" width="90" height="20" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="NFailure_di" bpmnElement="NFailure" bioc:stroke="#7c2d12" bioc:fill="#ffedd5">
+        <dc:Bounds x="1090" y="440" width="210" height="90" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1132" y="470" width="90" height="20" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="NRule_di" bpmnElement="NRule" bioc:stroke="#334155" bioc:fill="#f1f5f9">
+        <dc:Bounds x="690" y="650" width="650" height="110" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="NScope_di" bpmnElement="NScope" bioc:stroke="#334155" bioc:fill="#f1f5f9">
+        <dc:Bounds x="1420" y="650" width="620" height="110" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="N01_di" bpmnElement="N01" bioc:stroke="#334155">
+        <di:waypoint x="116" y="226" />
+        <di:waypoint x="170" y="226" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="N02_di" bpmnElement="N02" bioc:stroke="#334155">
+        <di:waypoint x="360" y="225" />
+        <di:waypoint x="420" y="225" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="N03_di" bpmnElement="N03" bioc:stroke="#334155">
+        <di:waypoint x="445" y="250" />
+        <di:waypoint x="445" y="508" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="270" y="385" width="160" height="42" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="N04_di" bpmnElement="N04" bioc:stroke="#334155">
+        <di:waypoint x="470" y="225" />
+        <di:waypoint x="565" y="225" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="505" y="201" width="30" height="18" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="N05_di" bpmnElement="N05" bioc:stroke="#334155">
+        <di:waypoint x="590" y="200" />
+        <di:waypoint x="590" y="85" />
+        <di:waypoint x="690" y="85" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="520" y="30" width="150" height="28" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="N06_di" bpmnElement="N06" bioc:stroke="#334155">
+        <di:waypoint x="615" y="225" />
+        <di:waypoint x="690" y="225" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="600" y="185" width="100" height="28" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="N07_di" bpmnElement="N07" bioc:stroke="#334155">
+        <di:waypoint x="590" y="250" />
+        <di:waypoint x="590" y="365" />
+        <di:waypoint x="690" y="365" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="520" y="410" width="150" height="28" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="N08_di" bpmnElement="N08" bioc:stroke="#334155">
+        <di:waypoint x="900" y="85" />
+        <di:waypoint x="995" y="85" />
+        <di:waypoint x="995" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="N09_di" bpmnElement="N09" bioc:stroke="#334155">
+        <di:waypoint x="900" y="225" />
+        <di:waypoint x="970" y="225" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="N10_di" bpmnElement="N10" bioc:stroke="#334155">
+        <di:waypoint x="900" y="365" />
+        <di:waypoint x="995" y="365" />
+        <di:waypoint x="995" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="N11_di" bpmnElement="N11" bioc:stroke="#334155">
+        <di:waypoint x="1020" y="225" />
+        <di:waypoint x="1090" y="225" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="N12_di" bpmnElement="N12" bioc:stroke="#334155">
+        <di:waypoint x="1300" y="225" />
+        <di:waypoint x="1350" y="225" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="N13_di" bpmnElement="N13" bioc:stroke="#334155">
+        <di:waypoint x="1560" y="225" />
+        <di:waypoint x="1620" y="225" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="N14_di" bpmnElement="N14" bioc:stroke="#334155">
+        <di:waypoint x="1830" y="225" />
+        <di:waypoint x="1910" y="226" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="N15_di" bpmnElement="N15" bioc:stroke="#334155">
+        <di:waypoint x="1195" y="288" />
+        <di:waypoint x="1195" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="N16_di" bpmnElement="N16" bioc:stroke="#334155">
+        <di:waypoint x="1455" y="288" />
+        <di:waypoint x="1455" y="485" />
+        <di:waypoint x="1300" y="485" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="N17_di" bpmnElement="N17" bioc:stroke="#334155">
+        <di:waypoint x="1195" y="530" />
+        <di:waypoint x="1195" y="590" />
+        <di:waypoint x="1725" y="590" />
+        <di:waypoint x="1725" y="270" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
