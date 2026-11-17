@@ -78,8 +78,8 @@ bereits gespeicherter Eintrag bleibt im Verlauf. [UC-009](../use_cases/UC-009-mi
 Die Frontend-Demo belegt den direkten Fallzugriff, die Weiterleitung,
 Eingabevalidierung und Wiederholung im Arbeitsspeicher. Die Camunda-Korrelation
 und der Ausfalltest mit PostgreSQL stehen aus.
-[Web-Tests](../../src/test/java/com/pertegato/propertyflow/access/web/StaffAccessWebTest.java) ·
-[Grenzfalltests](../../src/test/java/com/pertegato/propertyflow/caseprocessing/demo/DemoCasesBoundaryTest.java)
+[Web-Tests](../architecture/frontend-demo-ablosung-2026-11-16.md) ·
+[Grenzfalltests](../architecture/frontend-demo-ablosung-2026-11-16.md)
 
 Die OpenAPI beschreibt alle 20 expliziten Browseroperationen der vorhandenen
 Web-Controller. Dazu gehören das Erfassungsformular, der Mieterkontozugriff,
@@ -256,7 +256,7 @@ Die gemeinsame E-Mail-Prüfung für Fallanlage und Kontozugriff aus Commit
 und jede betroffene Datei mit «übernommen», «korrigiert» oder «verworfen»
 bewerten. Je Stelle den KI-Beitrag, die eigene Entscheidung und deren Grund mit
 einem Diff oder Test belegen. Das Review-Dokument steht aus.
-[Regressionstests zum Fallzugriff](../../src/test/java/com/pertegato/propertyflow/access/web/StaffAccessWebTest.java) ·
+[Regressionstests zum Fallzugriff](../architecture/frontend-demo-ablosung-2026-11-16.md) ·
 [Projekt-Kontext](../project-context.md)
 
 ## 8. Projekt-Kontext v0.3

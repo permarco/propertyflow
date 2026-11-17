@@ -1,6 +1,7 @@
 package com.pertegato.propertyflow.caseprocessing.service;
 
 import com.pertegato.propertyflow.access.contract.SubmissionContext;
+import com.pertegato.propertyflow.access.contract.TenantAccountAccess;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseAccepted;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseCreation;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseErrorCode;
@@ -18,8 +19,11 @@ import com.pertegato.propertyflow.caseprocessing.persistence.CaseEntity;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseRepository;
 import com.pertegato.propertyflow.caseprocessing.persistence.ProcessStartOrderEntity;
 import com.pertegato.propertyflow.caseprocessing.persistence.ProcessStartOrderRepository;
+import com.pertegato.propertyflow.caseprocessing.persistence.StaffMessageStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.SubmissionEntity;
 import com.pertegato.propertyflow.caseprocessing.persistence.SubmissionRepository;
+import com.pertegato.propertyflow.caseprocessing.persistence.TenantMessageStore;
+import com.pertegato.propertyflow.caseprocessing.persistence.UrgencyStore;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -43,6 +47,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Profile("propertyflow-backend & !frontend-demo")
 public class PersistentCaseService implements CaseCreation, CaseReading {
 
+    private final TenantAccountAccess tenantAccounts;
     private final CaseRepository cases;
     private final CaseAccessRepository accesses;
     private final SubmissionRepository submissions;
@@ -51,16 +56,24 @@ public class PersistentCaseService implements CaseCreation, CaseReading {
     private final PersonalLinkCodec links;
     private final TransactionTemplate writes;
     private final TransactionTemplate reads;
+    private final UrgencyStore urgencies;
+    private final TenantMessageStore messages;
+    private final StaffMessageStore staffMessages;
 
     public PersistentCaseService(CaseRepository cases, CaseAccessRepository accesses, SubmissionRepository submissions,
             ProcessStartOrderRepository startOrders, AcceptanceMailOrderRepository mailOrders, PersonalLinkCodec links,
-            PlatformTransactionManager transactions) {
+            PlatformTransactionManager transactions, UrgencyStore urgencies, TenantMessageStore messages, StaffMessageStore staffMessages,
+            TenantAccountAccess tenantAccounts) {
+        this.tenantAccounts = tenantAccounts;
         this.cases = cases;
         this.accesses = accesses;
         this.submissions = submissions;
         this.startOrders = startOrders;
         this.mailOrders = mailOrders;
         this.links = links;
+        this.urgencies = urgencies;
+        this.messages = messages;
+        this.staffMessages = staffMessages;
         this.writes = new TransactionTemplate(transactions);
         // The public contract promises a confirmed commit, even if the caller already has a transaction.
         this.writes.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -71,17 +84,27 @@ public class PersistentCaseService implements CaseCreation, CaseReading {
 
     @Override
     public CaseAccepted create(SubmissionContext context, CreateCaseCommand command) {
-        if (!(context instanceof SubmissionContext.Guest guest)) {
+        UUID scope;
+        CreateCaseCommand submitted = command;
+        if (context instanceof SubmissionContext.Guest guest) {
+            scope = guest.sessionScope();
+        } else if (context instanceof SubmissionContext.Tenant tenant) {
+            String email = tenantAccounts.verifiedEmail(tenant.accountId()).orElseThrow(() -> failure(CaseErrorCode.UNAUTHENTICATED));
+            scope = UUID.nameUUIDFromBytes(("tenant:" + tenant.accountId()).getBytes(StandardCharsets.UTF_8));
+            if (command != null) {
+                submitted = new CreateCaseCommand(command.operationId(), command.title(), command.unit(), command.description(), email);
+            }
+        } else {
             throw failure(CaseErrorCode.UNAUTHENTICATED);
         }
-        CreateCaseCommand input = CaseInputValidation.validateGuest(command);
+        CreateCaseCommand input = CaseInputValidation.validateGuest(submitted);
         String fingerprint = fingerprint(input);
         try {
             try {
-                return writes.execute(transaction -> createOrReplay(guest.sessionScope(), input, fingerprint));
+                return writes.execute(transaction -> createOrReplay(scope, input, fingerprint));
             } catch (DataIntegrityViolationException collision) {
                 // PostgreSQL waits on the unique key. The losing transaction is fully rolled back before this read.
-                return reads.execute(transaction -> submissions.findByGuestScopeAndOperationId(guest.sessionScope(), input.operationId())
+                return reads.execute(transaction -> submissions.findByGuestScopeAndOperationId(scope, input.operationId())
                         .map(existing -> replay(existing, fingerprint))
                         .orElseThrow(() -> failure(CaseErrorCode.STORAGE_UNAVAILABLE)));
             }
@@ -131,13 +154,30 @@ public class PersistentCaseService implements CaseCreation, CaseReading {
                         .orElseThrow(() -> failure(CaseErrorCode.CASE_NOT_AVAILABLE));
                 CaseEntity stored = cases.findById(access.getCaseId())
                         .orElseThrow(() -> failure(CaseErrorCode.CASE_NOT_AVAILABLE));
-                return CaseProjections.tenantView(stored);
+                return CaseProjections.tenantView(stored, urgencies.publicHistory(stored.getId()), messages.history(stored.getId()), staffMessages.history(stored.getId()));
             });
         } catch (DataAccessException | TransactionException exception) {
             throw failure(CaseErrorCode.STORAGE_UNAVAILABLE);
         }
     }
 
+
+    public List<TenantCaseView> listForAccount(UUID accountId) {
+        return reads.execute(transaction -> {
+            String email = tenantAccounts.verifiedEmail(accountId).orElseThrow(() -> failure(CaseErrorCode.UNAUTHENTICATED));
+            return cases.findByContactEmailOrderByReceivedAtDesc(email).stream()
+                    .map(stored -> CaseProjections.tenantView(stored, List.of(), List.of(), List.of())).toList();
+        });
+    }
+
+    public TenantCaseView readForAccount(UUID accountId, String caseId) {
+        return reads.execute(transaction -> {
+            String email = tenantAccounts.verifiedEmail(accountId).orElseThrow(() -> failure(CaseErrorCode.UNAUTHENTICATED));
+            CaseEntity stored = cases.findById(caseId).filter(value -> email.equals(value.getContactEmail()))
+                    .orElseThrow(() -> failure(CaseErrorCode.CASE_NOT_AVAILABLE));
+            return CaseProjections.tenantView(stored, urgencies.publicHistory(caseId), messages.history(caseId), staffMessages.history(caseId));
+        });
+    }
 
     private String fingerprint(CreateCaseCommand input) {
         try {

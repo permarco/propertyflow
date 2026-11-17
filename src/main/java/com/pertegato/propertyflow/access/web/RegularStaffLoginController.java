@@ -125,6 +125,7 @@ class RegularStaffLoginController {
 
             String target = StaffWebSession.safeTarget((String) session.getAttribute(StaffWebSession.RETURN_TO));
             request.changeSessionId();
+            session.removeAttribute(TenantWebSession.ACCOUNT);
             session.setAttribute(StaffWebSession.ACCOUNT, verified.orElseThrow().accountId());
             session.setAttribute(StaffWebSession.CSRF, newCsrf());
             session.removeAttribute(FLOW_ID);
@@ -140,7 +141,8 @@ class RegularStaffLoginController {
         HttpSession session = StaffWebSession.cookieSession(request);
         if (session != null) {
             synchronized (WebUtils.getSessionMutex(session)) {
-                if (validCsrf(session, csrf) && session.getAttribute(StaffWebSession.ACCOUNT) != null) {
+                if (validCsrf(session, csrf) && (session.getAttribute(StaffWebSession.ACCOUNT) != null
+                        || session.getAttribute(TenantWebSession.ACCOUNT) != null)) {
                     session.invalidate();
                     BrowserResponses.seeOther(request, response, "/mieter/fall");
                     return;

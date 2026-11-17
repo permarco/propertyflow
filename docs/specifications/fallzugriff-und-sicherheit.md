@@ -5,6 +5,14 @@
 
 **Geltungsbereich:** Mieterzugriff über Fall-Link oder Konto, Mitarbeiteranmeldung und Kontoverwaltung, delegierte MCP-Zugriffe sowie Schutz und Versand persönlicher Fall-Links.
 
+**Backendstand 16.11.2026:** Persistente Mieterkonten, Codeanmeldung,
+Mitarbeiterkontoverwaltung und die separate geprüfte Fallzugangsverwaltung sind
+implementiert. Die historischen Demoangaben weiter unten sind keine aktuelle
+Implementierungsgrenze. [Umsetzungsmatrix](../use_cases/umsetzungsstand-2026-11-16.md) ·
+[Prüfverfahren und technische Annahmen](../architecture/konten-und-zugangsverwaltung-2026-11-16.md).
+MCP/OAuth bleibt ein eigener offener Ausbau. Die Kontoanlage vergibt weiterhin
+keine zusätzlichen Verwaltungsrechte.
+
 ## Zweck und Verbindlichkeit
 
 Mieterinnen und Mieter können Anliegen ohne Konto einreichen und über einen persönlichen Link auf den jeweiligen Fall zugreifen. **Der persönliche E-Mail-Link enthält als einzigen variablen Zugangswert einen geheimen Token.** PropertyFlow ermittelt den zugehörigen Fall serverseitig und rendert die Ansicht direkt unter `/mieter/fall/zugang/<geheimer-token>`. Der Benutzer bleibt auf dieser URL. Die lesbare Case-ID bleibt die unveränderliche Referenz des Falls und wird im Inhalt der Fallansicht angezeigt. Der zusätzliche Zugang über ein freiwilliges Mieterkonto und die Regeln für Mitarbeiterkonten und MCP stehen in [ZUG-04](#zug-04-rechte-und-vertrauensgrenzen).
@@ -102,14 +110,16 @@ Für den Kontozugriff müssen die nach dieser Regel vereinheitlichte Fall-Kontak
 
 Die Mieterrechte umfassen veröffentlichte Falldaten und externe Nachrichten. Der Zugriff auf interne Memos und deren Metadaten ist dem Mitarbeiterbereich vorbehalten. Fachaktionen wie eine Dringlichkeitseinstufung, Freigabe, Abschluss oder Wiedereröffnung richten sich nach den jeweiligen Mitarbeiter- und Systemrechten im Fallprozess. Ein abgeschlossener Fall bleibt bei gültiger Berechtigung lesbar. Für Nachrichten gilt die Schreibsperre nach [KOM-04](fallkommunikation.md#kom-04-nachrichtensperre-nach-fallabschluss).
 
-**Lokaler Implementierungsstand (13.11.2026):** Selbstregistrierung, E-Mail-Codeprüfung,
-«Meine Fälle» sowie die Prüfung bei Detail- und Nachrichtenzugriffen sind im Profil
-`frontend-demo` umgesetzt. Die Konto-Adresse stammt aus der Sitzung; Formularwerte
-ändern keine Zuordnung oder Rolle. Für die Codeprüfung gelten die [gemeinsamen
-Einmalcode-Regeln](#e-mail-einmalcode-für-registrierung-und-anmeldung).
-Konten und Fälle liegen im Arbeitsspeicher. Dauerhafte Speicherung, persönliche
-Audit-Zuordnung und OAuth-/MCP-Delegation sind damit noch nicht umgesetzt.
-Die [Testanleitung](../../src/test/README.md) beschreibt die Prüfungen mit Mailpit.
+**Implementierungsstand (16.11.2026):** Selbstregistrierung, E-Mail-Codeprüfung,
+«Meine Fälle» sowie die Berechtigung bei Detail- und Nachrichtenzugriffen verwenden
+im Profil `propertyflow-backend` persistente PostgreSQL-Konten und Fälle. Die
+verifizierte Konto-Adresse stammt aus der Sitzung; Formularwerte ändern weder
+Zuordnung noch Rolle. Es gelten die [gemeinsamen Einmalcode-Regeln](#e-mail-einmalcode-für-registrierung-und-anmeldung).
+Sitzungswechsel, CSRF, Eigentum, Rollenentzug und Neustartpersistenz werden im
+integrierten Testbetrieb geprüft. OAuth-/MCP-Delegation bleibt ausdrücklich ein
+separater Arbeitsumfang. Die [Testanleitung](../../src/test/README.md) und
+[Übertragungsmatrix](../architecture/frontend-demo-ablosung-2026-11-16.md) beschreiben
+Prüfaufbau und verbleibende Prototypabhängigkeiten.
 
 ### Mitarbeiteranmeldung und Kontoverwaltung
 

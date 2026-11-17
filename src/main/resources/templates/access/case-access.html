@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="de-CH" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{tenant/fragments :: head('Fallzugänge verwalten')}"></head>
+<body>
+<header class="app-header"><a th:href="@{/mitarbeiter/faelle}" class="brand">PropertyFlow</a><span>Fallzugangsverwaltung</span></header>
+<main class="narrow">
+    <h1>Fallzugänge verwalten</h1>
+    <p><a th:href="@{/mitarbeiter/faelle}">Fallübersicht</a> · <a th:href="@{/mitarbeiter/konten}">Kontoverwaltung</a></p>
+    <p th:if="${error != null}" class="error" role="alert" th:text="${error}"></p>
+    <p th:if="${success != null}" class="notice" role="status" th:text="${success}"></p>
+    <form method="get" th:action="@{/mitarbeiter/fallzugaenge}"><label for="caseId">Fall-ID</label>
+        <input id="caseId" name="caseId" required maxlength="80"><button>Fallzugang prüfen</button></form>
+    <section class="card" th:if="${contact != null}">
+        <h2 th:text="${contact.id()}"></h2><p>Aktuelle Kontaktadresse: <span th:text="${contact.email()}"></span></p>
+        <form th:if="${verificationId == null}" method="post" th:action="@{/mitarbeiter/fallzugaenge/{id}/pruefung(id=${contact.id()})}">
+            <input type="hidden" name="csrf" th:value="${csrf}"><input type="hidden" name="version" th:value="${contact.version()}">
+            <label for="email">Bestätigte Kontaktadresse für den Ersatzlink</label>
+            <input id="email" name="email" type="email" required maxlength="254" th:value="${contact.email()}">
+            <label for="evidence">Wie wurde die Identität desselben Mieters unabhängig geprüft?</label>
+            <textarea id="evidence" name="evidence" minlength="20" maxlength="1000" required></textarea>
+            <p>Dokumentieren Sie beispielsweise den Abgleich mit dem Mietvertrag und den Rückruf über eine bereits bekannte Nummer.
+                Der anschliessende Code bestätigt zusätzlich den Zugriff auf das angegebene Postfach.</p>
+            <button>Bestätigungscode senden</button>
+        </form>
+        <form th:if="${verificationId != null}" method="post" th:action="@{/mitarbeiter/fallzugaenge/{id}/anwenden(id=${contact.id()})}">
+            <input type="hidden" name="csrf" th:value="${csrf}"><input type="hidden" name="version" th:value="${version}">
+            <input type="hidden" name="verificationId" th:value="${verificationId}"><input type="hidden" name="operation" th:value="${operation}">
+            <input type="hidden" name="email" th:value="${email}">
+            <p>Bestätigen Sie den Code aus dem geprüften Postfach <strong th:text="${email}"></strong>. Er gilt 15 Minuten.</p>
+            <label for="code">Bestätigungscode</label><input id="code" name="code" inputmode="numeric" maxlength="6" required>
+            <button>Kontakt bestätigen und Link ersetzen</button>
+        </form>
+    </section>
+</main>
+</body>
+</html>

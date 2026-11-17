@@ -1,0 +1,39 @@
+{
+  "reviewType": "development-agent-review-not-independent-human-approval",
+  "sourceReport": "qwen35-4b-2026-11-16-message-v5.json",
+  "sourceSha256": "ae795680795aa3f5fc0ca09801e9d48c6b903f32091872334d8ebf883a40f7c6",
+  "cases": [
+    {
+      "id": "generate-heating",
+      "text": "Die Heizung ist wieder vollständig funktionsfähig, wie Sie in Ihrer Meldung vom [Datum] mitgeteilt haben. Da Sie keine weitere Hilfe benötigen, ist der Fall abgeschlossen.",
+      "passed": false,
+      "finding": "Unausgefüllter Datumsplatzhalter trotz fehlender Datumsquelle."
+    },
+    {
+      "id": "generate-tap",
+      "text": "Die Störung am Wasserhahn ist behoben. Der Mieter bestätigt, dass das Tropfen nicht mehr auftritt, keine Folgeschäden vorliegen und keine weitere Unterstützung benötigt wird.",
+      "passed": false,
+      "finding": "Sachlich belegt, aber Zusammenfassung über den Mieter statt direkter Ansprache."
+    },
+    {
+      "id": "generate-door",
+      "text": "Die Störung an der Wohnungstür wurde von Ihnen behoben. Die Tür lässt sich nun wieder problemlos bedienen, sodass keine weiteren Maßnahmen erforderlich sind.",
+      "passed": false,
+      "finding": "Der Text schreibt die Behebung dem Mieter zu. Die Quelle bestätigt die Funktion, nicht den ausführenden Akteur."
+    },
+    {
+      "id": "generate-two-issues",
+      "text": "Die Störung an der Klingel- und Sprechanlage wurde behoben. Der Mieter bestätigt, dass beide Anlagen dauerhaft funktionieren und keine weitere Hilfe benötigt wird.",
+      "passed": false,
+      "finding": "Sachlich belegt, aber interne Zusammenfassung über den Mieter statt direkter Ansprache."
+    },
+    {
+      "id": "generate-tenant-rule",
+      "text": "Die Störung Ihres mobilen Küchenweckers ist abgeschlossen. Da der Wecker nicht fest eingebaut ist und Ihnen gehört, liegt kein Bearbeitungsbedarf der Verwaltung vor.",
+      "passed": true,
+      "finding": "Der fehlende Verwaltungsbedarf ist belegt; keine Reparaturbehauptung. Sprachlich wäre Fall statt Störung bei abgeschlossen präziser."
+    }
+  ],
+  "passed": false,
+  "releaseApproved": false
+}

@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="de-CH" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{tenant/fragments :: head('Zugriff entzogen')}"></head>
+<body><main class="narrow"><section class="card">
+    <h1>Mitarbeiterzugriff entzogen</h1>
+    <p>Ihr Mitarbeiterzugriff wurde entzogen und diese Sitzung wurde beendet.</p>
+    <a th:href="@{/anmelden}">Zur Anmeldung</a>
+</section></main></body>
+</html>

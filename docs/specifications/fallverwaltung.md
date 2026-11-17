@@ -278,6 +278,14 @@ Besteht nach der Aufhebung weiterer Mieterantwortbedarf, löst die Aktion allein
 
 ## FALL-06: Fachlicher Status und technischer Workflow
 
+**Ergänzung vom 16.11.2026:** Bei deaktivierter oder ausgefallener KI bleibt die
+manuelle Bearbeitung durch berechtigte Mitarbeitende verbindlich verfügbar,
+einschliesslich selbst formulierter Kommunikation, Wartepfaden, manuellem Abschluss
+und Wiedereröffnung. Der führende Prozess übergibt nicht automatisch bearbeitbare
+Fälle zur Mitarbeiterprüfung. Details und Abnahmekriterien stehen in
+[KI-Tools und manueller Ersatzbetrieb](ki-tools.md). Die nachfolgenden Sperren bei
+fehlendem Prozessstart oder Camunda-Ausfall gelten weiterhin.
+
 | Information | Führende Verantwortung | Abgrenzung |
 |---|---|---|
 | Case-ID, Ursprungsdaten, Objektzuordnung, gespeicherter fachlicher Status und Verlauf | PropertyFlow | Führender Datenspeicher für die Fallansichten |
@@ -944,7 +952,7 @@ PropertyFlow prüft diese Grundlage bei der Annahme der Mitarbeiteraktion und no
 
 Nach erfolgreicher Abschlussspeicherung endet der aktive Prozessbereich samt laufenden Nachrichtenauswertungen und Empfang; es wird keine zusätzliche Abschlussbenachrichtigung veranlasst. Ein bereits gestarteter externer Modellaufruf kann trotzdem verspätet antworten. Vor einer Ergebnisübernahme prüft der Dienst deshalb erneut den aktuellen Status und den Bezug zur Bearbeitung. Das alte Ergebnis darf weder Status, Dringlichkeit, Antwortbedarf oder Kommunikation ändern noch eine Mitarbeiterprüfung oder Wiedereröffnung auslösen. Diese Wirkung muss auch bei gleichzeitigem Abschluss und Ergebniszugriff abgesichert sein.
 
-Der fachliche Rückweg ist im [BPMN-Entwurf](../architecture/bpmn/propertyflow-fallprozess-entwurf.bpmn) vorgesehen. Technische Versionsbindung, Transaktionsschutz und Wiederholungskoordination sind vor der ausführbaren Umsetzung zu konkretisieren.
+Der fachliche Rückweg ist im [BPMN-Entwurf](../../src/main/resources/bpmn/propertyflow-fallprozess-entwurf.bpmn) vorgesehen. Technische Versionsbindung, Transaktionsschutz und Wiederholungskoordination sind vor der ausführbaren Umsetzung zu konkretisieren.
 
 ### Direkter Mitarbeiterabschluss während Warten auf Mieterantwort
 

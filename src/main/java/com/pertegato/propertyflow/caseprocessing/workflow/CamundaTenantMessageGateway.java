@@ -1,0 +1,39 @@
+package com.pertegato.propertyflow.caseprocessing.workflow;
+
+import com.pertegato.propertyflow.caseprocessing.delivery.TenantMessageGateway;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.CorrelateMessageResponse;
+import java.util.Map;
+import java.util.UUID;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Component;
+
+@Component
+@Profile("propertyflow-backend & !frontend-demo")
+public class CamundaTenantMessageGateway implements TenantMessageGateway {
+
+    public static final String MESSAGE_NAME = "Mieternachricht gespeichert";
+    private final ObjectProvider<CamundaClient> clients;
+    private final boolean enabled;
+
+    public CamundaTenantMessageGateway(ObjectProvider<CamundaClient> clients, @Value("${propertyflow.workflow.enabled:false}") boolean enabled) {
+        this.clients = clients;
+        this.enabled = enabled;
+    }
+
+    @Override
+    public void correlate(UUID messageId, long leader, String tenant) {
+        CamundaClient client = enabled ? clients.getIfAvailable() : null;
+        if (client == null) {
+            throw new IllegalStateException("WORKFLOW_UNAVAILABLE");
+        }
+        CorrelateMessageResponse response = client.newCorrelateMessageCommand().messageName(MESSAGE_NAME)
+                .correlationKey(Long.toString(leader)).tenantId(tenant)
+                .variables(Map.of("tenantMessageId", messageId.toString())).send().join();
+        if (!Long.valueOf(leader).equals(response.getProcessInstanceKey()) || !tenant.equals(response.getTenantId())) {
+            throw new IllegalStateException("WRONG_MESSAGE_CORRELATION_TARGET");
+        }
+    }
+}

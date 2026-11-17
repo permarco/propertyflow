@@ -19,7 +19,7 @@ class StaffLoginViewTest {
     private static final SpringTemplateEngine TEMPLATES = templateEngine();
 
     @Test
-    void rendersStaffAddressStepWithContextRelativeFormAndNoRegistrationLink() {
+    void rendersStaffAddressStepWithContextRelativeFormAndExplicitTenantLinks() {
         String html = render(false, null);
 
         assertThat(html).contains(
@@ -29,8 +29,10 @@ class StaffLoginViewTest {
                 "for=\"login-email\"",
                 "autocomplete=\"email\"",
                 "href=\"/propertyflow/css/propertyflow.css\"",
-                "href=\"/propertyflow/mieter/fall\"")
-                .doesNotContain("login-code-verify", "/registrieren", "/mcp-zugriff");
+                "href=\"/propertyflow/mieter/fall\"",
+                "href=\"/propertyflow/mieter/anmelden\">Als Mieter anmelden",
+                "href=\"/propertyflow/registrieren\">Mieterkonto eröffnen")
+                .doesNotContain("login-code-verify", "/mcp-zugriff", "Mitarbeiterkonto eröffnen");
     }
 
     @Test
@@ -48,7 +50,7 @@ class StaffLoginViewTest {
                 "aria-describedby=\"login-error\"",
                 "Fehler &lt;script&gt;alert(1)&lt;/script&gt;",
                 "href=\"/propertyflow/anmelden\"")
-                .doesNotContain("<script>", "login-code-request", "/registrieren");
+                .doesNotContain("<script>", "login-code-request", "Mitarbeiterkonto eröffnen");
     }
 
     private static String render(boolean codeStep, String error) {

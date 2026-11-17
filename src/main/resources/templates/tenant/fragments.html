@@ -13,7 +13,10 @@
         <span class="brand-mark" aria-hidden="true">▰▥</span>
         PropertyFlow
     </a>
-    <span class="area">Mieteranliegen</span>
+    <span class="tenant-session" th:if="${!#strings.isEmpty(accountEmail)}">
+        Angemeldet als <strong th:text="${accountEmail}"></strong>
+    </span>
+    <nav><a th:href="@{/mieter/faelle}">Meine Fälle</a> · <a th:href="@{/registrieren}">Mieterkonto eröffnen</a> · <a th:href="@{/anmelden}">Mitarbeiter</a></nav>
 </header>
 </body>
 </html>

@@ -2,7 +2,7 @@
 
 ## Status
 
-Akzeptiert. Am 13.11.2026 um die ausschliessliche Prozessführung und das Verhalten bei Camunda-Ausfall präzisiert. Der Integrationsentscheid zu SS-003 ist in dieser Fassung zusammengeführt. Die BPMN-Modellierung und Umsetzung stehen aus.
+Akzeptiert. Am 13.11.2026 um die ausschliessliche Prozessführung und das Verhalten bei Camunda-Ausfall präzisiert. Der Integrationsentscheid zu SS-003 ist in dieser Fassung zusammengeführt. Die vollständige technische Umsetzung des fachlich definierten BPMN-Gesamtprozesses steht aus.
 
 [Entscheidung](#entscheidung) · [Integrationsprinzipien](#integrationsprinzipien) · [Sequenzdiagramm zum Fallstart](#sequenzdiagramm--fallstart-und-zuordnung) · [Prüfung der Integration](#prüfung-der-integration)
 
@@ -368,9 +368,11 @@ Der technische Vertrag zu Startkennung, Nachrichtenfeldern und Fehlerabbildung i
 
 PropertyFlow speichert den Fall mit «Eingegangen» und den dauerhaften Startauftrag gemeinsam. Die Bestätigung an den Mieter folgt auf den Datenbank-Commit. Ein asynchroner Starter prüft regelmässig die offenen Startaufträge und verwendet für jeden Versuch desselben Auftrags dieselbe gespeicherte Startkennung. Camunda verhindert damit einen weiteren Start, solange die zugehörige Instanz aktiv ist.
 
-Der erste Camunda-Job-Worker ordnet seine Instanz dem Fall zu. Er speichert den `processInstanceKey` am Fall und erledigt den Startauftrag in derselben Datenbanktransaktion. Bei einem vorübergehenden Speicherfehler wird der Job mit Wartezeit wiederholt, bis die Zuordnung gespeichert ist. Bis dahin bleibt der Fall auf «Eingegangen», und der Prozess wartet vor der fachlichen Bearbeitung. Eine Wiederholung für dieselbe bereits gespeicherte Instanz bestätigt die Zuordnung. Eine abweichende Instanz darf die gespeicherte Zuordnung nicht überschreiben oder den Fall weiterbearbeiten.
+Der Camunda-Zuordnungsworker ordnet seine Instanz dem Fall zu. Er speichert den `processInstanceKey` am Fall und erledigt den Startauftrag in derselben Datenbanktransaktion. Bei einem vorübergehenden Speicherfehler wird der Job mit Wartezeit wiederholt, bis die Zuordnung gespeichert ist. Bis dahin bleibt der Fall auf «Eingegangen», und der Prozess wartet vor der fachlichen Bearbeitung. Eine Wiederholung für dieselbe bereits gespeicherte Instanz bestätigt die Zuordnung. Eine abweichende Instanz darf die gespeicherte Zuordnung nicht überschreiben oder den Fall weiterbearbeiten.
 
 Die Startkennung identifiziert den Startauftrag. Der `processInstanceKey` bezeichnet die konkrete Ausführung des Fallprozesses. Die Case-ID ist die fachliche Referenz, die BPMN-Prozess-ID bezeichnet das Prozessmodell.
+
+**Technische Präzisierung 15.11.2026:** Der BPMN-Schritt `PrepareProcessKey` stellt vor dem Zuordnungsjob den geprüften Prozessschlüssel für den Empfangsbereich bereit. Er speichert noch keine führende Zuordnung und aktiviert den Fall nicht. Der unten gezeigte Zuordnungscommit bleibt unverändert. Der begrenzte INITIAL-Abschnitt ist [implementiert und separat getestet](../bpmn/initial-workflow-runtime.md); die Ausführbarkeit des Gesamtprozesses bleibt offen.
 
 ### Sequenzdiagramm · Fallstart und Zuordnung
 
@@ -822,5 +824,5 @@ und ausstehende Benachrichtigung nicht durch das Ende von ActiveCase verloren ge
 Es entsteht kein zusätzlicher Microservice; Worker und Starter bleiben an den
 bestehenden PropertyFlow-Modulgrenzen. Keine Zusatzmail beim Abschlussstatus.
 Details: [BEN-03](../../specifications/benachrichtigungen-und-zustellung.md#ben-03-speicherung-und-zuverlässige-übergabe)
-und [Versandentwurf](../bpmn/fallbenachrichtigung-versenden.bpmn).
+und [Versandentwurf](../../../src/main/resources/bpmn/fallbenachrichtigung-versenden.bpmn).
 Technische Umsetzung, Startkoordination und Laufzeitnachweise stehen aus.

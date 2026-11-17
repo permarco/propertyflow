@@ -7,9 +7,9 @@
 **Primary Actor:** Immobilienbewirtschaftung  
 **Goal:** Fälle in der Mitarbeiter-Fallübersicht sichten, suchen, filtern und sortieren sowie einen Fall zur Detailprüfung öffnen.
 
-**Status:** Produktiver Gesamtprozess geplant; lokale Frontend-Demo mit Mock-Daten vorhanden. Die Demo ersetzt keine produktive Datenbank-, KI-, Mail- oder Camunda-Integration. Siehe [Demo-Nachweise](../evaluation/evaluationsgrundlage.md#testabdeckung-der-frontend-demo--ergänzung-vom-13102026).
+**Status:** Im integrierten Backend mit PostgreSQL und Camunda umgesetzt. Die UI-Regression verwendet reale Fallaufnahme und persistierte Fälle; siehe [Übertragungsmatrix](../architecture/frontend-demo-ablosung-2026-11-16.md). Die fachliche Modellevaluation bleibt zurückgestellt.
 
-**Darstellung und Bedienung:** [Screen 02 – Mitarbeiter-Fallübersicht](../frontend/ansicht-02-mitarbeiter-falluebersicht.md) führt die vereinbarten Listenfunktionen und den technischen Wireframe. Die Umsetzung steht noch aus.
+**Darstellung und Bedienung:** [Screen 02 – Mitarbeiter-Fallübersicht](../frontend/ansicht-02-mitarbeiter-falluebersicht.md) führt die vereinbarten Listenfunktionen und den technischen Wireframe.
 
 ## Use-Case-Diagramm
 

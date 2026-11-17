@@ -4,7 +4,7 @@
 <body class="detail-page tenant-page">
 <header th:replace="~{tenant/fragments :: header}"></header>
 <main id="case-page">
-    <section id="case-head" class="case-head" aria-labelledby="case-title">
+    <section id="case-head" class="case-head" aria-labelledby="case-title" th:attr="data-closed=${closed}">
         <div class="case-heading">
             <div class="case-title-row">
                 <span class="eyebrow" th:text="${caseId}"></span>
@@ -31,18 +31,36 @@
     <div class="workspace">
         <div class="conversation">
             <section id="history" class="card history" tabindex="0" aria-labelledby="history-title">
-                <h2 id="history-title">Verlauf</h2>
+                <div class="section-heading history-heading">
+                    <h2 id="history-title">Verlauf</h2>
+                    <button type="button" class="secondary" data-history-order hidden></button>
+                </div>
                 <div class="messages">
                     <article class="message" th:each="entry : ${history}"
                              th:classappend="${entry.role() == 'Mieter' ? 'push-right' : (entry.role() == 'System' ? 'system' : '')}">
                         <div class="message-role"><strong th:text="${entry.role()}"></strong></div>
                         <span class="muted" th:text="${entry.timestamp()}"></span>
                         <p th:text="${entry.text()}"></p>
+                        <p class="muted" th:if="${!#strings.isEmpty(entry.answerLabel())}" th:text="${entry.answerLabel()}"></p>
                     </article>
                 </div>
+            </section>
+            <section id="tenant-message-panel" class="card" th:hidden="${closed}" aria-labelledby="tenant-message-heading">
+                <h2 id="tenant-message-heading">Neue Nachricht</h2>
+                <form id="tenant-message-form" action="" th:attr="data-csrf=${messageCsrf}" method="post">
+                    <input type="hidden" name="csrf" th:value="${messageCsrf}">
+                    <input type="hidden" name="operation" th:value="${messageOperation}">
+                    <label for="tenant-message-text">Ihre Ergänzung oder Antwort</label>
+                    <textarea id="tenant-message-text" name="text" rows="4" required aria-describedby="tenant-message-hint"></textarea>
+                    <p id="tenant-message-hint" class="muted">Maximal 2’000 Zeichen. Ihre Nachricht wird im Fallverlauf gespeichert.</p>
+                    <button type="submit">Nachricht senden</button>
+                    <p role="status" aria-live="polite"></p>
+                </form>
             </section>
         </div>
     </div>
 </main>
+<script th:src="@{/js/history-order.js}" defer></script>
+<script th:src="@{/js/tenant-messages.js}" defer></script>
 </body>
 </html>

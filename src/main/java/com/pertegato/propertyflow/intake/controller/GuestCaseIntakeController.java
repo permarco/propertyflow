@@ -1,8 +1,11 @@
 package com.pertegato.propertyflow.intake.controller;
 
 import com.pertegato.propertyflow.access.contract.SubmissionContext.Guest;
+import com.pertegato.propertyflow.access.contract.SubmissionContext;
+import com.pertegato.propertyflow.access.contract.TenantAccountAccess;
 import com.pertegato.propertyflow.access.web.BrowserResponses;
 import com.pertegato.propertyflow.access.web.GuestRequestLimits;
+import com.pertegato.propertyflow.access.web.TenantWebSession;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseAccepted;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseServiceException;
 import com.pertegato.propertyflow.caseprocessing.contract.CreateCaseCommand;
@@ -49,8 +52,10 @@ public class GuestCaseIntakeController {
 
     private final CaseSubmission submission;
     private final GuestRequestLimits limits;
+    private final TenantAccountAccess accounts;
 
-    public GuestCaseIntakeController(CaseSubmission submission, GuestRequestLimits limits) {
+    public GuestCaseIntakeController(CaseSubmission submission, GuestRequestLimits limits, TenantAccountAccess accounts) {
+        this.accounts = accounts;
         this.submission = submission;
         this.limits = limits;
     }
@@ -62,14 +67,21 @@ public class GuestCaseIntakeController {
 
     @GetMapping
     String form(HttpServletRequest request, Model model) {
-        IntakeForm blank = new IntakeForm("", "", "", "", UUID.randomUUID().toString());
+        String email = accounts.verifiedEmail(TenantWebSession.account(request)).orElse("");
+        model.addAttribute("accountSubmission", !email.isEmpty());
+        model.addAttribute("accountEmail", email);
+        IntakeForm blank = new IntakeForm("", "", email, "", UUID.randomUUID().toString());
         return render(model, blank, csrfForForm(request.getSession()), null, Map.of());
     }
 
     @PostMapping(consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     String submit(@RequestParam Map<String, String> fields, HttpServletRequest request, HttpServletResponse response, Model model) {
+        String email = accounts.verifiedEmail(TenantWebSession.account(request)).orElse("");
+        model.addAttribute("accountSubmission", !email.isEmpty());
+        model.addAttribute("accountEmail", email);
         IntakeForm form = new IntakeForm(
-                fields.get("title"), fields.get("unit"), fields.get("email"), fields.get("description"), fields.get("operation"));
+                fields.get("title"), fields.get("unit"), email.isEmpty() ? fields.get("email") : email,
+                fields.get("description"), fields.get("operation"));
         HttpSession session = request.getSession(false);
         if (session == null || !request.isRequestedSessionIdFromCookie()
                 || !(session.getAttribute(CSRF_ATTRIBUTE) instanceof String csrf)
@@ -78,10 +90,10 @@ public class GuestCaseIntakeController {
                     "Die Anfrage konnte nicht bestätigt werden. Öffnen Sie ein neues Formular.", Map.of());
         }
         String accountSubmission = fields.get("accountSubmission");
-        if ("true".equals(accountSubmission)) {
+        if ("true".equals(accountSubmission) && accounts.verifiedEmail(TenantWebSession.account(request)).isEmpty()) {
             return reject(response, model, form, null, HttpStatus.UNAUTHORIZED, SIGN_IN_REQUIRED, Map.of());
         }
-        if (accountSubmission != null && !"false".equals(accountSubmission)) {
+        if (accountSubmission != null && !"false".equals(accountSubmission) && !"true".equals(accountSubmission)) {
             return reject(response, model, form, csrf, HttpStatus.BAD_REQUEST, "Die Formularanfrage ist ungültig.", Map.of());
         }
         if (!limits.allowSubmission(request.getRemoteAddr())) {
@@ -89,13 +101,15 @@ public class GuestCaseIntakeController {
         }
 
         try {
-            Guest guest = new Guest(guestScope(session));
-            CaseAccepted accepted = submission.submit(guest, form.toCommand());
+            UUID accountId = TenantWebSession.account(request);
+            SubmissionContext context = accounts.verifiedEmail(accountId).isPresent()
+                    ? new SubmissionContext.Tenant(accountId) : new Guest(guestScope(session));
+            CaseAccepted accepted = submission.submit(context, form.toCommand());
             String path = UriComponentsBuilder.fromPath("/mieter/fall/zugang/{token}")
                     .encode()
                     .buildAndExpand(accepted.personalAccessToken())
                     .toUriString();
-            BrowserResponses.seeOther(request, response, path);
+            BrowserResponses.seeOther(request, response, context instanceof SubmissionContext.Tenant ? "/mieter/faelle/" + accepted.caseId() : path);
             return null;
         } catch (CaseServiceException exception) {
             return switch (exception.code()) {

@@ -99,7 +99,7 @@ class GuestCasePostgresTest {
         assertEquals("Heizung kalt", view.title());
         assertEquals("Wohnung 4", view.originalUnit());
         assertEquals("Seit gestern kalt.\n Bitte prüfen.", view.description());
-        assertEquals("t***@example.test", view.maskedContact());
+        assertEquals("t***e.test", view.maskedContact());
         assertTrue(view.assignedUnit().isEmpty());
         assertTrue(view.state().urgency().isEmpty());
         assertTrue(view.urgencySource().isEmpty());

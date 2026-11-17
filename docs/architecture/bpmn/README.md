@@ -1,6 +1,57 @@
 # PropertyFlow-Fallprozess
 
-[propertyflow-fallprozess-entwurf.bpmn](propertyflow-fallprozess-entwurf.bpmn)
+## Aktueller Ressourcenstand · 16.11.2026
+
+Die sieben ausführbaren, verbindlichen BPMN-Dateien liegen jetzt unter
+[`src/main/resources/bpmn`](../../../src/main/resources/bpmn/README.md).
+Sie werden mit dem Anwendungs-JAR ausgeliefert. Das Dev-Deployment liest diese
+Quellen unverändert; Tests deployen dieselben Klassenpfadressourcen. Unter `docs`
+liegen ausschliesslich Beschreibungen und Verweise, keine zweite Modellkopie.
+Prozess-IDs, Call-Verträge, Diagrammkoordinaten und fachliche Abläufe bleiben erhalten.
+Die bisher beim Deployment gesetzte Ausführbarkeit steht nun in der Quelle.
+Automatische Abschlüsse bleiben gesperrt; Modellevaluation und vollständige
+Produktionsabnahme sind nicht Bestandteil dieser Konsolidierung.
+
+Die folgenden Versionsabschnitte dokumentieren die Entwicklung. Aussagen zu
+nicht ausführbaren Entwürfen oder früheren Speicherorten sind historisch und
+werden durch diesen Ressourcenstand sowie die
+[aktuelle Umsetzungsmatrix](../../use_cases/umsetzungsstand-2026-11-16.md) abgelöst.
+
+**Implementierungsfortsetzung V34–V38 (16.11.2026):** Mitarbeiterrückfrage und direkter
+Mitarbeiterabschluss aus «In Abklärung», direkter Abschluss aus Mieterwarten sowie
+direkte Wiedervorlage aus beiden Phasen sind angebunden. Die aktuelle technische
+Beschreibung und Testnachweise stehen in [initial-workflow-runtime.md](initial-workflow-runtime.md).
+Überholte Mitarbeiterfortsetzungen werden gegen tatsächlich aktive Staff-, Reply-
+oder neue Automatik-Nachfolger abgeglichen. Die vier Abschlussaufgaben sind mit V38
+technisch angebunden, einschliesslich individueller LLM-Mitteilung, dauerhafter Mailpflicht
+und erneuter Abschlussprüfung. Die vollständigen Modelle verwenden im Test keine
+Platzhalter-Jobtypen mehr. Automatische Abschlüsse bleiben durch eine feste
+Produktionssperre bis zur bestandenen fachlichen Evaluation deaktiviert.
+Die [echte Abschlussevaluation](../../evaluation/automatischer-abschluss.md) hat
+einen unzulässigen Abschlussvorschlag bei unvollständig erledigten Teilproblemen gezeigt.
+Abschlussvorschläge sind zentral gespeichert und in der Mitarbeiteransicht als
+Prüfempfehlung sichtbar. Ihre sichere Fortsetzung zur Mitarbeiteraufgabe ist geprüft;
+sie erteilen keine automatische Abschlussfreigabe. Alle alternativen Zusammenführungen
+der sieben Modelle verwenden nun getrennte XOR-Gateways.
+Die älteren Abschnitte dokumentieren den Entwurfsstand. Die sechs Gesamtmodelle bleiben
+bis zur vollständigen Integration nicht ausführbar.
+
+Ergänzung 16.11.2026: Weitere Katalogfragen nach Teilantwort (QUESTION-Wiedereintritt,
+V32) und direkte Mitarbeiterübernahme aus «In Abklärung» (V33) besitzen Backend-,
+Camunda- und Oberflächenanbindung. Historische Versionsabschnitte unten beschreiben
+weiterhin den Entwurfsverlauf; aktueller Umfang und Grenzen stehen in
+[initial-workflow-runtime.md](initial-workflow-runtime.md). Die sechs Gesamtmodelle
+bleiben bis zur vollständigen Integration nicht ausführbar.
+
+Ergänzung vom 16.11.2026: Zentrale Auswertung, quellengebundene Empfehlung,
+Warteentscheidungen, versionierte Terminänderung/-löschung, Mieterwarten,
+manuelle Aufhebung von Antwortbedarf, Abschluss während Wiedervorlage,
+automatische Katalogfragen im initialen Pfad und Wiedereröffnung besitzen weitere begrenzte Backend- und Laufzeitnachweise. Der aktuelle Umfang
+und die noch fehlenden Prozessanschlüsse stehen in
+[initial-workflow-runtime.md](initial-workflow-runtime.md#ergänzung-auswertung-empfehlung-und-warteentscheidungen).
+Die sechs Gesamtmodelle bleiben nicht ausführbar.
+
+[propertyflow-fallprozess-entwurf.bpmn](../../../src/main/resources/bpmn/propertyflow-fallprozess-entwurf.bpmn)
 ist die führende fachliche Prozessdefinition, Gesamtstand 0.35, Stand 15.11.2026.
 Er enthält BPMN-Diagrammkoordinaten und kann im Camunda Modeler geöffnet werden.
 
@@ -9,10 +60,27 @@ Dies gilt für alle sieben unten aufgeführten Prozesse einschliesslich ihrer
 Nebenabläufe, der vereinbarten Status-/Aktionsregeln und der Teilprozess-Verträge.
 Die Prozessdefinition bildet die Grundlage für die technische Umsetzung.
 
-Die Modelle bleiben technisch **nicht ausführbar** (`isExecutable=false`).
-B10 sowie die Implementierung und Laufzeitnachweise zu B07/B09 stehen aus.
+Sechs Gesamtmodelle bleiben technisch **nicht ausführbar** (`isExecutable=false`).
+Der unabhängige Mailprozess ist ausführbar und direkt aus seiner Originaldatei getestet.
+B10 sowie die vollständigen Laufzeitnachweise zu B07/B09 stehen aus.
 Die Bestätigung ist weder eine Deployment- noch eine produktive Abnahme.
 Die bestehenden Dateinamen und Modellversionsnummern bleiben erhalten.
+
+**Technische Nachführung 15.11.2026:** Der Backend-Abschnitt vom Startauftrag über
+führende Registrierung und INITIAL-Kindzuordnung bis «In Abklärung» ist implementiert
+und gegen isolierte PostgreSQL-/Camunda-Dienste geprüft. Hinzu kommen unabhängiger
+Mailversand, initiale Triage samt Analysefehlerpfad und Prüfbedarf aus der Automatik
+bis zur echten Mitarbeiteraufgabe. Interne Memos, manuelle Dringlichkeit und
+Objektzuordnung laufen über den nicht unterbrechenden Fallnebenprozess. Bewusstes
+Fortsetzen aus SReview und Mitarbeiterabschluss aus SReview/SWork verwenden native
+User-Task-Completion; nachträgliche Konflikte führen in eine neue Prüfung.
+Mieternachrichten werden dauerhaft mit Mailpflicht gespeichert und im zentralen
+Eingang einer tatsächlichen Kindinstanz zugeordnet; die zentrale Neubewertung wird von Automatik und Mieterantwortprüfung gemeinsam genutzt. Externe Informationen aus Abklärung/Prüfung/Bearbeitung
+und Rückfragen während Prüfung nutzen die vorhandenen Nebenaktionen, ohne eine
+offene Mitarbeiteraufgabe abzuschliessen. Nachricht und unabhängige Mailpflicht
+werden atomar gespeichert. Katalogfragen im initialen Automatikpfad sowie Kommunikation in den Wartephasen sind zusätzlich angebunden; automatische Abschlussantworten bleiben offen. Bindungen werden in den Originalquellen gepflegt. Die Fall-/Mitarbeiter-Fixtures prüfen diese begrenzten
+Abschnitte; sie ersetzen keinen ausführbaren Gesamtprozess.
+[Implementierung, Betrieb und Grenzen](initial-workflow-runtime.md).
 
 Die [Camunda Guidelines](../../specifications/CAMUNDA_GUIDELINES.md) bündeln die
 Projektregeln für Modellierung, Integration, Worker, Rechte und Prüfungen.
@@ -104,13 +172,13 @@ Darstellung. Die Farbgebung ist eine PropertyFlow-Konvention, keine BPMN-Vorgabe
 
 | Datei | Inhalt / typische Änderung |
 |---|---|
-| [propertyflow-fallprozess-entwurf.bpmn](propertyflow-fallprozess-entwurf.bpmn) | Hauptablauf, durchgängiger Mieternachrichteneingang, gemeinsame Automatik-Unterbrechung und Mitarbeiterabschluss |
-| [automatische-abklaerung.bpmn](automatische-abklaerung.bpmn) | Automatische Analyse, Ausführungsprüfung, Katalogrückfrage, individuelle Antwort und Systemabschluss; aktuelle Rückwege |
-| [mieterantwort-pruefen.bpmn](mieterantwort-pruefen.bpmn) | Offene Fragen auswerten, Teilantworten, Fortsetzungen nach der Mieterantwort |
-| [mitarbeiterbearbeitung.bpmn](mitarbeiterbearbeitung.bpmn) | Mitarbeiterprüfung, weitere Bearbeitung, Entscheidung und Aufruf der Wiedervorlage |
-| [wiedervorlage.bpmn](wiedervorlage.bpmn) | Termin/Timer, Änderung, Löschung und Mitarbeiterrückfrage während der Wartephase |
-| [mieternachricht-verarbeiten.bpmn](mieternachricht-verarbeiten.bpmn) | Gespeicherten Eingang prüfen, Mitarbeiterprüfung schützen, Wiedervorlage wecken und Nachricht auswerten |
-| [fallbenachrichtigung-versenden.bpmn](fallbenachrichtigung-versenden.bpmn) | Eigenständiger Versandprozess; Camunda beauftragt den Mail-Worker |
+| [propertyflow-fallprozess-entwurf.bpmn](../../../src/main/resources/bpmn/propertyflow-fallprozess-entwurf.bpmn) | Hauptablauf, durchgängiger Mieternachrichteneingang, gemeinsame Automatik-Unterbrechung und Mitarbeiterabschluss |
+| [automatische-abklaerung.bpmn](../../../src/main/resources/bpmn/automatische-abklaerung.bpmn) | Automatische Analyse, Ausführungsprüfung, Katalogrückfrage, individuelle Antwort und Systemabschluss; aktuelle Rückwege |
+| [mieterantwort-pruefen.bpmn](../../../src/main/resources/bpmn/mieterantwort-pruefen.bpmn) | Offene Fragen auswerten, Teilantworten, Fortsetzungen nach der Mieterantwort |
+| [mitarbeiterbearbeitung.bpmn](../../../src/main/resources/bpmn/mitarbeiterbearbeitung.bpmn) | Mitarbeiterprüfung, weitere Bearbeitung, Entscheidung und Aufruf der Wiedervorlage |
+| [wiedervorlage.bpmn](../../../src/main/resources/bpmn/wiedervorlage.bpmn) | Termin/Timer, Änderung, Löschung und Mitarbeiterrückfrage während der Wartephase |
+| [mieternachricht-verarbeiten.bpmn](../../../src/main/resources/bpmn/mieternachricht-verarbeiten.bpmn) | Gespeicherten Eingang prüfen, Mitarbeiterprüfung schützen, Wiedervorlage wecken und Nachricht auswerten |
+| [fallbenachrichtigung-versenden.bpmn](../../../src/main/resources/bpmn/fallbenachrichtigung-versenden.bpmn) | Eigenständiger Versandprozess; Camunda beauftragt den Mail-Worker |
 
 Jede Datei ist die einzige bearbeitete Quelle ihres Teilprozesses, keine generierte
 Ansichtskopie. In Camunda Modeler die gewünschte Datei direkt öffnen; der Dateiname
@@ -686,7 +754,7 @@ Dies ist ein Fachentwurf; Startverträge und Worker sind noch nicht implementier
 
 ## Externe Wartephase · Mitarbeiterentwurf 0.16
 
-In [mitarbeiterbearbeitung.bpmn](mitarbeiterbearbeitung.bpmn) führt «Nächste Aktion»
+In [mitarbeiterbearbeitung.bpmn](../../../src/main/resources/bpmn/mitarbeiterbearbeitung.bpmn) führt «Nächste Aktion»
 über «Auf externe Rückmeldung warten» zur Statusspeicherung und zur Aufgabe
 «Externe Rückmeldung abwarten / Fortsetzung entscheiden». Deren drei Ausgänge
 verwenden die bestehenden Wege: Fortsetzen → `SProgress`, Wiedervorlage →
@@ -702,7 +770,7 @@ Alle Modelle bleiben nicht ausführbare Fachentwürfe ohne Backend-Änderung.
 
 ## Wiedervorlagetermin · Entwurf 0.17
 
-In [wiedervorlage.bpmn](wiedervorlage.bpmn) verwendet `WTimer` nun ein absolutes
+In [wiedervorlage.bpmn](../../../src/main/resources/bpmn/wiedervorlage.bpmn) verwendet `WTimer` nun ein absolutes
 `timeDate` mit `= followUpDueAt`. Der gespeicherte Termin entspricht **08:00 Uhr
 Europe/Zurich** am Zieldatum, inklusive Sommer-/Winterzeit. «In N Tagen» zählt
 Kalendertage; Wochenenden und Feiertage verschieben den Termin nicht.
@@ -714,7 +782,7 @@ und Laufzeitverhalten sind noch nicht implementiert; das Modell bleibt Fachentwu
 
 ## Ausbleibende Mieterantwort · Entwurf 0.18
 
-[mieterantwort-pruefen.bpmn](mieterantwort-pruefen.bpmn) kennzeichnet das Warten
+[mieterantwort-pruefen.bpmn](../../../src/main/resources/bpmn/mieterantwort-pruefen.bpmn) kennzeichnet das Warten
 in Version 1 ausdrücklich ohne Antwortfrist, automatische Erinnerung oder
 zeitgesteuerte Eskalation wegen Schweigens. Es gibt dafür keinen Timer und keinen
 zeitgesteuerten Abschlussweg. Ohne anderen fachlichen Auslöser bleiben Wartestatus
@@ -774,7 +842,7 @@ keine Backend-Implementierung.
 
 ## Prüfbedarf während Bearbeitung und Wiedervorlage · Entwurf 0.22
 
-In [mitarbeiterbearbeitung.bpmn](mitarbeiterbearbeitung.bpmn) sind zwei
+In [mitarbeiterbearbeitung.bpmn](../../../src/main/resources/bpmn/mitarbeiterbearbeitung.bpmn) sind zwei
 unterbrechende Randereignisse ergänzt:
 
 - `SWorkReviewNeeded` an «Weiteres Vorgehen umsetzen» führt unmittelbar zu
@@ -793,7 +861,7 @@ bleibt offen; keine Backend-Implementierung.
 
 ## Camunda-Mailbeauftragung · Entwurf 0.23
 
-[fallbenachrichtigung-versenden.bpmn](fallbenachrichtigung-versenden.bpmn) enthält
+[fallbenachrichtigung-versenden.bpmn](../../../src/main/resources/bpmn/fallbenachrichtigung-versenden.bpmn) enthält
 zwei Send-Tasks: Status-/Dringlichkeitsmail und Annahme-/Nachrichtenmail. Beide
 verwenden den Mail-Worker `propertyflow.mail.send`. Zuvor wird der gespeicherte
 Auftrag geprüft; bereits erledigte Aufträge benötigen keinen erneuten Versand.

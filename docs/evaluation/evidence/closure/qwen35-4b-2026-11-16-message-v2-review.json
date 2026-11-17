@@ -1,0 +1,44 @@
+{
+  "reviewType": "development-agent-review-not-independent-human-approval",
+  "sourceReport": "qwen35-4b-2026-11-16-message-v2.json",
+  "sourceSha256": "a83ce4d8b5dd345d0ce1e59bcdd4cbdd975b57316b8df1ba24b2f2d48730f7c0",
+  "cases": [
+    {
+      "id": "generate-heating",
+      "text": "Die Heizung funktioniert wieder vollständig und Sie benötigen keine weitere Hilfe.",
+      "passed": true,
+      "finding": "Konkreter Fallbezug und Inhalt durch den öffentlichen aktuellen Verlauf gedeckt; keine neue Verpflichtung.",
+      "styleNote": null
+    },
+    {
+      "id": "generate-tap",
+      "text": "Die Meldung, dass der Wasserhahn tropft, wurde vom Mieter bestätigt gelöst. Der Mieter teilt mit, dass das Problem behoben ist, keine Folgeschäden vorliegen und keine weitere Unterstützung benötigt wird.",
+      "passed": true,
+      "finding": "Konkreter Fallbezug und Inhalt durch den öffentlichen aktuellen Verlauf gedeckt; keine neue Verpflichtung.",
+      "styleNote": "Dritte Person wirkt wie interne Zusammenfassung; direkte Ansprache verbessern."
+    },
+    {
+      "id": "generate-door",
+      "text": "Die Wohnungstür klemmt.",
+      "passed": false,
+      "finding": "Unzulässig: wiederholt die ursprüngliche Türstörung als aktuellen Zustand trotz späterer vollständiger Behebung.",
+      "styleNote": null
+    },
+    {
+      "id": "generate-two-issues",
+      "text": "Die Klingel- und Sprechanlage funktioniert nun dauerhaft; beide Anliegen sind abgeschlossen und weiterer Hilfebedarf besteht nicht.",
+      "passed": true,
+      "finding": "Konkreter Fallbezug und Inhalt durch den öffentlichen aktuellen Verlauf gedeckt; keine neue Verpflichtung.",
+      "styleNote": null
+    },
+    {
+      "id": "generate-tenant-rule",
+      "text": "Die Verwaltung bestätigt, dass der defekte Küchenwecker als privates, mobiles Gerät des Mieters identifiziert wurde und nicht Bestandteil der vermieteten Ausstattung darstellt. Da kein Schaden am Gebäude oder an der Installation vorliegt, besteht kein Bearbeitungsbedarf für die Verwaltung.",
+      "passed": true,
+      "finding": "Konkreter Fallbezug und Inhalt durch den öffentlichen aktuellen Verlauf gedeckt; keine neue Verpflichtung.",
+      "styleNote": "Dritte Person wirkt wie interne Zusammenfassung; direkte Ansprache verbessern."
+    }
+  ],
+  "passed": false,
+  "releaseApproved": false
+}

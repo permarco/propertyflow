@@ -16,14 +16,23 @@ automatisch im Camunda-Prozess. Die interaktive KI-Funktion in UI3 hilft beim
 Formulieren einer Nachricht, die der Mitarbeiter prüft und bewusst sendet.
 Die E-Mail-Annahme aus der Projektvision benötigt weiterhin einen eigenen
 Kanalvertrag; die vereinbarten Benachrichtigungen verweisen auf die Fallansicht.
-Die drei Oberflächen sind als lokale Frontend-Demo mit Testdaten implementiert.
-Die produktiven Integrationen folgen separat.
+Für die lokale integrierte Version startet `pwsh -File dev/start.ps1` PostgreSQL,
+PropertyFlow, Camunda mit Operate/Tasklist und Mailpit einschliesslich synthetischer
+Beispielsfälle. Einstieg: [PropertyFlow Dev](http://127.0.0.1:8081/).
+Die [Dev-Anleitung](dev/README.md) beschreibt Zugänge, Prozessansicht, Persistenz,
+manuelle Prüfschritte und die verbleibenden Grenzen. Die separate Frontend-Demo
+ist weiterhin verfügbar, verwendet aber nicht diese persistente Prozessintegration.
+
+Die KI ist im Devbetrieb standardmässig deaktiviert. Der
+[manuelle Ersatzbetrieb](docs/specifications/ki-tools.md) ist verbindlich spezifiziert;
+automatische Abschlüsse bleiben bis zur fachlichen Freigabe gesperrt.
 
 ## Einstieg
 
 - [Entwicklung und Demo](dev/README.md): Mailpit, Mieterregistrierung, Mitarbeiterkonto und Start in IntelliJ oder per Maven.
 - [Tests](src/test/README.md): Java-, JavaScript- und Browserprüfungen mit separatem Test-Mailpit.
 - [Camunda-Infrastruktur](infra/camunda/README.md): separate Workflow-Umgebung.
+- [Datenbankmigrationen nach Modulen](docs/architecture/datenbankmigrationen.md): Initialschema, Erhalt bestehender Daten und isolierte Testdatenbank.
 
 Die Frontend-Demo benötigt keine Datenbank und keinen laufenden Camunda-Server.
 Die Anwendung läuft lokal auf Port 8081, die separate Browser-Testinstanz auf 8082.

@@ -104,14 +104,51 @@ class Stage1GuestWebTest {
     @Autowired
     GuestRequestLimits limits;
 
+    @Autowired
+    com.pertegato.propertyflow.access.contract.TenantAccountAccess accounts;
+
     private MockMvc mvc;
 
     @BeforeEach
     void resetPorts() {
         mvc = MockMvcBuilders.webAppContextSetup(context).build();
-        reset(submission, reading, limits);
+        reset(submission, reading, limits, accounts);
+        when(accounts.verifiedEmail(any())).thenReturn(Optional.empty());
         when(limits.allowSubmission(any())).thenReturn(true);
         when(limits.allowPersonalLink(any())).thenReturn(true);
+    }
+
+    @Test
+    void guestIntakeKeepsEmailEditableAndDoesNotShowSignedInLabel() throws Exception {
+        String html = body(mvc.perform(get(CONTEXT + FORM).contextPath(CONTEXT)).andReturn().getResponse());
+        assertFalse(html.contains("Angemeldet als"));
+        assertFalse(html.matches("(?s).*id=\"email\"[^>]*readonly[^>]*.*"));
+    }
+
+    @Test
+    void signedInIntakeShowsVerifiedReadOnlyEmailAlsoAfterInvalidSubmission() throws Exception {
+        OpenForm opened = newForm();
+        UUID accountId = UUID.randomUUID();
+        opened.session().setAttribute("propertyflow.tenant.account", accountId);
+        when(accounts.verifiedEmail(accountId)).thenReturn(Optional.of(EMAIL));
+        MvcResult result = mvc.perform(get(CONTEXT + FORM).contextPath(CONTEXT).session(opened.session())
+                .with(request -> {
+                    request.setRequestedSessionId(opened.session().getId());
+                    request.setRequestedSessionIdFromCookie(true);
+                    return request;
+                })).andReturn();
+        String html = body(result.getResponse());
+        assertTrue(html.contains("Angemeldet als"));
+        assertTrue(html.matches("(?s).*id=\"email\"[^>]*readonly[^>]*.*"));
+        Map<String, String> fields = withField(opened.fields(), "email", "spoofed@example.test");
+        fields.put("accountSubmission", "invalid");
+        MockHttpServletResponse rejected = submit(opened.session(), fields);
+        assertEquals(400, rejected.getStatus());
+        assertTrue(body(rejected).contains("Angemeldet als"));
+        assertTrue(body(rejected).contains(EMAIL));
+        assertFalse(body(rejected).contains("spoofed@example.test"));
+        assertTrue(body(rejected).matches("(?s).*id=\"email\"[^>]*readonly[^>]*.*"));
+        verifyNoInteractions(submission);
     }
 
     @Test
@@ -191,7 +228,7 @@ class Stage1GuestWebTest {
     }
 
     @Test
-    void readsPersonalLinkWithoutSessionAndRendersOnlyEscapedPublicData() throws Exception {
+    void readsPersonalLinkWithoutPriorSessionAndRendersProtectedMessageFormAndEscapedPublicData() throws Exception {
         Instant receipt = Instant.parse("2026-11-14T14:00:00Z");
         when(reading.readByToken(TOKEN)).thenReturn(new TenantCaseView(
                 new CaseStatusView("CASE-1", CaseStatus.RECEIVED, Optional.of(Urgency.HIGH)),
@@ -203,7 +240,7 @@ class Stage1GuestWebTest {
         MvcResult result = request(LINK + TOKEN);
         MockHttpServletResponse response = result.getResponse();
         protectedResponse(response, 200);
-        assertTrue(result.getRequest().getSession(false) == null);
+        assertTrue(result.getRequest().getSession(false).getAttribute("propertyflow.tenant-message.csrf") instanceof String);
         String html = body(response);
         assertTrue(html.contains("CASE-1"));
         assertTrue(html.contains("Heizung &lt;kalt&gt;"));
@@ -212,7 +249,8 @@ class Stage1GuestWebTest {
         assertTrue(html.contains("14.11.2026, 15:00"));
         assertTrue(html.contains("&lt;script&gt;Ursprünglicher Text&lt;/script&gt;"));
         assertFalse(html.contains("<script>"));
-        assertFalse(html.contains("method=\"post\""));
+        assertTrue(html.contains("id=\"tenant-message-form\""));
+        assertTrue(html.contains("method=\"post\""));
         assertFalse(html.contains(TOKEN));
         assertFalse(html.contains(EMAIL));
         verify(reading).readByToken(TOKEN);
@@ -308,6 +346,11 @@ class Stage1GuestWebTest {
     @EnableAutoConfiguration
     @Import({GuestCaseIntakeController.class, PersonalCaseController.class})
     static class AdapterConfiguration {
+        @Bean
+        com.pertegato.propertyflow.access.contract.TenantAccountAccess tenantAccounts() {
+            return mock(com.pertegato.propertyflow.access.contract.TenantAccountAccess.class);
+        }
+
 
         @Bean
         CaseSubmission caseSubmission() {

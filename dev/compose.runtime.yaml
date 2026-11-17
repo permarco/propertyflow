@@ -1,0 +1,55 @@
+name: propertyflow-dev
+
+services:
+  camunda-postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: camunda
+      POSTGRES_USER: camunda
+      POSTGRES_PASSWORD: ${PROPERTYFLOW_CAMUNDA_DATABASE_PASSWORD:?Dev-Startskript verwenden}
+    volumes:
+      - camunda-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U camunda -d camunda"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  camunda-data-init:
+    image: camunda/camunda:8.9.19
+    user: "0:0"
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["chown -R 1001:1001 /usr/local/camunda/data /usr/local/camunda/camunda-data"]
+    volumes:
+      - camunda-engine:/usr/local/camunda/data
+      - camunda-data:/usr/local/camunda/camunda-data
+    restart: "no"
+
+  camunda:
+    image: camunda/camunda:8.9.19
+    mem_limit: 2g
+    ports:
+      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:26500:26500"
+    environment:
+      CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_PASSWORD: ${PROPERTYFLOW_CAMUNDA_DATABASE_PASSWORD:?Dev-Startskript verwenden}
+    volumes:
+      - camunda-engine:/usr/local/camunda/data
+      - camunda-data:/usr/local/camunda/camunda-data
+      - ./runtime-camunda.yaml:/usr/local/camunda/config/application.yaml:ro
+    depends_on:
+      camunda-postgres:
+        condition: service_healthy
+      camunda-data-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9600/actuator/health/readiness"]
+      interval: 5s
+      timeout: 3s
+      retries: 60
+      start_period: 30s
+
+volumes:
+  camunda-postgres:
+  camunda-engine:
+  camunda-data:

@@ -1,5 +1,10 @@
 # Use Cases von PropertyFlow
 
+**Aktueller Umsetzungsstand:** Die [Backend-Umsetzungsmatrix vom 16.11.2026](umsetzungsstand-2026-11-16.md)
+führt UI, Java, Persistenz, Camunda und Nachweise je Use Case zusammen. Die
+Standangaben in den folgenden ursprünglichen Tabellen beschreiben überwiegend die
+frühere Frontend-Demo und sind keine aktuelle Backend-Abnahme.
+
 Die Übersicht verbindet die beschriebenen Benutzerziele mit den fachlichen
 Abläufen im Hintergrund. Jeder Use Case führt Akteur, Ziel und Stand. Die
 Fachregeln bleiben in den verlinkten Spezifikationen. Ein Use Case kann

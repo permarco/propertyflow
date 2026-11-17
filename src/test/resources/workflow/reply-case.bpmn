@@ -1,0 +1,589 @@
+<?xml version='1.0' encoding='utf-8'?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" targetNamespace="https://propertyflow.local/test">
+  <bpmn:message id="Message_ClearAnswer" name="Antwortbedarf aufheben angefordert">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="= processInstanceKey" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:message id="Message_TenantMessage" name="Mieternachricht gespeichert">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="= processInstanceKey" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:message id="Message_ReviewRequired" name="Fachlicher Prüfbedarf festgestellt">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="= processInstanceKey" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:message id="Message_CaseDataChange" name="Falldaten ergänzen angefordert">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="= processInstanceKey" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:error id="Error_TriageFailure" errorCode="TRIAGE_ANALYSIS_FAILED" />
+  <bpmn:error id="Error_StaffClosureStale" errorCode="STAFF_CLOSURE_STALE" />
+  <bpmn:message id="Message_StaffCloseReply" name="Mitarbeiterabschluss im Mieterwartepfad angefordert">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="= processInstanceKey" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:message id="Message_StaffFollowClarification" name="Direkte Wiedervorlage angefordert">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="= processInstanceKey" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:process id="PropertyFlow_Case_Draft" isExecutable="true">
+    <bpmn:documentation>Integration fixture for INITIAL and automatic interruption to staff review only. Mirrors the canonical entry and call scopes.
+      This is not the deployable full case process. Unimplemented processing stays at a waiting test job.</bpmn:documentation>
+    <bpmn:startEvent id="ProcessStart">
+      <bpmn:outgoing>K1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="K1" sourceRef="ProcessStart" targetRef="PrepareProcessKey" />
+    <bpmn:serviceTask id="PrepareProcessKey">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="propertyflow-prepare-process-key" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>K1</bpmn:incoming>
+      <bpmn:outgoing>K2</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="K2" sourceRef="PrepareProcessKey" targetRef="ActiveCase" />
+    <bpmn:subProcess id="ActiveCase">
+      <bpmn:incoming>K2</bpmn:incoming>
+      <bpmn:outgoing>EndFlow</bpmn:outgoing>
+      <bpmn:startEvent id="Start">
+        <bpmn:outgoing>F_Initial</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:sequenceFlow id="F_Initial" sourceRef="Start" targetRef="Register" />
+      <bpmn:serviceTask id="Register">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="propertyflow-register-case" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>F_Initial</bpmn:incoming>
+        <bpmn:outgoing>F02</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="F02" sourceRef="Register" targetRef="PrepareInitialAuto" />
+      <bpmn:serviceTask id="PrepareInitialAuto">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="propertyflow-prepare-initial" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>F02</bpmn:incoming>
+        <bpmn:outgoing>InitialAutomatic</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="InitialAutomatic" sourceRef="PrepareInitialAuto" targetRef="Automatic" />
+      <bpmn:callActivity id="Automatic">
+        <bpmn:extensionElements>
+          <zeebe:calledElement processId="PropertyFlow_Automatic_Draft" bindingType="deployment" propagateAllChildVariables="false" propagateAllParentVariables="false" />
+          <zeebe:ioMapping>
+            <zeebe:input source="=caseId" target="caseId" />
+            <zeebe:input source="=processInstanceKey" target="leadingProcessInstanceKey" />
+            <zeebe:input source="=automaticEntryContextRef" target="entryContextRef" />
+            <zeebe:input source="=automaticCallRef" target="automaticCallRef" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+        <bpmn:incoming>InitialAutomatic</bpmn:incoming>
+        <bpmn:outgoing>AutomaticEnd</bpmn:outgoing>
+      </bpmn:callActivity>
+      <bpmn:boundaryEvent id="AutomaticFailure" attachedToRef="Automatic">
+        <bpmn:outgoing>AutoFail01</bpmn:outgoing>
+        <bpmn:errorEventDefinition id="AutomaticFailure_definition" errorRef="Error_TriageFailure" />
+      </bpmn:boundaryEvent>
+      <bpmn:sequenceFlow id="AutoFail01" sourceRef="AutomaticFailure" targetRef="AutomaticFailurePrepare" />
+      <bpmn:serviceTask id="AutomaticFailurePrepare">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="propertyflow.review.analysis-failure" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>AutoFail01</bpmn:incoming>
+        <bpmn:outgoing>AutoFail02</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="AutoFail02" sourceRef="AutomaticFailurePrepare" targetRef="StaffContinuationClaim" />
+      <bpmn:boundaryEvent id="AutomaticInterrupted" attachedToRef="Automatic">
+        <bpmn:outgoing>AI01</bpmn:outgoing>
+        <bpmn:conditionalEventDefinition id="AutomaticInterrupted_definition">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">= automaticInterruptionReady = true and automaticInterruptionCallRef = automaticCallRef</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:sequenceFlow id="AI01" sourceRef="AutomaticInterrupted" targetRef="AutomaticInterruptionPrepare" />
+      <bpmn:serviceTask id="AutomaticInterruptionPrepare">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="propertyflow.review.prepare-staff" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>AI01</bpmn:incoming>
+        <bpmn:outgoing>AIStaff</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="AIStaff" sourceRef="AutomaticInterruptionPrepare" targetRef="StaffContinuationClaim" />
+      <bpmn:serviceTask id="StaffContinuationClaim">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="propertyflow.staff.claim" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>AutoFail02</bpmn:incoming>
+        <bpmn:incoming>AIStaff</bpmn:incoming>
+        <bpmn:incoming>F_CloseConflict_Staff</bpmn:incoming>
+        <bpmn:incoming>F21</bpmn:incoming>
+        <bpmn:incoming>RN2</bpmn:incoming>
+        <bpmn:incoming>CA05</bpmn:incoming>
+        <bpmn:incoming>SF07</bpmn:incoming>
+        <bpmn:outgoing>SCClaim</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="SCClaim" sourceRef="StaffContinuationClaim" targetRef="StaffContinuationRoute" />
+      <bpmn:exclusiveGateway id="StaffContinuationRoute">
+        <bpmn:incoming>SCClaim</bpmn:incoming>
+        <bpmn:outgoing>SCStart</bpmn:outgoing>
+        <bpmn:outgoing>SCExisting</bpmn:outgoing>
+        <bpmn:outgoing>SCSuperseded</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+      <bpmn:sequenceFlow id="SCStart" sourceRef="StaffContinuationRoute" targetRef="Staff">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= staffContinuationOutcome = "START"</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="SCExisting" sourceRef="StaffContinuationRoute" targetRef="StaffContinuationMerge">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= staffContinuationOutcome = "EXISTING"</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:serviceTask id="StaffContinuationMerge">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="propertyflow.staff.merge-continuation" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>SCExisting</bpmn:incoming>
+        <bpmn:outgoing>SCMerged</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="SCMerged" sourceRef="StaffContinuationMerge" targetRef="StaffContinuationMerged" />
+      <bpmn:endEvent id="StaffContinuationMerged">
+        <bpmn:incoming>SCMerged</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:callActivity id="Staff">
+        <bpmn:extensionElements>
+          <zeebe:calledElement processId="PropertyFlow_Staff_Draft" bindingType="deployment" propagateAllChildVariables="false" propagateAllParentVariables="false" />
+          <zeebe:ioMapping>
+            <zeebe:input source="=caseId" target="caseId" />
+            <zeebe:input source="=processInstanceKey" target="leadingProcessInstanceKey" />
+            <zeebe:input source="=staffEntryContextRef" target="entryContextRef" />
+            <zeebe:output source="= outcome" target="staffOutcome" />
+            <zeebe:output source="= decisionRef" target="staffDecisionRef" />
+            <zeebe:output source="= if outcome = &quot;WAIT_FOR_REPLY&quot; then decisionRef else &quot;&quot;" target="replyEntryContextRef" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+        <bpmn:incoming>SCStart</bpmn:incoming>
+        <bpmn:outgoing>F15</bpmn:outgoing>
+      </bpmn:callActivity>
+      <bpmn:sequenceFlow id="F15" sourceRef="Staff" targetRef="StaffRoute" />
+      <bpmn:exclusiveGateway id="StaffRoute">
+        <bpmn:incoming>F15</bpmn:incoming>
+        <bpmn:outgoing>F16</bpmn:outgoing>
+        <bpmn:outgoing>F17</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+      <bpmn:sequenceFlow id="F16" sourceRef="StaffRoute" targetRef="Close">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= staffOutcome = "CLOSE"</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:serviceTask id="Close">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="propertyflow.staff.close" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>F16</bpmn:incoming>
+        <bpmn:incoming>CR06</bpmn:incoming>
+        <bpmn:outgoing>FActiveClose</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:boundaryEvent id="CloseConflict" attachedToRef="Close">
+        <bpmn:extensionElements>
+          <zeebe:ioMapping>
+            <zeebe:output source="= staffEntryContextRef" target="staffEntryContextRef" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+        <bpmn:outgoing>F_CloseConflict_Staff</bpmn:outgoing>
+        <bpmn:errorEventDefinition id="CloseConflict_definition" errorRef="Error_StaffClosureStale" />
+      </bpmn:boundaryEvent>
+      <bpmn:sequenceFlow id="F_CloseConflict_Staff" sourceRef="CloseConflict" targetRef="StaffContinuationClaim" />
+      <bpmn:sequenceFlow id="FActiveClose" sourceRef="Close" targetRef="ActiveEnd" />
+      <bpmn:subProcess id="CaseDataSide" triggeredByEvent="true">
+        <bpmn:extensionElements>
+          <zeebe:ioMapping>
+            <zeebe:input source="= null" target="caseDataCommandRef" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+        <bpmn:startEvent id="CaseDataStart" isInterrupting="false">
+          <bpmn:outgoing>CD01</bpmn:outgoing>
+          <bpmn:messageEventDefinition messageRef="Message_CaseDataChange" />
+        </bpmn:startEvent>
+        <bpmn:sequenceFlow id="CD01" sourceRef="CaseDataStart" targetRef="CaseDataApply" />
+        <bpmn:serviceTask id="CaseDataApply">
+          <bpmn:extensionElements>
+            <zeebe:taskDefinition type="propertyflow.case-data.apply" />
+          </bpmn:extensionElements>
+          <bpmn:incoming>CD01</bpmn:incoming>
+          <bpmn:outgoing>CD02</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:sequenceFlow id="CD02" sourceRef="CaseDataApply" targetRef="CaseDataEnd" />
+        <bpmn:endEvent id="CaseDataEnd">
+          <bpmn:incoming>CD02</bpmn:incoming>
+        </bpmn:endEvent>
+      </bpmn:subProcess>
+      <bpmn:subProcess id="ReviewNeedSide" triggeredByEvent="true">
+        <bpmn:extensionElements>
+          <zeebe:ioMapping>
+            <zeebe:input source="= null" target="reviewSignalRef" />
+            <zeebe:input source="= null" target="reviewRoute" />
+            <zeebe:input source="= null" target="reviewContinuationRef" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+        <bpmn:startEvent id="ReviewNeedStart" isInterrupting="false">
+          <bpmn:outgoing>PN01</bpmn:outgoing>
+          <bpmn:messageEventDefinition messageRef="Message_ReviewRequired" />
+        </bpmn:startEvent>
+        <bpmn:sequenceFlow id="PN01" sourceRef="ReviewNeedStart" targetRef="ReviewNeedCheck" />
+        <bpmn:serviceTask id="ReviewNeedCheck">
+          <bpmn:extensionElements>
+            <zeebe:taskDefinition type="propertyflow.review.check" />
+          </bpmn:extensionElements>
+          <bpmn:incoming>PN01</bpmn:incoming>
+          <bpmn:outgoing>PN02</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:sequenceFlow id="PN02" sourceRef="ReviewNeedCheck" targetRef="ReviewNeedRoute" />
+        <bpmn:exclusiveGateway id="ReviewNeedRoute">
+          <bpmn:incoming>PN02</bpmn:incoming>
+          <bpmn:outgoing>PN03</bpmn:outgoing>
+          <bpmn:outgoing>PN08</bpmn:outgoing>
+          <bpmn:outgoing>PN05</bpmn:outgoing>
+          <bpmn:outgoing>PN04</bpmn:outgoing>
+        </bpmn:exclusiveGateway>
+        <bpmn:sequenceFlow id="PN03" sourceRef="ReviewNeedRoute" targetRef="ReviewNeedExisting">
+          <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= reviewRoute = "EXISTING"</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+        <bpmn:sequenceFlow id="PN08" sourceRef="ReviewNeedRoute" targetRef="ReviewNeedOther">
+          <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= reviewRoute = "OTHER"</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+        <bpmn:sequenceFlow id="PN05" sourceRef="ReviewNeedRoute" targetRef="ReviewNeedDone">
+          <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= reviewRoute = "NONE"</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+        <bpmn:serviceTask id="ReviewNeedExisting">
+          <bpmn:extensionElements>
+            <zeebe:taskDefinition type="propertyflow.review.merge" />
+          </bpmn:extensionElements>
+          <bpmn:incoming>PN03</bpmn:incoming>
+          <bpmn:outgoing>PN06</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:sequenceFlow id="PN06" sourceRef="ReviewNeedExisting" targetRef="ReviewNeedDone" />
+        <bpmn:serviceTask id="ReviewNeedOther">
+          <bpmn:extensionElements>
+            <zeebe:taskDefinition type="propertyflow.review.interrupt-automatic" />
+          </bpmn:extensionElements>
+          <bpmn:incoming>PN08</bpmn:incoming>
+          <bpmn:outgoing>PN09</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:sequenceFlow id="PN09" sourceRef="ReviewNeedOther" targetRef="ReviewNeedDone" />
+        <bpmn:endEvent id="ReviewNeedDone">
+          <bpmn:incoming>PN05</bpmn:incoming>
+          <bpmn:incoming>PN06</bpmn:incoming>
+          <bpmn:incoming>PN09</bpmn:incoming>
+          <bpmn:incoming>PN07</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:serviceTask id="ReviewNeedWakeReply">
+          <bpmn:extensionElements>
+            <zeebe:taskDefinition type="propertyflow.reply.wake-review" />
+          </bpmn:extensionElements>
+          <bpmn:incoming>PN04</bpmn:incoming>
+          <bpmn:outgoing>PN07</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:sequenceFlow id="PN04" sourceRef="ReviewNeedRoute" targetRef="ReviewNeedWakeReply">
+          <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= reviewRoute = "REPLY"</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+        <bpmn:sequenceFlow id="PN07" sourceRef="ReviewNeedWakeReply" targetRef="ReviewNeedDone" />
+      </bpmn:subProcess>
+      <bpmn:sequenceFlow id="AutomaticEnd" sourceRef="Automatic" targetRef="ActiveEnd" />
+      <bpmn:endEvent id="ActiveEnd">
+        <bpmn:incoming>FActiveClose</bpmn:incoming>
+        <bpmn:incoming>AutomaticEnd</bpmn:incoming>
+        <bpmn:terminateEventDefinition id="ActiveEnd_definition" />
+      </bpmn:endEvent>
+      <bpmn:subProcess id="TenantInbox" name="Mieternachrichten&#10;durchgängig empfangen" triggeredByEvent="true">
+        <bpmn:documentation>Einziger externer Empfänger für Message_TenantMessage in der führenden Prozessinstanz. Nicht unterbrechend und je Nachricht aktivierbar. Eingangs-ID und Analysekontext müssen pro Aufruf lokal bleiben. Keine globale überschreibbare letzte Nachricht. Steuerinformationen werden versionsgeprüft bereitgestellt: im ActiveCase-Bereich für den Hauptpfad und ausdrücklich in der aktuellen Kindinstanz für ausgelagerte Wartepunkte (teilprozess-vertraege.md). Rechteprüfung und Speicherung erfolgen vor Korrelation gemäss SS-003; Korrelation bestätigt Empfang, nicht abgeschlossene LLM-Auswertung. Keine eigene Veröffentlichung, Statusfreigabe oder Schliessung aus diesem Nebenpfad.</bpmn:documentation>
+        <bpmn:extensionElements>
+          <zeebe:ioMapping>
+            <zeebe:input source="= null" target="tenantMessageId" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+        <bpmn:startEvent id="NStart" name="Mieternachricht gespeichert" isInterrupting="false">
+          <bpmn:outgoing>NReceive_Call</bpmn:outgoing>
+          <bpmn:messageEventDefinition id="NStart_definition" messageRef="Message_TenantMessage" />
+        </bpmn:startEvent>
+        <bpmn:callActivity id="ProcessTenantMessage" name="Mieternachricht&#10;verarbeiten">
+          <bpmn:documentation>Ruft mieternachricht-verarbeiten.bpmn je empfangener Nachricht auf. tenantMessageId muss lokal aus der korrelierten gespeicherten Nachricht übernommen werden, niemals in einer überschreibbaren Root-Variable. Keine Outputs; keine Antwort-, Status- oder Abschlussfreigabe durch Call-Ende. Empfangsbestätigung wartet nicht auf Verarbeitung. Interne Bereitstellung gemäss teilprozess-vertraege.md.</bpmn:documentation>
+          <bpmn:extensionElements>
+            <zeebe:calledElement processId="PropertyFlow_TenantMessage_Draft" propagateAllChildVariables="false" propagateAllParentVariables="false" bindingType="deployment" />
+            <zeebe:ioMapping>
+              <zeebe:input source="= caseId" target="caseId" />
+              <zeebe:input source="= processInstanceKey" target="leadingProcessInstanceKey" />
+              <zeebe:input source="= tenantMessageId" target="tenantMessageId" />
+            </zeebe:ioMapping>
+          </bpmn:extensionElements>
+          <bpmn:incoming>NReceive_Call</bpmn:incoming>
+          <bpmn:outgoing>NReceive_End</bpmn:outgoing>
+        </bpmn:callActivity>
+        <bpmn:endEvent id="NReceptionEnd" name="Dieser Eingang verarbeitet">
+          <bpmn:incoming>NReceive_End</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="NReceive_Call" sourceRef="NStart" targetRef="ProcessTenantMessage" />
+        <bpmn:sequenceFlow id="NReceive_End" sourceRef="ProcessTenantMessage" targetRef="NReceptionEnd" />
+      </bpmn:subProcess>
+      <bpmn:sequenceFlow id="F17" sourceRef="StaffRoute" targetRef="Reply">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= staffOutcome = "WAIT_FOR_REPLY"</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:callActivity id="Reply">
+        <bpmn:extensionElements>
+          <zeebe:calledElement processId="PropertyFlow_TenantReply_Draft" bindingType="deployment" propagateAllChildVariables="false" propagateAllParentVariables="false" />
+          <zeebe:ioMapping>
+            <zeebe:input source="= caseId" target="caseId" />
+            <zeebe:input source="= processInstanceKey" target="leadingProcessInstanceKey" />
+            <zeebe:input source="= replyEntryContextRef" target="entryContextRef" />
+            <zeebe:input source="= staffEntryContextRef" target="staffEntryContextRef" />
+            <zeebe:output source="= outcome" target="replyOutcome" />
+            <zeebe:output source="= decisionRef" target="replyDecisionRef" />
+            <zeebe:output source="= if outcome = &quot;REVIEW&quot; then decisionRef else staffEntryContextRef" target="staffEntryContextRef" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+        <bpmn:incoming>F17</bpmn:incoming>
+        <bpmn:incoming>F19</bpmn:incoming>
+        <bpmn:incoming>CA06</bpmn:incoming>
+        <bpmn:outgoing>F09</bpmn:outgoing>
+      </bpmn:callActivity>
+      <bpmn:exclusiveGateway id="ReplyRoute">
+        <bpmn:incoming>F09</bpmn:incoming>
+        <bpmn:outgoing>F19</bpmn:outgoing>
+        <bpmn:outgoing>F21</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+      <bpmn:sequenceFlow id="F09" sourceRef="Reply" targetRef="ReplyRoute" />
+      <bpmn:sequenceFlow id="F19" sourceRef="ReplyRoute" targetRef="Reply">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= replyOutcome = "WAIT"</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="F21" sourceRef="ReplyRoute" targetRef="StaffContinuationClaim">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= replyOutcome = "REVIEW"</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:boundaryEvent id="ReplyReviewNeeded" attachedToRef="Reply">
+        <bpmn:outgoing>RN1</bpmn:outgoing>
+        <bpmn:conditionalEventDefinition id="ReplyReviewNeeded_definition">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">= reviewNeedReplyCallRef != null and reviewNeedReplyCallRef = activeReplyCallRef and activeReplyEntryRef != null and activeReplyEntryRef = replyEntryContextRef</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:serviceTask id="ReviewNeedPrepare">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="propertyflow.reply.prepare-review" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>RN1</bpmn:incoming>
+        <bpmn:outgoing>RN2</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="RN1" sourceRef="ReplyReviewNeeded" targetRef="ReviewNeedPrepare" />
+      <bpmn:sequenceFlow id="RN2" sourceRef="ReviewNeedPrepare" targetRef="StaffContinuationClaim" />
+      <bpmn:subProcess id="ClearAnswerSide" name="Mitarbeiteraktion: Antwortbedarf aufheben" triggeredByEvent="true">
+        <bpmn:documentation>
+Nicht unterbrechender Mitarbeitereingang in jeder aktiven Phase. Keine Mieternachricht und keine KI-Auswertung erforderlich. Lokale Auftragsdaten; keine pauschale Überschreibung von Hauptpfadvariablen. Nach Fallabschluss keine neuen Wirkungen.</bpmn:documentation>
+        <bpmn:extensionElements>
+          <zeebe:ioMapping>
+            <zeebe:input source="= null" target="clearAnswerCommandRef" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+        <bpmn:startEvent id="ClearAnswerStart" name="Geprüfter Mitarbeiterauftrag" isInterrupting="false">
+          <bpmn:outgoing>CA01</bpmn:outgoing>
+          <bpmn:messageEventDefinition id="ClearAnswerStart_definition" messageRef="Message_ClearAnswer" />
+        </bpmn:startEvent>
+        <bpmn:serviceTask id="ClearAnswerApply" name="Antwortbedarf geprüft aufheben&#10;Fortsetzung bereitstellen">
+          <bpmn:documentation>
+KOM-03: Berechtigung, aktuellen Fall, Nachricht, Antwortbedarf, führende Instanz und Auftragsversion prüfen. Nur gezielten Bedarf idempotent aufheben, Nachricht erhalten und nicht als beantwortet markieren. Weitere offene Fragen: keine Statusänderung. Laufende Mitarbeiterprüfung, Wiedervorlage und externe Wartephase erhalten. Nur beim aktuellen Reply-Aufruf und letztem aufgehobenen Bedarf den geprüften Fortsetzungsmarker mit Call-Bezug dauerhaft bereitstellen. Bereits bestehende Prüfgründe haben Vorrang. Neue Fragen und konkurrierende Entscheidungen dürfen nicht überschrieben werden. Abgelehnte oder veraltete Aktionen bleiben ohne Wirkung; technische Fehler Retry/Incident. Speicherung und Markerzustellung müssen wiederholbar ohne Lücke sein. Keine direkte User-Task-Erledigung.</bpmn:documentation>
+          <bpmn:extensionElements>
+            <zeebe:taskDefinition type="propertyflow.answer.clear" />
+          </bpmn:extensionElements>
+          <bpmn:incoming>CA01</bpmn:incoming>
+          <bpmn:outgoing>CA02</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:endEvent id="ClearAnswerEnd" name="Nur Nebenaktion beendet">
+          <bpmn:incoming>CA02</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="CA01" name="" sourceRef="ClearAnswerStart" targetRef="ClearAnswerApply" />
+        <bpmn:sequenceFlow id="CA02" name="" sourceRef="ClearAnswerApply" targetRef="ClearAnswerEnd" />
+      </bpmn:subProcess>
+      <bpmn:boundaryEvent id="ReplyCleared" name="Antwortbedarf aufgehoben" attachedToRef="Reply">
+        <bpmn:documentation>
+Nur aktuell freigegebenen Aufhebungsmarker zum aktiven Reply-Call verwenden. Teilaufhebung unterbricht den Call nicht. Marker und Unterbrechung vor Ausführung mit neuen Fragen, Mitarbeiterentscheidung, Fallabschluss und Call-Wechsel koordinieren; alte Marker niemals auf neuere Calls anwenden. Kein normaler Output des abgebrochenen Calls.</bpmn:documentation>
+        <bpmn:outgoing>CA03</bpmn:outgoing>
+        <bpmn:conditionalEventDefinition id="ReplyCleared_definition">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">= (clearedAnswerCallRef != null and clearedAnswerCallRef = activeReplyCallRef and activeReplyEntryRef != null and activeReplyEntryRef = replyEntryContextRef) or (clearedReplyEntryRef != null and clearedReplyEntryRef = replyEntryContextRef)</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:serviceTask id="ClearAnswerContinue" name="Aktuelle Fortsetzung prüfen&#10;Mitarbeitereintritt vorbereiten">
+        <bpmn:documentation>BEN-03 / 0.23: Bei tatsächlicher benachrichtigungspflichtiger Änderung Ereignis und Mailpflicht dauerhaft zusammen sichern. Der dauerhafte Starter startet fallbenachrichtigung-versenden.bpmn mit mailOrderRef; dort beauftragen Camunda-Send-Tasks den Mail-Worker. Hier kein direkter SMTP-Aufruf und kein Warten auf SMTP. Unveränderte Werte und identische Wiederholungen erzeugen keine neue Mailpflicht.
+Dauerhaften Aufhebungsentscheid und aktuellen Fall-/Call-Stand laden, nicht auf Outputs des abgebrochenen Calls warten. Ohne offenen Antwortbedarf und ohne vorrangigen Prüfbedarf In Bearbeitung konsistent speichern und staffEntryContextRef für direkten SWork-Eintritt bereitstellen. Bei aktuellem Prüfbedarf Kontext für Mitarbeiterprüfung setzen. Bei inzwischen neuen offenen Fragen ohne Prüfbedarf aktuellen Reply-Kontext bereitstellen und weiter warten. Bestehende Mitarbeiter-/Wiedervorlageinstanz nicht duplizieren; überholte Aufträge dürfen keine neuere Bearbeitung verdrängen. Keine erneute KI-Analyse, keine Abschlussfreigabe. Technische Konfliktkoordination bleibt offen.</bpmn:documentation>
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="propertyflow.answer.continue" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>CA03</bpmn:incoming>
+        <bpmn:outgoing>CA04</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:exclusiveGateway id="ClearAnswerRoute" name="Aktueller&#10;Fortsetzungsweg">
+        <bpmn:incoming>CA04</bpmn:incoming>
+        <bpmn:outgoing>CA05</bpmn:outgoing>
+        <bpmn:outgoing>CA06</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+      <bpmn:sequenceFlow id="CA03" name="" sourceRef="ReplyCleared" targetRef="ClearAnswerContinue" />
+      <bpmn:sequenceFlow id="CA04" name="" sourceRef="ClearAnswerContinue" targetRef="ClearAnswerRoute" />
+      <bpmn:sequenceFlow id="CA05" name="In Bearbeitung / vorrangige Prüfung" sourceRef="ClearAnswerRoute" targetRef="StaffContinuationClaim">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= clearAnswerOutcome = "STAFF"</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="CA06" name="Neue offene Fragen; weiter warten" sourceRef="ClearAnswerRoute" targetRef="Reply">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= clearAnswerOutcome = "WAIT"</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:subProcess id="StaffCloseReplySide" name="Mitarbeiterabschluss während Warten auf Mieterantwort" triggeredByEvent="true">
+        <bpmn:documentation>
+Nicht unterbrechender Auftragseingang. Keine vorgängige Aufhebung des Antwortbedarfs nötig. Dieser Eingang gilt ausschliesslich für den aktuellen Reply-Call bei Wartet auf Mieterantwort; bestehende Abschlussaktionen anderer Phasen bleiben unverändert. Auftragsdaten lokal halten.</bpmn:documentation>
+        <bpmn:extensionElements>
+          <zeebe:ioMapping>
+            <zeebe:input source="= null" target="replyClosureCommandRef" />
+            <zeebe:input source="= null" target="replyClosureOutcome" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+        <bpmn:startEvent id="StaffCloseReplyStart" name="Mitarbeiter bestätigt Abschluss" isInterrupting="false">
+          <bpmn:outgoing>CR01</bpmn:outgoing>
+          <bpmn:messageEventDefinition id="StaffCloseReplyStart_definition" messageRef="Message_StaffCloseReply" />
+        </bpmn:startEvent>
+        <bpmn:serviceTask id="StaffCloseReplyCheck" name="Abschlussauftrag und&#10;aktuellen Fallstand prüfen">
+          <bpmn:documentation>
+Berechtigte Mitarbeiteridentität, bestätigten fachlichen Fallstand, Status Wartet auf Mieterantwort, führende Instanz und aktuellen Reply-Call serverseitig prüfen. Keine offene Mitarbeiter-User-Task erfinden: Autorisierung bindet hier an den aktuellen Warteaufruf. Unberechtigter, veralteter oder inzwischen anders zugeordneter Auftrag wird ohne Unterbrechung abgelehnt. Gültige Entscheidung mit Quelle Mitarbeiter, Auftragsschlüssel und Call-Bezug dauerhaft nachweisen. Keine neue KI-Auswertung, keine Nachricht und kein Kommentar erforderlich. Technischer Fehler bleibt Retry/Incident. Wiederholung eines bereits gespeicherten identischen Abschlusses als Erfolg ohne neue Wirkung behandeln, nicht als neuen Auftrag übernehmen.</bpmn:documentation>
+          <bpmn:extensionElements>
+            <zeebe:taskDefinition type="propertyflow.reply-closure.check" />
+          </bpmn:extensionElements>
+          <bpmn:incoming>CR01</bpmn:incoming>
+          <bpmn:outgoing>CR02</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:exclusiveGateway id="StaffCloseReplyAccepted" name="Auftrag&#10;übernommen?">
+          <bpmn:incoming>CR02</bpmn:incoming>
+          <bpmn:outgoing>CR03</bpmn:outgoing>
+          <bpmn:outgoing>CR04</bpmn:outgoing>
+        </bpmn:exclusiveGateway>
+        <bpmn:serviceTask id="StaffCloseReplySignal" name="Geprüften Abschluss&#10;für aktuellen Warteaufruf bereitstellen">
+          <bpmn:documentation>
+Persistierten Entscheidungsbezug samt Quelle Mitarbeiter und aktuellem Call-Bezug zuverlässig bereitstellen. Marker und Unterbrechung atomar gegen Call-Wechsel, manuelles Aufheben, neue Fragen, automatische Veröffentlichung und Fallabschluss abstimmen. Nach Übernahme geänderte fachliche Grundlage führt über Close zur Mitarbeiterprüfung, niemals stillschweigend die alte Bestätigung aktualisieren. Eine andere bereits aktive Bearbeitung nicht abbrechen. Technische Koordination bleibt offen.</bpmn:documentation>
+          <bpmn:extensionElements>
+            <zeebe:taskDefinition type="propertyflow.reply-closure.signal" />
+          </bpmn:extensionElements>
+          <bpmn:incoming>CR03</bpmn:incoming>
+          <bpmn:outgoing>CR05</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:endEvent id="StaffCloseReplyRejected" name="Abgelehnt&#10;Aktueller Pfad bleibt">
+          <bpmn:incoming>CR04</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:endEvent id="StaffCloseReplyReady" name="Nur Auftrag bereitgestellt">
+          <bpmn:incoming>CR05</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="CR01" name="" sourceRef="StaffCloseReplyStart" targetRef="StaffCloseReplyCheck" />
+        <bpmn:sequenceFlow id="CR02" name="" sourceRef="StaffCloseReplyCheck" targetRef="StaffCloseReplyAccepted" />
+        <bpmn:sequenceFlow id="CR03" name="Ja" sourceRef="StaffCloseReplyAccepted" targetRef="StaffCloseReplySignal">
+          <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= replyClosureOutcome = "ACCEPTED"</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+        <bpmn:sequenceFlow id="CR04" name="Nein: Konflikt / nicht zulässig" sourceRef="StaffCloseReplyAccepted" targetRef="StaffCloseReplyRejected">
+          <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= replyClosureOutcome = "REJECTED"</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+        <bpmn:sequenceFlow id="CR05" name="" sourceRef="StaffCloseReplySignal" targetRef="StaffCloseReplyReady" />
+      </bpmn:subProcess>
+      <bpmn:boundaryEvent id="ReplyStaffClose" name="Abschluss bestätigt" attachedToRef="Reply">
+        <bpmn:documentation>
+Unterbrechung ausschliesslich für den aktuell gebundenen Reply-Aufruf. Keine normale Call-Rückgabe übernehmen. Close lädt den dauerhaft gespeicherten Mitarbeiterentscheid; Quelle niemals System. Erst nach erfolgreicher Abschlussspeicherung endet Antwortbedarf. Bei früher Ablehnung bleibt der aktuelle Pfad bestehen. Später fachlicher Konflikt nutzt STAFF_CLOSURE_STALE und CloseConflict.</bpmn:documentation>
+        <bpmn:extensionElements>
+          <zeebe:ioMapping>
+            <zeebe:output source="= &quot;CLOSE&quot;" target="staffOutcome" />
+            <zeebe:output source="= staffReplyClosureDecisionRef" target="staffDecisionRef" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+        <bpmn:outgoing>CR06</bpmn:outgoing>
+        <bpmn:conditionalEventDefinition id="ReplyStaffClose_definition">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffCloseReplyCallRef != null and staffCloseReplyCallRef = activeReplyCallRef and staffCloseReplyEntryRef = replyEntryContextRef</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:sequenceFlow id="CR06" sourceRef="ReplyStaffClose" targetRef="Close" />
+      <bpmn:subProcess id="StaffFollowSide" name="Direkte Wiedervorlage aus Abklärung oder Mieterwartephase" triggeredByEvent="true">
+        <bpmn:documentation>FALL-11 Übergang 31 / FALL-AK-37. Nicht unterbrechender interner Mitarbeiterauftrag. Ungültige oder veraltete Aufträge verändern den laufenden Pfad nicht. Lokale Auftragsvariablen, kein zusätzlicher Mieternachrichtenempfänger.
+0.27: Zusätzlich FALL-11 Übergang 32 / FALL-AK-38. Derselbe geprüfte Auftragseingang gilt aus Wartet auf Mieterantwort; keine zweite Terminsetzungslogik.</bpmn:documentation>
+        <bpmn:extensionElements>
+          <zeebe:ioMapping>
+            <zeebe:input source="=directFollowCommandRef" target="directFollowCommandRef" />
+            <zeebe:input source="=null" target="directFollowOutcome" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+        <bpmn:startEvent id="StaffFollowStart" name="Wiedervorlage angefordert" isInterrupting="false">
+          <bpmn:outgoing>SF01</bpmn:outgoing>
+          <bpmn:messageEventDefinition id="StaffFollowStart_definition" messageRef="Message_StaffFollowClarification" />
+        </bpmn:startEvent>
+        <bpmn:serviceTask id="StaffFollowPublish" name="Auftrag prüfen: Termin und&#10;Wartet auf Wiedervorlage speichern">
+          <bpmn:documentation>Berechtigung, aktuellen führenden Durchlauf, Status In Abklärung oder Wartet auf Mieterantwort, bestätigten Fallstand und zukünftigen Termin prüfen. FALL-11: Kalendertage, 08:00 Europe/Zurich, optionale interne Begründung. Termin, Version, Status, bewusste Berücksichtigung bekannter Prüfgründe und erforderliche Mailpflicht konsistent sichern. Offene Mieterfragen erhalten. Keine pauschale Kosten- oder Abschlussfreigabe. Alte automatische Schreibfreigaben entziehen. Konkurrierende Änderungen machen den Auftrag ungültig, keine stillschweigende Übernahme neuer Erkenntnisse. Erfolgreiche Wiederholung liefert denselben Termin und dieselbe Version ohne neue Mailpflicht. Technischer Fehler bleibt Retry/Incident. BEN-03: zuverlässige Übergabe an Mailprozess, kein Warten auf SMTP.</bpmn:documentation>
+          <bpmn:extensionElements>
+            <zeebe:taskDefinition type="propertyflow.direct-follow-up.apply" />
+          </bpmn:extensionElements>
+          <bpmn:incoming>SF01</bpmn:incoming>
+          <bpmn:outgoing>SF02</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:exclusiveGateway id="StaffFollowResult" name="Terminsetzung&#10;gespeichert?">
+          <bpmn:incoming>SF02</bpmn:incoming>
+          <bpmn:outgoing>SF03</bpmn:outgoing>
+          <bpmn:outgoing>SF05</bpmn:outgoing>
+        </bpmn:exclusiveGateway>
+        <bpmn:serviceTask id="StaffFollowSignal" name="Übernahme für aktuellen&#10;Bearbeitungspfad bereitstellen">
+          <bpmn:documentation>0.31: Gespeicherten Terminauftrag zum aktuellen Aufruf bereitstellen. Bei Automatic: automaticCallRef + automaticInterruptionReady im Elternscope. Bei Reply: bestehenden staffFollowTakeoverReady zum Reply-Aufruf verwenden. Keine zweite Terminversion/Mailpflicht. Kontakte und neue Prüfgründe nach Speicherung auch während Übergabe nachliefern, aufgehobenen Termin nicht wiederherstellen.</bpmn:documentation>
+          <bpmn:extensionElements>
+            <zeebe:taskDefinition type="propertyflow.direct-follow-up.signal" />
+          </bpmn:extensionElements>
+          <bpmn:incoming>SF03</bpmn:incoming>
+          <bpmn:outgoing>SF04</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:endEvent id="StaffFollowDone" name="Übernahme bereitgestellt">
+          <bpmn:incoming>SF04</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:endEvent id="StaffFollowRejected" name="Abgelehnt: aktuellen Stand anzeigen&#10;Laufender Pfad bleibt">
+          <bpmn:incoming>SF05</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="SF01" sourceRef="StaffFollowStart" targetRef="StaffFollowPublish" />
+        <bpmn:sequenceFlow id="SF02" sourceRef="StaffFollowPublish" targetRef="StaffFollowResult" />
+        <bpmn:sequenceFlow id="SF03" name="Ja / bereits übernommen" sourceRef="StaffFollowResult" targetRef="StaffFollowSignal">
+          <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= directFollowOutcome = "APPLIED"</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+        <bpmn:sequenceFlow id="SF04" sourceRef="StaffFollowSignal" targetRef="StaffFollowDone" />
+        <bpmn:sequenceFlow id="SF05" name="Nein" sourceRef="StaffFollowResult" targetRef="StaffFollowRejected">
+          <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= directFollowOutcome = "REJECTED"</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+      </bpmn:subProcess>
+      <bpmn:serviceTask id="StaffFollowContinue" name="Aktuellen Wiedervorlage-&#10;Eintritt bereitstellen">
+        <bpmn:documentation>FALL-11 Übergang 31. Gespeicherten Terminsetzungsauftrag und aktuelle Terminversion laden, nicht neu berechnen oder erneut speichern. staffEntryContextRef für direkten Eintritt in FollowUp vorbereiten; Marker konsumieren. Neue Mieternachricht oder neuer zwingender Prüfgrund nach Terminsetzung: betroffenen Termin idempotent aufheben und Mitarbeiterprüfung vorbereiten, genau eine Prüfung auch bei gleichzeitigem Timer. Keine Wiederherstellung eines aufgehobenen Termins. Alte automatische Ergebnisse bleiben gesperrt. Übergabekontext und Ereignisse zuverlässig an SEntryCheck übergeben; keine live gemeinsam genutzten Kindvariablen.
+0.27: Auch Übergang 32. Keine Rückgaben des abgebrochenen Reply-Calls verwenden; offene Antwortbedarfe unverändert erhalten. Derselbe geprüfte FollowUp-Eintritt wie bei Übergang 31.</bpmn:documentation>
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="propertyflow.direct-follow-up.continue" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>SF_Takeover_Reply</bpmn:incoming>
+        <bpmn:outgoing>SF07</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:boundaryEvent id="StaffFollowAtReply" name="Wiedervorlage bestätigt" attachedToRef="Reply">
+        <bpmn:documentation>FALL-11 Übergänge 31/32: Unterbrechung nur für bestätigte Terminsetzung aus In Abklärung oder Wartet auf Mieterantwort im aktuellen Durchlauf. Marker und Zustellverfahren sind Fachentwurf. Nach Speicherung keine automatische Wirkung des abgelösten Laufs; technische Umsetzung offen.</bpmn:documentation>
+        <bpmn:extensionElements>
+          <zeebe:ioMapping>
+            <zeebe:output source="=staffFollowCommandRef" target="directFollowContinuationRef" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+        <bpmn:outgoing>SF_Takeover_Reply</bpmn:outgoing>
+        <bpmn:conditionalEventDefinition id="StaffFollowAtReply_definition">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">= staffFollowReplyEntryRef != null and staffFollowReplyEntryRef != "" and staffFollowReplyEntryRef = replyEntryContextRef and (staffFollowReplyCallRef = "" or staffFollowReplyCallRef = activeReplyCallRef)</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:sequenceFlow id="SF07" sourceRef="StaffFollowContinue" targetRef="StaffContinuationClaim" />
+      <bpmn:sequenceFlow id="SF_Takeover_Reply" sourceRef="StaffFollowAtReply" targetRef="StaffFollowContinue" />
+      <bpmn:sequenceFlow id="SCSuperseded" sourceRef="StaffContinuationRoute" targetRef="StaffContinuationReconcile">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= staffContinuationOutcome = "SUPERSEDED"</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:serviceTask id="StaffContinuationReconcile">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="propertyflow.staff.reconcile-continuation" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>SCSuperseded</bpmn:incoming>
+        <bpmn:outgoing>SCObsolete</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="SCObsolete" sourceRef="StaffContinuationReconcile" targetRef="StaffContinuationObsolete" />
+      <bpmn:endEvent id="StaffContinuationObsolete">
+        <bpmn:incoming>SCObsolete</bpmn:incoming>
+      </bpmn:endEvent>
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="EndFlow" sourceRef="ActiveCase" targetRef="End" />
+    <bpmn:endEvent id="End">
+      <bpmn:incoming>EndFlow</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+</bpmn:definitions>

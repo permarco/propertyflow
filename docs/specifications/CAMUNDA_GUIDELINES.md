@@ -29,7 +29,11 @@ Entscheidungen zu klären, statt stillschweigend die Prozesslogik zu verändern.
 
 Eine beschlossene Regel, ein modellierter Entwurf, implementierter Code und ein
 bestandener Laufzeittest MÜSSEN als unterschiedliche Nachweisstände bezeichnet werden.
-Die sieben BPMN-Dateien sind derzeit nicht ausführbare Fachentwürfe.
+Seit 16.11.2026 liegen alle sieben ausführbaren Modelle als verbindliche
+Anwendungsressourcen unter `src/main/resources/bpmn`. Deployment und Tests verwenden
+diese Quellen ohne nachträgliches Umschalten von `isExecutable`. Unter `docs` bleiben
+Beschreibungen und Verweise; dort DARF KEINE zweite bearbeitete Modellkopie entstehen. Der jeweils nachgewiesene Umfang steht in der BPMN-README und der
+zugehörigen Laufzeitdokumentation; eine vollständige B10-Abnahme folgt daraus nicht.
 
 ## 2. Prozessführung und Datenverantwortung
 

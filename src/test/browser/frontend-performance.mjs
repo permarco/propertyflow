@@ -1,16 +1,15 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { staffStorageState } from './staff-test-login.mjs';
+import { base, createCase } from './integrated-helpers.mjs';
 
 const require = createRequire(path.resolve('target/frontend-tools/package.json'));
 const { chromium } = require('playwright');
 const { default: lighthouse } = await import(pathToFileURL(require.resolve('lighthouse')).href);
 const { launch } = await import(pathToFileURL(require.resolve('chrome-launcher')).href);
-const base = process.env.DEMO_URL || 'http://127.0.0.1:8082';
-const chromePath = process.env.CHROME_PATH || 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
+const chromePath = process.env.CHROME_PATH || chromium.executablePath();
 const out = path.resolve('target/frontend-quality');
 await mkdir(out, { recursive: true });
 const chrome = await launch({ chromePath, chromeFlags: ['--headless', '--disable-gpu', '--no-first-run'] });
@@ -18,20 +17,23 @@ const summary = { at: new Date().toISOString(), base, profile: 'desktop, provide
 try {
     const browser = await chromium.launch({ executablePath: chromePath, headless: true });
     let sessionCookie;
+    let c;
     try {
-        const state = await staffStorageState(browser);
+        const state = JSON.parse(await readFile(process.env.PROPERTYFLOW_E2E_STAFF_STATE, 'utf8'));
+        const context = await browser.newContext();
+        c = await createCase(await context.newPage());
         sessionCookie = state.cookies.find(cookie => cookie.name === 'JSESSIONID' && cookie.domain === new URL(base).hostname);
-        assert.ok(sessionCookie, 'Staff login must issue a session cookie for the demo host');
+        assert.ok(sessionCookie, 'Staff login must issue a session cookie for the backend host');
     } finally {
         await browser.close();
     }
     const auditBrowser = await chromium.connectOverCDP(`http://127.0.0.1:${chrome.port}`);
     const [auditContext] = auditBrowser.contexts();
-    const routes = ['/mieter/fall', '/mieter/fall/zugang/demo-aktiver-fall', '/mitarbeiter/faelle', '/mitarbeiter/faelle/REQ-2026-001'];
+    const routes = ['/mieter/fall', new URL(c.tenantUrl).pathname, '/mitarbeiter/faelle', new URL(c.staffUrl).pathname];
     for (const [index, route] of routes.entries()) {
         const staffRoute = route.startsWith('/mitarbeiter/');
         const headers = staffRoute ? { Cookie: `${sessionCookie.name}=${sessionCookie.value}` } : {};
-        assert.equal((await fetch(base + route, { headers, redirect: 'manual' })).status, 200); // warm template/server
+        assert.equal((await fetch(base + route, { headers, redirect: 'manual' })).status, 200); // Template und Server vor der Messung aufwärmen.
         if (staffRoute) await auditContext.addCookies([sessionCookie]);
         for (let run = 1; run <= 3; run++) {
             const result = await lighthouse(base + route, {
@@ -41,6 +43,8 @@ try {
             });
             const lhr = result.lhr;
             if (lhr.runtimeError) throw new Error(JSON.stringify(lhr.runtimeError));
+            assert.equal(typeof lhr.categories.performance.score, 'number',
+                'Unvollständige Lighthouse-Messung: ' + JSON.stringify(lhr.runWarnings));
             assert.equal(new URL(lhr.finalDisplayedUrl).pathname, route, 'Measure the requested page rather than a redirect to login');
             const report = result.report.replaceAll(sessionCookie.value, '[redacted]');
             await writeFile(path.join(out, `lighthouse-${index + 1}-${run}.json`), report);

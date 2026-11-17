@@ -24,3 +24,13 @@ Die folgenden Dateien dokumentieren lokale Demo-Prüfungen vom 12.10.2026. Sie b
 ## Abgrenzung zu AI Usage
 
 [AI Usage](../ai-usage/README.md) dokumentiert den KI-Einsatz bei der Entwicklung, Reviews, Korrekturen, Erkenntnisse und ausgeführte Nachweise. Hier stehen die Prüfgrundlagen und erwarteten Ergebnisse. Erkenntnisse aus einer Prüfung werden im passenden Prüfprotokoll festgehalten; daraus abgeleitete Änderungen an Fachregeln oder Prüfkriterien werden in deren zuständigen Dokumenten nachgeführt.
+
+
+## Automatische Abschlussgründe
+
+[Abschlussprüfung und Modellevaluation](automatischer-abschluss.md) beschreibt
+Format-/Quellenprüfung, zusätzliche Regelfreigabe und den versionierten synthetischen
+Bestände für Abschlussbewertung, synthetische Regeln und individuelle Mitteilung.
+Echte Generierung, kontrollierte Entwurfsprüfung und zusätzliche Textsichtung werden
+getrennt ausgewiesen. Ein technischer Vertragsnachweis ist keine semantische Freigabe.
+Ergebnisse stehen im [Entwicklungsbericht](../ai-usage/abschluss-evaluation-2026-11-16.md).

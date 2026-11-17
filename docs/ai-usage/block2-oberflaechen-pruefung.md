@@ -209,7 +209,7 @@ aus FALL-06, KOM-01/KOM-02 und UI3/FD-AK-21. Der begrenzte Prüfauftrag war
 Begründung, ungültige Übergänge, Versionskonflikte und wiederholte Aufrufe.
 Die Geschäftslogik sollte nicht vorsorglich verändert werden.
 
-Die neue Klasse [DemoCasesChangeTest](../../src/test/java/com/pertegato/propertyflow/caseprocessing/demo/DemoCasesChangeTest.java)
+Die neue Klasse [DemoCasesChangeTest](../architecture/frontend-demo-ablosung-2026-11-16.md)
 enthielt zunächst sechs Testmethoden mit insgesamt zehn Testausführungen;
 nach dem unten dokumentierten Veto verbleiben fünf Methoden mit neun
 Testausführungen. Sie verwendet
@@ -385,7 +385,7 @@ Der HTML-Test deckt den lokalen Streaming-Ausgabepfad ab, nicht jeden
 möglichen XSS-Pfad der Anwendung oder externe LLM-Integrationen.
 
 Die ausführbaren Prüfungen liegen in
-[frontend-quality.mjs](../../src/test/browser/frontend-quality.mjs) und
+[frontend-quality.mjs](../architecture/frontend-demo-ablosung-2026-11-16.md) und
 [frontend-performance.mjs](../../src/test/browser/frontend-performance.mjs).
 Sie ändern keine fachlichen Falldaten. Rohberichte und Screenshot werden
 unter `target/frontend-quality/` erzeugt.
@@ -567,12 +567,12 @@ UI3 und [UC-002](../use_cases/UC-002-mieteranliegen-anzeigen.md#gemeinsame-fachl
 verlangen Erhalt von Suche, Filtern, Sortierung und Seite.
 [fragments.html](../../src/main/resources/templates/demo/fragments.html) verlinkt
 «Zur Fallübersicht» stets auf /mitarbeiter/faelle ohne Auswahl; auch die
-[list.html](../../src/main/resources/templates/demo/list.html)-Falllinks transportieren
+[list.html](../architecture/frontend-demo-ablosung-2026-11-16.md)-Falllinks transportieren
 keinen Rückkehrkontext. Filter setzen → Detail öffnen → Rückkehr zeigt Standardliste.
 
 **F07 · P2 · Polling setzt Listen-Leseposition zurück.**
 ÜB-AK-11 und [UI2 Abschnitt 5](../frontend/ansicht-02-mitarbeiter-falluebersicht.md#5-aktionen-und-aktualisierung)
-verbieten den Sprung zum Listenanfang. [propertyflow.js](../../src/main/resources/static/js/propertyflow.js),
+verbieten den Sprung zum Listenanfang. [propertyflow.js](../architecture/frontend-demo-ablosung-2026-11-16.md),
 loadList, ersetzt stets den gesamten results-Bereich inklusive des Scrollcontainers.
 Es wird ein fokussierter Link gesucht, aber weder scrollTop noch ein sichtbarer
 Fallanker erhalten. Nach unten scrollen und den 20-Sekunden-Abruf abwarten.
@@ -748,11 +748,11 @@ Die widersprüchliche Beschränkung auf eine Stammdatenauswahl wurde in [FALL-04
 
 Dieser Nachtrag ordnet die spätere Umsetzung ein; frühere Prüfprotokolle bleiben als historischer Stand erhalten. Grundlage ist die lokale Übergabe `target/frontend-quality/documentation-handoff.txt`, abgeglichen mit aktuellem Code und vorhandenen Tests.
 
-- **UI1-Navigation:** Die frühere Vereinbarung einer Textverlustwarnung ist durch die spätere Benutzerentscheidung ersetzt. Beim manuellen Verlassen oder Neuladen gibt es keine Warnung; ungesendeter Text geht verloren. Normales Polling erhält ihn, erkannter Abschluss löscht ihn, erfolgreiches Senden leert die Textbox. Die UI3-Warnung bleibt bestehen. [UI1 und AK-28](../frontend/ansicht-01-mieter-fallansicht.md) wurden nachgeführt. Nachweise: [Tenant-Navigation](../../src/test/browser/tenant-navigation.test.mjs), [Nachrichten](../../src/test/browser/tenant-message.test.mjs), [Aktualisierung](../../src/test/browser/tenant-refresh.test.mjs) und [Abschluss](../../src/test/browser/tenant-closure.test.mjs).
+- **UI1-Navigation:** Die frühere Vereinbarung einer Textverlustwarnung ist durch die spätere Benutzerentscheidung ersetzt. Beim manuellen Verlassen oder Neuladen gibt es keine Warnung; ungesendeter Text geht verloren. Normales Polling erhält ihn, erkannter Abschluss löscht ihn, erfolgreiches Senden leert die Textbox. Die UI3-Warnung bleibt bestehen. [UI1 und AK-28](../frontend/ansicht-01-mieter-fallansicht.md) wurden nachgeführt. Nachweise: [Tenant-Navigation](../architecture/frontend-demo-ablosung-2026-11-16.md), [Nachrichten](../architecture/frontend-demo-ablosung-2026-11-16.md), [Aktualisierung](../architecture/frontend-demo-ablosung-2026-11-16.md) und [Abschluss](../architecture/frontend-demo-ablosung-2026-11-16.md).
 - **UI1-Ursprungsangaben:** Der veraltete Block-2-Punkt zu aufklappbaren Ursprungsangaben ist korrigiert: kompakte Angaben im Kopf, Beschreibung als erste Mieternachricht, keine separate Ursprungsansicht.
-- **D01 umgesetzt:** Der damalige Hinweis «noch umzusetzen» unter [Korrektur D01](#korrektur-d01--zuordnung-bestätigen) ist überholt. Das [Detailtemplate](../../src/main/resources/templates/demo/detail.html) enthält «Zuordnung bestätigen» sowie die ursprüngliche Mieterangabe als Vorbelegung bei fehlender bestätigter Zuordnung. Andernfalls erscheint der aktuelle bestätigte Wert. Nach Polling und «Abbrechen» übernimmt der Editor den neuesten bestätigten Seitenleistenstand. Nachweise: [UI-Grenzfälle](../../src/test/browser/ui-boundaries.test.mjs) und [Mitarbeiterabläufe](../../src/test/browser/staff-workflows.test.mjs). Eine erneute Buttonänderung ist nicht erforderlich.
+- **D01 umgesetzt:** Der damalige Hinweis «noch umzusetzen» unter [Korrektur D01](#korrektur-d01--zuordnung-bestätigen) ist überholt. Das [Detailtemplate](../architecture/frontend-demo-ablosung-2026-11-16.md) enthält «Zuordnung bestätigen» sowie die ursprüngliche Mieterangabe als Vorbelegung bei fehlender bestätigter Zuordnung. Andernfalls erscheint der aktuelle bestätigte Wert. Nach Polling und «Abbrechen» übernimmt der Editor den neuesten bestätigten Seitenleistenstand. Nachweise: [UI-Grenzfälle](../architecture/frontend-demo-ablosung-2026-11-16.md) und [Mitarbeiterabläufe](../architecture/frontend-demo-ablosung-2026-11-16.md). Eine erneute Buttonänderung ist nicht erforderlich.
 
-Der gemeinsame Aufruf lautet `node src/test/browser/run-ui-tests.mjs`; Voraussetzungen und Startbefehle stehen in der [README](../../src/test/README.md). Er benötigt eine laufende, wegwerfbare Demo und die Browser-Testabhängigkeiten unter `target/frontend-tools`; Standardadresse ist `http://127.0.0.1:8082`, überschreibbar mit `DEMO_URL`. Tests verändern lokale Mock-Daten; keine Produktionsinstanz verwenden. Bei paralleler Entwicklung DevTools-Neustarts mit `-Dspring-boot.run.jvmArguments=-Dspring.devtools.restart.enabled=false` unterbinden. Der [Teststarter](../../src/test/browser/run-ui-tests.mjs) schreibt `target/frontend-quality/ui-tests.tap`. Weitere, separate Berichte sind `target/frontend-quality/browser.json` und `performance.json`.
+Der gemeinsame Aufruf lautet `node src/test/browser/run-ui-tests.mjs`; Voraussetzungen und Startbefehle stehen in der [README](../../src/test/README.md). Er benötigt eine laufende, wegwerfbare Demo und die Browser-Testabhängigkeiten unter `target/frontend-tools`; Standardadresse ist `http://127.0.0.1:8082`, überschreibbar mit `DEMO_URL`. Tests verändern lokale Mock-Daten; keine Produktionsinstanz verwenden. Bei paralleler Entwicklung DevTools-Neustarts mit `-Dspring-boot.run.jvmArguments=-Dspring.devtools.restart.enabled=false` unterbinden. Der [Teststarter](../architecture/frontend-demo-ablosung-2026-11-16.md) schreibt `target/frontend-quality/ui-tests.tap`. Weitere, separate Berichte sind `target/frontend-quality/browser.json` und `performance.json`.
 
 Bei dieser Dokumentationspflege wurde der vorhandene TAP-Bericht gelesen: 43 Tests bestanden, keine fehlgeschlagen, übersprungen oder abgebrochen. Die Tests wurden in diesem Auftrag nicht erneut ausgeführt. Die neue Reihe ergänzt die bisherigen Java-, Streaming-, A11y- und Performance-Prüfungen; sie ersetzt keine Backend-/Integrations- oder KI-Evaluation.
 

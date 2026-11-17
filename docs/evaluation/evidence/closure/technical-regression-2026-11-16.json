@@ -1,0 +1,112 @@
+{
+  "finishedAt": "2026-11-16T13:32:59+01:00",
+  "build": "SUCCESS",
+  "tests": 107,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "contractTests": 58,
+  "postgresTests": 31,
+  "camundaTests": 18,
+  "automaticClosureRelease": false,
+  "semanticEvaluationPassed": false,
+  "sourceLog": "target/closure-evaluation/final-regression.log",
+  "suites": [
+    {
+      "name": "com.pertegato.propertyflow.caseprocessing.service.AutomaticClosureBasisTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.29
+    },
+    {
+      "name": "com.pertegato.propertyflow.caseprocessing.service.AutomaticClosurePostgresTest",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 8.97
+    },
+    {
+      "name": "com.pertegato.propertyflow.caseprocessing.service.ConversationEvaluationPostgresTest",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 2.883
+    },
+    {
+      "name": "com.pertegato.propertyflow.caseprocessing.workflow.CanonicalModelsCamundaTest",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 70.14
+    },
+    {
+      "name": "com.pertegato.propertyflow.caseprocessing.workflow.ConversationEvaluationCamundaTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 6.809
+    },
+    {
+      "name": "com.pertegato.propertyflow.recommendation.ai.ClosureMessageModelTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.035
+    },
+    {
+      "name": "com.pertegato.propertyflow.recommendation.ApprovedClosureRulesTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.032
+    },
+    {
+      "name": "com.pertegato.propertyflow.recommendation.ClosureAssessmentServiceTest",
+      "tests": 23,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.053
+    },
+    {
+      "name": "com.pertegato.propertyflow.recommendation.ClosureEvaluationCorpusTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.045
+    },
+    {
+      "name": "com.pertegato.propertyflow.recommendation.ClosureMessageEvaluationCorpusTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.017
+    },
+    {
+      "name": "com.pertegato.propertyflow.recommendation.ClosureMessageServiceTest",
+      "tests": 23,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.077
+    }
+  ],
+  "sourceSha256": {
+    "src/main/java/com/pertegato/propertyflow/recommendation/service/ClosureAssessmentService.java": "60a91eae4f08539c32344d39555c4b307a06c61e3fd9d6313699014b7c855fe6",
+    "src/main/java/com/pertegato/propertyflow/recommendation/service/ClosureMessageService.java": "5d4945f5a0cb05da10bff38bcd6476ef21f5aaa44b9815006441735b9beda811",
+    "src/main/java/com/pertegato/propertyflow/recommendation/ai/ClosureMessageModel.java": "2f8467f0766a816553df39f0f1c094b783d196f7c81a1fe9eebb887794c0b175",
+    "src/main/java/com/pertegato/propertyflow/recommendation/config/ClosureAssessmentConfiguration.java": "f3187e0c8ea92292e8989fd539b9438dd9d3e4e3476ed751c68507863609b13e",
+    "src/main/java/com/pertegato/propertyflow/caseprocessing/service/AutomaticClosureService.java": "9ce3437c69133d78856a9e4fed8a85030b26d65d1fdc05ec5687a88d65fefc02",
+    "src/main/java/com/pertegato/propertyflow/caseprocessing/service/AutomaticClosureRelease.java": "56f7e5253a33b0f26b2f76888c5e93f44c6d09b151d9ab32af60b06181d2b310"
+  }
+}

@@ -17,6 +17,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -53,15 +54,7 @@ public class PersonalCaseController {
         }
         try {
             TenantCaseView view = reading.readByToken(token);
-            model.addAttribute("caseId", view.state().caseId());
-            model.addAttribute("title", view.title());
-            model.addAttribute("originalUnit", view.originalUnit());
-            model.addAttribute("assignedUnit", view.assignedUnit().orElse(null));
-            model.addAttribute("maskedContact", view.maskedContact());
-            model.addAttribute("status", statusLabel(view.state().status()));
-            model.addAttribute("urgency", view.state().urgency().map(PersonalCaseController::urgencyLabel).orElse(NOT_ASSESSED));
-            model.addAttribute("urgencyCss", view.state().urgency().map(PersonalCaseController::urgencyCss).orElse("urgency-0"));
-            model.addAttribute("history", history(view));
+            populate(view, request, model);
             return "tenant/case";
         } catch (CaseServiceException exception) {
             return switch (exception.code()) {
@@ -75,6 +68,21 @@ public class PersonalCaseController {
         }
     }
 
+    static void populate(TenantCaseView view, HttpServletRequest request, Model model) {
+            model.addAttribute("caseId", view.state().caseId());
+            model.addAttribute("title", view.title());
+            model.addAttribute("originalUnit", view.originalUnit());
+            model.addAttribute("assignedUnit", view.assignedUnit().orElse(null));
+            model.addAttribute("maskedContact", view.maskedContact());
+            model.addAttribute("status", statusLabel(view.state().status()));
+            model.addAttribute("urgency", view.state().urgency().map(PersonalCaseController::urgencyLabel).orElse(NOT_ASSESSED));
+            model.addAttribute("urgencyCss", view.state().urgency().map(PersonalCaseController::urgencyCss).orElse("urgency-0"));
+            model.addAttribute("history", history(view));
+            model.addAttribute("messageCsrf", TenantMessageController.csrf(request.getSession()));
+            model.addAttribute("messageOperation", UUID.randomUUID().toString());
+            model.addAttribute("closed", view.state().status() == CaseStatus.CLOSED);
+    }
+
     private String error(HttpServletResponse response, Model model, HttpStatus status, String message) {
         model.asMap().clear();
         model.addAttribute("error", message);
@@ -82,7 +90,7 @@ public class PersonalCaseController {
         return "tenant/error";
     }
 
-    private List<HistoryEntry> history(TenantCaseView view) {
+    private static List<HistoryEntry> history(TenantCaseView view) {
         List<HistoryEvent> events = new ArrayList<>();
         for (PublicMessage message : view.messages()) {
             String role = switch (message.author()) {
@@ -90,7 +98,7 @@ public class PersonalCaseController {
                 case STAFF -> "Immobilienverwaltung";
                 case SYSTEM -> "System";
             };
-            events.add(new HistoryEvent("message", message.id(), role, message.text(), message.occurredAt()));
+            events.add(new HistoryEvent("message", message.id(), role, message.text(), message.occurredAt(), answerLabel(message)));
         }
         for (UrgencyChange change : view.urgencyHistory()) {
             String role = switch (change.source()) {
@@ -99,13 +107,13 @@ public class PersonalCaseController {
             };
             String previous = change.previous().map(PersonalCaseController::urgencyLabel).orElse(NOT_ASSESSED);
             String text = "Dringlichkeit: " + previous + " → " + urgencyLabel(change.current());
-            events.add(new HistoryEvent("urgency", change.id(), role, text, change.occurredAt()));
+            events.add(new HistoryEvent("urgency", change.id(), role, text, change.occurredAt(), ""));
         }
         events.sort(Comparator.comparing(HistoryEvent::occurredAt)
                 .thenComparing(HistoryEvent::type)
                 .thenComparing(HistoryEvent::id));
         return events.stream()
-                .map(event -> new HistoryEntry(event.role(), event.text(), LOCAL_TIME.format(event.occurredAt())))
+                .map(event -> new HistoryEntry(event.role(), event.text(), LOCAL_TIME.format(event.occurredAt()), event.answerLabel()))
                 .toList();
     }
 
@@ -140,9 +148,27 @@ public class PersonalCaseController {
         };
     }
 
-    private record HistoryEvent(String type, String id, String role, String text, Instant occurredAt) {
+    static String answerLabel(PublicMessage message) {
+        String label = switch (message.answerResolution() == null ? "" : message.answerResolution()) {
+            case "MANUAL" -> "Antwortbedarf manuell aufgehoben";
+            case "CASE_CLOSED" -> "Antwortbedarf durch Fallabschluss beendet";
+            default -> answerLabel(message.answerState());
+        };
+        return message.answerResolvedAt() == null ? label : label + " · " + LOCAL_TIME.format(message.answerResolvedAt());
     }
 
-    public record HistoryEntry(String role, String text, String timestamp) {
+    static String answerLabel(PublicMessage.AnswerState state) {
+        return switch (state) {
+            case NONE -> "";
+            case OPEN -> "Offener Antwortbedarf";
+            case ANSWERED -> "Rückfrage beantwortet";
+            case CANCELLED -> "Antwortbedarf aufgehoben";
+        };
+    }
+
+    private record HistoryEvent(String type, String id, String role, String text, Instant occurredAt, String answerLabel) {
+    }
+
+    public record HistoryEntry(String role, String text, String timestamp, String answerLabel) {
     }
 }

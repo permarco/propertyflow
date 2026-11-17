@@ -74,6 +74,7 @@ eindeutig festgelegt sind.
 - Architekturentscheidungen werden über ADRs dokumentiert.
 - Datenbankschemaänderungen werden mit Flyway versioniert.
 - Bereits angewendete Flyway-Migrationen werden nicht nachträglich verändert.
+- Backend-Initialskripte sind nach Modulen aufgeteilt. Nach dem freigegebenen Hard Reset ohne Sicherung ist die Legacy-Kette entfernt; additive Updates V6–V8 sind vorhanden, neue Änderungen beginnen mit V9. Siehe [Datenbankmigrationen](architecture/datenbankmigrationen.md).
 - Kleine, fokussierte Änderungen und automatisierte Tests werden bevorzugt.
 
 ## 3. Kontext und Systemgrenzen
@@ -203,9 +204,10 @@ Details:
   Seit Stand 0.10 liegt auch die Nachrichtenverarbeitung in
   `mieternachricht-verarbeiten.bpmn`; der nicht unterbrechende Eingang bleibt
   im Hauptprozess und ruft sie je gespeicherter Nachricht ohne Outputs auf.
-  Keine live gemeinsamen Variablen über Call-Grenzen annehmen. Die Modelle sind
-  nicht ausführbar; Backend-Übergaben und die Rechtebindung aus ADR-002/SS-003
-  an untergeordnete Aufgaben sind vor Ausführung zu konkretisieren.
+  Keine live gemeinsamen Variablen über Call-Grenzen annehmen. Die ausführbaren Modelle liegen seit 16.11.2026 verbindlich unter
+  `src/main/resources/bpmn`; `docs/architecture/bpmn` enthält die Beschreibung.
+  Der aktuelle Integrationsstand steht in der Umsetzungsmatrix; Ausführbarkeit
+  ersetzt weder fachliche Modellevaluation noch Produktionsabnahme.
 - PropertyFlow speichert neue Anliegen als «Eingegangen» und startet den
   Camunda-Fallprozess asynchron. Für anschliessende Statuswechsel ist
   ausschliesslich Camunda zuständig. Mitarbeitende lösen nur Aktionen aus,

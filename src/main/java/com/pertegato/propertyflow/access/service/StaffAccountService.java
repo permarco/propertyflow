@@ -5,10 +5,14 @@ import com.pertegato.propertyflow.access.contract.StaffAccessDecision;
 import com.pertegato.propertyflow.access.contract.StaffAccountAccess;
 import com.pertegato.propertyflow.access.contract.StaffAuthenticationErrorCode;
 import com.pertegato.propertyflow.access.contract.StaffAuthenticationException;
+import com.pertegato.propertyflow.access.contract.StaffDirectory;
 import com.pertegato.propertyflow.access.contract.WebAccountContext;
 import com.pertegato.propertyflow.access.persistence.StaffAccountStore;
 import com.pertegato.propertyflow.access.persistence.StaffAccountStore.Account;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.RecoverableDataAccessException;
@@ -18,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Profile("propertyflow-backend & !frontend-demo")
-public class StaffAccountService implements StaffAccountAccess {
+public class StaffAccountService implements StaffAccountAccess, StaffDirectory {
 
     private final StaffAccountStore accounts;
 
@@ -31,6 +35,11 @@ public class StaffAccountService implements StaffAccountAccess {
         return resolve(context)
                 .map(account -> account.activeStaff() ? StaffAccessDecision.ALLOWED : StaffAccessDecision.FORBIDDEN)
                 .orElse(StaffAccessDecision.UNAUTHENTICATED);
+    }
+
+    @Override
+    public Map<UUID, String> displayNames(Set<UUID> accountIds) {
+        return accounts.displayNames(accountIds);
     }
 
     Optional<Account> resolve(WebAccountContext context) {

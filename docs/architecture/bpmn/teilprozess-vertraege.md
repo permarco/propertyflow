@@ -1,6 +1,37 @@
 # Verträge der ausgelagerten BPMN-Teilprozesse
 
-Stand 15.11.2026 · Gesamtstand 0.35 · nicht ausführbar, keine Backend-Implementierung.
+**Implementierungsfortsetzung V34–V37 (16.11.2026):** Mitarbeiterrückfrage und direkter
+Mitarbeiterabschluss aus «In Abklärung», direkter Abschluss aus Mieterwarten sowie
+direkte Wiedervorlage aus beiden Phasen sind angebunden. Die aktuelle technische
+Beschreibung und Testnachweise stehen in [initial-workflow-runtime.md](initial-workflow-runtime.md).
+Die älteren Abschnitte dokumentieren den Entwurfsstand. Die sechs Gesamtmodelle bleiben
+bis zur vollständigen Integration nicht ausführbar.
+
+Laufzeitergänzung 16.11.2026: Der QUESTION-Wiedereintritt mit neuer aktueller
+Automatikreferenz sowie die direkte Mitarbeiterübernahme mit dauerhaftem,
+aufrufgebundenem Entscheid sind in V32/V33 angebunden. Neue Katalogfragen verändern
+den Wartestatus nicht. Die bestätigte Übernahme führt genau einmal zu SWork oder
+zur vorrangigen SReview-Aufgabe. Historische technische Markerbeschreibungen bleiben
+Entwurfshistorie; die aktuelle Umsetzung steht im [Laufzeitnachweis](initial-workflow-runtime.md).
+
+Ergänzung vom 15.11.2026: Zentrale Auswertung, quellengebundene Empfehlung,
+Warteentscheidungen, versionierte Terminänderung/-löschung und Wiedereröffnung
+besitzen weitere begrenzte Backend- und Laufzeitnachweise. Der aktuelle Umfang
+und die noch fehlenden Prozessanschlüsse stehen in
+[initial-workflow-runtime.md](initial-workflow-runtime.md#ergänzung-auswertung-empfehlung-und-warteentscheidungen).
+Die sechs Gesamtmodelle bleiben nicht ausführbar.
+
+Stand 15.11.2026 · Gesamtstand 0.35 · Sechs Gesamtmodelle noch nicht ausführbar; Mailprozess ausführbar.
+
+INITIAL, unabhängiger Mailversand, initiale Triage, Automatik-Unterbrechung zur
+Mitarbeiterprüfung, Fortsetzen und Mitarbeiterabschluss aus SReview/SWork sowie
+ADD_MEMO, SET_MANUAL_URGENCY und SET_OBJECT_ASSIGNMENT
+sowie die dauerhafte Mieternachrichtenannahme bis NIdentify und die
+Mitarbeiterkommunikation als Information während Abklärung/Prüfung/Bearbeitung
+beziehungsweise Rückfrage während Prüfung
+besitzen begrenzte Backend-Implementierungen mit Laufzeittests:
+[technischer Nachweis und verbleibender Umfang](initial-workflow-runtime.md).
+Die übrigen Verträge bleiben Umsetzungsgrundlage, kein Implementierungsnachweis.
 
 **Fachlich definiert und am 15.11.2026 bestätigt.** Die sieben Prozesse und die
 hier festgehaltenen Übergabeverträge bilden die Grundlage der Umsetzung.
@@ -8,8 +39,8 @@ Die Bestätigung bedeutet keine bereits ausführbare oder zur Laufzeit geprüfte
 Anbindung; siehe [Status und Restarbeiten](status-aktionsmatrix-review-2026-11-15.md).
 
 Die Aufteilung in eigene Dateien ist bestätigt. Die folgenden technischen
-Übergaben konkretisieren den Entwurf; sie sind noch kein implementierter
-Java-/HTTP-Vertrag. Die Fachregeln aus KOM-03 bis KOM-06 und FALL-05 bis FALL-12
+Übergaben konkretisieren den Entwurf; ausser den oben nachgewiesenen Abschnitten
+sind sie noch kein implementierter Java-/HTTP-Vertrag. Die Fachregeln aus KOM-03 bis KOM-06 und FALL-05 bis FALL-12
 bleiben bestehen. Der Hauptprozess behält allein die führende Fallzuordnung.
 
 ## Aktueller Gesamtstand 0.34 und Versionshistorie
@@ -82,13 +113,13 @@ Prüfplan: FALL-AK-42 ergänzt die bisherigen fachlichen Prüffälle. Keine dies
 
 | Datei | Prozess-ID | Aufrufstelle |
 |---|---|---|
-| [propertyflow-fallprozess-entwurf.bpmn](propertyflow-fallprozess-entwurf.bpmn) | `PropertyFlow_Case_Draft` | Asynchroner Fallstart |
-| [automatische-abklaerung.bpmn](automatische-abklaerung.bpmn) | `PropertyFlow_Automatic_Draft` | `Automatic` im Hauptprozess |
-| [mieterantwort-pruefen.bpmn](mieterantwort-pruefen.bpmn) | `PropertyFlow_TenantReply_Draft` | `Reply` im Hauptprozess |
-| [mitarbeiterbearbeitung.bpmn](mitarbeiterbearbeitung.bpmn) | `PropertyFlow_Staff_Draft` | `Staff` im Hauptprozess |
-| [wiedervorlage.bpmn](wiedervorlage.bpmn) | `PropertyFlow_FollowUp_Draft` | `FollowUp` im Mitarbeiterprozess |
-| [mieternachricht-verarbeiten.bpmn](mieternachricht-verarbeiten.bpmn) | `PropertyFlow_TenantMessage_Draft` | `ProcessTenantMessage` im Ereignis-Teilprozess `TenantInbox` |
-| [fallbenachrichtigung-versenden.bpmn](fallbenachrichtigung-versenden.bpmn) | `PropertyFlow_Mail_Draft` | Eigenständiger Start anhand dauerhafter Mailpflicht, kein Call des Fallprozesses |
+| [propertyflow-fallprozess-entwurf.bpmn](../../../src/main/resources/bpmn/propertyflow-fallprozess-entwurf.bpmn) | `PropertyFlow_Case_Draft` | Asynchroner Fallstart |
+| [automatische-abklaerung.bpmn](../../../src/main/resources/bpmn/automatische-abklaerung.bpmn) | `PropertyFlow_Automatic_Draft` | `Automatic` im Hauptprozess |
+| [mieterantwort-pruefen.bpmn](../../../src/main/resources/bpmn/mieterantwort-pruefen.bpmn) | `PropertyFlow_TenantReply_Draft` | `Reply` im Hauptprozess |
+| [mitarbeiterbearbeitung.bpmn](../../../src/main/resources/bpmn/mitarbeiterbearbeitung.bpmn) | `PropertyFlow_Staff_Draft` | `Staff` im Hauptprozess |
+| [wiedervorlage.bpmn](../../../src/main/resources/bpmn/wiedervorlage.bpmn) | `PropertyFlow_FollowUp_Draft` | `FollowUp` im Mitarbeiterprozess |
+| [mieternachricht-verarbeiten.bpmn](../../../src/main/resources/bpmn/mieternachricht-verarbeiten.bpmn) | `PropertyFlow_TenantMessage_Draft` | `ProcessTenantMessage` im Ereignis-Teilprozess `TenantInbox` |
+| [fallbenachrichtigung-versenden.bpmn](../../../src/main/resources/bpmn/fallbenachrichtigung-versenden.bpmn) | `PropertyFlow_Mail_Draft` | Eigenständiger Start anhand dauerhafter Mailpflicht, kein Call des Fallprozesses |
 
 `ActiveCase` und der Ereignis-Teilprozess `TenantInbox` bleiben eingebettet im
 Hauptprozess. Die Nebenaktion für Mitarbeiterrückfragen während Wiedervorlage

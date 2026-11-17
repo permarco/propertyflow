@@ -20,6 +20,7 @@
         </div>
         <form id="intake-form" method="post" th:action="@{/mieter/fall}">
             <input th:if="${csrf != null}" type="hidden" name="csrf" th:value="${csrf}">
+            <input type="hidden" name="accountSubmission" th:value="${accountSubmission == true}">
             <input type="hidden" name="operation" th:value="${form.operation()}">
 
             <label for="title">Betreff <span aria-hidden="true">*</span></label>
@@ -37,9 +38,10 @@
             <small id="unit-error" th:if="${fieldErrors.containsKey('unit')}" th:text="${fieldErrors['unit']}"></small>
 
             <label for="email">E-Mail-Adresse <span aria-hidden="true">*</span></label>
-            <input id="email" name="email" type="email" autocomplete="email" required maxlength="254" th:value="${form.email()}"
+            <input id="email" name="email" th:readonly="${accountSubmission == true}" type="email" autocomplete="email" required maxlength="254" th:value="${form.email()}"
                    th:attr="aria-invalid=${fieldErrors.containsKey('email') ? 'true' : null},
-                            aria-describedby=${fieldErrors.containsKey('email') ? 'email-error' : null}">
+                            aria-describedby=${fieldErrors.containsKey('email') ? 'email-error' : (accountSubmission == true ? 'account-email-hint' : null)}">
+            <small id="account-email-hint" th:if="${accountSubmission == true}">Ihre bestätigte Konto-Adresse wird verwendet.</small>
             <small id="email-error" th:if="${fieldErrors.containsKey('email')}" th:text="${fieldErrors['email']}"></small>
 
             <label for="description">Beschreibung <span aria-hidden="true">*</span></label>

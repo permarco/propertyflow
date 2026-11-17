@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="de-CH" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{tenant/fragments :: head('Aufträge prüfen')}"></head>
+<body class="staff-page">
+<header th:replace="~{staff/fragments :: header('/mitarbeiter/faelle', ${csrf})}"></header>
+<main>
+    <h1>Aufträge prüfen</h1>
+    <p>Hier erscheinen blockierte oder fehlgeschlagene Aufträge, ungewisse Zustellungen,
+        seit über fünf Minuten offene Bestätigungen und Abweisungen der letzten sieben Tage.</p>
+    <p>Die Übersicht liest den gespeicherten Stand. Das Öffnen oder Aktualisieren löst keine erneute Ausführung aus.</p>
+    <p th:if="${error != null}" role="alert" th:text="${error}"></p>
+    <section class="card" th:if="${overview != null}">
+        <p th:if="${overview.rows().isEmpty()}">In den überwachten Auftragsarten liegen derzeit keine entsprechenden Einträge vor.</p>
+        <p th:if="${overview.more()}">Die neuesten 100 Einträge werden angezeigt. Weitere Einträge sind vorhanden.</p>
+        <div class="table-card" th:unless="${overview.rows().isEmpty()}">
+            <table>
+                <thead><tr><th>Fall</th><th>Auftrag</th><th>Stand</th><th>Angelegt</th><th>Prüfung</th></tr></thead>
+                <tbody>
+                <tr th:each="row : ${overview.rows()}">
+                    <td><a th:href="@{/mitarbeiter/faelle/{id}(id=${row.caseId()})}" th:text="${row.caseId()}"></a></td>
+                    <td><span th:text="${row.kind()}"></span><details><summary>Auftragsreferenz</summary><span th:text="${row.reference()}"></span></details></td>
+                    <td th:text="${row.state()}"></td><td th:text="${row.since()}"></td><td th:text="${row.guidance()}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+    <p><a class="button secondary" th:href="@{/mitarbeiter/betrieb}">Stand aktualisieren</a></p>
+    <p class="muted">Überwacht werden Fallstarts, Fall- und Ersatzlinkmails, Fallangaben, Mitarbeiternachrichten und Wiedervorlagen.
+        Auch Mitarbeiterentscheidungen und Wiedereröffnungen werden berücksichtigt.
+        Weitere Prozessfehler und Incidents prüfen Sie im Camunda-Web-Interface. Eine leere Liste ist keine vollständige Betriebsabnahme.</p>
+</main>
+</body>
+</html>

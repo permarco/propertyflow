@@ -1,0 +1,39 @@
+{
+  "reviewType": "development-agent-review-not-independent-human-approval",
+  "sourceReport": "qwen35-4b-2026-11-16-message-v6.json",
+  "sourceSha256": "da57bf5fb758a7a3e8ed9bd10f37bbbd4c36f908a6648ef103053ad69ff71a44",
+  "cases": [
+    {
+      "id": "generate-heating",
+      "text": "Sehr geehrte Damen und Herren,\n\nSie haben uns mitgeteilt, dass die Heizung in Ihrem Objekt wieder vollständig funktioniert und Sie keine weitere Hilfe benötigen. Da der Fall nun vollständig abgedeckt ist, besteht kein weiterer Handlungsbedarf.",
+      "passed": true,
+      "finding": "Belegter aktueller Zustand und fehlender Hilfebedarf. Die Absätze enthalten echte LF-Zeichen, keine sichtbaren Escape-Zeichen."
+    },
+    {
+      "id": "generate-tap",
+      "text": "Sehr geehrte Damen und Herren,\n\nDer Mieter bestätigt, dass der tropfende Wasserhahn am betroffenen Objekt keine Folgeschäden verursacht und er benötigt keine weitere Unterstützung. Der Fall ist somit vollständig abgeschlossen.",
+      "passed": false,
+      "finding": "Keine klare Aussage zur Behebung; indirekte Ansprache und Formulierung als weiterhin tropfender Wasserhahn."
+    },
+    {
+      "id": "generate-door",
+      "text": "Sehr geehrte Damen und Herren,\n\nDer Fall bezüglich der klemmenden Wohnungstür am Objekt [Objekt-Nummer] ist abgeschlossen, da Sie in Ihrer Nachfolge mitgeteilt haben, dass sich die Tür wieder problemlos bedienen lässt. Es besteht nach Ihrer Bestätigung kein weiterer Hilfebedarf.",
+      "passed": false,
+      "finding": "Unbelegter Platzhalter [Objekt-Nummer] und sprachlich unklare Formulierung in Ihrer Nachfolge."
+    },
+    {
+      "id": "generate-two-issues",
+      "text": "Sehr geehrte Damen und Herren,\n\nDer Fall bezüglich der ausgefallenen Klingel- und Sprechanlage am Objekt wurde abgeschlossen, da Sie bestätigt haben, dass beide Geräte nun dauerhaft funktionieren. Da keine weiteren Hilfsmaßnahmen erforderlich sind, wird dieser Vorgang nicht weiter verfolgt.",
+      "passed": true,
+      "finding": "Beide Geräte und der fehlende weitere Bedarf sind belegt. Echte Absätze sind zulässig."
+    },
+    {
+      "id": "generate-tenant-rule",
+      "text": "Sehr geehrte Damen und Herren,\n\nIhre Meldung zum defekten Display Ihres mobilen Küchenweckers ist abgeschlossen, da es sich um ein von Ihnen mitgebrachtes privates Gerät handelt, das nicht zur vermieteten Ausstattung gehört. Gemäß den geltenden Regeln besteht für dieses private Gegenstand kein Bearbeitungsbedarf der Verwaltung.\n\nEs liegen keine weiteren offenen Punkte vor.",
+      "passed": true,
+      "finding": "Der konkrete private Gegenstand und fehlende Verwaltungsbedarf sind belegt. Kleine grammatische Schwäche; keine erfundene Reparatur."
+    }
+  ],
+  "passed": false,
+  "releaseApproved": false
+}

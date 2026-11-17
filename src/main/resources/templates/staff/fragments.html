@@ -10,6 +10,9 @@
     <span class="area">Mitarbeiterbereich</span>
     <a th:if="${listTarget != null}" class="button secondary" th:href="@{${listTarget}}">Zur Fallübersicht</a>
     <div class="account-menu">
+        <a th:href="@{/mitarbeiter/betrieb}">Aufträge prüfen</a>
+        <a th:if="${canManageAccounts == true}" th:href="@{/mitarbeiter/konten}">Kontoverwaltung</a>
+        <a th:if="${canManageCaseAccess == true}" th:href="@{/mitarbeiter/fallzugaenge}">Fallzugänge</a>
         <form th:action="@{/abmelden}" method="post">
             <input type="hidden" name="csrf" th:value="${csrf}">
             <button class="secondary" type="submit">Abmelden</button>

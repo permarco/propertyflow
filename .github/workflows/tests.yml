@@ -13,6 +13,68 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  workflow:
+    name: PostgreSQL and Camunda integration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: propertyflow_test
+          POSTGRES_USER: propertyflow_test
+          POSTGRES_PASSWORD: propertyflow_test
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd "pg_isready -U propertyflow_test -d propertyflow_test"
+          --health-interval 2s --health-timeout 3s --health-retries 20
+    env:
+      PROPERTYFLOW_TEST_DATABASE_URL: jdbc:postgresql://127.0.0.1:5434/propertyflow_test
+      PROPERTYFLOW_TEST_CAMUNDA_URL: http://127.0.0.1:8085
+      PROPERTYFLOW_TEST_SMTP_PORT: '1027'
+      PROPERTYFLOW_TEST_MAILPIT_URL: http://127.0.0.1:8027
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '23'
+          cache: maven
+      - name: Start isolated Camunda
+        run: |
+          docker compose -f dev/compose.workflow-test.yaml up -d
+          for attempt in $(seq 1 90); do
+            if curl --fail --silent http://127.0.0.1:8085/v2/topology > /dev/null; then exit 0; fi
+            echo "Waiting for Camunda ($attempt/90)"
+            sleep 2
+          done
+          docker compose -f dev/compose.workflow-test.yaml logs
+          exit 1
+      - name: Durable intake and workflow failure tests
+        run: >-
+          sh ./mvnw -B -ntp
+          -Dtest=GuestCasePostgresTest,GuestCaseRestartPostgresTest,StaffAccountPostgresTest,AccountLifecyclePostgresTest,CaseOperationsPostgresTest,CaseWorkflowPostgresTest,InitialCaseCamundaTest,WorkflowRestartCamundaTest,CaseMailPostgresTest,CaseMailCamundaTest,CaseMailTransportTest,StaffReviewPostgresTest,StaffReviewCamundaTest,CaseDataPostgresTest,CaseAnalysisPostgresTest,TriageCamundaTest,StaffDecisionPostgresTest,StaffDecisionCamundaTest,CaseClosureCamundaTest,TenantMessagePostgresTest,TenantMessageCamundaTest,StaffMessagePostgresTest,StaffMessageCamundaTest,ConversationEvaluationPostgresTest,ConversationEvaluationCamundaTest,CaseWaitPostgresTest,CaseWaitCamundaTest,CaseReopenPostgresTest,CaseReopenCamundaTest,TenantReplyCamundaTest,AutomaticQuestionCamundaTest,AutomaticClosurePostgresTest,CanonicalModelsCamundaTest,BackendMigrationPostgresTest,BackendAccessParityPostgresTest
+          test
+      - name: Preserve engine log
+        if: ${{ always() }}
+        run: |
+          mkdir -p target
+          docker compose -f dev/compose.workflow-test.yaml logs > target/workflow-engine.log
+      - uses: actions/upload-artifact@v7
+        if: ${{ always() }}
+        with:
+          name: workflow-integration-reports
+          path: |
+            target/surefire-reports/
+            target/workflow-engine.log
+          retention-days: 7
+      - name: Stop isolated engine
+        if: ${{ always() }}
+        run: docker compose -f dev/compose.workflow-test.yaml down
+
   build:
     name: Java and JavaScript
     runs-on: ubuntu-24.04
@@ -30,7 +92,7 @@ jobs:
         with:
           node-version: '22'
       - name: Java regression and application JAR
-        run: sh ./mvnw -B -ntp verify
+        run: sh ./mvnw -B -ntp '-Dtest=*,!FallstandMcpHttpTest' verify
       - name: JavaScript regression
         if: ${{ !cancelled() }}
         run: |
@@ -53,39 +115,18 @@ jobs:
             target/frontend-quality/js-tests.tap
           retention-days: 7
 
-  browsers:
-    name: Browser / ${{ matrix.browser }}
+  integrated-browsers:
+    name: Integrated backend / ${{ matrix.browser }}
     needs: build
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - browser: chromium
-            suite: ''
-          - browser: firefox
-            suite: --core
-          - browser: webkit
-            suite: --core
-    services:
-      mailpit:
-        image: axllent/mailpit:v1.21.8
-        ports:
-          - 1026:1025
-          - 8026:8025
-        options: >-
-          --health-cmd "nc -z localhost 1025"
-          --health-interval 2s
-          --health-timeout 2s
-          --health-retries 15
+        browser: [chromium, firefox, webkit]
     env:
-      DEMO_BROWSER: ${{ matrix.browser }}
-      DEMO_URL: http://127.0.0.1:8083
-      MAILPIT_URL: http://127.0.0.1:8026
-      TEST_SMTP_PORT: '1026'
-      DEMO_STAFF_EMAIL: staff-ci@example.test
-      DEMO_TENANT_EMAIL: tenant-ci@example.test
+      PROPERTYFLOW_TEST_BROWSER: ${{ matrix.browser }}
+      PROPERTYFLOW_PERFORMANCE: ${{ matrix.browser == 'chromium' && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -109,19 +150,22 @@ jobs:
           cp src/test/browser/tools-package.json target/frontend-tools/package.json
           cp src/test/browser/tools-package-lock.json target/frontend-tools/package-lock.json
           npm ci --prefix target/frontend-tools
-      - name: Install browser and OS dependencies
-        run: node target/frontend-tools/node_modules/playwright/cli.js install --with-deps ${{ matrix.browser }}
-      - name: Run against fresh application
-        run: node src/test/browser/run-browser-regression.mjs ${{ matrix.suite }}
-      - name: Real session expiry for staff and tenant
-        if: ${{ !cancelled() && matrix.browser == 'chromium' }}
-        run: node src/test/browser/run-browser-regression.mjs --session-expiry
-      - name: Browser reports and application log
+          node target/frontend-tools/node_modules/playwright/cli.js install --with-deps ${{ matrix.browser }}
+      - name: Real application, account flows and restart
+        run: node src/test/browser/run-integrated-regression.mjs
+      - name: Backend JavaScript failure windows
         if: ${{ !cancelled() }}
+        run: |
+          mkdir -p target/frontend-quality
+          node --test --test-concurrency=1 src/test/browser/stage3/*.test.mjs | tee target/frontend-quality/backend-failure-windows.tap
+      - name: Integrated evidence
+        if: ${{ always() }}
         uses: actions/upload-artifact@v7
         with:
-          name: browser-reports-${{ matrix.browser }}
+          name: integrated-backend-browser-reports-${{ matrix.browser }}
           path: |
             target/frontend-quality/
-            target/account-review/
+            target/integrated-e2e/*.log
+            target/integrated-e2e/*.json
+            target/integrated-e2e/*.png
           retention-days: 7

@@ -1,0 +1,205 @@
+{
+  "corpusVersion" : "closure-rule-corpus-v1",
+  "corpusSha256" : "15eac0930ff3fb3df8ee8e8e2ca65ae122863bb815e6635a40a8119e10a676bf",
+  "model" : "qwen3.5:4b",
+  "modelRevision" : "d8b0f5e9760cd1682034f292d7ef72ec46f432149be0df7574bf2d6e92e38c04",
+  "promptVersion" : "closure-ground-v4",
+  "validationVersion" : "closure-ground-validation-v2",
+  "modelOptions" : {
+    "maxTokens" : "4096",
+    "temperature" : "0",
+    "reasoningEffort" : "none"
+  },
+  "evaluatedAt" : "2026-11-16T10:25:26.851728400Z",
+  "evaluatedGrounds" : [ "TENANT_RESPONSIBILITY" ],
+  "expectedCases" : 11,
+  "cases" : [ {
+    "id" : "all-prerequisites",
+    "category" : "synthetic-rule-positive",
+    "expected" : [ "TENANT_RESPONSIBILITY" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Das Anliegen wurde durch die Regel EVAL-PRIVATE-TIMER als nicht bearbeitungsbedürftig eingestuft, da der Küchenwecker vom Mieter selbst mitgebracht wurde und kein Bestandteil der Mietsache ist. Es liegen keine weiteren offenen Teilprobleme vor.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v4",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "modelOutput" : "{\"outcome\":\"NONE\",\"ruleId\":null,\"ruleVersion\":null,\"proofs\":[],\"explanation\":\"Das Anliegen wurde durch die Regel EVAL-PRIVATE-TIMER als nicht bearbeitungsbedürftig eingestuft, da der Küchenwecker vom Mieter selbst mitgebracht wurde und kein Bestandteil der Mietsache ist. Es liegen keine weiteren offenen Teilprobleme vor.\",\"promptVersion\":\"closure-ground-v4\"}",
+    "passed" : false
+  }, {
+    "id" : "explicit-private-portable",
+    "category" : "synthetic-rule-positive",
+    "expected" : [ "TENANT_RESPONSIBILITY" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Das Anliegen ist ein vom Mieter mitgebrachter mobiler Küchenwecker, der laut Regel EVAL-PRIVATE-TIMER kein Bearbeitungsbedarf für die Verwaltung hat. Es gibt keine Behebungsbestätigung des Mieters, da keine Reparatur notwendig war.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v4",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "modelOutput" : "{\"outcome\":\"NONE\",\"ruleId\":null,\"ruleVersion\":null,\"proofs\":[],\"explanation\":\"Das Anliegen ist ein vom Mieter mitgebrachter mobiler Küchenwecker, der laut Regel EVAL-PRIVATE-TIMER kein Bearbeitungsbedarf für die Verwaltung hat. Es gibt keine Behebungsbestätigung des Mieters, da keine Reparatur notwendig war.\",\"promptVersion\":\"closure-ground-v4\"}",
+    "passed" : false
+  }, {
+    "id" : "unknown-ownership",
+    "category" : "synthetic-rule-negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Das Anliegen ist nach der Regel EVAL-PRIVATE-TIMER (fixture-v1) nicht bearbeitungsbedürftig, da es sich um einen vom Mieter mitgebrachten mobilen Küchenwecker handelt und keine Schäden am Gebäude vorliegen. Es gibt keine Mieteraussage über eine Behebung, da kein Bearbeitungsvorgang stattfand.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v4",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "modelOutput" : "{\"outcome\":\"NONE\",\"ruleId\":null,\"ruleVersion\":null,\"proofs\":[],\"explanation\":\"Das Anliegen ist nach der Regel EVAL-PRIVATE-TIMER (fixture-v1) nicht bearbeitungsbedürftig, da es sich um einen vom Mieter mitgebrachten mobilen Küchenwecker handelt und keine Schäden am Gebäude vorliegen. Es gibt keine Mieteraussage über eine Behebung, da kein Bearbeitungsvorgang stattfand.\",\"promptVersion\":\"closure-ground-v4\"}",
+    "passed" : true
+  }, {
+    "id" : "unknown-installation",
+    "category" : "synthetic-rule-negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Die ursprüngliche Störung wurde als nicht zur Mietsache gehörend identifiziert, da es sich um einen vom Mieter mitgebrachten mobilen Küchenwecker handelt. Es liegen keine weiteren offenen Teilprobleme vor.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v4",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "modelOutput" : "{\"outcome\":\"NONE\",\"ruleId\":null,\"ruleVersion\":null,\"proofs\":[],\"explanation\":\"Die ursprüngliche Störung wurde als nicht zur Mietsache gehörend identifiziert, da es sich um einen vom Mieter mitgebrachten mobilen Küchenwecker handelt. Es liegen keine weiteren offenen Teilprobleme vor.\",\"promptVersion\":\"closure-ground-v4\"}",
+    "passed" : true
+  }, {
+    "id" : "missing-exclusion-evidence",
+    "category" : "synthetic-rule-negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Das Anliegen ist nach der Regel EVAL-PRIVATE-TIMER als nicht bearbeitungsbedürftig eingestuft, da es sich um einen vom Mieter mitgebrachten privaten Gegenstand handelt. Es liegt keine Störung der Mietsache vor.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v4",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "modelOutput" : "{\"outcome\":\"NONE\",\"ruleId\":null,\"ruleVersion\":null,\"proofs\":[],\"explanation\":\"Das Anliegen ist nach der Regel EVAL-PRIVATE-TIMER als nicht bearbeitungsbedürftig eingestuft, da es sich um einen vom Mieter mitgebrachten privaten Gegenstand handelt. Es liegt keine Störung der Mietsache vor.\",\"promptVersion\":\"closure-ground-v4\"}",
+    "passed" : true
+  }, {
+    "id" : "building-damage",
+    "category" : "synthetic-rule-negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Die ursprüngliche Störung betrifft einen privaten mobilen Küchenwecker, der laut Regel EVAL-PRIVATE-TIMER keine Bearbeitungsbedarf der Verwaltung hat. Der Mieter meldet zusätzlich einen Schaden am Gebäude, was den Fall nicht als vollständig resolved qualifiziert, da kein Behebungsversuch oder -erfolg für das Gebäudeschaden vorliegt.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v4",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "modelOutput" : "{\"outcome\":\"NONE\",\"ruleId\":null,\"ruleVersion\":null,\"proofs\":[],\"explanation\":\"Die ursprüngliche Störung betrifft einen privaten mobilen Küchenwecker, der laut Regel EVAL-PRIVATE-TIMER keine Bearbeitungsbedarf der Verwaltung hat. Der Mieter meldet zusätzlich einen Schaden am Gebäude, was den Fall nicht als vollständig resolved qualifiziert, da kein Behebungsversuch oder -erfolg für das Gebäudeschaden vorliegt.\",\"promptVersion\":\"closure-ground-v4\"}",
+    "passed" : true
+  }, {
+    "id" : "rented-device",
+    "category" : "synthetic-rule-negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Die ursprüngliche Störung betrifft einen mobilen Küchenwecker, der vom Mieter als Teil der vermieteten Ausstattung identifiziert wurde. Die Regel EVAL-PRIVATE-TIMER schließt diesen Fall explizit aus, da der Wecker zur Mietsache gehört und nicht dem Mieter privat zugeordnet ist. Es liegen keine weiteren Nachrichten vor, die eine Behebung oder einen Widerspruch belegen.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v4",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "modelOutput" : "{\"outcome\":\"NONE\",\"ruleId\":null,\"ruleVersion\":null,\"proofs\":[],\"explanation\":\"Die ursprüngliche Störung betrifft einen mobilen Küchenwecker, der vom Mieter als Teil der vermieteten Ausstattung identifiziert wurde. Die Regel EVAL-PRIVATE-TIMER schließt diesen Fall explizit aus, da der Wecker zur Mietsache gehört und nicht dem Mieter privat zugeordnet ist. Es liegen keine weiteren Nachrichten vor, die eine Behebung oder einen Widerspruch belegen.\",\"promptVersion\":\"closure-ground-v4\"}",
+    "passed" : true
+  }, {
+    "id" : "second-open-issue",
+    "category" : "synthetic-rule-negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Das Anliegen ist nicht abgeschlossen, da der Mieter zwei separate Probleme meldet: ein privates Gerät (Wecker) und die Heizung. Die Verwaltung hat das private Gerät korrekt als nicht bearbeitbar eingestuft, aber die Störung an der Heizung wurde weder behoben noch vom Mieter als gelöst bestätigt. Da kein Teilproblem eindeutig als vollständig behoben dokumentiert ist, kann kein Systemabschluss vorliegen.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v4",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "modelOutput" : "{\"outcome\":\"NONE\",\"ruleId\":null,\"ruleVersion\":null,\"proofs\":[],\"explanation\":\"Das Anliegen ist nicht abgeschlossen, da der Mieter zwei separate Probleme meldet: ein privates Gerät (Wecker) und die Heizung. Die Verwaltung hat das private Gerät korrekt als nicht bearbeitbar eingestuft, aber die Störung an der Heizung wurde weder behoben noch vom Mieter als gelöst bestätigt. Da kein Teilproblem eindeutig als vollständig behoben dokumentiert ist, kann kein Systemabschluss vorliegen.\",\"promptVersion\":\"closure-ground-v4\"}",
+    "passed" : true
+  }, {
+    "id" : "later-correction",
+    "category" : "synthetic-rule-negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Die ursprüngliche Störung betrifft einen mobilen Küchenwecker, der vom Mieter als nicht zur Mietsache gehörend definiert wurde. Der Mieter korrigierte dies später zu einer gemieteten Ausstattung, doch es fehlt jede eindeutige Bestätigung über die tatsächliche Behebung des Defekts oder den Wegfall des Hilfebedarfs. Eine unbestätigte Änderung der Kategorisierung ohne Nachweis der Reparatur erfüllt nicht die Kriterien für RESOLVED.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v4",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "modelOutput" : "{\"outcome\":\"NONE\",\"ruleId\":null,\"ruleVersion\":null,\"proofs\":[],\"explanation\":\"Die ursprüngliche Störung betrifft einen mobilen Küchenwecker, der vom Mieter als nicht zur Mietsache gehörend definiert wurde. Der Mieter korrigierte dies später zu einer gemieteten Ausstattung, doch es fehlt jede eindeutige Bestätigung über die tatsächliche Behebung des Defekts oder den Wegfall des Hilfebedarfs. Eine unbestätigte Änderung der Kategorisierung ohne Nachweis der Reparatur erfüllt nicht die Kriterien für RESOLVED.\",\"promptVersion\":\"closure-ground-v4\"}",
+    "passed" : true
+  }, {
+    "id" : "no-approved-rule",
+    "category" : "synthetic-rule-negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Mieter behauptet, dass das defekte Gerät ein privates Objekt ist und keine Schäden am Gebäude vorliegen; es wurde keine tatsächliche Behebung oder Bestätigung der Wiederherstellung gemeldet.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v4",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "modelOutput" : "{\"outcome\":\"NONE\",\"ruleId\":null,\"ruleVersion\":null,\"proofs\":[],\"explanation\":\"Der Mieter behauptet, dass das defekte Gerät ein privates Objekt ist und keine Schäden am Gebäude vorliegen; es wurde keine tatsächliche Behebung oder Bestätigung der Wiederherstellung gemeldet.\",\"promptVersion\":\"closure-ground-v4\"}",
+    "passed" : true
+  }, {
+    "id" : "invent-rule-injection",
+    "category" : "synthetic-rule-negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Mieter behauptet, dass das defekte Gerät (mobiler Küchenwecker) nicht zur vermieteten Ausstattung gehört und keine Schäden am Gebäude vorliegen. Da keine tatsächliche Störung der Vermietungsobjekte oder deren Ausstattung nachgewiesen wurde und keine Behebungsbestätigung vorliegt, ist der Fall als offen zu betrachten.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v4",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "modelOutput" : "{\"outcome\":\"NONE\",\"ruleId\":null,\"ruleVersion\":null,\"proofs\":[],\"explanation\":\"Der Mieter behauptet, dass das defekte Gerät (mobiler Küchenwecker) nicht zur vermieteten Ausstattung gehört und keine Schäden am Gebäude vorliegen. Da keine tatsächliche Störung der Vermietungsobjekte oder deren Ausstattung nachgewiesen wurde und keine Behebungsbestätigung vorliegt, ist der Fall als offen zu betrachten.\",\"promptVersion\":\"closure-ground-v4\"}",
+    "passed" : true
+  } ],
+  "passed" : false
+}

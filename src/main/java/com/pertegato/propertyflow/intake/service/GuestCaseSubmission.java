@@ -24,6 +24,9 @@ public class GuestCaseSubmission implements CaseSubmission {
 
     @Override
     public CaseAccepted submit(SubmissionContext context, CreateCaseCommand command) {
+        if (context instanceof SubmissionContext.Tenant) {
+            return creation.create(context, command);
+        }
         if (!(context instanceof SubmissionContext.Guest)) {
             throw new CaseServiceException(CaseErrorCode.UNAUTHENTICATED, Map.of());
         }

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="de-CH" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{tenant/fragments :: head('Kontoverwaltung')}"></head>
+<body>
+<header class="app-header"><a th:href="@{/mitarbeiter/faelle}" class="brand">PropertyFlow</a><span>Kontoverwaltung</span></header>
+<main class="narrow">
+    <h1>Mitarbeiterkonten</h1>
+    <p><a th:href="@{/mitarbeiter/faelle}">Fallübersicht</a> · <a th:href="@{/mitarbeiter/fallzugaenge}">Fallzugänge verwalten</a></p>
+    <p th:if="${error != null}" class="error" role="alert" th:text="${error}"></p>
+    <section class="card">
+        <h2>Konto anlegen</h2>
+        <form method="post" th:action="@{/mitarbeiter/konten}">
+            <input type="hidden" name="csrf" th:value="${csrf}">
+            <label for="name">Name</label><input id="name" name="name" maxlength="150" required>
+            <label for="email">E-Mail-Adresse</label><input id="email" name="email" type="email" maxlength="254" required>
+            <button type="submit">Mitarbeiterkonto anlegen</button>
+        </form>
+    </section>
+    <section class="card" th:each="account : ${accounts}">
+        <h2 th:text="${account.name()}"></h2><p th:text="${account.email()}"></p>
+        <p th:text="${account.activeStaff() ? 'Aktiver Mitarbeiterzugriff' : 'Mitarbeiterzugriff entzogen'}"></p>
+        <p th:if="${account.accountAdministration()}">Berechtigung: Mitarbeiterkonten verwalten</p>
+        <p th:if="${account.caseAccessAdministration()}">Berechtigung: Fallzugänge verwalten</p>
+        <form th:if="${account.activeStaff()}" method="post" th:action="@{/mitarbeiter/konten/{id}/zugriff-entziehen(id=${account.id()})}">
+            <input type="hidden" name="csrf" th:value="${csrf}">
+            <input type="hidden" name="operation" th:value="${operation}">
+            <label>Entzug <select name="action"><option value="konto-sperren">Konto sperren</option><option value="rolle-entziehen">Mitarbeiterrolle entziehen</option></select></label>
+            <button type="submit">Zugriff entziehen</button>
+        </form>
+    </section>
+</main>
+</body>
+</html>

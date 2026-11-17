@@ -5,10 +5,9 @@ info:
   description: >
     HTTP-Vertrag für die Browserrouten von PropertyFlow. Die Operationen für
     Fallannahme, Mieternachrichten und ausgewählte Mitarbeiteraktionen
-    beschreiben Zielabläufe mit dauerhafter Speicherung und Camunda. Mit
-    frontend-demo gekennzeichnete Operationen beschreiben das Verhalten der
-    lokalen Demo. Statische Ressourcen und technische Betriebsendpunkte sind
-    gesondert zu betrachten.
+    beschreiben Abläufe mit dauerhafter Speicherung und Camunda. Die entfernten
+    In-Memory-Demorouten sind kein Teil dieses Vertrags. Statische Ressourcen
+    und technische Betriebsendpunkte sind gesondert zu betrachten.
 tags:
   - name: Mieter
     description: Anliegen einreichen, eigene Fälle einsehen und Nachrichten senden.
@@ -19,17 +18,9 @@ tags:
 paths:
   /:
     get:
-      operationId: demoStartseiteOeffnen
-      summary: Startseite der Demo öffnen
-      x-propertyflow-status: frontend-demo
-      responses:
-        '200':
-          $ref: '#/components/responses/HtmlAnsicht'
-  /demo/datenschutz:
-    get:
-      operationId: demoDatenschutzOeffnen
-      summary: Datenschutzinformationen zur lokalen Demo öffnen
-      x-propertyflow-status: frontend-demo
+      operationId: entwicklungsStartseiteOeffnen
+      summary: Startseite des integrierten Devbetriebs öffnen
+      x-propertyflow-status: propertyflow-dev
       responses:
         '200':
           $ref: '#/components/responses/HtmlAnsicht'
@@ -904,6 +895,40 @@ paths:
           Bei unklarem Ausgang denselben Text und dieselbe Absende-ID
           erneut senden. PropertyFlow verwendet die bereits gespeicherte
           Nachricht, falls vorhanden. 303 setzt bestätigte Korrelation voraus.
+  /mitarbeiter/betrieb:
+    get:
+      operationId: mitarbeiterBetriebsuebersichtOeffnen
+      tags: [Mitarbeitende]
+      summary: Auffällige persistente Aufträge zur Prüfung anzeigen
+      x-propertyflow-status: implementiert
+      description: >
+        Aktive Mitarbeiterrolle bei jedem Abruf erneut prüfen. Zeigt höchstens
+        100 technische Auftragsreferenzen mit Fall, Zustand und Zeitpunkt sowie
+        einen Hinweis auf weitere Treffer. Keine Nachrichtentexte, Adressen,
+        Zugangstokens oder Prüfnachweise. Ausschliesslich lesend; kein Retry-Befehl.
+        Ohne Mitarbeitersitzung erfolgt die Weiterleitung zur Anmeldung.
+      security:
+        - BrowserSession: []
+      responses:
+        '200':
+          description: HTML-Betriebsübersicht oder ausdrückliche Leermeldung.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+          content:
+            text/html:
+              schema:
+                $ref: '#/components/schemas/Html'
+        '303':
+          $ref: '#/components/responses/StaffLoginRedirect'
+        '401':
+          $ref: '#/components/responses/StaffReadNeedsLogin'
+        '403':
+          $ref: '#/components/responses/StaffReadDenied'
+        '503':
+          $ref: '#/components/responses/StaffServiceUnavailable'
   /mitarbeiter/faelle:
     get:
       operationId: mitarbeiterFalluebersichtOeffnen
@@ -1052,174 +1077,6 @@ paths:
           $ref: '#/components/responses/StaffTechnicalFailure'
         '503':
           $ref: '#/components/responses/StaffServiceUnavailable'
-  /mitarbeiter/faelle/{id}/nachrichten:
-    parameters:
-      - $ref: '#/components/parameters/StaffCaseId'
-    post:
-      operationId: mitarbeiterNachrichtOderMemoSpeichern
-      tags: [Mitarbeitende]
-      summary: Externe Nachricht veröffentlichen oder internes Memo speichern
-      x-propertyflow-status: frontend-demo
-      description: >
-        Die Demo speichert im Arbeitsspeicher und leitet zum Falldetail
-        weiter. Im Zielablauf gelten die separaten Verträge
-        POST /mitarbeiter/faelle/{id}/externe-nachricht-veroeffentlichen
-        (UC-010) und POST /mitarbeiter/faelle/{id}/internes-memo-speichern
-        (UC-011).
-      security:
-        - BrowserSession: []
-      requestBody:
-        required: true
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              type: object
-              required: [text, operation, csrf]
-              properties:
-                text:
-                  type: string
-                  minLength: 1
-                  x-propertyflow-max-utf16-code-units: 5000
-                  description: Nachricht oder Memo mit höchstens 5’000 UTF-16-Codeeinheiten in der Demo.
-                internal:
-                  type: boolean
-                  default: false
-                  description: Bei true als internes Memo speichern.
-                answer:
-                  type: boolean
-                  default: false
-                  description: Bei einer externen Nachricht eine Mieterantwort verlangen.
-                operation:
-                  $ref: '#/components/schemas/StaffOperation'
-                csrf:
-                  $ref: '#/components/schemas/StaffCsrf'
-                returnTo:
-                  $ref: '#/components/schemas/StaffReturnTo'
-      responses:
-        '303':
-          $ref: '#/components/responses/StaffDetailRedirect'
-        '400':
-          description: Formularfeld fehlt oder ist ungültig, etwa leerer oder zu langer Text.
-          headers:
-            Cache-Control:
-              $ref: '#/components/headers/NoStore'
-            Referrer-Policy:
-              $ref: '#/components/headers/NoReferrer'
-          content:
-            text/html:
-              schema:
-                $ref: '#/components/schemas/Html'
-        '401':
-          $ref: '#/components/responses/StaffWriteNeedsLogin'
-        '403':
-          $ref: '#/components/responses/StaffWriteDenied'
-        '404':
-          $ref: '#/components/responses/FallNichtVerfuegbar'
-        '409':
-          description: >
-            Der Fall ist für eine neue Nachricht geschlossen oder dieselbe
-            Absende-ID wurde bereits mit anderen Daten verwendet.
-          headers:
-            Cache-Control:
-              $ref: '#/components/headers/NoStore'
-            Referrer-Policy:
-              $ref: '#/components/headers/NoReferrer'
-          content:
-            text/html:
-              schema:
-                $ref: '#/components/schemas/Html'
-  /mitarbeiter/faelle/{id}/aktion:
-    parameters:
-      - $ref: '#/components/parameters/StaffCaseId'
-    post:
-      operationId: mitarbeiterFallaktionInDemoAusfuehren
-      tags: [Mitarbeitende]
-      summary: Fallaktion über das Demoformular ausführen
-      x-propertyflow-status: frontend-demo
-      description: >
-        Dieser Formularvertrag beschreibt die lokale Demo. Die dortige
-        direkte Statusauswahl gehört zur Demo. Im Zielablauf steuert Camunda
-        die Statuswechsel. Für «Bearbeitung fortsetzen» gilt der eigene
-        Vertrag POST /mitarbeiter/faelle/{id}/bearbeitung-fortsetzen.
-        Für die Wiedervorlage gilt POST /mitarbeiter/faelle/{id}/wiedervorlage.
-        Für den Mitarbeiterabschluss gilt POST /mitarbeiter/faelle/{id}/abschliessen.
-        Für die Wiedereröffnung gilt POST /mitarbeiter/faelle/{id}/wiedereroeffnen.
-        Zum Aufheben des Antwortbedarfs dient im Zielablauf
-        POST /mitarbeiter/faelle/{id}/nachrichten/{messageId}/antwortbedarf-aufheben.
-      security:
-        - BrowserSession: []
-      requestBody:
-        required: true
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              type: object
-              required: [action, version, operation, csrf]
-              properties:
-                action:
-                  type: string
-                  enum: [urgency, status, followUp, clearFollowUp, unit, close, reopen, clearAnswer]
-                  description: Ausgewählte Demoaktion.
-                version:
-                  type: integer
-                  format: int64
-                  description: Version des bei der Erfassung angezeigten Fallstands.
-                value:
-                  type: string
-                  description: Aktionsabhängiger Wert, etwa Dringlichkeit, Zuordnung, Datum oder Nachrichten-ID.
-                days:
-                  oneOf:
-                    - type: integer
-                      minimum: 1
-                    - type: string
-                      const: ''
-                  description: >
-                    Für die Wiedervorlage. Eine Angabe in Tagen hat Vorrang
-                    vor dem Datum. Das Formular darf das Feld leer senden.
-                reason:
-                  type: string
-                  x-propertyflow-max-utf16-code-units: 1000
-                  description: Optionale interne Begründung mit höchstens 1’000 UTF-16-Codeeinheiten.
-                operation:
-                  $ref: '#/components/schemas/StaffOperation'
-                csrf:
-                  $ref: '#/components/schemas/StaffCsrf'
-                returnTo:
-                  $ref: '#/components/schemas/StaffReturnTo'
-      responses:
-        '303':
-          $ref: '#/components/responses/StaffDetailRedirect'
-        '400':
-          description: Die Aktion oder ein Formularfeld ist ungültig.
-          headers:
-            Cache-Control:
-              $ref: '#/components/headers/NoStore'
-            Referrer-Policy:
-              $ref: '#/components/headers/NoReferrer'
-          content:
-            text/html:
-              schema:
-                $ref: '#/components/schemas/Html'
-        '401':
-          $ref: '#/components/responses/StaffWriteNeedsLogin'
-        '403':
-          $ref: '#/components/responses/StaffWriteDenied'
-        '404':
-          $ref: '#/components/responses/FallNichtVerfuegbar'
-        '409':
-          description: >
-            Fallstand oder Aktion ist überholt, der Fallzustand erlaubt die
-            Änderung nicht mehr oder die Absende-ID wurde bereits mit
-            anderen Aktionsdaten verwendet.
-          headers:
-            Cache-Control:
-              $ref: '#/components/headers/NoStore'
-            Referrer-Policy:
-              $ref: '#/components/headers/NoReferrer'
-          content:
-            text/html:
-              schema:
-                $ref: '#/components/schemas/Html'
   /mitarbeiter/faelle/{id}/bearbeitung-fortsetzen:
     parameters:
       - $ref: '#/components/parameters/StaffCaseId'
@@ -2199,7 +2056,7 @@ paths:
       operationId: mitarbeiterKiFormulierungStarten
       tags: [Mitarbeitende]
       summary: KI-Formulierung starten und streamen
-      x-propertyflow-status: zielvertrag
+      x-propertyflow-status: implementiert
       description: >
         Ein berechtigter Mitarbeiter startet aus der aktiven Fallansicht
         einen Vorschlag für eine externe Nachricht. PropertyFlow prüft
@@ -2235,6 +2092,7 @@ paths:
                 text:
                   type: string
                   pattern: '\S'
+                  x-propertyflow-max-utf16-code-units: 5000
                   description: Bewusst eingegebene kurze Sachanweisung für die externe Nachricht.
                 attemptId:
                   $ref: '#/components/schemas/StaffFormulationAttemptId'
@@ -2330,7 +2188,7 @@ paths:
       operationId: mitarbeiterKiFormulierungAbbrechen
       tags: [Mitarbeitende]
       summary: Laufende KI-Formulierung abbrechen
-      x-propertyflow-status: zielvertrag
+      x-propertyflow-status: implementiert
       description: >
         PropertyFlow prüft Mitarbeitersitzung, Fallberechtigung und CSRF.
         Der Abbruch betrifft genau die attemptId im adressierten Fall und

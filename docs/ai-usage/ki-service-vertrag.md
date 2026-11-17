@@ -1,5 +1,11 @@
 # KI-Baustein: KI-Aufruf als Service/Tool
 
+Die übergreifende verbindliche Anforderung für alle KI-Tools ist inzwischen unter
+[KI-Tools und manueller Ersatzbetrieb](../specifications/ki-tools.md) dokumentiert:
+Bei deaktivierter oder ausgefallener KI bleibt die Mitarbeiterbearbeitung möglich.
+Die folgende Beschreibung dokumentiert den ursprünglichen Analysebaustein und ersetzt
+diese systemweite Anforderung nicht.
+
 Stand: 13.11.2026. Lernbaustein im Modul `triage`, ohne HTTP-Freigabe oder
 Änderung fachlicher Falldaten. Grundlage sind ADR-001, die Modulstruktur und
 DRING-01/02. Die bestehenden Oberflächen bleiben eine separate Demo.

@@ -6,7 +6,7 @@
 **Use Case Name:** Userkonto eröffnen  
 **Primary Actor:** Mieterin / Mieter  
 **Goal:** Ein freiwilliges Mieterkonto mit verifizierter E-Mail-Adresse eröffnen und alle Fälle mit derselben aktuellen Kontaktadresse im Konto sehen.  
-**Status:** Web-Ablauf mit E-Mail-Einmalcode in der lokalen Frontend-Demo umgesetzt (13.11.2026). Konten und Fälle liegen im Arbeitsspeicher; dauerhafte Speicherung und OAuth-/MCP-Delegation folgen separat.
+**Status:** Im integrierten PostgreSQL-Backend umgesetzt: Registrierung mit Codeprüfung, persistentes Mieterkonto und automatische Fallzuordnung. MCP bleibt separat offen. [Umsetzung und Nachweise](umsetzungsstand-2026-11-16.md)
 
 **Fachliche Grundlage:** [ADR-005](../architecture/adr/ADR-005-zugriffsmodell.md) beschreibt Konto, Fallzuordnung und MCP-Zugriff. [ADR-004](../architecture/adr/ADR-004-tokenbasierter-mieterzugriff.md) regelt den persönlichen Fall-Link. Ein Anliegen kann gemäss [UC-001](UC-001-mieteranliegen-einreichen.md) ohne Konto eingereicht werden.
 

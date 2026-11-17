@@ -8,7 +8,10 @@ zusätzlichen offenen Anforderungen.
 **Umfang:** Konsolidierter Abgleich bis Gesamtstand 0.35 mit den dokumentierten
 B09.1–B09.5-Verträgen. B02.1–B02.3 sind im
 Entwurf behandelt; die festgestellten Dokumentationswidersprüche B01/B08 sind bereinigt.
-Backend-Implementierung und Laufzeitnachweise stehen weiterhin aus.
+Backend-Implementierung und Laufzeitnachweise des Gesamtprozesses stehen weiterhin aus.
+INITIAL, Mailversand, Prüfbedarf aus der Automatik und interne Memos sind separat
+implementiert und mit PostgreSQL/Camunda beziehungsweise HTTP/Browser geprüft;
+siehe [technische Nachführung](initial-workflow-runtime.md). B10 bleibt insgesamt offen.
 
 ## Ergebnis und verbleibende Arbeit
 
@@ -30,9 +33,9 @@ keine ausführbare oder getestete Gesamtlösung.
 | B01 – Erster aktiver Status | Dokumentation bereinigt | Keine offene Fachentscheidung; technische Umsetzung bei B10. |
 | B02 – Mitarbeiter-Nebenaktionen | Im Entwurf behandelt | B02.1–B02.3 im Entwurf behandelt; technische Umsetzung bei B07/B09/B10. |
 | B03 – Mitarbeiterübergänge | Im Entwurf behandelt | Ausführbare Umsetzung und Prüfung mit B07/B09/B10. Keine erneute Entscheidung über Übergänge 29–33. |
-| B04 – Prüfbedarf unterbricht Automatik | Im Entwurf behandelt | Zuverlässige Zustellung, Abbruch bei blockiertem Job und Konflikte zur Laufzeit prüfen. |
+| B04 – Prüfbedarf unterbricht Automatik | Für INITIAL-Automatik implementiert; realer Incident wird unterbrochen, eine SReview-Aufgabe entsteht | Weitere Phasenwechsel, Rückkehrwege und Gesamtmodell abnehmen. |
 | B05 – Fehlerpfad der Vorgehensbestimmung | Im Entwurf behandelt | Fachliche Fehler im Worker ausdrücklich melden; technische Fehler getrennt testen. |
-| B06 – Mailanbindung | Im Entwurf behandelt | Dauerhafte Mailpflicht, Start, Wiederholungsschutz und Versandfehler implementieren/testen. |
+| B06 – Mailanbindung | Annahme-/Statusmail, dauerhafte Versuche und unabhängiger Originalprozess implementiert; SMTP-Annahme und Fehlerpfade getestet | Neue Ereignisarten mit den weiteren Fachfunktionen anbinden; Betrieb ergänzen. |
 | B07 – Gleichzeitige Aktionen und einmalige Fortsetzung | Vertrag festgelegt, Ausgänge im Entwurf 0.35 ergänzt | Technische Umsetzung und Laufzeitnachweise FALL-AK-44 stehen aus. |
 | B08 – Dokumentationskonsistenz | Festgestellte Widersprüche bereinigt | Aktuelle Übersicht 0.34 verwenden; historische technische Stände sind ausdrücklich gekennzeichnet. |
 | B09 – Rechtebindung und Aktionsbezug | B09.1–B09.5 in der Spezifikation festgelegt | Transportformat, HTTP-/UI-Anbindung, technische Worker-Zugänge und ausführbare Zielbindung implementieren und prüfen. Kein Laufzeitnachweis. |
@@ -56,13 +59,13 @@ die Navigation [README.md](README.md).
 
 | Datei | Modellstand | Zuständigkeit |
 |---|---|---|
-| [propertyflow-fallprozess-entwurf.bpmn](propertyflow-fallprozess-entwurf.bpmn) | 0.35 | Führender Ablauf, zentrale Eingänge, gemeinsame Unterbrechung, Mitarbeiterabschluss |
-| [automatische-abklaerung.bpmn](automatische-abklaerung.bpmn) | 0.31 | Analyse, Ausführungsprüfung, automatische Rückfrage/Antwort/Systemabschluss |
-| [mieterantwort-pruefen.bpmn](mieterantwort-pruefen.bpmn) | 0.32 | Antwortauswertung, fachliche Fortsetzung und manueller Sendeweg |
-| [mitarbeiterbearbeitung.bpmn](mitarbeiterbearbeitung.bpmn) | 0.35 | Prüfung, Bearbeitung und externe Wartephase |
-| [wiedervorlage.bpmn](wiedervorlage.bpmn) | 0.33 | Termin, Timer und Mitarbeiteraktionen zur Wiedervorlage |
-| [mieternachricht-verarbeiten.bpmn](mieternachricht-verarbeiten.bpmn) | 0.12 | Zentrale Verarbeitung gespeicherter Mieternachrichten |
-| [fallbenachrichtigung-versenden.bpmn](fallbenachrichtigung-versenden.bpmn) | 0.23 | Eigenständiger Versandprozess mit Mail-Worker |
+| [propertyflow-fallprozess-entwurf.bpmn](../../../src/main/resources/bpmn/propertyflow-fallprozess-entwurf.bpmn) | 0.35 | Führender Ablauf, zentrale Eingänge, gemeinsame Unterbrechung, Mitarbeiterabschluss |
+| [automatische-abklaerung.bpmn](../../../src/main/resources/bpmn/automatische-abklaerung.bpmn) | 0.31 | Analyse, Ausführungsprüfung, automatische Rückfrage/Antwort/Systemabschluss |
+| [mieterantwort-pruefen.bpmn](../../../src/main/resources/bpmn/mieterantwort-pruefen.bpmn) | 0.32 | Antwortauswertung, fachliche Fortsetzung und manueller Sendeweg |
+| [mitarbeiterbearbeitung.bpmn](../../../src/main/resources/bpmn/mitarbeiterbearbeitung.bpmn) | 0.35 | Prüfung, Bearbeitung und externe Wartephase |
+| [wiedervorlage.bpmn](../../../src/main/resources/bpmn/wiedervorlage.bpmn) | 0.33 | Termin, Timer und Mitarbeiteraktionen zur Wiedervorlage |
+| [mieternachricht-verarbeiten.bpmn](../../../src/main/resources/bpmn/mieternachricht-verarbeiten.bpmn) | 0.12 | Zentrale Verarbeitung gespeicherter Mieternachrichten |
+| [fallbenachrichtigung-versenden.bpmn](../../../src/main/resources/bpmn/fallbenachrichtigung-versenden.bpmn) | 0.23 | Eigenständiger Versandprozess mit Mail-Worker |
 
 Alle sieben Modelle tragen `isExecutable=false`. Unterschiedliche Modellstände
 je Datei sind beabsichtigt. Die führende Fallzuordnung bleibt im Hauptprozess;

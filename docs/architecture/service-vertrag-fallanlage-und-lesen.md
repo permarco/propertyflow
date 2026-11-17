@@ -169,7 +169,8 @@ public record PublicMessage(
     String id,
     PublicAuthor author,
     String text,
-    Instant occurredAt
+    Instant occurredAt,
+    PublicMessage.AnswerState answerState
 ) {}
 
 public record UrgencyChange(
@@ -194,6 +195,14 @@ public record InternalMemo(
     Instant occurredAt
 ) {}
 ```
+
+`PublicMessage.AnswerState` unterscheidet `NONE`, `OPEN`, `ANSWERED` und `CANCELLED`.
+Informationen und Mieternachrichten verwenden `NONE`. Die veröffentlichte
+Mitarbeiterrückfrage liefert den dauerhaft gespeicherten Antwortbedarf, ohne interne
+Begründung oder Mitarbeiteridentität in die öffentliche Projektion aufzunehmen.
+Der bisherige Konstruktor ohne Antwortstatus bleibt mit `NONE` kompatibel.
+Die Anzeige eines gespeicherten Zustands implementiert noch keine automatische
+Antwortauswertung oder Aufhebungsaktion.
 
 Dieser Abschnitt implementiert lesende Detailseiten, nicht den vollständigen UI3-Aktionsvertrag. `PublicMessage` enthält ausschliesslich gespeicherte veröffentlichte externe Nachrichten; keine automatisch aus internen Statusereignissen generierten Texte. Dringlichkeitsänderungen bleiben als eigene strukturierte Historie vorhanden. Für die Ansicht können beide Listen nach Zeitpunkt zusammengeführt werden. Bei gleichem Zeitpunkt liefert der Service eine stabile Reihenfolge innerhalb der Listen; die Ansicht verwendet Typ/ID als stabilen Tie-Breaker.
 

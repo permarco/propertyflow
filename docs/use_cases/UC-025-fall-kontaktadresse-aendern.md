@@ -5,7 +5,7 @@
 **Use Case ID:** UC-025  
 **Primary Actor:** Für die Adressänderung zuständige Person der Verwaltung  
 **Goal:** Die aktuelle Kontaktadresse eines Falls nach einem geprüften Wechsel korrigieren und die Fallzuordnung entsprechend aktualisieren.  
-**Status:** [HTTP-Zielvertrag](../architecture/openapi/propertyflow-web.yaml) für geprüfte Adresskorrektur und gleichzeitigen Linkersatz beschrieben. Prüfverfahren, Rechtevergabe, Bedienung und Umsetzung stehen aus.
+**Status:** Im integrierten Backend umgesetzt: geprüfte Zieladresse, atomarer Linkersatz und Neuzuordnung beim nächsten Kontozugriff. [Umsetzung und Nachweise](umsetzungsstand-2026-11-16.md)
 
 ## Use-Case-Diagramm
 

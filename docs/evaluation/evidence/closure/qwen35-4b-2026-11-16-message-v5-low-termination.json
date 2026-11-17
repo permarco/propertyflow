@@ -1,0 +1,14 @@
+{
+  "sourceReport": "qwen35-4b-2026-11-16-message-v5-low-incomplete.json",
+  "sourceSha256": "e2017219023e1c0629c667667360656015fb65adadc21dfff4dd2cd3abcc19e4",
+  "completed": false,
+  "expectedCases": 33,
+  "observedCases": 4,
+  "passed": false,
+  "releaseApproved": false,
+  "terminationReason": "Nach drei aufeinanderfolgenden begrenzten Generierungsaufrufen ohne Modellantwort wurde der eigene Surefire-Prozess gezielt beendet. Die beobachteten Zwischenberichte nach Fall 2 und 3 lagen genau rund 60 Sekunden auseinander. Keine fachliche Ablehnung und keine vollständige Evaluation.",
+  "observedCheckpoints": [
+    "2026-11-16T11:56:08.587996800Z: 2 Fälle",
+    "2026-11-16T11:57:08.595652100Z: 3 Fälle"
+  ]
+}

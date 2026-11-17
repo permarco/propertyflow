@@ -428,7 +428,7 @@ Die Beispiele enthalten fiktive veröffentlichte externe Nachrichten und ein fre
 |---|---|
 | Kopf | Case-ID, unveränderlicher Betreff, aktueller fachlicher Status und Dringlichkeit mit Änderungsquelle. Die Case-ID ist eine Referenz, kein Zugangsschlüssel. |
 | Ursprungsdaten | Betreff als Titel, Objekt/Wohnung und maskierte E-Mail-Adresse im Kopf; Beschreibung ausschliesslich als erste Mieternachricht im Verlauf. Alle Werte schreibgeschützt. |
-| Verlauf | Alle sichtbaren Nachrichten auf einer Seite, chronologisch von oben nach unten, neueste Nachricht zuunterst; jeder Eintrag mit Absenderrolle, Datum, Uhrzeit und sicher ausgegebenem Text. |
+| Verlauf | Alle sichtbaren Nachrichten auf einer Seite, in einstellbarer Reihenfolge: Pfeil neben «Verlauf» wechselt zwischen «Neueste zuerst» (Standard) und «Älteste zuerst»; die Auswahl wird gemeinsam mit der Mitarbeiteransicht im Browser gespeichert (bestätigt am 16.11.2026); jeder Eintrag mit Absenderrolle, Datum, Uhrzeit und sicher ausgegebenem Text. |
 | Dringlichkeitsereignisse | Im selben Verlauf chronologisch eingeordnet; alter/neuer Wert, Zeitpunkt und Änderungsquelle System/Immobilienverwaltung. Keine internen Auditdetails oder Bearbeitungsaktion für Mieter. |
 | Aktualisieren | Automatisch bei aktivem und abgeschlossenem Fall gemäss Abschnitt 4.5.1; vereinbartes Intervall 20 Sekunden bei sichtbarer Seite. Nach erkannter Wiedereröffnung erscheint die Nachrichteneingabe wieder. Manueller GET bleibt verfügbar. Kein Stream, kein Prozessstart und keine Schreibaktion. |
 | Langer Verlauf | Lesen durch Scrollen, ohne Seitennavigation. Neue Nachrichten werden unten ergänzt; beim Lesen älterer Einträge bleibt die Position erhalten. |

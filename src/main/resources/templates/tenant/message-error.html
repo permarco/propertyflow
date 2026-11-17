@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="de-CH" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{tenant/fragments :: head('Nachricht senden')}"></head>
+<body class="tenant-page">
+<header th:replace="~{tenant/fragments :: header}"></header>
+<main><section class="card" aria-labelledby="message-heading">
+    <h1 id="message-heading">Nachricht senden</h1>
+    <p role="alert" th:text="${error}"></p>
+    <form action="" method="post">
+        <input type="hidden" name="csrf" th:value="${messageCsrf}">
+        <input type="hidden" name="operation" th:value="${messageOperation}">
+        <label for="message-text">Ihre Ergänzung oder Antwort</label>
+        <textarea id="message-text" name="text" rows="6" required th:text="${messageText}"></textarea>
+        <p>Maximal 2’000 Zeichen. Bei unklarem Ausgang denselben Text erneut senden.</p>
+        <button type="submit">Nachricht erneut senden</button>
+    </form>
+</section></main>
+</body></html>

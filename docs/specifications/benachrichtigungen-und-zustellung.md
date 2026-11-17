@@ -63,7 +63,7 @@ Ein Versandauftrag referenziert mindestens den Fall, das eindeutige Änderungser
 speichert die fachliche Änderung und die zugehörige Mailpflicht dauerhaft mit
 Ereignisreferenz, Benachrichtigungstyp und eindeutiger Auftragskennung. Ein
 dauerhafter Starter übergibt die Referenz `mailOrderRef` an den eigenständigen
-Camunda-Prozess [Fallbenachrichtigung versenden](../architecture/bpmn/fallbenachrichtigung-versenden.bpmn).
+Camunda-Prozess [Fallbenachrichtigung versenden](../../src/main/resources/bpmn/fallbenachrichtigung-versenden.bpmn).
 Dessen Send-Tasks beauftragen denselben wiederverwendbaren Mail-Worker. Nur dieser
 lädt Versanddaten über die zuständigen Anwendungsdienste und sendet über SMTP;
 lokal wird Mailpit verwendet. Der Starter versendet selbst keine E-Mail.

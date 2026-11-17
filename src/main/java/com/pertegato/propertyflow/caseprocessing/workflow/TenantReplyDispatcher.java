@@ -1,0 +1,70 @@
+package com.pertegato.propertyflow.caseprocessing.workflow;
+
+import com.pertegato.propertyflow.caseprocessing.persistence.TenantReplyStore;
+import com.pertegato.propertyflow.caseprocessing.persistence.TenantReplyStore.Call;
+import com.pertegato.propertyflow.caseprocessing.persistence.TenantReplyStore.Delivery;
+import com.pertegato.propertyflow.caseprocessing.service.TenantReplyService;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.response.ProcessInstance;
+import java.util.Map;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Profile;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
+@Component
+@Profile("propertyflow-backend & !frontend-demo")
+@ConditionalOnProperty(name = "propertyflow.workflow.enabled", havingValue = "true")
+public class TenantReplyDispatcher {
+
+    private final TenantReplyStore replies;
+    private final TenantReplyService service;
+    private final CamundaClient engine;
+
+    public TenantReplyDispatcher(TenantReplyStore replies, TenantReplyService service, CamundaClient engine) {
+        this.replies = replies;
+        this.service = service;
+        this.engine = engine;
+    }
+
+    @Scheduled(fixedDelayString = "${propertyflow.workflow.poll-delay-ms:5000}",
+            initialDelayString = "${propertyflow.workflow.initial-delay-ms:5000}")
+    public void dispatch() {
+        for (int index = 0; index < 20; index++) {
+            Delivery delivery = replies.claim().orElse(null);
+            if (delivery == null) {
+                return;
+            }
+            try {
+                Call call = delivery.call();
+                ProcessInstance child = engine.newProcessInstanceGetRequest(call.child())
+                        .send()
+                        .join();
+                if (!TenantReplyWorkers.PROCESS.equals(child.getProcessDefinitionId())
+                        || !Long.valueOf(call.leader()).equals(child.getParentProcessInstanceKey())
+                        || !Long.valueOf(call.parent()).equals(child.getParentElementInstanceKey())
+                        || !call.tenant().equals(child.getTenantId()) || !"ACTIVE".equals(child.getState().name())) {
+                    continue;
+                }
+                if (delivery.review()) {
+                    if ("REVIEW".equals(service.review(call.id()).state())) {
+                        engine.newSetVariablesCommand(call.leader())
+                                .variables(Map.of("reviewNeedReplyCallRef", call.id().toString()))
+                                .send()
+                                .join();
+                        replies.reviewDelivered(call.id());
+                    }
+                } else if (delivery.version() > call.consumed()) {
+                    // Die Zielinstanz und der Verbrauchsstand verhindern verlorene frühe und doppelte späte Ergebnisse.
+                    engine.newSetVariablesCommand(call.child())
+                            .variables(Map.of("tenantEvaluationVersion", delivery.version()))
+                            .local(true)
+                            .send()
+                            .join();
+                }
+            } catch (RuntimeException exception) {
+                // Die dauerhafte Zustellung bleibt offen; ein unklarer Engine-Empfang wird erneut abgeglichen.
+            }
+        }
+    }
+}

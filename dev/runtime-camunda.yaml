@@ -1,0 +1,31 @@
+camunda:
+  process-instance-creation:
+    business-id-uniqueness-enabled: true
+  system:
+    cpu-thread-count: 2
+    io-thread-count: 2
+  security:
+    authentication:
+      method: basic
+      # Nur die an Loopback gebundene Entwicklungsumgebung verwendet eine offene Client-API.
+      unprotectedApi: true
+    authorizations:
+      enabled: false
+    initialization:
+      users:
+        - username: demo
+          password: demo
+          name: PropertyFlow Entwicklung
+          email: workflow@example.test
+      defaultRoles.admin.users:
+        - demo
+  data:
+    secondary-storage:
+      type: rdbms
+      rdbms:
+        url: jdbc:postgresql://camunda-postgres:5432/camunda
+        username: camunda
+        flushInterval: PT0.1S
+  backup:
+    webapps:
+      enabled: false

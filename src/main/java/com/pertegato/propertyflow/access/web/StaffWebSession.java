@@ -4,7 +4,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.net.URI;
+import java.util.UUID;
 import java.util.regex.Pattern;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 public final class StaffWebSession {
 
@@ -18,6 +21,17 @@ public final class StaffWebSession {
     private static final Pattern STAFF_TARGET = Pattern.compile(STAFF_LIST + "(?:/[A-Za-z0-9_-]+)?");
 
     private StaffWebSession() {
+    }
+
+    public static UUID administrativeActor(HttpServletRequest request, String csrf, boolean write) {
+        HttpSession session = StaffWebSession.cookieSession(request);
+        if (session == null || !(session.getAttribute(StaffWebSession.ACCOUNT) instanceof UUID id)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+        if (write && (csrf == null || !csrf.equals(session.getAttribute(StaffWebSession.CSRF)))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        }
+        return id;
     }
 
     public static String safeTarget(String value) {

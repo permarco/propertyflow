@@ -1,0 +1,68 @@
+<?xml version='1.0' encoding='utf-8'?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" targetNamespace="https://propertyflow.local/test">
+  <bpmn:error id="Error_StaffDecisionStale" errorCode="STAFF_DECISION_STALE" />
+  <bpmn:process id="PropertyFlow_Staff_Draft" isExecutable="true">
+    <bpmn:documentation>Integration fixture for review, explicit continuation and staff closure. Other staff decisions are not implemented here.</bpmn:documentation>
+    <bpmn:startEvent id="SStart"><bpmn:outgoing>S01</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:sequenceFlow id="S01" sourceRef="SStart" targetRef="SEntryCheck" />
+    <bpmn:serviceTask id="SEntryCheck">
+      <bpmn:extensionElements><zeebe:taskDefinition type="propertyflow.staff.register" /></bpmn:extensionElements>
+    <bpmn:incoming>S01</bpmn:incoming><bpmn:outgoing>EntryRoute</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:sequenceFlow id="EntryRoute" sourceRef="SEntryCheck" targetRef="SEntryRoute" />
+    <bpmn:exclusiveGateway id="SEntryRoute"><bpmn:incoming>EntryRoute</bpmn:incoming><bpmn:outgoing>S_EntryReview</bpmn:outgoing></bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="S_EntryReview" sourceRef="SEntryRoute" targetRef="SReviewStatus">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= staffEntryKind = "REVIEW"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:serviceTask id="SReviewStatus">
+      <bpmn:extensionElements><zeebe:taskDefinition type="propertyflow.staff.start-review" /></bpmn:extensionElements>
+    <bpmn:incoming>S_EntryReview</bpmn:incoming><bpmn:incoming>SProgressRetry</bpmn:incoming><bpmn:incoming>FollowRetry</bpmn:incoming><bpmn:incoming>ContactReview</bpmn:incoming><bpmn:incoming>SWorkReviewNeededFlow</bpmn:incoming><bpmn:incoming>SExternalReviewFlow</bpmn:incoming><bpmn:incoming>WaitToReview</bpmn:incoming><bpmn:outgoing>S02</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:sequenceFlow id="S02" sourceRef="SReviewStatus" targetRef="SReview" />
+    <bpmn:userTask id="SReview" name="Fall prüfen und Vorgehen entscheiden">
+      <bpmn:extensionElements><zeebe:userTask /></bpmn:extensionElements>
+    <bpmn:incoming>S02</bpmn:incoming><bpmn:outgoing>S03</bpmn:outgoing></bpmn:userTask>
+    <bpmn:sequenceFlow id="S03" sourceRef="SReview" targetRef="SDecision" />
+    <bpmn:exclusiveGateway id="SDecision"><bpmn:incoming>S03</bpmn:incoming><bpmn:outgoing>S04</bpmn:outgoing><bpmn:outgoing>S08</bpmn:outgoing><bpmn:outgoing>ToFollowReview</bpmn:outgoing></bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="S04" sourceRef="SDecision" targetRef="SProgress">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= staffDecision = "CONTINUE"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="S08" sourceRef="SDecision" targetRef="SCloseEnd">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= staffDecision = "CLOSE"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:serviceTask id="SProgress">
+      <bpmn:extensionElements><zeebe:taskDefinition type="propertyflow.staff.progress" /></bpmn:extensionElements>
+    <bpmn:incoming>S04</bpmn:incoming><bpmn:incoming>ExternalResume</bpmn:incoming><bpmn:incoming>WaitToWork</bpmn:incoming><bpmn:outgoing>S05</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:boundaryEvent id="SProgressStale" attachedToRef="SProgress">
+      <bpmn:outgoing>SProgressRetry</bpmn:outgoing><bpmn:errorEventDefinition id="SProgressStale_definition" errorRef="Error_StaffDecisionStale" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="SProgressRetry" sourceRef="SProgressStale" targetRef="SReviewStatus" />
+    <bpmn:sequenceFlow id="S05" sourceRef="SProgress" targetRef="SWork" />
+    <bpmn:userTask id="SWork">
+      <bpmn:extensionElements><zeebe:userTask /></bpmn:extensionElements>
+    <bpmn:incoming>S05</bpmn:incoming><bpmn:outgoing>S06</bpmn:outgoing></bpmn:userTask>
+    <bpmn:sequenceFlow id="S06" sourceRef="SWork" targetRef="SWorkDecision" />
+    <bpmn:exclusiveGateway id="SWorkDecision"><bpmn:incoming>S06</bpmn:incoming><bpmn:outgoing>S11</bpmn:outgoing><bpmn:outgoing>ToFollowWork</bpmn:outgoing><bpmn:outgoing>ToExternal</bpmn:outgoing></bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="S11" sourceRef="SWorkDecision" targetRef="SCloseEnd">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= staffDecision = "CLOSE"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="ToFollowReview" sourceRef="SDecision" targetRef="FollowUp"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= staffDecision = "FOLLOW_UP"</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="ToFollowWork" sourceRef="SWorkDecision" targetRef="FollowUp"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= staffDecision = "FOLLOW_UP"</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="ToExternal" sourceRef="SWorkDecision" targetRef="SExternalStatus"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= staffDecision = "WAIT_EXTERNAL"</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:serviceTask id="SExternalStatus"><bpmn:extensionElements><zeebe:taskDefinition type="propertyflow.staff.wait-external" /></bpmn:extensionElements><bpmn:incoming>ToExternal</bpmn:incoming><bpmn:outgoing>ExternalWait</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:sequenceFlow id="ExternalWait" sourceRef="SExternalStatus" targetRef="SExternalWait" />
+    <bpmn:userTask id="SExternalWait"><bpmn:extensionElements><zeebe:userTask /></bpmn:extensionElements><bpmn:incoming>ExternalWait</bpmn:incoming><bpmn:outgoing>ExternalResume</bpmn:outgoing></bpmn:userTask>
+    <bpmn:sequenceFlow id="ExternalResume" sourceRef="SExternalWait" targetRef="SProgress" />
+    <bpmn:callActivity id="FollowUp"><bpmn:extensionElements>
+      <zeebe:calledElement processId="PropertyFlow_FollowUp_Draft" propagateAllChildVariables="false" propagateAllParentVariables="false" />
+      <zeebe:ioMapping><zeebe:input source="=caseId" target="caseId" /><zeebe:input source="=leadingProcessInstanceKey" target="leadingProcessInstanceKey" /><zeebe:input source="=staffDecisionRef" target="staffDecisionRef" /><zeebe:output source="=outcome" target="waitOutcome" /><zeebe:input source="= followUpEntryContextRef" target="activeWaitRef" /><zeebe:input source="= followUpEntryContextRef" target="followUpScopeRef" /><zeebe:output source="= outcome" target="outcome" /><zeebe:output source="= decisionRef" target="decisionRef" /></zeebe:ioMapping>
+    </bpmn:extensionElements><bpmn:incoming>ToFollowReview</bpmn:incoming><bpmn:incoming>ToFollowWork</bpmn:incoming><bpmn:outgoing>FollowReview</bpmn:outgoing></bpmn:callActivity>
+    <bpmn:sequenceFlow id="FollowReview" sourceRef="FollowUp" targetRef="SFollowResult" />
+    <bpmn:boundaryEvent id="FollowStale" attachedToRef="FollowUp"><bpmn:outgoing>FollowRetry</bpmn:outgoing><bpmn:errorEventDefinition errorRef="Error_StaffDecisionStale" /></bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="FollowRetry" sourceRef="FollowStale" targetRef="SReviewStatus" />
+    <bpmn:boundaryEvent id="SContactDuringFollowUp" attachedToRef="FollowUp">
+<bpmn:outgoing>ContactStop</bpmn:outgoing><bpmn:conditionalEventDefinition id="ContactFollowUp_definition"><bpmn:condition xsi:type="bpmn:tFormalExpression">=pendingTenantContactFollowUpVersion != null and pendingTenantContactFollowUpVersion = activeFollowUpVersion</bpmn:condition></bpmn:conditionalEventDefinition></bpmn:boundaryEvent>
+<bpmn:sequenceFlow id="ContactStop" sourceRef="SContactDuringFollowUp" targetRef="SStopFollowUp" />
+<bpmn:serviceTask id="SStopFollowUp"><bpmn:extensionElements><zeebe:taskDefinition type="propertyflow.follow-up.stop-contact" /></bpmn:extensionElements><bpmn:incoming>ContactStop</bpmn:incoming><bpmn:incoming>SFollowUpReviewNeededFlow</bpmn:incoming><bpmn:outgoing>ContactReview</bpmn:outgoing></bpmn:serviceTask>
+<bpmn:sequenceFlow id="ContactReview" sourceRef="SStopFollowUp" targetRef="SReviewStatus" />
+<bpmn:endEvent id="SCloseEnd"><bpmn:incoming>WaitToClose</bpmn:incoming><bpmn:incoming>S08</bpmn:incoming><bpmn:incoming>S11</bpmn:incoming></bpmn:endEvent>
+  <bpmn:boundaryEvent id="SWorkReviewNeeded" attachedToRef="SWork"><bpmn:outgoing>SWorkReviewNeededFlow</bpmn:outgoing><bpmn:conditionalEventDefinition id="SWorkReviewNeeded_definition"><bpmn:condition xsi:type="bpmn:tFormalExpression">= pendingWorkReviewRef != null and pendingWorkReviewRef = activeWorkTaskRef</bpmn:condition></bpmn:conditionalEventDefinition></bpmn:boundaryEvent><bpmn:sequenceFlow id="SWorkReviewNeededFlow" sourceRef="SWorkReviewNeeded" targetRef="SReviewStatus" /><bpmn:boundaryEvent id="SExternalReview" attachedToRef="SExternalWait"><bpmn:outgoing>SExternalReviewFlow</bpmn:outgoing><bpmn:conditionalEventDefinition id="SExternalReview_definition"><bpmn:condition xsi:type="bpmn:tFormalExpression">= externalWaitReviewRequired = true and reviewWaitRef = activeExternalWaitRef</bpmn:condition></bpmn:conditionalEventDefinition></bpmn:boundaryEvent><bpmn:sequenceFlow id="SExternalReviewFlow" sourceRef="SExternalReview" targetRef="SReviewStatus" /><bpmn:boundaryEvent id="SFollowUpReviewNeeded" attachedToRef="FollowUp"><bpmn:outgoing>SFollowUpReviewNeededFlow</bpmn:outgoing><bpmn:conditionalEventDefinition id="SFollowUpReviewNeeded_definition"><bpmn:condition xsi:type="bpmn:tFormalExpression">= pendingReviewFollowUpVersion != null and pendingReviewFollowUpVersion = activeFollowUpVersion</bpmn:condition></bpmn:conditionalEventDefinition></bpmn:boundaryEvent><bpmn:sequenceFlow id="SFollowUpReviewNeededFlow" sourceRef="SFollowUpReviewNeeded" targetRef="SStopFollowUp" /><bpmn:exclusiveGateway id="SFollowResult"><bpmn:incoming>FollowReview</bpmn:incoming><bpmn:outgoing>WaitToClose</bpmn:outgoing><bpmn:outgoing>WaitToReview</bpmn:outgoing><bpmn:outgoing>WaitToWork</bpmn:outgoing></bpmn:exclusiveGateway><bpmn:sequenceFlow id="WaitToReview" sourceRef="SFollowResult" targetRef="SReviewStatus"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=waitOutcome = "REVIEW"</bpmn:conditionExpression></bpmn:sequenceFlow><bpmn:sequenceFlow id="WaitToWork" sourceRef="SFollowResult" targetRef="SProgress"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=waitOutcome = "CONTINUE"</bpmn:conditionExpression></bpmn:sequenceFlow><bpmn:sequenceFlow id="WaitToClose" sourceRef="SFollowResult" targetRef="SCloseEnd"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=waitOutcome = "CLOSE"</bpmn:conditionExpression></bpmn:sequenceFlow></bpmn:process>
+</bpmn:definitions>

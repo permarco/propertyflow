@@ -6,9 +6,18 @@ services:
     ports:
       - "127.0.0.1:1025:1025"
       - "127.0.0.1:8025:8025"
-    # No relay and no persistent volume: local captured mail only.
+    # Kein Relay: Nachrichten bleiben ausschliesslich im lokalen Testpostfach.
+    environment:
+      MP_DATABASE: /data/mailpit.db
+    volumes:
+      - mailpit-data:/data
     healthcheck:
       test: ["CMD", "/usr/bin/nc", "-z", "localhost", "1025"]
       interval: 2s
       timeout: 2s
       retries: 15
+
+volumes:
+  mailpit-data:
+    external: true
+    name: propertyflow-dev_mailpit-data

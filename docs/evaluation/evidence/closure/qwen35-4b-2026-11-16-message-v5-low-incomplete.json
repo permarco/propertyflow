@@ -1,0 +1,64 @@
+{
+  "corpusVersion" : "closure-message-corpus-v4",
+  "corpusSha256" : "2d1b365c9041769e0a3926b6d1804febf302cd3de28628349db3c83c97501434",
+  "model" : "qwen3.5:4b",
+  "modelRevision" : "d8b0f5e9760cd1682034f292d7ef72ec46f432149be0df7574bf2d6e92e38c04",
+  "promptVersion" : "closure-message-v5",
+  "validationVersion" : "closure-message-validation-v5",
+  "modelOptions" : {
+    "reasoningEffort" : "low",
+    "responseFormat" : "json_schema",
+    "temperature" : "0",
+    "schemaVersion" : "closure-message-schema-v1",
+    "timeoutSeconds" : "60",
+    "maxTokens" : "4096"
+  },
+  "evaluatedAt" : "2026-11-16T11:58:08.604968700Z",
+  "expectedCases" : 33,
+  "cases" : [ {
+    "id" : "generate-heating",
+    "mode" : "GENERATE",
+    "category" : "generation",
+    "expectedValid" : true,
+    "actual" : null,
+    "failure" : "IllegalStateException",
+    "calls" : [ ],
+    "semanticDecision" : false,
+    "contentChecks" : false,
+    "passed" : false
+  }, {
+    "id" : "generate-tap",
+    "mode" : "GENERATE",
+    "category" : "generation",
+    "expectedValid" : true,
+    "actual" : null,
+    "failure" : "IllegalStateException",
+    "calls" : [ ],
+    "semanticDecision" : false,
+    "contentChecks" : false,
+    "passed" : false
+  }, {
+    "id" : "generate-door",
+    "mode" : "GENERATE",
+    "category" : "generation",
+    "expectedValid" : true,
+    "actual" : null,
+    "failure" : "IllegalStateException",
+    "calls" : [ ],
+    "semanticDecision" : false,
+    "contentChecks" : false,
+    "passed" : false
+  }, {
+    "id" : "generate-two-issues",
+    "mode" : "GENERATE",
+    "category" : "generation",
+    "expectedValid" : true,
+    "actual" : null,
+    "failure" : "IllegalStateException",
+    "calls" : [ ],
+    "semanticDecision" : false,
+    "contentChecks" : false,
+    "passed" : false
+  } ],
+  "passed" : false
+}

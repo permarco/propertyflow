@@ -1,0 +1,5 @@
+-- Initialer Persistenzstand des Moduls triage.
+-- Triage besitzt derzeit keine eigenen Datenbanktabellen.
+-- Analyseergebnisse und ihre fachliche Übernahme werden durch caseprocessing gespeichert.
+-- Diese Datei verschiebt keine Tabellenzuständigkeit in das Triage-Modul.
+-- Bewusst ohne DDL; es werden keine ungenutzten Tabellen auf Vorrat angelegt.

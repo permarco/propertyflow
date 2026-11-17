@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="de-CH" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{tenant/fragments :: head('Meine Fälle')}"></head>
+<body>
+<header th:replace="~{tenant/fragments :: header}"></header>
+<main class="narrow">
+    <h1>Meine Fälle</h1>
+    <p><a th:href="@{/mieter/fall}">Neues Anliegen melden</a></p>
+    <form method="post" th:action="@{/abmelden}"><input type="hidden" name="csrf" th:value="${csrf}"><button>Abmelden</button></form>
+    <p th:if="${cases.isEmpty()}">Für Ihre verifizierte E-Mail-Adresse sind noch keine Fälle vorhanden.</p>
+    <section class="card" th:each="entry : ${cases}">
+        <h2><a th:href="@{/mieter/faelle/{id}(id=${entry.id()})}" th:text="${entry.title()}"></a></h2>
+        <p th:text="${entry.unit()}"></p>
+        <p><span class="badge" th:text="${entry.status()}"></span></p>
+        <p th:text="${entry.id()}"></p>
+    </section>
+</main>
+</body>
+</html>

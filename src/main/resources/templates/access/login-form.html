@@ -14,6 +14,7 @@
     </th:block>
     <th:block th:if="${codeStep}">
         <p class="notice" role="status" th:text="${registration ? 'Wenn die Anfrage verarbeitet werden kann, senden wir einen Einmalcode. Damit eröffnen oder öffnen Sie Ihr Konto.' : 'Wenn für diese Adresse ein berechtigtes Konto besteht, senden wir einen Einmalcode.'}"></p>
+        <p>Verwenden Sie den Code der gerade angeforderten E-Mail in diesem Browserfenster. Er gilt zehn Minuten und nur einmal.</p>
         <form id="login-code-verify" th:action="@{${loginBase + '/pruefen'}}" method="post">
             <input type="hidden" name="csrf" th:value="${csrf}">
             <label for="login-code">Einmalcode</label>
@@ -30,5 +31,5 @@
         </div>
     </th:block>
     <p th:if="${showRegistrationLink and !registration}">Noch kein Konto? <a th:href="@{/registrieren}">Userkonto eröffnen</a></p>
-    <p th:if="${registration}">Bereits registriert? <a th:href="@{/anmelden}">Mit Konto anmelden</a></p>
+    <p th:if="${registration}">Bereits registriert? <a th:href="@{${tenantLoginUrl != null ? tenantLoginUrl : '/anmelden'}}">Mit Konto anmelden</a></p>
 </section>

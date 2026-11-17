@@ -7,6 +7,7 @@ import com.pertegato.propertyflow.caseprocessing.contract.AccountCaseReading;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseErrorCode;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseServiceException;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseStatusView;
+import com.pertegato.propertyflow.caseprocessing.contract.PublicMessage;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffCaseListing;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffCasePage;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffCaseQuery;
@@ -92,15 +93,18 @@ public class StaffCaseController {
             HttpServletRequest request, HttpServletResponse response, Model model) {
         return read(request, response, model, context -> {
             StaffCaseView view = reading.readForStaff(context, id);
+            model.addAttribute("recommendation", view.recommendation().orElse(null));
             TenantCaseView publicView = view.publicView();
             CaseStatusView state = publicView.state();
             model.addAttribute("caseId", state.caseId());
+            model.addAttribute("memoActor", context.accountId());
             model.addAttribute("title", publicView.title());
             model.addAttribute("originalUnit", publicView.originalUnit());
             model.addAttribute("assignedUnit", publicView.assignedUnit().orElse(null));
             model.addAttribute("contactEmail", view.contactEmail());
             model.addAttribute("status", PersonalCaseController.statusLabel(state.status()));
             model.addAttribute("urgency", urgencyLabel(state));
+            model.addAttribute("urgencyValue", state.urgency().map(Enum::name).orElse(""));
             model.addAttribute("urgencyCss", urgencyCss(state));
             model.addAttribute("urgencySource", publicView.urgencySource()
                     .map(source -> switch (source) {
@@ -252,10 +256,16 @@ public class StaffCaseController {
                 case STAFF -> "Immobilienverwaltung";
                 case SYSTEM -> "System";
             };
-            events.add(new Event(role, message.text(), message.occurredAt(), false));
+            events.add(new Event(role, message.text(), message.occurredAt(), false, PersonalCaseController.answerLabel(message),
+                    message.answerState() == PublicMessage.AnswerState.OPEN ? message.id() : null));
         });
-        view.internalMemos().forEach(memo -> events.add(new Event("Internes Memo", memo.text(), memo.occurredAt(), true)));
+        view.internalMemos().forEach(memo -> events.add(new Event("Immobilienverwaltung", memo.text(), memo.occurredAt(), true)));
+        view.internalChanges().forEach(change -> events.add(new Event("Immobilienverwaltung · " + change.actorName(),
+                change.description(), change.occurredAt(), true)));
         view.publicView().urgencyHistory().forEach(change -> {
+            if (view.internalChanges().stream().anyMatch(internal -> internal.id().equals(change.id()))) {
+                return;
+            }
             String previous = change.previous().map(PersonalCaseController::urgencyLabel).orElse(PersonalCaseController.NOT_ASSESSED);
             String text = "Dringlichkeit: " + previous + " → " + PersonalCaseController.urgencyLabel(change.current());
             String role = switch (change.source()) {
@@ -266,7 +276,7 @@ public class StaffCaseController {
         });
         return events.stream()
                 .sorted(Comparator.comparing(Event::at))
-                .map(event -> new HistoryEntry(event.role(), event.text(), format(event.at()), event.internal()))
+                .map(event -> new HistoryEntry(event.role(), event.text(), format(event.at()), event.internal(), event.answerLabel(), event.clearAnswerId()))
                 .toList();
     }
 
@@ -286,10 +296,13 @@ public class StaffCaseController {
             String urgency, String urgencyCss, String status) {
     }
 
-    public record HistoryEntry(String role, String text, String timestamp, boolean internal) {
+    public record HistoryEntry(String role, String text, String timestamp, boolean internal, String answerLabel, String clearAnswerId) {
     }
 
-    private record Event(String role, String text, Instant at, boolean internal) {
+    private record Event(String role, String text, Instant at, boolean internal, String answerLabel, String clearAnswerId) {
+        private Event(String role, String text, Instant at, boolean internal) {
+            this(role, text, at, internal, "", null);
+        }
     }
 
     private record SignedIn(UUID account, String csrf) {

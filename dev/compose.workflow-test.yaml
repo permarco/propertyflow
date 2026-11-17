@@ -1,0 +1,20 @@
+name: propertyflow-workflow-test
+
+services:
+  mailpit:
+    image: axllent/mailpit:v1.21.8
+    ports:
+      - "127.0.0.1:1027:1025"
+      - "127.0.0.1:8027:8025"
+
+  camunda:
+    image: camunda/camunda:8.9.19
+    ports:
+      - "127.0.0.1:8085:8080"
+      - "127.0.0.1:26505:26500"
+    mem_limit: 2g
+    tmpfs:
+      - /usr/local/camunda/data:uid=1001,gid=1001
+      - /usr/local/camunda/camunda-data:uid=1001,gid=1001
+    volumes:
+      - ./workflow-test-camunda.yaml:/usr/local/camunda/config/application.yaml:ro

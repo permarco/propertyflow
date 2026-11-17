@@ -1,0 +1,437 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:color="http://www.omg.org/spec/BPMN/non-normative/color/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_PropertyFlow_FollowUp_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+  <bpmn:message id="Message_StaffQuestion" name="Mitarbeiternachricht während Wiedervorlage angefordert">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=followUpScopeRef" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:message id="Message_StaffClose" name="Mitarbeiterabschluss bestätigt">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=activeWaitRef" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:message id="Message_FollowUpDelete" name="Wiedervorlage löschen">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=activeWaitRef" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:message id="Message_FollowUpChange" name="Wiedervorlage ändern">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=activeWaitRef" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:error id="Error_FollowUpChangeStale" errorCode="FOLLOW_UP_CHANGE_STALE" />
+  <bpmn:process id="PropertyFlow_FollowUp_Draft" name="Wiedervorlage verwalten · Fachentwurf 0.33" isExecutable="true">
+    <bpmn:documentation>
+0.22: Neuer zwingender Prüfbedarf unterbricht diesen gesamten Call über SFollowUpReviewNeeded im Mitarbeiterprozess, einschliesslich Timer und Nebenaktionen. SStopFollowUp entfernt den betroffenen fachlichen Termin und veranlasst genau eine Prüfung. Keine normale Rückgabe bei Abbruch, kein automatisches Wiederherstellen des Termins.
+Dateiaufteilung 0.9: untergeordneter Prozess, nur durch Call Activity starten. Keine eigene führende Fallzuordnung. Eingaben caseId, leadingProcessInstanceKey und entryContextRef; Rückgaben outcome und decisionRef. Explizite instanzübergreifende Aktualisierung gemäss teilprozess-vertraege.md erforderlich; keine live gemeinsam genutzten Elternvariablen. Nicht ausführbar, kein Backend implementiert.</bpmn:documentation>
+    <bpmn:startEvent id="WStart" name="Wiedervorlage gewählt">
+      <bpmn:outgoing>W01</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="WSave" name="Termin speichern&#10;Wartet auf Wiedervorlage">
+      <bpmn:documentation>BEN-03 / 0.23: Bei tatsächlicher benachrichtigungspflichtiger Änderung Ereignis und Mailpflicht dauerhaft zusammen sichern. Der dauerhafte Starter startet fallbenachrichtigung-versenden.bpmn mit mailOrderRef; dort beauftragen Camunda-Send-Tasks den Mail-Worker. Hier kein direkter SMTP-Aufruf und kein Warten auf SMTP. Unveränderte Werte und identische Wiederholungen erzeugen keine neue Mailpflicht.
+Dateiaufteilung 0.9: Beim Eintritt den eigenen Kindinstanz- und Call-Bezug aus Engine-Metadaten zur unveränderten leadingProcessInstanceKey prüfen/registrieren. Aktuellen Stand aus PropertyFlow laden und lokale Steuerstände initialisieren. Registrierung und Nachlieferung müssen ohne Lücke zusammenwirken, auch bei vorher eingegangenen Nachrichten. Diese Instanz wird nicht als neuer führender Fallprozess gespeichert. Umsetzung gemäss teilprozess-vertraege.md noch offen.
+Wiedervorlage-Version in PropertyFlow sichern und im zuständigen Mitarbeiterbereich bereitstellen, bevor dort auf Kontakt reagiert wird. activeFollowUpVersion und pendingTenantContactFollowUpVersion müssen denselben aktuellen Termin/Aufruf bezeichnen. Nicht auf normale Call-Rückgabe warten. Die lückenlose interne Übergabe ist vor Ausführung zu implementieren.
+FALL-11 / FALL-AK-30: Bestätigten Termin als absoluten followUpDueAt mit Offset oder UTC in diesem Scope bereitstellen. Kalendertage ab lokalem Datum der erstmaligen Annahme, 08:00 Uhr Europe/Zurich am Zieldatum, keine Wochenend-/Feiertagsverschiebung. Neue Eingabe serverseitig nur mit Zeitpunkt in der Zukunft annehmen; ungültige Eingabe verändert keine bestehende Wartephase. Wiederholung eines angenommenen Auftrags übernimmt denselben gespeicherten Zeitpunkt und berechnet keine neuen Tage. Bei verzögerter Verarbeitung darf ein inzwischen fälliger gültiger Auftrag nicht als ungültige Neueingabe verworfen werden. Variablenbereitstellung und atomare Versionskoordination sind noch nicht implementiert.
+0.26 / FALL-11 Übergang 31: Bei direktem Einstieg aus In Abklärung den bereits erfolgreich gespeicherten Terminsetzungsauftrag übernehmen. Keine neue Terminversion, keine erneute Berücksichtigung von Prüfgründen, keine zweite Mailpflicht und keine Neuberechnung des Datums. Aktuelle Version prüfen und frühere Kontakt-/Prüfbedarfsmarker zuverlässig an den umschliessenden FollowUp-Call vermitteln. Einen inzwischen aufgehobenen Termin nicht wiederherstellen; Unterbrechung über SContactDuringFollowUp / SFollowUpReviewNeeded und SStopFollowUp zur Prüfung. Inzwischen fälliger ursprünglich gültiger Termin führt sofort zum bestehenden Timerpfad. Alte oder fremde Aufträge dürfen keinen späteren Termin überschreiben.
+0.27 / Übergang 32: Derselbe idempotente Direkteinstieg gilt aus Wartet auf Mieterantwort. Offene Rückfragen bleiben offen; alte Antwortauswertungen dürfen nicht mehr wirken.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="propertyflow.follow-up.save" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>W01</bpmn:incoming>
+      <bpmn:outgoing>W02</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:eventBasedGateway id="WEvents" name="Auf erstes Ereignis warten">
+      <bpmn:incoming>Flow_1azuihh</bpmn:incoming>
+      <bpmn:outgoing>W03</bpmn:outgoing>
+      <bpmn:outgoing>W05</bpmn:outgoing>
+      <bpmn:outgoing>W06</bpmn:outgoing>
+      <bpmn:outgoing>W07</bpmn:outgoing>
+    </bpmn:eventBasedGateway>
+    <bpmn:intermediateCatchEvent id="WTimer" name="Gespeicherter Termin erreicht&#10;08:00 Uhr Schweizer Zeit">
+      <bpmn:documentation>
+FALL-11: Absoluter, zuvor geprüfter und gespeicherter Zeitpunkt. followUpDueAt enthält ISO-8601 mit Offset oder UTC für 08:00 Europe/Zurich am Zieldatum, inklusive Sommer-/Winterzeit. Kein PnD-Timer und keine Neuberechnung bei Retry. Bei verspäteter Aktivierung nach gültiger Annahme ohne weiteren Aufschub fällig; vor Wirkung prüft WClearTimer die aktuelle Terminversion und den Fallstatus. Die Zeitreferenz ist modelliert, ihre Bereitstellung durch Worker bleibt offen; Fachentwurf weiterhin nicht ausführbar.</bpmn:documentation>
+      <bpmn:incoming>W03</bpmn:incoming>
+      <bpmn:outgoing>W09</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="WTimer_definition">
+        <bpmn:timeDate xsi:type="bpmn:tFormalExpression">= followUpDueAt</bpmn:timeDate>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="WChange" name="Terminänderung bestätigt">
+      <bpmn:documentation>
+Nach Auslagerung Zielinstanz serverseitig über die aktuelle Wiedervorlage-Zuordnung bestimmen. Keine Korrelation allein an den führenden Hauptprozess. Bestehende Mitarbeiterberechtigungen und Versionsschutz bleiben verbindlich; kein zusätzlicher externer Mieternachrichteneingang.</bpmn:documentation>
+      <bpmn:incoming>W05</bpmn:incoming>
+      <bpmn:outgoing>W14</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="WChange_definition" messageRef="Message_FollowUpChange" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="WDelete" name="Terminlöschung bestätigt">
+      <bpmn:documentation>
+Nach Auslagerung Zielinstanz serverseitig über die aktuelle Wiedervorlage-Zuordnung bestimmen. Keine Korrelation allein an den führenden Hauptprozess. Bestehende Mitarbeiterberechtigungen und Versionsschutz bleiben verbindlich; kein zusätzlicher externer Mieternachrichteneingang.</bpmn:documentation>
+      <bpmn:incoming>W06</bpmn:incoming>
+      <bpmn:outgoing>W16</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="WDelete_definition" messageRef="Message_FollowUpDelete" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="WClose" name="Abschluss bestätigt">
+      <bpmn:documentation>
+Nach Auslagerung Zielinstanz serverseitig über die aktuelle Wiedervorlage-Zuordnung bestimmen. Keine Korrelation allein an den führenden Hauptprozess. Bestehende Mitarbeiterberechtigungen und Versionsschutz bleiben verbindlich; kein zusätzlicher externer Mieternachrichteneingang.</bpmn:documentation>
+      <bpmn:incoming>W07</bpmn:incoming>
+      <bpmn:outgoing>W18</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="WClose_definition" messageRef="Message_StaffClose" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:serviceTask id="WClearTimer" name="Termin versionsgeprüft erledigen&#10;Prüfung einmalig veranlassen">
+      <bpmn:documentation>
+FALL-11 Zeile 5 / FALL-AK-27: Fall, führende Bearbeitung, Aufruf und Terminversion unmittelbar vor Wirkung prüfen. Dieselbe logische Erledigung/Prüfzuordnung wie Kontaktweg SStopFollowUp verwenden. Kein zweiter Prüfauftrag bei gleichzeitigem Kontakt. Alte/gelöschte Termine und abgeschlossene Fälle bleiben ohne neue Wirkung; keine veraltete REVIEW-Freigabe zurückgeben. Konkrete technische Konfliktfortsetzung vor Ausführung festlegen.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="propertyflow.follow-up.timer" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>W09</bpmn:incoming>
+      <bpmn:outgoing>W10</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="WReviewEnd" name="Zur Mitarbeiterprüfung">
+      <bpmn:documentation>
+Normaler Kindprozessabschluss: outcome=REVIEW und decisionRef zur geprüften Grundlage an den Aufrufer zurückgeben. Der vorgelagerte entscheidende Dienst muss diese Werte setzen; noch nicht implementiert. Dieses Ende schliesst den Fall nicht fachlich ab. Keine pauschale Rückgabe übriger Kindvariablen.</bpmn:documentation>
+      <bpmn:incoming>W10</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="WUpdate" name="Neuen Termin speichern&#10;Alten Timer ersetzen">
+      <bpmn:documentation>BEN-03 / 0.23: Bei tatsächlicher benachrichtigungspflichtiger Änderung Ereignis und Mailpflicht dauerhaft zusammen sichern. Der dauerhafte Starter startet fallbenachrichtigung-versenden.bpmn mit mailOrderRef; dort beauftragen Camunda-Send-Tasks den Mail-Worker. Hier kein direkter SMTP-Aufruf und kein Warten auf SMTP. Unveränderte Werte und identische Wiederholungen erzeugen keine neue Mailpflicht.
+Wiedervorlage-Version in PropertyFlow sichern und im zuständigen Mitarbeiterbereich bereitstellen, bevor dort auf Kontakt reagiert wird. activeFollowUpVersion und pendingTenantContactFollowUpVersion müssen denselben aktuellen Termin/Aufruf bezeichnen. Nicht auf normale Call-Rückgabe warten. Die lückenlose interne Übergabe ist vor Ausführung zu implementieren.
+FALL-11 Zeile 5: Neue bewusste Terminentscheidung gegen aktuellen Fallstand inklusive gespeicherter Nachrichten prüfen. Neue Terminversion konsistent mit Mitarbeiterinstanz und Timer bereitstellen. Alte Kontakt-/Timermarker dürfen neuen Call/Timer nicht beenden; Race zwischen Versionswechsel und Randereignis vor Umsetzung technisch auflösen.
+FALL-11 / FALL-AK-30: Bestätigten Termin als absoluten followUpDueAt mit Offset oder UTC in diesem Scope bereitstellen. Kalendertage ab lokalem Datum der erstmaligen Annahme, 08:00 Uhr Europe/Zurich am Zieldatum, keine Wochenend-/Feiertagsverschiebung. Neue Eingabe serverseitig nur mit Zeitpunkt in der Zukunft annehmen; ungültige Eingabe verändert keine bestehende Wartephase. Wiederholung eines angenommenen Auftrags übernimmt denselben gespeicherten Zeitpunkt und berechnet keine neuen Tage. Bei verzögerter Verarbeitung darf ein inzwischen fälliger gültiger Auftrag nicht als ungültige Neueingabe verworfen werden. Variablenbereitstellung und atomare Versionskoordination sind noch nicht implementiert.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="propertyflow.follow-up.change" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>W14</bpmn:incoming>
+      <bpmn:outgoing>W15</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="WDeleteTask" name="Timer und Termin entfernen">
+      <bpmn:documentation>BEN-03 / 0.23: Bei tatsächlicher benachrichtigungspflichtiger Änderung Ereignis und Mailpflicht dauerhaft zusammen sichern. Der dauerhafte Starter startet fallbenachrichtigung-versenden.bpmn mit mailOrderRef; dort beauftragen Camunda-Send-Tasks den Mail-Worker. Hier kein direkter SMTP-Aufruf und kein Warten auf SMTP. Unveränderte Werte und identische Wiederholungen erzeugen keine neue Mailpflicht.
+0.27 / Übergang 17: Nach gültiger Terminlöschung führt die bestehende Rückgabe zum Mitarbeiterpfad In Bearbeitung, auch bei weiterhin offenen Mieterfragen. Diese weder erledigen noch allein deshalb den Mieterwartepfad reaktivieren. Aktuellen Fallstand, Terminversion und konkurrierenden neuen Prüfbedarf vor Wirkung prüfen.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="propertyflow.follow-up.change" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>W16</bpmn:incoming>
+      <bpmn:outgoing>W17</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="WProgressEnd" name="Bearbeitung fortsetzen">
+      <bpmn:documentation>
+Normaler Kindprozessabschluss: outcome=CONTINUE und decisionRef zur geprüften Grundlage an den Aufrufer zurückgeben. Der vorgelagerte entscheidende Dienst muss diese Werte setzen; noch nicht implementiert. Dieses Ende schliesst den Fall nicht fachlich ab. Keine pauschale Rückgabe übriger Kindvariablen.</bpmn:documentation>
+      <bpmn:incoming>W17</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="WCloseTask" name="Wiedervorlage beenden">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="propertyflow.follow-up.close" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>W18</bpmn:incoming>
+      <bpmn:outgoing>W19</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="WCloseEnd" name="Zum fachlichen Abschluss">
+      <bpmn:documentation>
+Normaler Kindprozessabschluss: outcome=CLOSE und decisionRef zur geprüften Grundlage an den Aufrufer zurückgeben. Der vorgelagerte entscheidende Dienst muss diese Werte setzen; noch nicht implementiert. Dieses Ende schliesst den Fall nicht fachlich ab. Keine pauschale Rückgabe übriger Kindvariablen.</bpmn:documentation>
+      <bpmn:incoming>W19</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="W01" sourceRef="WStart" targetRef="WSave" />
+    <bpmn:sequenceFlow id="W02" sourceRef="WSave" targetRef="Gateway_0z8028n" />
+    <bpmn:sequenceFlow id="W03" sourceRef="WEvents" targetRef="WTimer" />
+    <bpmn:sequenceFlow id="W05" sourceRef="WEvents" targetRef="WChange" />
+    <bpmn:sequenceFlow id="W06" sourceRef="WEvents" targetRef="WDelete" />
+    <bpmn:sequenceFlow id="W07" sourceRef="WEvents" targetRef="WClose" />
+    <bpmn:sequenceFlow id="W09" sourceRef="WTimer" targetRef="WClearTimer" />
+    <bpmn:sequenceFlow id="W10" sourceRef="WClearTimer" targetRef="WReviewEnd" />
+    <bpmn:sequenceFlow id="W14" sourceRef="WChange" targetRef="WUpdate" />
+    <bpmn:sequenceFlow id="W15" sourceRef="WUpdate" targetRef="Event_11mtz7n" />
+    <bpmn:sequenceFlow id="W16" sourceRef="WDelete" targetRef="WDeleteTask" />
+    <bpmn:sequenceFlow id="W17" sourceRef="WDeleteTask" targetRef="WProgressEnd" />
+    <bpmn:sequenceFlow id="W18" sourceRef="WClose" targetRef="WCloseTask" />
+    <bpmn:sequenceFlow id="W19" sourceRef="WCloseTask" targetRef="WCloseEnd" />
+    <bpmn:subProcess id="WQuestionSide" name="Nachricht als Nebenaktion – Timer läuft weiter" triggeredByEvent="true">
+      <bpmn:documentation>0.33 / KOM-AK-31: Nicht unterbrechende Nebenaktion für Information oder Rückfrage. Nachricht setzt, beendet oder verlängert keinen Timer; Terminversion und Wartephase bleiben unverändert. Keine lokalen Hauptpfad-Ergebnisse überschreiben. Aktuellen Fallstand und zuständigen Wiedervorlage-Aufruf prüfen; Konkurrenz mit Timer, Mieterkontakt und Mitarbeiterentscheidung koordinieren.</bpmn:documentation>
+      <bpmn:startEvent id="WQuestionStart" name="Sendeauftrag eingegangen" isInterrupting="false">
+        <bpmn:documentation>
+Nach Auslagerung Zielinstanz serverseitig über die aktuelle Wiedervorlage-Zuordnung bestimmen. Keine Korrelation allein an den führenden Hauptprozess. Bestehende Mitarbeiterberechtigungen und Versionsschutz bleiben verbindlich; kein zusätzlicher externer Mieternachrichteneingang.</bpmn:documentation>
+        <bpmn:outgoing>W20</bpmn:outgoing>
+        <bpmn:messageEventDefinition id="WQuestionStart_definition" messageRef="Message_StaffQuestion" />
+      </bpmn:startEvent>
+      <bpmn:serviceTask id="WPublish" name="Nachricht mit optionalem Antwortbedarf&#10;veröffentlichen – Termin bleibt">
+        <bpmn:documentation>BEN-03 / 0.23: Bei tatsächlicher benachrichtigungspflichtiger Änderung Ereignis und Mailpflicht dauerhaft zusammen sichern. Der dauerhafte Starter startet fallbenachrichtigung-versenden.bpmn mit mailOrderRef; dort beauftragen Camunda-Send-Tasks den Mail-Worker. Hier kein direkter SMTP-Aufruf und kein Warten auf SMTP. Unveränderte Werte und identische Wiederholungen erzeugen keine neue Mailpflicht.
+0.33: Berechtigung, aktuellen führenden Durchlauf, Wiedervorlage-Call/Kindinstanz, Terminversion, Status und bestätigte Fallversion vor Speicherung prüfen. Text und Antwortbedarf aus bestätigtem Auftrag. Ohne Antwortbedarf nur Information, mit Bedarf zusätzliche offene Rückfrage; bestehende Fragen erhalten. Nachricht, optionalen Bedarf und Mailpflicht konsistent sichern, ohne Status-/Termin-/Timeränderung. Alter unveröffentlichter Auftrag nach Timerablauf, Kontakt oder anderer Fortsetzung ohne Wirkung ablehnen und Text erhalten. Identischer erfolgreicher Retry ohne Duplikat oder neue Mailpflicht. Technische Fehler Retry/Incident; bereits gespeicherter Versand bleibt bei späterer Fortsetzung bestehen. Neue zwingende Prüfgründe über bestehenden separaten Pfad behandeln.</bpmn:documentation>
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="propertyflow.staff-message.publish" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>W20</bpmn:incoming>
+        <bpmn:outgoing>W21</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:endEvent id="WQuestionEnd" name="Nebenaktion beendet">
+        <bpmn:incoming>W21</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="W20" sourceRef="WQuestionStart" targetRef="WPublish" />
+      <bpmn:sequenceFlow id="W21" sourceRef="WPublish" targetRef="WQuestionEnd" />
+    </bpmn:subProcess>
+    <bpmn:exclusiveGateway id="Gateway_0z8028n">
+      <bpmn:incoming>W02</bpmn:incoming>
+      <bpmn:incoming>Flow_0yja40z</bpmn:incoming>
+      <bpmn:outgoing>Flow_1azuihh</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_1azuihh" sourceRef="Gateway_0z8028n" targetRef="WEvents" />
+    <bpmn:boundaryEvent id="WUpdateStale" attachedToRef="WUpdate">
+      <bpmn:outgoing>WUpdateRetry</bpmn:outgoing>
+      <bpmn:errorEventDefinition errorRef="Error_FollowUpChangeStale" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="WUpdateRetry" sourceRef="WUpdateStale" targetRef="Event_1vpk549" />
+    <bpmn:boundaryEvent id="WDeleteTaskStale" attachedToRef="WDeleteTask">
+      <bpmn:outgoing>WDeleteTaskRetry</bpmn:outgoing>
+      <bpmn:errorEventDefinition errorRef="Error_FollowUpChangeStale" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="WDeleteTaskRetry" sourceRef="WDeleteTaskStale" targetRef="Event_1x7121l" />
+    <bpmn:boundaryEvent id="WCloseTaskStale" attachedToRef="WCloseTask">
+      <bpmn:outgoing>WCloseTaskRetry</bpmn:outgoing>
+      <bpmn:errorEventDefinition errorRef="Error_FollowUpChangeStale" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="WCloseTaskRetry" sourceRef="WCloseTaskStale" targetRef="Event_1y7so7y" />
+    <bpmn:intermediateThrowEvent id="Event_1vpk549">
+      <bpmn:incoming>WUpdateRetry</bpmn:incoming>
+      <bpmn:linkEventDefinition id="LinkEventDefinition_0zi7z18" name="RECALCULATE" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:intermediateCatchEvent id="Event_0qagckz">
+      <bpmn:outgoing>Flow_0yja40z</bpmn:outgoing>
+      <bpmn:linkEventDefinition id="LinkEventDefinition_19dvd9j" name="RECALCULATE" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_0yja40z" sourceRef="Event_0qagckz" targetRef="Gateway_0z8028n" />
+    <bpmn:intermediateThrowEvent id="Event_11mtz7n">
+      <bpmn:incoming>W15</bpmn:incoming>
+      <bpmn:linkEventDefinition id="LinkEventDefinition_1nf02i6" name="RECALCULATE" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:intermediateThrowEvent id="Event_1y7so7y">
+      <bpmn:incoming>WCloseTaskRetry</bpmn:incoming>
+      <bpmn:linkEventDefinition id="LinkEventDefinition_1rnk1dv" name="RECALCULATE" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:intermediateThrowEvent id="Event_1x7121l">
+      <bpmn:incoming>WDeleteTaskRetry</bpmn:incoming>
+      <bpmn:linkEventDefinition id="LinkEventDefinition_0vht0pm" name="RECALCULATE" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:textAnnotation id="WRule">
+      <bpmn:text>Mieterkontakt wird zentral empfangen und versionsgebunden bereitgestellt.
+Das Randereignis im Mitarbeiterprozess beendet diesen Call samt Timer vor KI-Ende.
+Timer und Kontakt teilen eine Prüfzuordnung: genau eine Mitarbeiterprüfung.
+Alter Kontakt/Timer hebt keinen neueren bewussten Termin auf.
+Nach Abschluss keine neue Wirkung; spätere KI ergänzt nur die aktuelle Aufgabe.
+Atomare Koordination vor Ausführung implementieren (FALL-11 / FALL-AK-27).</bpmn:text>
+    </bpmn:textAnnotation>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="FollowUp_diagram" name="05 · Wiedervorlage">
+    <bpmndi:BPMNPlane id="FollowUp_plane" bpmnElement="PropertyFlow_FollowUp_Draft">
+      <bpmndi:BPMNShape id="WStart_di" bpmnElement="WStart" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="190" y="402" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="152" y="450" width="112" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="WSave_di" bpmnElement="WSave" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="306" y="370" width="250" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="WEvents_di" bpmnElement="WEvents" bioc:stroke="#334155" bioc:fill="#f1f5f9">
+        <dc:Bounds x="756" y="395" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="717" y="457" width="129" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="WTimer_di" bpmnElement="WTimer" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
+        <dc:Bounds x="1002" y="272" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="948" y="320" width="145" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="WChange_di" bpmnElement="WChange" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
+        <dc:Bounds x="1002" y="112" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="958" y="160" width="125" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="WDelete_di" bpmnElement="WDelete" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
+        <dc:Bounds x="1002" y="682" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="959" y="730" width="122" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="WClose_di" bpmnElement="WClose" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
+        <dc:Bounds x="1002" y="502" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="973" y="550" width="95" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="WClearTimer_di" bpmnElement="WClearTimer" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="1122" y="240" width="250" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="WReviewEnd_di" bpmnElement="WReviewEnd" bioc:stroke="#14532d" bioc:fill="#dcfce7">
+        <dc:Bounds x="1482" y="272" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1446" y="320" width="109" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="WUpdate_di" bpmnElement="WUpdate" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="1135" y="80" width="250" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="WDeleteTask_di" bpmnElement="WDeleteTask" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="1122" y="650" width="250" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="WCloseTask_di" bpmnElement="WCloseTask" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="1122" y="470" width="250" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="WCloseEnd_di" bpmnElement="WCloseEnd" bioc:stroke="#14532d" bioc:fill="#dcfce7">
+        <dc:Bounds x="1482" y="502" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1436" y="550" width="128" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1o6mi7a_di" bpmnElement="Event_11mtz7n" bioc:stroke="#6b3c00" bioc:fill="#ffe0b2" color:background-color="#ffe0b2" color:border-color="#6b3c00">
+        <dc:Bounds x="1482" y="112" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1v6vh0k_di" bpmnElement="Event_1vpk549" bioc:stroke="#6b3c00" bioc:fill="#ffe0b2" color:background-color="#ffe0b2" color:border-color="#6b3c00">
+        <dc:Bounds x="1482" y="202" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1a7xkhq" bpmnElement="Event_1y7so7y" bioc:stroke="#6b3c00" bioc:fill="#ffe0b2" color:background-color="#ffe0b2" color:border-color="#6b3c00">
+        <dc:Bounds x="1482" y="592" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="WProgressEnd_di" bpmnElement="WProgressEnd" bioc:stroke="#14532d" bioc:fill="#dcfce7">
+        <dc:Bounds x="1482" y="682" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1445" y="730" width="111" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1dfcvyb" bpmnElement="Event_1x7121l" bioc:stroke="#6b3c00" bioc:fill="#ffe0b2" color:background-color="#ffe0b2" color:border-color="#6b3c00">
+        <dc:Bounds x="1482" y="782" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0z8028n_di" bpmnElement="Gateway_0z8028n" isMarkerVisible="true">
+        <dc:Bounds x="636" y="395" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_15nm8qa_di" bpmnElement="Event_0qagckz" bioc:stroke="#6b3c00" bioc:fill="#ffe0b2" color:background-color="#ffe0b2" color:border-color="#6b3c00">
+        <dc:Bounds x="532" y="252" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="WQuestionSide_di" bpmnElement="WQuestionSide" isExpanded="true" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
+        <dc:Bounds x="190" y="620" width="592" height="235" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="WQuestionStart_di" bpmnElement="WQuestionStart" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
+        <dc:Bounds x="245" y="737" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="287" y="818" width="133" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="WPublish_di" bpmnElement="WPublish" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="361" y="705" width="250" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="WQuestionEnd_di" bpmnElement="WQuestionEnd" bioc:stroke="#14532d" bioc:fill="#dcfce7">
+        <dc:Bounds x="691" y="737" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="657" y="785" width="105" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="W20_di" bpmnElement="W20">
+        <di:waypoint x="281" y="755" />
+        <di:waypoint x="361" y="755" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="W21_di" bpmnElement="W21">
+        <di:waypoint x="611" y="755" />
+        <di:waypoint x="691" y="755" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="WCloseTaskStale_di" bpmnElement="WCloseTaskStale">
+        <dc:Bounds x="1342" y="552" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="WDeleteTaskStale_di" bpmnElement="WDeleteTaskStale">
+        <dc:Bounds x="1317" y="732" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="WUpdateStale_di" bpmnElement="WUpdateStale">
+        <dc:Bounds x="1330" y="162" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="WRule_di" bpmnElement="WRule" bioc:stroke="#475569" bioc:fill="#ffffff">
+        <dc:Bounds x="190" y="990" width="500" height="144" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="W01_di" bpmnElement="W01">
+        <di:waypoint x="226" y="420" />
+        <di:waypoint x="306" y="420" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="W02_di" bpmnElement="W02">
+        <di:waypoint x="556" y="420" />
+        <di:waypoint x="636" y="420" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1azuihh_di" bpmnElement="Flow_1azuihh">
+        <di:waypoint x="686" y="420" />
+        <di:waypoint x="756" y="420" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="W03_di" bpmnElement="W03">
+        <di:waypoint x="806" y="420" />
+        <di:waypoint x="910" y="420" />
+        <di:waypoint x="910" y="290" />
+        <di:waypoint x="1002" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="W05_di" bpmnElement="W05">
+        <di:waypoint x="806" y="420" />
+        <di:waypoint x="910" y="420" />
+        <di:waypoint x="910" y="130" />
+        <di:waypoint x="1002" y="130" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="W06_di" bpmnElement="W06">
+        <di:waypoint x="806" y="420" />
+        <di:waypoint x="906" y="420" />
+        <di:waypoint x="906" y="700" />
+        <di:waypoint x="1002" y="700" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="W07_di" bpmnElement="W07">
+        <di:waypoint x="806" y="420" />
+        <di:waypoint x="906" y="420" />
+        <di:waypoint x="906" y="520" />
+        <di:waypoint x="1002" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="W09_di" bpmnElement="W09">
+        <di:waypoint x="1038" y="290" />
+        <di:waypoint x="1122" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="W14_di" bpmnElement="W14">
+        <di:waypoint x="1038" y="130" />
+        <di:waypoint x="1135" y="130" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="W16_di" bpmnElement="W16">
+        <di:waypoint x="1038" y="700" />
+        <di:waypoint x="1122" y="700" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="W18_di" bpmnElement="W18">
+        <di:waypoint x="1038" y="520" />
+        <di:waypoint x="1122" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="W10_di" bpmnElement="W10">
+        <di:waypoint x="1372" y="290" />
+        <di:waypoint x="1482" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="W15_di" bpmnElement="W15">
+        <di:waypoint x="1385" y="130" />
+        <di:waypoint x="1482" y="130" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="W17_di" bpmnElement="W17">
+        <di:waypoint x="1372" y="700" />
+        <di:waypoint x="1482" y="700" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="W19_di" bpmnElement="W19">
+        <di:waypoint x="1372" y="520" />
+        <di:waypoint x="1482" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0yja40z_di" bpmnElement="Flow_0yja40z">
+        <di:waypoint x="568" y="270" />
+        <di:waypoint x="661" y="270" />
+        <di:waypoint x="661" y="395" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="WUpdateRetry_di" bpmnElement="WUpdateRetry">
+        <di:waypoint x="1348" y="198" />
+        <di:waypoint x="1348" y="220" />
+        <di:waypoint x="1482" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="WCloseTaskRetry_di" bpmnElement="WCloseTaskRetry">
+        <di:waypoint x="1360" y="588" />
+        <di:waypoint x="1360" y="610" />
+        <di:waypoint x="1482" y="610" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="WDeleteTaskRetry_di" bpmnElement="WDeleteTaskRetry">
+        <di:waypoint x="1335" y="768" />
+        <di:waypoint x="1335" y="800" />
+        <di:waypoint x="1482" y="800" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

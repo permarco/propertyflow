@@ -4,6 +4,7 @@ import com.pertegato.propertyflow.access.contract.WebAccountContext;
 import com.pertegato.propertyflow.access.web.StaffWebSession;
 import com.pertegato.propertyflow.caseprocessing.contract.AccountCaseReading;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseErrorCode;
+import com.pertegato.propertyflow.caseprocessing.contract.CaseRecommendation;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseServiceException;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseStatus;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseStatusView;
@@ -175,9 +176,26 @@ class StaffCaseWebTest {
                 .andExpect(content().string(containsString("mieter@example.test")))
                 .andExpect(content().string(containsString(CONTEXT + "/abmelden")))
                 .andExpect(content().string(not(containsString("external.example.test"))))
-                .andExpect(content().string(not(containsString(DETAIL + "/aktion"))));
+                .andExpect(content().string(not(containsString(DETAIL + "/aktion\""))))
+                .andExpect(content().string(containsString("data-command-base=\"" + CONTEXT + DETAIL + "/aktionen\"")))
+                .andExpect(content().string(containsString("data-actor=\"" + STAFF.accountId() + "\"")));
         verify(reading).readForStaff(STAFF, CASE_ID);
         verifyNoInteractions(listing);
+    }
+
+    @Test
+    void closureSuggestionRemainsEscapedStaffAdviceWithItsEarlierBasisVisible() throws Exception {
+        TenantCaseView publicView = new TenantCaseView(caseState(), TITLE, "Das Haus ist kalt.", UNIT, Optional.empty(),
+                "m***@example.test", RECEIVED_AT, RECEIVED_AT, 2, Optional.empty(), List.of(), List.of());
+        CaseRecommendation recommendation = new CaseRecommendation("Verwaltung", "Fall prüfen", List.of(), null, false,
+                "Vorgeschlagener Abschlussgrund: Problem behoben.\n<script>window.untrusted=true</script>");
+        when(reading.readForStaff(STAFF, CASE_ID)).thenReturn(new StaffCaseView(publicView, "mieter@example.test", Optional.empty(),
+                List.of("Mitarbeiterentscheidung erforderlich"), List.of(), List.of(), Optional.of(recommendation)));
+        protectedResponse(mvc.perform(signedIn(DETAIL)), 200)
+                .andExpect(content().string(containsString("Abschlussbewertung zur Prüfung")))
+                .andExpect(content().string(containsString("Diese Empfehlung beruht auf einem früheren Fallstand.")))
+                .andExpect(content().string(containsString("&lt;script&gt;window.untrusted=true&lt;/script&gt;")))
+                .andExpect(content().string(not(containsString("<script>window.untrusted=true</script>"))));
     }
 
     @ParameterizedTest

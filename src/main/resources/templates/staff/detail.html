@@ -18,7 +18,7 @@
             </div>
             <div>
                 <span class="field-caption">Dringlichkeit</span>
-                <span id="case-urgency" class="badge" th:classappend="${urgencyCss}"
+                <span id="case-urgency" class="badge" th:classappend="${urgencyCss}" th:attr="data-value=${urgencyValue}"
                       th:text="${#strings.isEmpty(urgencySource) ? urgency : urgency + ' · ' + urgencySource}"></span>
             </div>
             <div>
@@ -28,41 +28,317 @@
         </div>
     </section>
     <p id="save-state" role="status" aria-live="polite"></p>
+    <p th:if="${developmentMode == true}">
+        <a th:href="@{/mitarbeiter/faelle/{id}/prozess(id=${caseId})}" target="_blank" rel="noopener noreferrer">Prozess in Camunda anzeigen</a>
+    </p>
     <div class="workspace">
         <aside id="case-sidebar" aria-labelledby="case-data-title">
             <section class="card">
                 <h2 id="case-data-title">Falldaten</h2>
-                <dl>
+                <dl id="case-data" th:attr="data-assigned-unit=${assignedUnit},data-original-unit=${originalUnit}">
                     <dt>Ursprüngliche Objektangabe</dt><dd th:text="${originalUnit}"></dd>
                     <dt>Bestätigte Zuordnung</dt><dd th:text="${#strings.isEmpty(assignedUnit) ? 'Noch nicht zugeordnet' : assignedUnit}"></dd>
                     <dt>Kontakt</dt><dd th:text="${contactEmail}"></dd>
                     <dt>Eingang</dt><dd th:text="${received}"></dd>
                     <dt>Letzte Aktion des Mieters</dt><dd th:text="${lastContact}"></dd>
                 </dl>
+                <details class="assignment-editor" id="assignment-editor">
+                    <summary>Zuordnung ändern</summary>
+                    <form id="assignment-form" data-case-action="assignment" th:action="@{/mitarbeiter/faelle/{id}/objekt-wohnung-zuordnen(id=${caseId})}"
+                          th:attr="data-actor=${memoActor},data-command-base=@{/mitarbeiter/faelle/{id}/aktionen(id=${caseId})}" method="post">
+                        <label for="assigned-unit">Objekt / Wohnung</label>
+                        <input id="assigned-unit" name="assignment" type="text" list="assignment-suggestions" required
+                               th:value="${#strings.isEmpty(assignedUnit) ? originalUnit : assignedUnit}"
+                               aria-describedby="assigned-unit-hint" placeholder="Zuordnung auswählen oder frei eingeben">
+                        <small id="assigned-unit-hint">1–200 Zeichen; Leerzeichen am Anfang und Ende zählen nicht mit.</small>
+                        <datalist id="assignment-suggestions"></datalist>
+                        <div class="actions">
+                            <button type="button" data-action-cancel class="secondary">Abbrechen</button>
+                            <button type="submit" disabled>Zuordnung bestätigen</button>
+                        </div>
+                        <p data-action-feedback role="status" aria-live="polite">Verfügbarkeit wird geprüft.</p>
+                        <a data-action-login th:href="@{/anmelden}" target="_blank" rel="noopener" hidden>Erneut anmelden</a>
+                    </form>
+                </details>
             </section>
-            <section th:unless="${reviewReasons.isEmpty()}" class="card notice" aria-labelledby="case-review-title">
-                <h2 id="case-review-title">Prüfbedarf</h2>
+            <div id="case-recommendation"><section class="card" th:if="${recommendation != null}" aria-labelledby="recommendation-title">
+                <h2 id="recommendation-title">Empfehlung zur fachlichen Prüfung</h2>
+                <p th:unless="${recommendation.current}">Diese Empfehlung beruht auf einem früheren Fallstand.</p>
+                <p th:if="${recommendation.failure != null}" th:text="${recommendation.failure}"></p>
+                <div th:if="${recommendation.failure == null}">
+                    <p th:text="${recommendation.responsibility}"></p>
+                    <p class="preserve-whitespace" th:text="${recommendation.procedure}"></p>
+                    <h3>Verwendete Quellen</h3>
+                    <ul><li th:each="source : ${recommendation.sources}" th:text="${source}"></li></ul>
+                </div>
+                <section th:if="${recommendation.closureAssessment != null}" aria-labelledby="closure-assessment-title">
+                    <h3 id="closure-assessment-title">Abschlussbewertung zur Prüfung</h3>
+                    <p class="preserve-whitespace" th:text="${recommendation.closureAssessment}"></p>
+                </section>
+            </section>
+            </div>
+            <div id="case-review"><section th:unless="${reviewReasons.isEmpty()}" class="card notice" aria-labelledby="case-review-title">
+                <h2 id="case-review-title" th:text="${status == 'Abgeschlossen' ? 'Interne Hinweise' : 'Prüfbedarf'}">Prüfbedarf</h2>
                 <ul><li th:each="reason : ${reviewReasons}" th:text="${reason}"></li></ul>
+            </section></div>
+            <section class="card" aria-labelledby="staff-review-heading" hidden>
+                <details class="edit-card" name="case-edit">
+                    <summary id="staff-review-heading"><span>Status</span><span>Status ändern</span></summary>
+                <form id="staff-review-form" th:action="@{/mitarbeiter/faelle/{id}/fortsetzen(id=${caseId})}"
+                      th:attr="data-review-url=@{/mitarbeiter/faelle/{id}/pruefung(id=${caseId})},data-actor=${memoActor}" method="post">
+                    <p>Nach Ihrer Prüfung können Sie die Bearbeitung fortsetzen. Die vorhandenen Prüfhinweise bleiben nachvollziehbar.</p>
+                    <label for="staff-decision-reason">Begründung (optional, nur intern)</label>
+                    <textarea id="staff-decision-reason" name="reason" maxlength="1000" rows="2"></textarea>
+                    <div class="actions">
+                        <button type="submit" disabled>Bearbeitung fortsetzen</button>
+                        <button type="button" data-review-reload class="secondary">Neu laden</button>
+                    </div>
+                    <p role="status" aria-live="polite"></p>
+                </form>
+                </details>
+            </section>
+            <section class="card" hidden aria-labelledby="staff-wait-heading">
+                <details class="edit-card" name="case-edit">
+                    <summary id="staff-wait-heading"><span>Wiedervorlage</span><span>Wiedervorlage ändern</span></summary>
+                <form id="staff-wait-form" method="post" th:action="@{/mitarbeiter/faelle/{id}/wiedervorlage-setzen(id=${caseId})}"
+                      th:attr="data-task-url=@{/mitarbeiter/faelle/{id}/pruefung(id=${caseId})},data-external-url=@{/mitarbeiter/faelle/{id}/externe-rueckmeldung-abwarten(id=${caseId})},data-actor=${memoActor}">
+                    <p>Wählen Sie eine Anzahl Kalendertage oder ein Datum. Die Wiedervorlage erfolgt um 08:00 Uhr Schweizer Zeit.</p>
+                    <label for="follow-days">In Tagen</label><input id="follow-days" name="days" type="number" min="0" step="1">
+                    <label for="follow-date">Oder am Datum</label><input id="follow-date" name="date" type="date">
+                    <label for="follow-reason">Begründung (optional, nur intern)</label><textarea id="follow-reason" name="reason" maxlength="1000" rows="2"></textarea>
+                    <div class="actions"><button type="submit" disabled>Wiedervorlage setzen</button>
+                        <button type="button" data-wait-external disabled>Auf externe Rückmeldung warten</button>
+                        <button type="button" data-wait-reload class="secondary">Neu laden</button></div>
+                    <p role="status" aria-live="polite"></p>
+                </form>
+                </details>
+            </section>
+            <section class="card" id="staff-direct-follow-up" data-direct-follow hidden aria-labelledby="staff-direct-follow-heading"
+                     th:attr="data-actor=${memoActor},data-availability-url=@{/mitarbeiter/faelle/{id}/direkte-wiedervorlage/verfuegbar(id=${caseId})},data-submit-url=@{/mitarbeiter/faelle/{id}/direkte-wiedervorlage(id=${caseId})},data-result-url=@{/mitarbeiter/faelle/{id}/aktionen/(id=${caseId})}">
+                <details class="edit-card" name="case-edit">
+                    <summary id="staff-direct-follow-heading"><span>Wiedervorlage</span><span>Wiedervorlage ändern</span></summary>
+                <p>Termin um 08:00 Uhr Schweizer Zeit. Entweder Kalendertage oder ein Datum wählen. Offene Rückfragen bleiben erhalten.</p>
+                <label for="direct-follow-days">In Kalendertagen</label>
+                <input id="direct-follow-days" name="days" type="number" min="0" step="1">
+                <label for="direct-follow-date">Am Datum</label>
+                <input id="direct-follow-date" name="date" type="date">
+                <label for="direct-follow-reason">Interne Begründung (optional)</label>
+                <textarea id="direct-follow-reason" name="reason" maxlength="1000"></textarea>
+                <button type="button" data-direct-follow-open disabled>Wiedervorlage setzen</button>
+                <dialog data-direct-follow-confirmation aria-labelledby="direct-follow-confirm-heading">
+                    <h3 id="direct-follow-confirm-heading">Wiedervorlage bestätigen?</h3>
+                    <p>Den Fallstand und die bekannten Prüfgründe geprüft? Ein neuer Kontakt führt wieder zur Mitarbeiterprüfung.</p>
+                    <button type="button" data-direct-follow-confirm>Bestätigen</button>
+                    <button type="button" data-direct-follow-cancel>Abbrechen</button>
+                </dialog>
+                <p role="status" aria-live="polite"></p>
+                </details>
+            </section>
+            <section class="card" id="staff-follow-up-change" hidden aria-labelledby="staff-follow-up-heading">
+                <details class="edit-card" name="case-edit">
+                    <summary id="staff-follow-up-heading"><span>Wiedervorlage</span><span>Wiedervorlage ändern</span></summary>
+                <form id="staff-follow-up-form" method="post" th:action="@{/mitarbeiter/faelle/{id}/wiedervorlage-aendern(id=${caseId})}"
+                      th:data-availability-url="@{/mitarbeiter/faelle/{id}/wiedervorlage/verfuegbar(id=${caseId})}"
+                      th:data-delete-url="@{/mitarbeiter/faelle/{id}/wiedervorlage-loeschen(id=${caseId})}"
+                      th:data-close-url="@{/mitarbeiter/faelle/{id}/wiedervorlage-abschliessen(id=${caseId})}"
+                      th:data-result-url="@{/mitarbeiter/faelle/{id}/wiedervorlage/auftraege/(id=${caseId})}" th:data-actor="${memoActor}">
+                    <label>In Kalendertagen <input name="days" type="number" min="0" step="1"></label>
+                    <label>Oder am Datum <input name="date" type="date"></label>
+                    <p>Der Termin gilt um 08:00 Uhr Schweizer Zeit.</p>
+                    <label>Interne Begründung (optional) <textarea name="reason" maxlength="1000" rows="2"></textarea></label>
+                    <button type="submit" disabled>Terminänderung bestätigen</button>
+                    <button type="button" data-follow-up-delete disabled>Wiedervorlage löschen</button>
+                    <details><summary>Fall abschliessen</summary>
+                        <p>Der Fall wird abgeschlossen und der Termin aufgehoben. Offene Antwortbedarfe werden beendet.
+                            Neue Nachrichten sind danach nicht mehr möglich.</p>
+                        <button type="button" data-follow-up-close disabled>Abschluss verbindlich bestätigen</button>
+                    </details>
+                    <button type="button" data-follow-up-reload>Neu laden</button>
+                    <p role="status" aria-live="polite"></p>
+                </form>
+                </details>
+            </section>
+            <details class="card edit-card" name="case-edit" aria-labelledby="urgency-edit-title">
+                <summary id="urgency-edit-title"><span>Dringlichkeit</span><span>Dringlichkeit ändern</span></summary>
+                <form id="urgency-form" data-case-action="urgency" th:action="@{/mitarbeiter/faelle/{id}/dringlichkeit-aendern(id=${caseId})}"
+                      th:attr="data-actor=${memoActor},data-command-base=@{/mitarbeiter/faelle/{id}/aktionen(id=${caseId})}" method="post">
+                    <fieldset>
+                        <legend>Ausgewählte Dringlichkeit</legend>
+                        <div class="urgency-options">
+                            <label class="urgency-1"><input type="radio" name="urgency" value="CRITICAL"
+                                    th:checked="${urgency == 'Kritisch'}" required> Kritisch</label>
+                            <label class="urgency-2"><input type="radio" name="urgency" value="HIGH"
+                                    th:checked="${urgency == 'Hoch'}" required> Hoch</label>
+                            <label class="urgency-3"><input type="radio" name="urgency" value="NORMAL"
+                                    th:checked="${urgency == 'Normal'}" required> Normal</label>
+                            <label class="urgency-4"><input type="radio" name="urgency" value="LOW"
+                                    th:checked="${urgency == 'Niedrig'}" required> Niedrig</label>
+                        </div>
+                    </fieldset>
+                    <label for="urgency-reason">Begründung (optional, nur intern)</label>
+                    <textarea id="urgency-reason" name="reason" maxlength="1000" rows="2"></textarea>
+                    <button type="submit" disabled>Speichern</button>
+                    <p data-action-feedback role="status" aria-live="polite">Verfügbarkeit wird geprüft.</p>
+                    <a data-action-login th:href="@{/anmelden}" target="_blank" rel="noopener" hidden>Erneut anmelden</a>
+                </form>
+            </details>
+            <section class="card" id="staff-takeover" hidden aria-labelledby="staff-takeover-heading"
+                     th:attr="data-actor=${memoActor},data-availability-url=@{/mitarbeiter/faelle/{id}/uebernehmen/verfuegbar(id=${caseId})},data-submit-url=@{/mitarbeiter/faelle/{id}/uebernehmen(id=${caseId})},data-result-url=@{/mitarbeiter/faelle/{id}/aktionen/(id=${caseId})}">
+                <h3 id="staff-takeover-heading">Bearbeitung übernehmen</h3>
+                <p>Die automatische Abklärung wird beendet. Bestehender Prüfbedarf bleibt erhalten.</p>
+                <button type="button" data-takeover-open disabled>Bearbeitung übernehmen</button>
+                <div data-takeover-confirmation hidden>
+                    <p>Die Bearbeitung dieses Falls jetzt verbindlich übernehmen?</p>
+                    <button type="button" data-takeover-confirm>Übernahme bestätigen</button>
+                    <button type="button" data-takeover-cancel>Abbrechen</button>
+                </div>
+                <p role="status" aria-live="polite"></p>
+            </section>
+            <section class="card" id="staff-clarification-close" data-direct-close hidden aria-labelledby="staff-clarification-close-heading"
+                     th:attr="data-actor=${memoActor},data-availability-url=@{/mitarbeiter/faelle/{id}/abklaerung-abschliessen/verfuegbar(id=${caseId})},data-submit-url=@{/mitarbeiter/faelle/{id}/abklaerung-abschliessen(id=${caseId})},data-result-url=@{/mitarbeiter/faelle/{id}/aktionen/(id=${caseId})}">
+                <h3 id="staff-clarification-close-heading">Fall während der Abklärung abschliessen</h3>
+                <p>Der Fall wird abgeschlossen. Offene Antwortbedarfe werden beendet; neue Nachrichten sind danach nicht mehr möglich.</p>
+                <button type="button" data-direct-close-open disabled>Fall abschliessen</button>
+                <dialog data-direct-close-confirmation aria-labelledby="clarification-close-confirm-heading">
+                    <h3 id="clarification-close-confirm-heading">Fall wirklich abschliessen?</h3>
+                    <p>Den angezeigten Fallstand geprüft und keine weitere Bearbeitung erforderlich?</p>
+                    <button type="button" data-direct-close-confirm>Abschliessen</button>
+                    <button type="button" data-direct-close-cancel>Abbrechen</button>
+                </dialog>
+                <p role="status" aria-live="polite"></p>
+            </section>
+            <section class="card" id="staff-reply-close" data-direct-close hidden aria-labelledby="staff-reply-close-heading"
+                     th:attr="data-actor=${memoActor},data-availability-url=@{/mitarbeiter/faelle/{id}/mieterwarten-abschliessen/verfuegbar(id=${caseId})},data-submit-url=@{/mitarbeiter/faelle/{id}/mieterwarten-abschliessen(id=${caseId})},data-result-url=@{/mitarbeiter/faelle/{id}/aktionen/(id=${caseId})}">
+                <h3 id="staff-reply-close-heading">Fall während des Mieterwartens abschliessen</h3>
+                <p>Der Fall wird abgeschlossen. Offene Antwortbedarfe werden beendet; neue Nachrichten sind danach nicht mehr möglich.</p>
+                <button type="button" data-direct-close-open disabled>Fall abschliessen</button>
+                <dialog data-direct-close-confirmation aria-labelledby="reply-close-confirm-heading">
+                    <h3 id="reply-close-confirm-heading">Fall wirklich abschliessen?</h3>
+                    <p>Den angezeigten Fallstand geprüft und keine weitere Bearbeitung erforderlich?</p>
+                    <button type="button" data-direct-close-confirm>Abschliessen</button>
+                    <button type="button" data-direct-close-cancel>Abbrechen</button>
+                </dialog>
+                <p role="status" aria-live="polite"></p>
+            </section>
+            <section id="staff-reopen-panel" class="card" hidden aria-labelledby="staff-reopen-heading"
+                     th:attr="data-task-url=@{/mitarbeiter/faelle/{id}/pruefung(id=${caseId})},data-actor=${memoActor}">
+                <h2 id="staff-reopen-heading">Wiedereröffnung</h2>
+                <button type="button" data-reopen-open>Fall wiedereröffnen</button>
+                <p role="status" aria-live="polite"></p>
+                <dialog aria-labelledby="staff-reopen-question"><h2 id="staff-reopen-question">Fall wiedereröffnen?</h2>
+                    <form method="post" th:action="@{/mitarbeiter/faelle/{id}/wiedereroeffnen(id=${caseId})}">
+                        <button type="button" data-reopen-cancel class="secondary">Abbrechen</button>
+                        <button type="submit">Wiedereröffnen</button>
+                    </form>
+                </dialog>
+            </section>
+            <section id="staff-close-panel" class="card" aria-labelledby="staff-close-heading" hidden
+                     th:attr="data-task-url=@{/mitarbeiter/faelle/{id}/pruefung(id=${caseId})},data-actor=${memoActor}">
+                <h2 id="staff-close-heading">Steuerung</h2>
+                <div class="actions">
+                    <button type="button" data-close-open disabled>Fall abschliessen</button>
+                    <button type="button" data-close-reload class="secondary push-right">Neu laden</button>
+                </div>
+                <p role="status" aria-live="polite"></p>
+                <dialog aria-labelledby="staff-close-question">
+                    <h2 id="staff-close-question">Fall wirklich abschliessen?</h2>
+                    <form th:action="@{/mitarbeiter/faelle/{id}/abschliessen(id=${caseId})}" method="post">
+                        <div class="actions">
+                            <button type="button" data-close-cancel class="secondary">Abbrechen</button>
+                            <button type="submit">Abschliessen</button>
+                        </div>
+                    </form>
+                </dialog>
             </section>
         </aside>
         <div class="conversation">
             <section id="history" class="card history" tabindex="0" aria-labelledby="history-title">
-                <h2 id="history-title">Verlauf</h2>
+                <div class="section-heading history-heading">
+                    <h2 id="history-title">Verlauf</h2>
+                    <button type="button" class="secondary" data-history-order hidden></button>
+                </div>
                 <div class="messages">
                     <article th:each="entry : ${history}" class="message"
                              th:classappend="${(entry.role() == 'Mieter' ? 'tenant' : 'management') + (entry.internal() ? ' event' : (entry.role() == 'System' ? ' system' : ''))}">
                         <div class="message-role">
                             <strong th:text="${entry.role()}"></strong>
-                            <small th:if="${entry.internal()}">Internes Memo</small>
+                            <span th:if="${entry.internal()}" role="img" aria-label="Nur intern sichtbar" title="Nur intern sichtbar">🔒</span>
                         </div>
                         <p class="muted" th:text="${entry.timestamp()}"></p>
                         <p th:text="${entry.text()}"></p>
+                        <p class="muted" th:if="${!#strings.isEmpty(entry.answerLabel())}" th:text="${entry.answerLabel()}"></p>
+                        <details th:if="${entry.clearAnswerId() != null}" class="answer-cancellation">
+                            <summary>Antwortbedarf aufheben</summary>
+                            <p>Für diese Rückfrage keine weitere Antwort mehr verlangen?</p>
+                            <form data-clear-answer th:action="@{/mitarbeiter/faelle/{id}/antwortbedarf-aufheben(id=${caseId})}"
+                                  th:attr="data-actor=${memoActor},data-availability-url=@{/mitarbeiter/faelle/{id}/aktionen/verfuegbar(id=${caseId})},data-result-url=@{/mitarbeiter/faelle/{id}/aktionen/(id=${caseId})}"
+                                  method="post">
+                                <input type="hidden" name="messageId" th:value="${entry.clearAnswerId()}">
+                                <input type="hidden" name="version" th:value="${version}">
+                                <button type="submit">Antwortbedarf aufheben</button>
+                            </form>
+                        </details>
                     </article>
                 </div>
+            </section>
+            <section class="card" aria-labelledby="external-message-title">
+                <p id="answer-action-feedback" role="status" aria-live="polite"></p>
+                <h2 id="external-message-title">Nachricht verfassen</h2>
+                <div class="actions">
+                    <label class="toggle"><input id="internal-message-toggle" type="checkbox" role="switch"
+                                                 aria-controls="staff-message-form memo-panel">Intern</label>
+                    <label class="toggle"><input type="checkbox" name="answer" form="staff-message-form"
+                                                 role="switch" disabled> Mieterantwort erforderlich</label>
+                </div>
+                <form id="staff-message-form" th:action="@{/mitarbeiter/faelle/{id}/externe-nachricht-veroeffentlichen(id=${caseId})}"
+                      th:attr="data-actor=${memoActor},data-message-base=@{/mitarbeiter/faelle/{id}/nachrichten(id=${caseId})}" method="post">
+                    <label for="staff-message-text">Externe Nachricht</label>
+                    <textarea id="staff-message-text" name="text" rows="5" required></textarea>
+                    <section id="staff-formulation" aria-label="KI-Formulierung"
+                             th:attr="data-url=@{/mitarbeiter/faelle/{id}/ki-formulierung(id=${caseId})},data-availability-url=@{/mitarbeiter/faelle/{id}/aktionen/verfuegbar(id=${caseId})}">
+                        <button type="button" data-formulate disabled>Mit KI formulieren</button>
+                        <button type="button" data-formulation-abort hidden>Abbrechen</button>
+                        <p data-formulation-status role="status" aria-live="polite">Bereit</p>
+                        <p data-formulation-output class="formulation-output"></p>
+                        <button type="button" data-formulation-adopt disabled>Vorschlag übernehmen</button>
+                        <p class="muted">Vorschläge vor dem Senden prüfen. Bei nicht verfügbarer KI können Sie die Nachricht selbst schreiben.</p>
+                    </section>
+                    <p class="muted">Diese Nachricht ist für den Mieter sichtbar. Er wird per E-Mail benachrichtigt.</p>
+                    <button type="submit" disabled>Nachricht senden</button>
+                    <p role="status" aria-live="polite">Verfügbarkeit wird geprüft.</p>
+                    <a data-message-login th:href="@{/anmelden}" target="_blank" rel="noopener" hidden>Erneut anmelden</a>
+                </form>
+            <section id="memo-panel" aria-labelledby="memo-title" hidden>
+                <h2 id="memo-title">Internes Memo</h2>
+                <form id="memo-form" data-case-action="memo" th:action="@{/mitarbeiter/faelle/{id}/internes-memo-speichern(id=${caseId})}"
+                      th:attr="data-actor=${memoActor},data-command-base=@{/mitarbeiter/faelle/{id}/aktionen(id=${caseId})}" method="post">
+                    <label for="memo-text">Notiz für die Immobilienverwaltung</label>
+                    <textarea id="memo-text" name="text" maxlength="5000" rows="4" required></textarea>
+                    <p class="muted">Dieses Memo ist nur intern sichtbar. Es wird nicht an den Mieter gesendet.</p>
+                    <button type="submit" disabled>Memo intern speichern</button>
+                    <p id="memo-feedback" data-action-feedback role="status" aria-live="polite">Verfügbarkeit wird geprüft.</p>
+                    <a id="memo-login" data-action-login th:href="@{/anmelden}" target="_blank" rel="noopener" hidden>Erneut anmelden</a>
+                </form>
+            </section>
             </section>
         </div>
     </div>
 </main>
+<script th:src="@{/js/history-order.js}" defer></script>
 <script th:src="@{/js/staff-case-read.js}" defer></script>
+<script th:src="@{/js/staff-drafts.js}" defer></script>
+<script th:src="@{/js/staff-case-data.js}" defer></script>
+<script th:src="@{/js/staff-review.js}" defer></script>
+<script th:src="@{/js/staff-close.js}" defer></script>
+<script th:src="@{/js/staff-messages.js}" defer></script>
+<script th:src="@{/js/staff-formulation.js}" defer></script>
+<script th:src="@{/js/staff-composer.js}" defer></script>
+<script defer th:src="@{/js/staff-waits.js}"></script>
+<script defer th:src="@{/js/staff-takeover.js}"></script>
+<script defer th:src="@{/js/staff-clarification-close.js}"></script>
+<script defer th:src="@{/js/staff-direct-follow-up.js}"></script>
+<script defer th:src="@{/js/staff-follow-up.js}"></script>
+<script defer th:src="@{/js/staff-answer-requirements.js}"></script>
+<script defer th:src="@{/js/staff-reopen.js}"></script>
 </body>
 </html>
