@@ -483,23 +483,22 @@ Integrationen bleiben.
 ## Datenbankmigrationen
 
 Änderungen am relationalen Datenbankschema werden mit Flyway versioniert.
+Die Initialdateien des Backend-Profils liegen nach Modulen aufgeteilt unter
+`src/main/resources/db/backend-migration/`. `access` besitzt zwei Tabellen,
+`caseprocessing` 47. `intake`, `triage` und `recommendation` dokumentieren in
+je einer eigenen SQL-Datei ihren aktuellen Stand ohne eigene Tabellen.
+Fallbezogene Analyse- und Empfehlungsergebnisse bleiben in `caseprocessing`.
 
-Die Migrationen befinden sich zentral unter:
+Nach dem ausdrücklich freigegebenen Hard Reset ohne Sicherung ist die ursprüngliche
+Legacy-Kette entfernt. Additive Updates V6–V8 ergänzen Konten und Fallzugangsverwaltung (insgesamt 54 Fachtabellen).
+Neue Änderungen beginnen mit V9 in
+`db/backend-migration/updates/`. Bereits angewendete Moduldateien bleiben unverändert.
+Die Aufteilung und die getrennten lokalen Datenbanken sind unter
+[Datenbankmigrationen nach Modulen](datenbankmigrationen.md) beschrieben.
 
-```text
-src/main/resources/db/migration/
-```
-
-Jede Schemaänderung wird durch eine neue versionierte Migration beschrieben.
-Bereits angewendete Migrationen werden nicht nachträglich verändert.
-
-Flyway ist für die versionierte Weiterentwicklung des relationalen
-Datenbankschemas vorgesehen. Hibernate/JPA soll das Schema nicht automatisch
+Flyway verwaltet eine gemeinsame Versionsfolge. Die Persistence-Implementierungen
+bleiben innerhalb ihrer fachlichen Module. Hibernate/JPA darf das Schema nicht
 mit `create` oder `update` verändern.
-
-Die Flyway-Migrationen werden zentral verwaltet; die
-Persistence-Implementierungen verbleiben weiterhin innerhalb der jeweiligen
-fachlichen Module.
 
 ## Zielbild
 

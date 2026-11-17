@@ -9,6 +9,7 @@ import java.util.Objects;
 public final class AnalyzeTool {
 
     public static final int MAX_TEXT_LENGTH = CaseDescription.MAX_LENGTH;
+    public static final String PROMPT_VERSION = "triage-urgency-v1";
     private static final String INVALID_INPUT_MESSAGE = "text muss 1 bis " + MAX_TEXT_LENGTH + " Zeichen enthalten und darf nicht leer sein.";
     private static final String MODEL_UNAVAILABLE_MESSAGE = "KI-Analyse derzeit nicht verfügbar. Bitte manuell prüfen.";
     private static final String INVALID_MODEL_OUTPUT_MESSAGE = "KI-Antwort entspricht nicht dem Vertrag. Bitte manuell prüfen.";

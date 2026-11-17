@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="https://propertyflow.local/test">
+  <bpmn:error id="Error_StaffDecisionStale" errorCode="STAFF_DECISION_STALE" />
+  <bpmn:process id="PropertyFlow_Staff_Draft" isExecutable="true">
+    <bpmn:documentation>Integration fixture for review, explicit continuation and staff closure. Other staff decisions are not implemented here.</bpmn:documentation>
+    <bpmn:startEvent id="SStart" />
+    <bpmn:sequenceFlow id="S01" sourceRef="SStart" targetRef="SEntryCheck" />
+    <bpmn:serviceTask id="SEntryCheck">
+      <bpmn:extensionElements><zeebe:taskDefinition type="propertyflow.staff.register" /></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="EntryRoute" sourceRef="SEntryCheck" targetRef="SEntryRoute" />
+    <bpmn:exclusiveGateway id="SEntryRoute" />
+    <bpmn:sequenceFlow id="S_EntryReview" sourceRef="SEntryRoute" targetRef="SReviewStatus">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= staffEntryKind = "REVIEW"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:serviceTask id="SReviewStatus">
+      <bpmn:extensionElements><zeebe:taskDefinition type="propertyflow.staff.start-review" /></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="S02" sourceRef="SReviewStatus" targetRef="SReview" />
+    <bpmn:userTask id="SReview" name="Fall prüfen und Vorgehen entscheiden">
+      <bpmn:extensionElements><zeebe:userTask /></bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="S03" sourceRef="SReview" targetRef="SDecision" />
+    <bpmn:exclusiveGateway id="SDecision" />
+    <bpmn:sequenceFlow id="S04" sourceRef="SDecision" targetRef="SProgress">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= staffDecision = "CONTINUE"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="S08" sourceRef="SDecision" targetRef="SCloseEnd">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= staffDecision = "CLOSE"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:serviceTask id="SProgress">
+      <bpmn:extensionElements><zeebe:taskDefinition type="propertyflow.staff.progress" /></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:boundaryEvent id="SProgressStale" attachedToRef="SProgress">
+      <bpmn:errorEventDefinition id="SProgressStale_definition" errorRef="Error_StaffDecisionStale" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="SProgressRetry" sourceRef="SProgressStale" targetRef="SReviewStatus" />
+    <bpmn:sequenceFlow id="S05" sourceRef="SProgress" targetRef="SWork" />
+    <bpmn:userTask id="SWork">
+      <bpmn:extensionElements><zeebe:userTask /></bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="S06" sourceRef="SWork" targetRef="SWorkDecision" />
+    <bpmn:exclusiveGateway id="SWorkDecision" />
+    <bpmn:sequenceFlow id="S11" sourceRef="SWorkDecision" targetRef="SCloseEnd">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= staffDecision = "CLOSE"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:endEvent id="SCloseEnd" />
+  </bpmn:process>
+</bpmn:definitions>

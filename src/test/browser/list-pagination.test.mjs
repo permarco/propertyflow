@@ -1,18 +1,16 @@
 import { launchBrowser } from './browser-launcher.mjs';
-// Run against a disposable frontend-demo instance; creates 51 local mock cases.
+// Erzeugt 51 echte Fälle im isolierten PostgreSQL-/Camunda-Testbetrieb.
 // node --test src/test/browser/list-pagination.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { staffStorageState } from './staff-test-login.mjs';
+import { base } from './integrated-helpers.mjs';
 
-const base = process.env.DEMO_URL || 'http://127.0.0.1:8082';
-
-test('UI2: 51 Treffer auf zwei Seiten; Navigation erhält Suche, Filter und Sortierung', { timeout: 60000 }, async () => {
+test('UI2: 51 Treffer auf zwei Seiten; Navigation erhält Suche, Filter und Sortierung', { timeout: 180000 }, async () => {
     const browser = await launchBrowser();
     try {
         const context = await browser.newContext({ locale: 'de-CH', viewport: { width: 1440, height: 900 },
-            storageState: await staffStorageState(browser) });
+            storageState: process.env.PROPERTYFLOW_E2E_STAFF_STATE });
         const page = await context.newPage();
         await page.goto(`${base}/mieter/fall`);
         const csrf = await page.locator('#intake-form input[name=csrf]').inputValue();
@@ -25,16 +23,16 @@ test('UI2: 51 Treffer auf zwei Seiten; Navigation erhält Suche, Filter und Sort
                 form: { csrf, operation: randomUUID(), title, unit: 'Testwohnung 3',
                     email: 'test@example.ch', description: 'Testfall für die Seitennavigation.' }, maxRedirects: 0,
             });
-            assert.equal(response.status(), 303, `Mock-Fall ${i} muss angelegt werden`);
+            assert.equal(response.status(), 303, `Backend-Fall ${i} muss angelegt werden`);
         }
-        const params = new URLSearchParams({ q: marker, urgency: 'Noch nicht bewertet', closed: 'true', sort: 'title', desc: 'true' });
+        const params = new URLSearchParams({ q: marker, urgency: '', closed: 'true', sort: 'title', desc: 'true' });
         await page.goto(`${base}/mitarbeiter/faelle?${params}`);
         const readRows = () => page.locator('#results tr[data-case]').evaluateAll(rows => rows.map(row => ({
             id: row.dataset.case, title: row.querySelector('td[data-label="Fall"] p').textContent,
         })));
         async function assertSelection(number) {
             assert.equal(await page.locator('#q').inputValue(), marker);
-            assert.equal(await page.locator('#urgency').inputValue(), 'Noch nicht bewertet');
+            assert.equal(await page.locator('#urgency').inputValue(), '');
             assert.equal(await page.locator('#closed').isChecked(), true);
             assert.equal(await page.locator('#results th').first().getAttribute('aria-sort'), 'descending');
             assert.equal((await page.locator('.pagination span').textContent()).trim(), `Seite ${number} von 2`);

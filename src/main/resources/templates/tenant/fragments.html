@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="de-CH" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(pageTitle)">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="referrer" content="no-referrer">
+    <title th:text="|${pageTitle} · PropertyFlow|">PropertyFlow</title>
+    <link rel="stylesheet" th:href="@{/css/propertyflow.css}">
+</head>
+<body>
+<header class="app-header" th:fragment="header">
+    <a class="brand" th:href="@{/mieter/fall}">
+        <span class="brand-mark" aria-hidden="true">▰▥</span>
+        PropertyFlow
+    </a>
+    <span class="tenant-session" th:if="${!#strings.isEmpty(accountEmail)}">
+        Angemeldet als <strong th:text="${accountEmail}"></strong>
+    </span>
+    <nav><a th:href="@{/mieter/faelle}">Meine Fälle</a> · <a th:href="@{/registrieren}">Mieterkonto eröffnen</a> · <a th:href="@{/anmelden}">Mitarbeiter</a></nav>
+</header>
+</body>
+</html>

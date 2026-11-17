@@ -6,7 +6,7 @@
 **Primary Actor:** Angemeldeter Mieter oder Mitarbeiter  
 **Supporting Actor:** MCP-Client im LLM-Chat  
 **Goal:** Einem Client ausgewählte PropertyFlow-Aktionen erlauben und diese Berechtigung wieder entziehen können.  
-**Status:** Zielablauf gemäss ADR-005 und ZUG-04. «Fallstand abrufen» ist als erstes Werkzeug für Mieter festgelegt. Die Umsetzung der OAuth-Delegation und die Bedienung der Widerrufsfunktion sind zu konkretisieren.
+**Status:** «Fallstand abrufen» ist in der lokalen Demo mit ausdrücklicher Lesefreigabe und Widerruf umgesetzt. Die produktive OAuth-Delegation folgt dem Zielablauf gemäss ADR-005 und ZUG-04. [Demo-Anleitung](../../dev/README.md#mcp-werkzeug-lokal-ausprobieren)
 
 ## Use-Case-Diagramm
 

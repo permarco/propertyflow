@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { setTimeout as pause } from 'node:timers/promises';
 
-const base = process.env.MAILPIT_URL || 'http://127.0.0.1:8026';
+const base = process.env.PROPERTYFLOW_E2E_MAIL_URL || process.env.MAILPIT_URL || 'http://127.0.0.1:8026';
 const subject = 'Ihr Einmalcode für PropertyFlow';
 
 async function json(path) {

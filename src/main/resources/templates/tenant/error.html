@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="de-CH" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{tenant/fragments :: head('Ansicht nicht verfügbar')}"></head>
+<body>
+<header th:replace="~{tenant/fragments :: header}"></header>
+<main class="narrow">
+    <section class="card">
+        <h1>Ansicht nicht verfügbar</h1>
+        <p role="alert" th:text="${error}"></p>
+        <a th:href="@{/mieter/fall}">Neues Anliegen melden</a>
+    </section>
+</main>
+</body>
+</html>

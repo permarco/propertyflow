@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="https://propertyflow.local/test">
+  <bpmn:error id="Error_StaffDecisionStale" errorCode="STAFF_DECISION_STALE" />
+<bpmn:message id="Message_StaffReviewSend" name="Mitarbeiternachricht als Nebenaktion senden"><bpmn:extensionElements><zeebe:subscription correlationKey="=entryContextRef" /></bpmn:extensionElements></bpmn:message>
+  <bpmn:process id="PropertyFlow_Staff_Draft" isExecutable="true">
+    <bpmn:documentation>Integration fixture for review, explicit continuation and staff closure. Other staff decisions are not implemented here.</bpmn:documentation>
+    <bpmn:startEvent id="SStart" />
+    <bpmn:sequenceFlow id="S01" sourceRef="SStart" targetRef="SEntryCheck" />
+    <bpmn:serviceTask id="SEntryCheck">
+      <bpmn:extensionElements><zeebe:taskDefinition type="propertyflow.staff.register" /></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="EntryRoute" sourceRef="SEntryCheck" targetRef="SEntryRoute" />
+    <bpmn:exclusiveGateway id="SEntryRoute" />
+    <bpmn:sequenceFlow id="S_EntryReview" sourceRef="SEntryRoute" targetRef="SReviewStatus">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= staffEntryKind = "REVIEW"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:serviceTask id="SReviewStatus">
+      <bpmn:extensionElements><zeebe:taskDefinition type="propertyflow.staff.start-review" /></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="S02" sourceRef="SReviewStatus" targetRef="SReview" />
+    <bpmn:userTask id="SReview" name="Fall prüfen und Vorgehen entscheiden">
+      <bpmn:extensionElements><zeebe:userTask /></bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="S03" sourceRef="SReview" targetRef="SDecision" />
+    <bpmn:exclusiveGateway id="SDecision" />
+    <bpmn:sequenceFlow id="S04" sourceRef="SDecision" targetRef="SProgress">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= staffDecision = "CONTINUE"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="S08" sourceRef="SDecision" targetRef="SCloseEnd">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= staffDecision = "CLOSE"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:serviceTask id="SProgress">
+      <bpmn:extensionElements><zeebe:taskDefinition type="propertyflow.staff.progress" /></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:boundaryEvent id="SProgressStale" attachedToRef="SProgress">
+      <bpmn:errorEventDefinition id="SProgressStale_definition" errorRef="Error_StaffDecisionStale" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="SProgressRetry" sourceRef="SProgressStale" targetRef="SReviewStatus" />
+    <bpmn:sequenceFlow id="S05" sourceRef="SProgress" targetRef="SWork" />
+    <bpmn:userTask id="SWork">
+      <bpmn:extensionElements><zeebe:userTask /></bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="S06" sourceRef="SWork" targetRef="SWorkDecision" />
+    <bpmn:exclusiveGateway id="SWorkDecision" />
+    <bpmn:sequenceFlow id="S11" sourceRef="SWorkDecision" targetRef="SCloseEnd">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= staffDecision = "CLOSE"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:endEvent id="SCloseEnd" />
+<bpmn:subProcess id="SMessageSide" name="Nachricht senden – Aufgabe oder Wartephase bleibt offen" triggeredByEvent="true">
+      <bpmn:documentation>KOM-01 / KOM-AK-27: Nicht unterbrechende Nebenaktion für die aktuelle offene SReview- oder SExternalWait-Aufgabe. Der Empfang liegt im Mitarbeiterprozess; der Dienst begrenzt ihn ausdrücklich auf die serverseitig verifizierte offene Prüf- oder externe Warteaufgabe. Interner autorisierter Sendeauftrag, kein Mieternachrichtenempfang. Lokale Auftragsreferenz pro Ausführung; keine Rückgabe oder Überschreibung von outcome/decisionRef und keine Completion von SReview oder SExternalWait. Bereits laufende Nebenaufträge müssen beendet oder ohne Wirkung aufgelöst werden, bevor die Kindinstanz normal endet; technische Incidents können deren Ende verzögern. Technische Korrelation und HTTP-Rückmeldung bleiben vor Umsetzung festzulegen.
+0.33 / KOM-AK-31: Zusätzlich zu SReview und SExternalWait ist reine Information ohne neuen Antwortbedarf bei aktueller SWork-Aufgabe zulässig. SWork bleibt dieselbe offene Aufgabe. Rückfragen mit Antwortbedarf aus In Bearbeitung verwenden unverändert SQuestion als bewusste Fortsetzung; nicht über diese Nebenaktion schleusen.</bpmn:documentation>
+        <bpmn:extensionElements><zeebe:ioMapping><zeebe:input source="=null" target="staffMessageCommandRef" /><zeebe:input source="=null" target="staffMessageOutcome" /></zeebe:ioMapping></bpmn:extensionElements>
+      <bpmn:startEvent id="SMessageStart" name="Sendeauftrag eingegangen" isInterrupting="false">
+        <bpmn:outgoing>SM01</bpmn:outgoing>
+        <bpmn:messageEventDefinition id="SMessageStart_definition" messageRef="Message_StaffReviewSend" />
+      </bpmn:startEvent>
+      <bpmn:endEvent id="SMessageEnd" name="Nur Nebenaktion beendet">
+        <bpmn:incoming>SM02</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SM02" sourceRef="SMessagePublish" targetRef="SMessageEnd" />
+      <bpmn:sequenceFlow id="SM01" sourceRef="SMessageStart" targetRef="SMessagePublish" />
+      <bpmn:serviceTask id="SMessagePublish" name="Aktuelle Aufgabe und Auftrag prüfen&#10;Nachricht + Versandauftrag speichern">
+        <bpmn:documentation>BEN-03 / 0.23: Bei tatsächlicher benachrichtigungspflichtiger Änderung Ereignis und Mailpflicht dauerhaft zusammen sichern. Der dauerhafte Starter startet fallbenachrichtigung-versenden.bpmn mit mailOrderRef; dort beauftragen Camunda-Send-Tasks den Mail-Worker. Hier kein direkter SMTP-Aufruf und kein Warten auf SMTP. Unveränderte Werte und identische Wiederholungen erzeugen keine neue Mailpflicht. Berechtigten Mitarbeiter, Fall, führende Instanz, Kindinstanz, aktuelle offene Prüf- oder externe Warteaufgabe und Fallstand prüfen. Externen Text und Toggle nur aus dem ausdrücklich bestätigten Sendeauftrag übernehmen. Optional Antwortbedarf speichern; niemals Statuswechsel oder Abschluss von SReview oder SExternalWait auslösen. Nachricht und Versandauftrag idempotent speichern, vor erneuter Wirkung konkurrierende Entscheidung/Abschluss berücksichtigen. Bereits veröffentlichter identischer Auftrag bleibt Erfolg ohne Duplikat; alter unveröffentlichter Auftrag nach Aufgabenende wird abgelehnt und als ohne Wirkung beendet, kein Sendeerfolg. Technische Fehler: Job-Retries/Incident. Kein zusätzlicher Modellaufruf, keine internen Memos, keine unbeabsichtigte globale Variablenpropagation. Details KOM-01/KOM-AK-27.
+0.28 / FALL-12 / FALL-AK-39: Auch bei gesetztem Mieterantwortbedarf bleibt Wartet auf externe Rückmeldung unverändert. Keine neue Aufgabe und keine Rückgabe im Hauptpfad. Nach Ende der gebundenen Warteaufgabe keine neue Veröffentlichung aus einem alten Auftrag. Bereits gespeicherte Nachricht bleibt bestehen; unabhängiger Mailversand wird durch Fortsetzung nicht aufgehoben.
+0.33: Phase und bestätigten Antwortbedarf vor Speicherung prüfen. SWork ausschliesslich ohne neuen Antwortbedarf zulässig; sonst ohne Veröffentlichung ablehnen und den bestehenden Rückfrageweg verwenden lassen. Bei SWork auch dessen aktuelle Task-/Call-Zuordnung verifizieren. Information erhält SWork, Status und alle bestehenden Fragen. Kein Task-Abschluss, keine Änderung von outcome/decisionRef. Relevante Grundlagenänderungen vor weiteren Wirkungen berücksichtigen. Neuer zwingender Prüfbedarf folgt seinem separaten Pfad. Bereits gespeicherte Nachricht/Mailpflicht erhalten; unveröffentlichte alte Aufträge nach Aufgabenwechsel ohne Wirkung ablehnen und Eingabe erhalten.</bpmn:documentation>
+          <bpmn:extensionElements><zeebe:taskDefinition type="propertyflow.staff-message.publish" retries="5" /></bpmn:extensionElements>
+        <bpmn:incoming>SM01</bpmn:incoming>
+        <bpmn:outgoing>SM02</bpmn:outgoing>
+      </bpmn:serviceTask>
+    </bpmn:subProcess>
+  </bpmn:process>
+</bpmn:definitions>

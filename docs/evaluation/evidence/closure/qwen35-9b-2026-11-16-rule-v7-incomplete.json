@@ -1,0 +1,36 @@
+{
+  "corpusVersion" : "closure-rule-corpus-v2",
+  "corpusSha256" : "df4871fc5da5fc3a37a14327fdd36ba1849240403a5754e94b01fb9407df0263",
+  "model" : "qwen3.5:9b",
+  "modelRevision" : "56671c2ab9385f9cfcb404638e32cd62d88e3501d44822208363c010179a3c90",
+  "promptVersion" : "closure-ground-v7",
+  "validationVersion" : "closure-ground-validation-v3",
+  "modelOptions" : {
+    "timeoutSeconds" : "60",
+    "maxTokens" : "4096",
+    "temperature" : "0",
+    "reasoningEffort" : "none"
+  },
+  "evaluatedAt" : "2026-11-16T12:42:39.888621600Z",
+  "evaluatedGrounds" : [ "RESOLVED", "TENANT_RESPONSIBILITY" ],
+  "expectedCases" : 13,
+  "cases" : [ {
+    "id" : "all-prerequisites",
+    "category" : "synthetic-rule-positive",
+    "expected" : [ "TENANT_RESPONSIBILITY" ],
+    "actual" : {
+      "outcome" : "REVIEW",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "",
+      "failure" : "CLOSURE_ASSESSMENT_UNAVAILABLE",
+      "model" : "qwen3.5:9b",
+      "promptVersion" : "closure-ground-v7",
+      "validationVersion" : "closure-ground-validation-v3"
+    },
+    "modelOutput" : null,
+    "passed" : false
+  } ],
+  "passed" : false
+}

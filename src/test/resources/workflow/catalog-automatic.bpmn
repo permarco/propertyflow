@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="https://propertyflow.local/test">
+  <bpmn:error id="StaleAnalysis" errorCode="ANALYSIS_BASIS_STALE" /><bpmn:error id="StalePublication" errorCode="PUBLICATION_BASIS_STALE" /><bpmn:process id="PropertyFlow_Automatic_Draft" isExecutable="true">
+    <bpmn:documentation>Integrationsmodell der gemeinsamen Auswertung und freigegebenen Katalogveröffentlichung.</bpmn:documentation>
+    <bpmn:startEvent id="AStart" />
+    <bpmn:sequenceFlow id="A01" sourceRef="AStart" targetRef="AEntry" />
+    <bpmn:serviceTask id="AEntry">
+      <bpmn:extensionElements><zeebe:taskDefinition type="propertyflow-register-automatic" /></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="A02" sourceRef="AEntry" targetRef="AEntryRoute" />
+    <bpmn:exclusiveGateway id="AEntryRoute" />
+    <bpmn:sequenceFlow id="A04" sourceRef="AEntryRoute" targetRef="Triage"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= entryKind = "QUESTION"</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="A03" sourceRef="AEntryRoute" targetRef="Clarification">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=entryKind = "INITIAL"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:serviceTask id="Clarification">
+      <bpmn:extensionElements><zeebe:taskDefinition type="propertyflow-start-clarification" /></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="F03" sourceRef="Clarification" targetRef="Triage" />
+    <bpmn:serviceTask id="Triage">
+      <bpmn:extensionElements><zeebe:taskDefinition type="propertyflow.automatic.evaluate" /></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="F04" sourceRef="Triage" targetRef="Recommend" />
+    <bpmn:serviceTask id="Recommend">
+      <bpmn:extensionElements><zeebe:taskDefinition type="propertyflow.automatic.recommendation" /></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="ToValidate" sourceRef="Recommend" targetRef="Validate" />
+    
+  <bpmn:serviceTask id="Validate"><bpmn:extensionElements><zeebe:taskDefinition type="propertyflow.automatic.validate-questions" /></bpmn:extensionElements></bpmn:serviceTask><bpmn:sequenceFlow id="AfterValidate" sourceRef="Validate" targetRef="Route" /><bpmn:serviceTask id="Question"><bpmn:extensionElements><zeebe:taskDefinition type="propertyflow.automatic.publish-questions" /></bpmn:extensionElements></bpmn:serviceTask><bpmn:sequenceFlow id="AfterQuestion" sourceRef="Question" targetRef="AWait" /><bpmn:serviceTask id="AWait"><bpmn:extensionElements><zeebe:taskDefinition type="propertyflow.automatic.prepare-result" /></bpmn:extensionElements></bpmn:serviceTask><bpmn:sequenceFlow id="AfterAWait" sourceRef="AWait" targetRef="WaitEnd" /><bpmn:serviceTask id="AReview"><bpmn:extensionElements><zeebe:taskDefinition type="propertyflow.automatic.prepare-result" /></bpmn:extensionElements></bpmn:serviceTask><bpmn:sequenceFlow id="AfterAReview" sourceRef="AReview" targetRef="ReviewEnd" /><bpmn:serviceTask id="CurrentAnalysis"><bpmn:extensionElements><zeebe:taskDefinition type="propertyflow.automatic.evaluate" /></bpmn:extensionElements></bpmn:serviceTask><bpmn:sequenceFlow id="AfterCurrentAnalysis" sourceRef="CurrentAnalysis" targetRef="Validate" /><bpmn:exclusiveGateway id="Route" /><bpmn:endEvent id="WaitEnd" /><bpmn:endEvent id="ReviewEnd" /><bpmn:sequenceFlow id="F07" sourceRef="Route" targetRef="Question"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= automaticAction = "QUESTION"</bpmn:conditionExpression></bpmn:sequenceFlow><bpmn:sequenceFlow id="A_RefreshWait" sourceRef="Route" targetRef="AWait"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= automaticAction = "WAIT"</bpmn:conditionExpression></bpmn:sequenceFlow><bpmn:sequenceFlow id="A_RouteReview" sourceRef="Route" targetRef="AReview"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= automaticAction = "REVIEW"</bpmn:conditionExpression></bpmn:sequenceFlow><bpmn:boundaryEvent id="ValidateStale" attachedToRef="Validate"><bpmn:errorEventDefinition errorRef="StaleAnalysis" /></bpmn:boundaryEvent><bpmn:sequenceFlow id="ValidateRetry" sourceRef="ValidateStale" targetRef="CurrentAnalysis" /><bpmn:boundaryEvent id="QuestionStale" attachedToRef="Question"><bpmn:errorEventDefinition errorRef="StalePublication" /></bpmn:boundaryEvent><bpmn:sequenceFlow id="QuestionRetry" sourceRef="QuestionStale" targetRef="CurrentAnalysis" /></bpmn:process>
+</bpmn:definitions>

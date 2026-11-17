@@ -2,26 +2,39 @@ package com.pertegato.propertyflow.access.web;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import java.net.URI;
+import java.util.UUID;
 import java.util.regex.Pattern;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
-final class StaffWebSession {
+public final class StaffWebSession {
 
-    static final String LOGIN = "/anmelden";
-    static final String ACCOUNT = "propertyflow.staff.accountId";
+    public static final String LOGIN = "/anmelden";
+    public static final String ACCOUNT = "propertyflow.staff.accountId";
     static final String CODE_EMAIL = "propertyflow.staff.codeEmail";
-    static final String RETURN_TO = "propertyflow.staff.returnTo";
-    static final String CSRF = "csrf";
+    public static final String RETURN_TO = "propertyflow.staff.returnTo";
+    public static final String CSRF = "csrf";
 
-    private static final String STAFF_LIST = "/mitarbeiter/faelle";
+    public static final String STAFF_LIST = "/mitarbeiter/faelle";
     private static final Pattern STAFF_TARGET = Pattern.compile(STAFF_LIST + "(?:/[A-Za-z0-9_-]+)?");
 
     private StaffWebSession() {
     }
 
-    static String safeTarget(String value) {
+    public static UUID administrativeActor(HttpServletRequest request, String csrf, boolean write) {
+        HttpSession session = StaffWebSession.cookieSession(request);
+        if (session == null || !(session.getAttribute(StaffWebSession.ACCOUNT) instanceof UUID id)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+        if (write && (csrf == null || !csrf.equals(session.getAttribute(StaffWebSession.CSRF)))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        }
+        return id;
+    }
+
+    public static String safeTarget(String value) {
         if (value != null && value.length() <= 2048) {
             try {
                 URI uri = URI.create(value);
@@ -36,17 +49,21 @@ final class StaffWebSession {
         return STAFF_LIST;
     }
 
+    public static HttpSession cookieSession(HttpServletRequest request) {
+        return request.isRequestedSessionIdFromCookie() && !request.isRequestedSessionIdFromURL()
+                ? request.getSession(false) : null;
+    }
+
+    public static String safeListTarget(String value) {
+        String target = safeTarget(value);
+        return STAFF_LIST.equals(URI.create(target).getRawPath()) ? target : STAFF_LIST;
+    }
+
     static void protectResponse(HttpServletResponse response) {
-        response.setHeader(HttpHeaders.CACHE_CONTROL, "no-store");
-        response.setHeader("Referrer-Policy", "no-referrer");
-        response.setHeader("X-Content-Type-Options", "nosniff");
-        response.setHeader("Content-Security-Policy",
-                "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; "
-                        + "object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'");
+        BrowserResponses.protect(response);
     }
 
     static void redirect(HttpServletRequest request, HttpServletResponse response, String target) {
-        response.setStatus(HttpStatus.SEE_OTHER.value());
-        response.setHeader(HttpHeaders.LOCATION, request.getContextPath() + target);
+        BrowserResponses.seeOther(request, response, target);
     }
 }

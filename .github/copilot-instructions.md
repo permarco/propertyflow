@@ -15,6 +15,12 @@ Read at minimum:
 For work on the MCP server, its tools, or agent access, also read the
 [MCP Guidelines](../docs/specifications/MCP_GUIDELINES.md) as a design and review reference.
 
+For work on Camunda, BPMN models, workflow integration, or job workers, also read
+the [Camunda Guidelines](../docs/specifications/CAMUNDA_GUIDELINES.md).
+
+For Java work, also follow the [Java Guidelines](../docs/specifications/JAVA_GUIDELINES.md).
+Write new comments and Javadocs in German. Existing comments do not need translation.
+
 ## Architecture
 
 - Follow all accepted ADRs.
@@ -47,6 +53,7 @@ For work on the MCP server, its tools, or agent access, also read the
 ## Development
 
 - Prefer small, focused changes.
+- Follow [database migration ownership](../docs/architecture/datenbankmigrationen.md): five module initial files and shared updates starting at V6. Legacy support was removed after the explicitly authorized development/test reset without backup. Never rewrite applied migrations or introduce automatic resets. Further destructive resets require task authorization.
 - Add automated tests for generated business logic.
 - Do not invent requirements.
 

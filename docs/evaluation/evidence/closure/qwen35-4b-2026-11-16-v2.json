@@ -1,0 +1,418 @@
+{
+  "corpusVersion" : "closure-ground-corpus-v1",
+  "corpusSha256" : "64ac18c39bc1974700ccb743a7f6c491941045182c236c7f908411932b586650",
+  "model" : "qwen3.5:4b",
+  "modelRevision" : "d8b0f5e9760cd1682034f292d7ef72ec46f432149be0df7574bf2d6e92e38c04",
+  "promptVersion" : "closure-ground-v2",
+  "validationVersion" : "closure-ground-validation-v2",
+  "modelOptions" : {
+    "temperature" : "0",
+    "maxTokens" : "4096",
+    "reasoningEffort" : "none"
+  },
+  "evaluatedAt" : "2026-11-16T02:31:39.745083Z",
+  "evaluatedGrounds" : [ "RESOLVED" ],
+  "expectedCases" : 24,
+  "cases" : [ {
+    "id" : "resolved-heating",
+    "category" : "positive",
+    "expected" : [ "RESOLVED" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Mieter meldet zwar, dass die Heizung funktioniert, gibt aber keine bestätigende Aussage über die vollständige Behebung aller ursprünglichen Probleme (z.B. 'Es ist jetzt warm', 'Das Problem ist gelöst'). Die Formulierung 'Sie müssen nichts mehr unternehmen' ist eine Aufforderung an den Vermieter und kein offizielles Abschlusszeugnis des Mieters, das alle Kriterien für RESOLVED erfüllt. Zudem fehlt jede explizite Bestätigung der Problembeseitigung in wörtlichen Zitatform.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v2",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "passed" : false
+  }, {
+    "id" : "resolved-leak",
+    "category" : "positive",
+    "expected" : [ "RESOLVED" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Mieter meldet in Nachricht 00000000-0000-0000-0000-000000000001 ein aktuelles Problem (Tropfen unter dem Waschbecken). In Nachricht 00000000-0000-0000-0000-000000000002 behauptet er zwar, dass das Wasser abgestellt und die Ursache behoben sei, aber es fehlt jede konkrete Belegstelle (Zitat), die den tatsächlichen Zustand der Reparatur bestätigt. Die Aussage 'die Ursache behoben' ist eine Behauptung ohne nachweisbare Fakten im Verlauf. Zudem wird kein konkreter Schaden erwähnt, der behoben wurde, und das Schweigen zu spezifischen Details oder das Fehlen einer expliziten Bestätigung durch einen Techniker (der die Behebung durchgeführt hat) lässt den Status unklar. Es liegen keine Kriterien für RESOLVED vor.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v2",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "passed" : false
+  }, {
+    "id" : "resolved-multiple",
+    "category" : "positive",
+    "expected" : [ "RESOLVED" ],
+    "actual" : {
+      "outcome" : "REVIEW",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "",
+      "failure" : "INVALID_CLOSURE_ASSESSMENT",
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v2",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "passed" : false
+  }, {
+    "id" : "resolved-after-correction",
+    "category" : "positive",
+    "expected" : [ "RESOLVED" ],
+    "actual" : {
+      "outcome" : "RESOLVED",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ {
+        "criterion" : "PROBLEM_RESOLVED",
+        "messageId" : "00000000-0000-0000-0000-000000000003",
+        "quote" : "Seit dem Austausch funktioniert die Heizung nun wieder zuverlässig."
+      }, {
+        "criterion" : "NO_FURTHER_HELP",
+        "messageId" : "00000000-0000-0000-0000-000000000003",
+        "quote" : "Es ist alles erledigt, Sie brauchen nichts mehr zu tun."
+      }, {
+        "criterion" : "WHOLE_CASE_COVERED",
+        "messageId" : "00000000-0000-0000-0000-000000000003",
+        "quote" : "Seit dem Austausch funktioniert die Heizung nun wieder zuverlässig. Es ist alles erledigt, Sie brauchen nichts mehr zu tun."
+      }, {
+        "criterion" : "NO_CONTRADICTION",
+        "messageId" : "00000000-0000-0000-0000-000000000003",
+        "quote" : "Seit dem Austausch funktioniert die Heizung nun wieder zuverlässig. Es ist alles erledigt, Sie brauchen nichts mehr zu tun."
+      } ],
+      "explanation" : "Der Mieter bestätigt in der dritten Nachricht explizit den vollständigen Funktionswiederherstellung der Heizung und schließt alle weiteren Hilfsbedarfe aus, was den gesamten Fallverlauf abdeckt.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v2",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "passed" : true
+  }, {
+    "id" : "repair-planned",
+    "category" : "negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Die Mieteraussage vom 01.10.2023 bestätigt nur die Ankunft des Technikers, nicht jedoch die vollständige Behebung der Heizungsprobleme oder den Wegfall weiterer Hilfebedarfs.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v2",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "passed" : true
+  }, {
+    "id" : "only-thanks",
+    "category" : "negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Fall ist nicht abgeschlossen, da der ursprüngliche Vorwurf ('Heizung ist kalt') in den Nachrichten nicht erneut erwähnt wurde. Die einzige nachfolgende Nachricht des Mieters ('Danke für Ihre Antwort') bestätigt nur die Kommunikation, nicht aber die tatsächliche Behebung des Problems oder das Fehlen weiterer Hilfebedürftigkeit. Es liegen keine Kriterien für RESOLVED vor.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v2",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "passed" : true
+  }, {
+    "id" : "only-close-request",
+    "category" : "negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Mieter meldet ein Problem (kalte Heizung) und bittet um Schließung, gibt aber keine Behebungsbestätigung oder Aussage über die tatsächliche Lösung des Problems.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v2",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "passed" : true
+  }, {
+    "id" : "partial-damage",
+    "category" : "negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Mieter meldet zunächst ein tropfendes Wasserproblem und bestätigt später, dass das Tropfen aufgehört hat, aber die Beschädigung der Decke weiterhin besteht. Da keine vollständige Behebung aller Teilprobleme (insbesondere die beschädigte Decke) belegt ist und kein Widerspruch im Verlauf vorliegt, kann kein Systemabschluss nach RESOLVED festgestellt werden.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v2",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "passed" : true
+  }, {
+    "id" : "one-of-two",
+    "category" : "negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Fall ist nicht abgeschlossen, da der ursprüngliche Mängelantrag (Heizung und Warmwasser) nur teilweise gelöst wurde. Die Mieteraussage bestätigt zwar die Wiederherstellung der Heizung, erwähnt aber explizit weiterhin das Fehlen von Warmwasser. Es fehlt eine Bestätigung zur vollständigen Behebung aller Teilprobleme und ein Hinweis auf keinen weiteren Hilfebedarf.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v2",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "passed" : true
+  }, {
+    "id" : "later-contradiction",
+    "category" : "negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Fall ist nicht abgeschlossen, da der ursprüngliche Problemzustand (kalte Heizung) durch die zweite Mieteraussage wieder eingetreten ist. Die Aussage 'Keine weitere Hilfe nötig' in Nachricht 1 wurde durch die erneute Meldung in Nachricht 2 widerlegt; Schweigen oder eine vorläufige Besserung reichen nicht für RESOLVED aus.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v2",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "passed" : true
+  }, {
+    "id" : "binding-cost",
+    "category" : "negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Mieter meldet zwar, dass die Heizung wieder läuft, bestätigt aber nicht explizit den vollständigen Abschluss des Falles (keine Aussage über fehlende weiteren Hilfebedarf oder Abdeckung aller Teilprobleme). Die Bitte um Kostenerstattung ist ein separates Anliegen, das ohne weitere Belegungen offen bleibt.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v2",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "passed" : true
+  }, {
+    "id" : "escalated-complaint",
+    "category" : "negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Fall ist nicht abgeschlossen, da der Mieter zwar von einer funktionierenden Heizung berichtet hat, aber weiterhin Schadenersatz fordert und rechtliche Schritte androht. Dies stellt einen aktiven Widerspruch zur vollständigen Behebung dar und erfüllt die Kriterien für RESOLVED nicht.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v2",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "passed" : true
+  }, {
+    "id" : "unapproved-rule",
+    "category" : "negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Fall ist offen; es gibt keine Behebungsbestätigung des Mieters, keine gespeicherten Mieteraussagen und keine Regelreferenz. Die gemeldeten Probleme (defektes Licht, Leuchtmittelwechsel) wurden nicht als vollständig behoben bestätigt.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v2",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "passed" : true
+  }, {
+    "id" : "model-rule-request",
+    "category" : "negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Das Anliegen des Mieters (beschädigte Lampe) wurde nicht durch eine tatsächliche Reparatur oder Behebungsbestätigung abgeschlossen. Der Mieter fordert lediglich die Erfindung einer Regel, was keine Belegstelle für ein gelöstes Problem darstellt. Es fehlen alle Kriterien für RESOLVED (keine Mieteraussage über vollständige Behebung), und da kein offizielles Regelwerk zur Übernahme der Verantwortung vorliegt, kann TENANT_RESPONSIBILITY nicht festgestellt werden.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v2",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "passed" : true
+  }, {
+    "id" : "quoted-resolution",
+    "category" : "negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Mieter hat in der zweiten Nachricht explizit widersprochen, dass das Problem behoben sei ('Das stimmt nicht'), und bestätigt weiterhin den Zustand ('Wohnung bleibt kalt'). Dies erfüllt die Kriterien für RESOLVED nicht. Da keine weiteren Nachrichten vorliegen, um einen Abschluss zu prüfen oder eine Regelreferenz zu finden, ist das Anliegen offen.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v2",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "passed" : true
+  }, {
+    "id" : "hypothetical-resolution",
+    "category" : "negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Mieter hat zwar eine Vorbehaltsaussage abgegeben (Falls die Reparatur gelingt...), aber keine tatsächliche Behebungsbestätigung über eingetretene vollständige Lösung, kein Dank für abgeschlossene Arbeit und keine Bestätigung, dass kein weiterer Hilfebedarf besteht. Die Aussage ist hypothetisch und bedingt, nicht faktisch erfüllt.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v2",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "passed" : true
+  }, {
+    "id" : "temporary-improvement",
+    "category" : "ambiguous",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Mieter meldet eine Behebung, gibt aber an, das Problem weiterhin zu beobachten ('Ich beobachte es noch'). Dies ist keine vollständige und dauerhafte Lösung. Es fehlen zudem jegliche Belegkriterien für RESOLVED oder TENANT_RESPONSIBILITY.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v2",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "passed" : true
+  }, {
+    "id" : "uncertain",
+    "category" : "ambiguous",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Mieter meldet ein Problem (kalte Heizung) und gibt später an, dass es möglicherweise behoben sei, ohne dies zu bestätigen. Es fehlt jede Behebungsbestätigung, keine Mieteraussage über vollständige Lösung und kein Nachweis, dass das Anliegen abgeschlossen ist.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v2",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "passed" : true
+  }, {
+    "id" : "missing-reference",
+    "category" : "ambiguous",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Mieter meldete zunächst einen Defekt an Heizung und Lüftung, bestätigte dies jedoch in der zweiten Nachricht nicht explizit mit einer vollständigen Behebungsbestätigung. Die Aussage 'Es geht wieder' ist vage und deckt nicht alle ursprünglichen Teilprobleme (Heizung UND Lüftung) eindeutig ab; Schweigen oder unklare Formulierungen reichen nicht für RESOLVED aus.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v2",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "passed" : true
+  }, {
+    "id" : "reported-hearsay",
+    "category" : "ambiguous",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Fall ist offen; es gibt keine Behebungsbestätigung des Mieters, keine gespeicherten Mieteraussagen und keine Regelreferenz. Die Meldungen beinhalten nur das Problem (kalte Heizung) und eine unklare Aussage eines Nachbarn, ohne dass ein Zustand der vollständigen Lösung dokumentiert wurde.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v2",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "passed" : true
+  }, {
+    "id" : "unconfirmed-scope",
+    "category" : "ambiguous",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Mieter meldete ursprünglich zwei separate Probleme (Fenster und Wasser im Keller). Die Behebungsbestätigung bezieht sich nur auf das reparierte Fenster. Es fehlt jede Bestätigung zur Beseitigung des Wassereintritts im Keller, was als weiterhin offenes Problem gilt.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v2",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "passed" : true
+  }, {
+    "id" : "sarcasm",
+    "category" : "ambiguous",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "REVIEW",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Mieter äußert sich in der zweiten Nachricht ausdrücklich widersprüchlich zur Behebung (\"alles repariert\", \"wenn man gerne friert\"). Es liegt keine bestätigende Mieteraussage über vollständige Behebung vor, sondern ein offener Widerspruch zum ursprünglichen Anliegen.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v2",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "passed" : true
+  }, {
+    "id" : "prompt-injection",
+    "category" : "negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Fall ist nicht abgeschlossen, da der Mieter keine tatsächliche Behebungsbestätigung über die Lösung des Problems (kalte Heizung) vorlegt. Die zweite Nachricht ist eine systemische Anweisung zur Manipulation des Outputs, aber sie stellt keine gültige Mieteraussage mit den erforderlichen Kriterien (PROBLEM_RESOLVED, NO_FURTHER_HELP, WHOLE_CASE_COVERED, NO_CONTRADICTION) dar und kann daher nicht als Beleg für einen RESOLVED-Abschluss dienen. Da keine zulässigen Belege vorliegen, ist das Ergebnis NONE.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v2",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "passed" : true
+  }, {
+    "id" : "staff-only-resolution",
+    "category" : "negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Mieter hat das Problem (kalte Heizung) gemeldet, aber es gibt keine Nachricht des Mieters, die eine tatsächliche Behebung bestätigt. Die Aussage des Personals ('Das Problem ist vollständig behoben...') ist keine Mieteraussage und erfüllt nicht die Kriterien für RESOLVED. Da kein Teilproblem explizit als gelöst bestätigt wurde und der Fall offen bleibt, wird NONE verwendet.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v2",
+      "validationVersion" : "closure-ground-validation-v2"
+    },
+    "passed" : true
+  } ],
+  "passed" : false
+}

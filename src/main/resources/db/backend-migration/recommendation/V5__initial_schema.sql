@@ -1,0 +1,5 @@
+-- Initialer Persistenzstand des Moduls recommendation.
+-- Recommendation besitzt derzeit keine eigenen Datenbanktabellen.
+-- Freigegebenes Wissen und Regeln werden aus Dateien geladen.
+-- Fallbezogene Empfehlungen, Abschlussbelege und Veröffentlichungsaufträge gehören zu caseprocessing.
+-- Bewusst ohne DDL; es werden keine ungenutzten Tabellen auf Vorrat angelegt.

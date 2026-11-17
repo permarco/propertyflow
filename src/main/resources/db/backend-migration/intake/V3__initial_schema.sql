@@ -1,0 +1,4 @@
+-- Initialer Persistenzstand des Moduls intake.
+-- Intake besitzt derzeit keine eigenen Datenbanktabellen.
+-- Fallanlage, Einreichungsidentität und Annahmeaufträge gehören zu caseprocessing.
+-- Bewusst ohne DDL; es werden keine ungenutzten Tabellen auf Vorrat angelegt.

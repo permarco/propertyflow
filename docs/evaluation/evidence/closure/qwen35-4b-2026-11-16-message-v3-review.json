@@ -1,0 +1,16 @@
+{
+  "reviewType": "development-agent-review-not-independent-human-approval",
+  "sourceReport": "qwen35-4b-2026-11-16-message-v3.json",
+  "sourceSha256": "61c3e29244950561d492b96a5b20054b7edd4eb2e844296a64a4e4bcdce2485a",
+  "cases": [
+    {
+      "id": "generate-tenant-rule",
+      "text": "Sehr geehrte Damen und Herren,\n\nwie in Ihrer Meldung vom 01.01.2024 mitgeteilt, handelt es sich bei dem defekten Display um einen mobilen Küchenwecker, der Ihnen persönlich gehört und nicht fest in die Mietsache eingebaut ist. Da keine Schäden am Gebäude oder an dessen Installation vorliegen, besteht kein Verwaltungsbedarf für eine Reparatur oder Behebung.\n\nMit freundlichen Grüßen,\nVerwaltung",
+      "passed": false,
+      "finding": "Das Meldungsdatum 01.01.2024 ist erfunden; keine Quelle enthält dieses Datum. Die lokale Inhaltsprüfung hat den falschen Text akzeptiert."
+    }
+  ],
+  "otherGeneratedCases": "Vier Generierungen liefern statt einer Nachricht eine Prüfantwort und werden formal abgelehnt.",
+  "passed": false,
+  "releaseApproved": false
+}

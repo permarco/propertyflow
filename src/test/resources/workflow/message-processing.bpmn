@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="https://propertyflow.local/test">
+  <bpmn:process id="PropertyFlow_TenantMessage_Draft" isExecutable="true">
+    <bpmn:documentation>Entry-only fixture: identifies a durable tenant message and stops before the remaining central evaluation.</bpmn:documentation>
+    <bpmn:startEvent id="NProcessingStart" />
+    <bpmn:sequenceFlow id="N01" sourceRef="NProcessingStart" targetRef="NIdentify" />
+    <bpmn:serviceTask id="NIdentify">
+      <bpmn:extensionElements><zeebe:taskDefinition type="propertyflow.tenant-message.identify" /></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="N02" sourceRef="NIdentify" targetRef="NAccept" />
+    <bpmn:exclusiveGateway id="NAccept" default="N03" />
+    <bpmn:sequenceFlow id="N03" sourceRef="NAccept" targetRef="NNoOpEnd" />
+    <bpmn:endEvent id="NNoOpEnd" />
+    <bpmn:sequenceFlow id="N04" sourceRef="NAccept" targetRef="UnimplementedEvaluation">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= tenantMessageAccepted = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:serviceTask id="UnimplementedEvaluation">
+      <bpmn:extensionElements><zeebe:taskDefinition type="propertyflow-test-unimplemented-message-evaluation" /></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="TestEndFlow" sourceRef="UnimplementedEvaluation" targetRef="TestEnd" />
+    <bpmn:endEvent id="TestEnd" />
+  </bpmn:process>
+</bpmn:definitions>

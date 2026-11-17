@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="https://propertyflow.local/test">
+  <bpmn:message id="TenantMessage" name="propertyflow-test-tenant-message">
+    <bpmn:extensionElements><zeebe:subscription correlationKey="=processInstanceKey" /></bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:message id="Message_ReviewRequired" name="Fachlicher Prüfbedarf festgestellt">
+    <bpmn:extensionElements><zeebe:subscription correlationKey="= processInstanceKey" /></bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:message id="Message_CaseDataChange" name="Falldaten ergänzen angefordert">
+    <bpmn:extensionElements><zeebe:subscription correlationKey="= processInstanceKey" /></bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:process id="PropertyFlow_Case_Draft" isExecutable="true">
+    <bpmn:documentation>Integration fixture for INITIAL and automatic interruption to staff review only. Mirrors the canonical entry and call scopes.
+      This is not the deployable full case process. Unimplemented processing stays at a waiting test job.</bpmn:documentation>
+    <bpmn:startEvent id="ProcessStart" />
+    <bpmn:sequenceFlow id="K1" sourceRef="ProcessStart" targetRef="PrepareProcessKey" />
+    <bpmn:serviceTask id="PrepareProcessKey">
+      <bpmn:extensionElements><zeebe:taskDefinition type="propertyflow-prepare-process-key" /></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="K2" sourceRef="PrepareProcessKey" targetRef="ActiveCase" />
+    <bpmn:subProcess id="ActiveCase">
+      <bpmn:startEvent id="Start" />
+      <bpmn:sequenceFlow id="F_Initial" sourceRef="Start" targetRef="Register" />
+      <bpmn:serviceTask id="Register">
+        <bpmn:extensionElements><zeebe:taskDefinition type="propertyflow-register-case" /></bpmn:extensionElements>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="F02" sourceRef="Register" targetRef="PrepareInitialAuto" />
+      <bpmn:serviceTask id="PrepareInitialAuto">
+        <bpmn:extensionElements><zeebe:taskDefinition type="propertyflow-prepare-initial" /></bpmn:extensionElements>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="InitialAutomatic" sourceRef="PrepareInitialAuto" targetRef="Automatic" />
+      <bpmn:callActivity id="Automatic">
+        <bpmn:extensionElements>
+          <zeebe:calledElement processId="PropertyFlow_Automatic_Draft" bindingType="deployment"
+                               propagateAllChildVariables="false" propagateAllParentVariables="false" />
+          <zeebe:ioMapping>
+            <zeebe:input source="=caseId" target="caseId" />
+            <zeebe:input source="=processInstanceKey" target="leadingProcessInstanceKey" />
+            <zeebe:input source="=automaticEntryContextRef" target="entryContextRef" />
+            <zeebe:input source="=automaticCallRef" target="automaticCallRef" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+      </bpmn:callActivity>
+      <bpmn:boundaryEvent id="AutomaticInterrupted" attachedToRef="Automatic">
+        <bpmn:conditionalEventDefinition id="AutomaticInterrupted_definition">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">= automaticInterruptionReady = true and automaticInterruptionCallRef = automaticCallRef</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:sequenceFlow id="AI01" sourceRef="AutomaticInterrupted" targetRef="AutomaticInterruptionPrepare" />
+      <bpmn:serviceTask id="AutomaticInterruptionPrepare">
+        <bpmn:extensionElements><zeebe:taskDefinition type="propertyflow.review.prepare-staff" /></bpmn:extensionElements>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="AIStaff" sourceRef="AutomaticInterruptionPrepare" targetRef="StaffContinuationClaim" />
+      <bpmn:serviceTask id="StaffContinuationClaim">
+        <bpmn:extensionElements><zeebe:taskDefinition type="propertyflow.staff.claim" /></bpmn:extensionElements>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="SCClaim" sourceRef="StaffContinuationClaim" targetRef="StaffContinuationRoute" />
+      <bpmn:exclusiveGateway id="StaffContinuationRoute" />
+      <bpmn:sequenceFlow id="SCStart" sourceRef="StaffContinuationRoute" targetRef="Staff">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= staffContinuationOutcome = "START"</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="SCExisting" sourceRef="StaffContinuationRoute" targetRef="StaffContinuationMerge">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= staffContinuationOutcome = "EXISTING"</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="SCSuperseded" sourceRef="StaffContinuationRoute" targetRef="StaffContinuationReconcile">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= staffContinuationOutcome = "SUPERSEDED"</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:serviceTask id="StaffContinuationReconcile">
+        <bpmn:extensionElements><zeebe:taskDefinition type="propertyflow.staff.reconcile-continuation" /></bpmn:extensionElements>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="SCObsolete" sourceRef="StaffContinuationReconcile" targetRef="StaffContinuationObsolete" />
+      <bpmn:endEvent id="StaffContinuationObsolete" />
+      <bpmn:serviceTask id="StaffContinuationMerge">
+        <bpmn:extensionElements><zeebe:taskDefinition type="propertyflow.staff.merge-continuation" /></bpmn:extensionElements>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="SCMerged" sourceRef="StaffContinuationMerge" targetRef="StaffContinuationMerged" />
+      <bpmn:endEvent id="StaffContinuationMerged" />
+      <bpmn:callActivity id="Staff">
+        <bpmn:extensionElements>
+          <zeebe:calledElement processId="PropertyFlow_Staff_Draft" bindingType="deployment"
+                               propagateAllChildVariables="false" propagateAllParentVariables="false" />
+          <zeebe:ioMapping>
+            <zeebe:input source="=caseId" target="caseId" />
+            <zeebe:input source="=processInstanceKey" target="leadingProcessInstanceKey" />
+            <zeebe:input source="=staffEntryContextRef" target="entryContextRef" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+      </bpmn:callActivity>
+      <bpmn:sequenceFlow id="StaffEnd" sourceRef="Staff" targetRef="ActiveEnd" />
+      <bpmn:subProcess id="CaseDataSide" triggeredByEvent="true">
+        <bpmn:extensionElements><zeebe:ioMapping><zeebe:input source="= null" target="caseDataCommandRef" /></zeebe:ioMapping></bpmn:extensionElements>
+        <bpmn:startEvent id="CaseDataStart" isInterrupting="false">
+          <bpmn:messageEventDefinition messageRef="Message_CaseDataChange" />
+        </bpmn:startEvent>
+        <bpmn:sequenceFlow id="CD01" sourceRef="CaseDataStart" targetRef="CaseDataApply" />
+        <bpmn:serviceTask id="CaseDataApply">
+          <bpmn:extensionElements><zeebe:taskDefinition type="propertyflow.case-data.apply" /></bpmn:extensionElements>
+        </bpmn:serviceTask>
+        <bpmn:sequenceFlow id="CD02" sourceRef="CaseDataApply" targetRef="CaseDataEnd" />
+        <bpmn:endEvent id="CaseDataEnd" />
+      </bpmn:subProcess>
+      <bpmn:subProcess id="ReviewNeedSide" triggeredByEvent="true">
+        <bpmn:extensionElements><zeebe:ioMapping>
+          <zeebe:input source="= null" target="reviewSignalRef" />
+          <zeebe:input source="= null" target="reviewRoute" />
+          <zeebe:input source="= null" target="reviewContinuationRef" />
+        </zeebe:ioMapping></bpmn:extensionElements>
+        <bpmn:startEvent id="ReviewNeedStart" isInterrupting="false">
+          <bpmn:messageEventDefinition messageRef="Message_ReviewRequired" />
+        </bpmn:startEvent>
+        <bpmn:sequenceFlow id="PN01" sourceRef="ReviewNeedStart" targetRef="ReviewNeedCheck" />
+        <bpmn:serviceTask id="ReviewNeedCheck">
+          <bpmn:extensionElements><zeebe:taskDefinition type="propertyflow.review.check" /></bpmn:extensionElements>
+        </bpmn:serviceTask>
+        <bpmn:sequenceFlow id="PN02" sourceRef="ReviewNeedCheck" targetRef="ReviewNeedRoute" />
+        <bpmn:exclusiveGateway id="ReviewNeedRoute" />
+        <bpmn:sequenceFlow id="PN03" sourceRef="ReviewNeedRoute" targetRef="ReviewNeedExisting">
+          <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= reviewRoute = "EXISTING"</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+        <bpmn:sequenceFlow id="PN08" sourceRef="ReviewNeedRoute" targetRef="ReviewNeedOther">
+          <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= reviewRoute = "OTHER"</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+        <bpmn:sequenceFlow id="PN05" sourceRef="ReviewNeedRoute" targetRef="ReviewNeedDone">
+          <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= reviewRoute = "NONE"</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+        <bpmn:serviceTask id="ReviewNeedExisting">
+          <bpmn:extensionElements><zeebe:taskDefinition type="propertyflow.review.merge" /></bpmn:extensionElements>
+        </bpmn:serviceTask>
+        <bpmn:sequenceFlow id="PN06" sourceRef="ReviewNeedExisting" targetRef="ReviewNeedDone" />
+        <bpmn:serviceTask id="ReviewNeedOther">
+          <bpmn:extensionElements><zeebe:taskDefinition type="propertyflow.review.interrupt-automatic" /></bpmn:extensionElements>
+        </bpmn:serviceTask>
+        <bpmn:sequenceFlow id="PN09" sourceRef="ReviewNeedOther" targetRef="ReviewNeedDone" />
+        <bpmn:endEvent id="ReviewNeedDone" />
+      </bpmn:subProcess>
+      <bpmn:sequenceFlow id="AutomaticEnd" sourceRef="Automatic" targetRef="ActiveEnd" />
+      <bpmn:endEvent id="ActiveEnd" />
+      <bpmn:subProcess id="TenantMessageSide" triggeredByEvent="true">
+        <bpmn:startEvent id="TenantMessageStart" isInterrupting="false">
+          <bpmn:messageEventDefinition messageRef="TenantMessage" />
+        </bpmn:startEvent>
+        <bpmn:sequenceFlow id="MessageWait" sourceRef="TenantMessageStart" targetRef="MessageTestBoundary" />
+        <bpmn:serviceTask id="MessageTestBoundary">
+          <bpmn:extensionElements><zeebe:taskDefinition type="propertyflow-test-unimplemented-message" /></bpmn:extensionElements>
+        </bpmn:serviceTask>
+        <bpmn:sequenceFlow id="MessageEndFlow" sourceRef="MessageTestBoundary" targetRef="MessageEnd" />
+        <bpmn:endEvent id="MessageEnd" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="EndFlow" sourceRef="ActiveCase" targetRef="End" />
+    <bpmn:endEvent id="End" />
+  </bpmn:process>
+</bpmn:definitions>

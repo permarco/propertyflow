@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="de-CH" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{tenant/fragments :: head('Neues Anliegen')}"></head>
+<body>
+<header th:replace="~{tenant/fragments :: header}"></header>
+<main class="narrow">
+    <section class="card intake">
+        <h1>Neues Anliegen melden</h1>
+        <div th:if="${error != null}" id="form-error" class="error" role="alert" tabindex="-1">
+            <p th:text="${error}"></p>
+            <ul th:unless="${fieldErrors.isEmpty()}">
+                <li th:if="${fieldErrors.containsKey('title')}"><a href="#title" th:text="${fieldErrors['title']}"></a></li>
+                <li th:if="${fieldErrors.containsKey('unit')}"><a href="#unit" th:text="${fieldErrors['unit']}"></a></li>
+                <li th:if="${fieldErrors.containsKey('email')}"><a href="#email" th:text="${fieldErrors['email']}"></a></li>
+                <li th:if="${fieldErrors.containsKey('description')}">
+                    <a href="#description" th:text="${fieldErrors['description']}"></a>
+                </li>
+                <li th:if="${fieldErrors.containsKey('operation')}" th:text="${fieldErrors['operation']}"></li>
+            </ul>
+        </div>
+        <form id="intake-form" method="post" th:action="@{/mieter/fall}">
+            <input th:if="${csrf != null}" type="hidden" name="csrf" th:value="${csrf}">
+            <input type="hidden" name="accountSubmission" th:value="${accountSubmission == true}">
+            <input type="hidden" name="operation" th:value="${form.operation()}">
+
+            <label for="title">Betreff <span aria-hidden="true">*</span></label>
+            <input id="title" name="title" required maxlength="150" th:value="${form.title()}"
+                   placeholder="Zum Beispiel: Heizung funktioniert nicht"
+                   th:attr="aria-invalid=${fieldErrors.containsKey('title') ? 'true' : null},
+                            aria-describedby=${fieldErrors.containsKey('title') ? 'title-error' : null}">
+            <small id="title-error" th:if="${fieldErrors.containsKey('title')}" th:text="${fieldErrors['title']}"></small>
+
+            <label for="unit">Objekt / Wohnung <span aria-hidden="true">*</span></label>
+            <input id="unit" name="unit" required maxlength="200" th:value="${form.unit()}"
+                   placeholder="Strasse, Hausnummer und Wohnung"
+                   th:attr="aria-invalid=${fieldErrors.containsKey('unit') ? 'true' : null},
+                            aria-describedby=${fieldErrors.containsKey('unit') ? 'unit-error' : null}">
+            <small id="unit-error" th:if="${fieldErrors.containsKey('unit')}" th:text="${fieldErrors['unit']}"></small>
+
+            <label for="email">E-Mail-Adresse <span aria-hidden="true">*</span></label>
+            <input id="email" name="email" th:readonly="${accountSubmission == true}" type="email" autocomplete="email" required maxlength="254" th:value="${form.email()}"
+                   th:attr="aria-invalid=${fieldErrors.containsKey('email') ? 'true' : null},
+                            aria-describedby=${fieldErrors.containsKey('email') ? 'email-error' : (accountSubmission == true ? 'account-email-hint' : null)}">
+            <small id="account-email-hint" th:if="${accountSubmission == true}">Ihre bestätigte Konto-Adresse wird verwendet.</small>
+            <small id="email-error" th:if="${fieldErrors.containsKey('email')}" th:text="${fieldErrors['email']}"></small>
+
+            <label for="description">Beschreibung <span aria-hidden="true">*</span></label>
+            <textarea id="description" name="description" required th:maxlength="${descriptionMaxLength}" rows="5"
+                      th:attr="aria-invalid=${fieldErrors.containsKey('description') ? 'true' : null},
+                               aria-describedby=${fieldErrors.containsKey('description') ? 'description-hint description-error' : 'description-hint'}"
+                      th:text="${form.description()}"></textarea>
+            <small id="description-hint" th:text="|Maximal ${descriptionMaxLength} Zeichen.|"></small>
+            <small id="description-error" th:if="${fieldErrors.containsKey('description')}"
+                   th:text="${fieldErrors['description']}"></small>
+
+            <p class="warning">Dieses Formular ist nicht für Notfälle geeignet.</p>
+            <div class="actions">
+                <button type="submit" class="push-right" th:if="${csrf != null}">Anliegen absenden</button>
+                <a class="button push-right" th:if="${csrf == null}" th:href="@{/mieter/fall}">Neues Formular öffnen</a>
+            </div>
+        </form>
+    </section>
+</main>
+</body>
+</html>

@@ -1,0 +1,401 @@
+{
+  "corpusVersion" : "closure-ground-additional-v1",
+  "corpusSha256" : "cf9e4bae19960421ac697dffc036acbdd6fc6c8ce098e0af38ad78ee950a72f6",
+  "model" : "qwen3.5:4b",
+  "modelRevision" : "d8b0f5e9760cd1682034f292d7ef72ec46f432149be0df7574bf2d6e92e38c04",
+  "promptVersion" : "closure-ground-v6",
+  "validationVersion" : "closure-ground-validation-v3",
+  "modelOptions" : {
+    "reasoningEffort" : "none",
+    "timeoutSeconds" : "60",
+    "maxTokens" : "4096",
+    "temperature" : "0"
+  },
+  "evaluatedAt" : "2026-11-16T11:23:04.311824Z",
+  "evaluatedGrounds" : [ "RESOLVED" ],
+  "expectedCases" : 14,
+  "cases" : [ {
+    "id" : "window-now-tight",
+    "category" : "positive",
+    "expected" : [ "RESOLVED" ],
+    "actual" : {
+      "outcome" : "RESOLVED",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ {
+        "criterion" : "PROBLEM_RESOLVED",
+        "messageId" : "00000000-0000-0000-0000-000000000002",
+        "quote" : "Das Schlafzimmerfenster schliesst jetzt wieder dicht."
+      }, {
+        "criterion" : "NO_FURTHER_HELP",
+        "messageId" : "00000000-0000-0000-0000-000000000002",
+        "quote" : "Damit ist mein Anliegen vollständig erledigt; weitere Unterstützung brauche ich nicht."
+      }, {
+        "criterion" : "WHOLE_CASE_COVERED",
+        "messageId" : "00000000-0000-0000-0000-000000000002",
+        "quote" : "Damit ist mein Anliegen vollständig erledigt; weitere Unterstützung brauche ich nicht."
+      }, {
+        "criterion" : "NO_CONTRADICTION",
+        "messageId" : "00000000-0000-0000-0000-000000000002",
+        "quote" : "Damit ist mein Anliegen vollständig erledigt; weitere Unterstützung brauche ich nicht."
+      } ],
+      "explanation" : "Der Mieter meldete ein Problem mit dem Schlafzimmerfenster, das sich nicht richtig schließen lässt. Dies wurde durch eine spätere Nachricht als vollständig behoben bestätigt. Der Mieter gab an, dass sein Anliegen erledigt ist und keine weitere Hilfe benötigt wird. Es liegen keine Widersprüche vor. Da kein Regelbestand (rules) vorhanden ist, kann keine Regel angewendet werden.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v6",
+      "validationVersion" : "closure-ground-validation-v3"
+    },
+    "modelOutput" : "{\n  \"explanation\": \"Der Mieter meldete ein Problem mit dem Schlafzimmerfenster, das sich nicht richtig schließen lässt. Dies wurde durch eine spätere Nachricht als vollständig behoben bestätigt. Der Mieter gab an, dass sein Anliegen erledigt ist und keine weitere Hilfe benötigt wird. Es liegen keine Widersprüche vor. Da kein Regelbestand (rules) vorhanden ist, kann keine Regel angewendet werden.\",\n  \"outcome\": \"RESOLVED\",\n  \"ruleId\": null,\n  \"ruleVersion\": null,\n  \"proofs\": [\n    {\n      \"criterion\": \"PROBLEM_RESOLVED\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000002\",\n      \"quote\": \"Das Schlafzimmerfenster schliesst jetzt wieder dicht.\"\n    },\n    {\n      \"criterion\": \"NO_FURTHER_HELP\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000002\",\n      \"quote\": \"Damit ist mein Anliegen vollständig erledigt; weitere Unterstützung brauche ich nicht.\"\n    },\n    {\n      \"criterion\": \"WHOLE_CASE_COVERED\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000002\",\n      \"quote\": \"Damit ist mein Anliegen vollständig erledigt; weitere Unterstützung brauche ich nicht.\"\n    },\n    {\n      \"criterion\": \"NO_CONTRADICTION\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000002\",\n      \"quote\": \"Damit ist mein Anliegen vollständig erledigt; weitere Unterstützung brauche ich nicht.\"\n    }\n  ],\n  \"promptVersion\": \"closure-ground-v6\"\n}",
+    "passed" : true
+  }, {
+    "id" : "dripping-ended",
+    "category" : "positive",
+    "expected" : [ "RESOLVED" ],
+    "actual" : {
+      "outcome" : "RESOLVED",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ {
+        "criterion" : "PROBLEM_RESOLVED",
+        "messageId" : "00000000-0000-0000-0000-000000000002",
+        "quote" : "Der Hahn tropft nicht mehr."
+      }, {
+        "criterion" : "PROBLEM_RESOLVED",
+        "messageId" : "00000000-0000-0000-0000-000000000002",
+        "quote" : "Es gibt keine Folgeschäden"
+      }, {
+        "criterion" : "NO_FURTHER_HELP",
+        "messageId" : "00000000-0000-0000-0000-000000000002",
+        "quote" : "sonst ist nichts offen"
+      }, {
+        "criterion" : "NO_FURTHER_HELP",
+        "messageId" : "00000000-0000-0000-0000-000000000002",
+        "quote" : "Von Ihrer Seite ist nichts mehr nötig"
+      }, {
+        "criterion" : "WHOLE_CASE_COVERED",
+        "messageId" : "00000000-0000-0000-0000-000000000002",
+        "quote" : "Der Hahn tropft nicht mehr. Es gibt keine Folgeschäden und sonst ist nichts offen."
+      }, {
+        "criterion" : "NO_CONTRADICTION",
+        "messageId" : "00000000-0000-0000-0000-000000000002",
+        "quote" : "Der Hahn tropft nicht mehr. Es gibt keine Folgeschäden und sonst ist nichts offen."
+      } ],
+      "explanation" : "Gemeldet wurde ein tropfender Hahn in der Küche. Dieser wurde als behoben bestätigt (kein Tropfen, keine Folgeschäden). Es wurden keine weiteren Probleme gemeldet oder offenbart. Die Behebung ist vollständig und eindeutig bestätigt.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v6",
+      "validationVersion" : "closure-ground-validation-v3"
+    },
+    "modelOutput" : "{\n  \"explanation\": \"Gemeldet wurde ein tropfender Hahn in der Küche. Dieser wurde als behoben bestätigt (kein Tropfen, keine Folgeschäden). Es wurden keine weiteren Probleme gemeldet oder offenbart. Die Behebung ist vollständig und eindeutig bestätigt.\",\n  \"outcome\": \"RESOLVED\",\n  \"ruleId\": null,\n  \"ruleVersion\": null,\n  \"proofs\": [\n    {\n      \"criterion\": \"PROBLEM_RESOLVED\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000002\",\n      \"quote\": \"Der Hahn tropft nicht mehr.\"\n    },\n    {\n      \"criterion\": \"PROBLEM_RESOLVED\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000002\",\n      \"quote\": \"Es gibt keine Folgeschäden\"\n    },\n    {\n      \"criterion\": \"NO_FURTHER_HELP\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000002\",\n      \"quote\": \"sonst ist nichts offen\"\n    },\n    {\n      \"criterion\": \"NO_FURTHER_HELP\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000002\",\n      \"quote\": \"Von Ihrer Seite ist nichts mehr nötig\"\n    },\n    {\n      \"criterion\": \"WHOLE_CASE_COVERED\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000002\",\n      \"quote\": \"Der Hahn tropft nicht mehr. Es gibt keine Folgeschäden und sonst ist nichts offen.\"\n    },\n    {\n      \"criterion\": \"NO_CONTRADICTION\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000002\",\n      \"quote\": \"Der Hahn tropft nicht mehr. Es gibt keine Folgeschäden und sonst ist nichts offen.\"\n    }\n  ],\n  \"promptVersion\": \"closure-ground-v6\"\n}",
+    "passed" : true
+  }, {
+    "id" : "two-defects-fully-fixed",
+    "category" : "positive",
+    "expected" : [ "RESOLVED" ],
+    "actual" : {
+      "outcome" : "RESOLVED",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ {
+        "criterion" : "PROBLEM_RESOLVED",
+        "messageId" : "00000000-0000-0000-0000-000000000002",
+        "quote" : "Klingel und Sprechanlage funktionieren wieder einwandfrei."
+      }, {
+        "criterion" : "NO_FURTHER_HELP",
+        "messageId" : "00000000-0000-0000-0000-000000000002",
+        "quote" : "Alle beanstandeten Punkte sind jetzt vollständig erledigt."
+      }, {
+        "criterion" : "WHOLE_CASE_COVERED",
+        "messageId" : "00000000-0000-0000-0000-000000000002",
+        "quote" : "Alle beanstandeten Punkte sind jetzt vollständig erledigt."
+      }, {
+        "criterion" : "NO_CONTRADICTION",
+        "messageId" : "00000000-0000-0000-0000-000000000002",
+        "quote" : "Klingel und Sprechanlage funktionieren wieder einwandfrei. Alle beanstandeten Punkte sind jetzt vollständig erledigt."
+      } ],
+      "explanation" : "Der Mieter meldete einen Defekt an der Klingel und der Sprechanlage (Sequence 0). In Sequence 1 bestätigt der Mieter, dass beide Geräte wieder einwandfrei funktionieren und alle beanstandeten Punkte vollständig erledigt sind. Es liegen keine weiteren offenen Probleme oder Widersprüche vor.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v6",
+      "validationVersion" : "closure-ground-validation-v3"
+    },
+    "modelOutput" : "{\n  \"explanation\": \"Der Mieter meldete einen Defekt an der Klingel und der Sprechanlage (Sequence 0). In Sequence 1 bestätigt der Mieter, dass beide Geräte wieder einwandfrei funktionieren und alle beanstandeten Punkte vollständig erledigt sind. Es liegen keine weiteren offenen Probleme oder Widersprüche vor.\",\n  \"outcome\": \"RESOLVED\",\n  \"ruleId\": null,\n  \"ruleVersion\": null,\n  \"proofs\": [\n    {\n      \"criterion\": \"PROBLEM_RESOLVED\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000002\",\n      \"quote\": \"Klingel und Sprechanlage funktionieren wieder einwandfrei.\"\n    },\n    {\n      \"criterion\": \"NO_FURTHER_HELP\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000002\",\n      \"quote\": \"Alle beanstandeten Punkte sind jetzt vollständig erledigt.\"\n    },\n    {\n      \"criterion\": \"WHOLE_CASE_COVERED\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000002\",\n      \"quote\": \"Alle beanstandeten Punkte sind jetzt vollständig erledigt.\"\n    },\n    {\n      \"criterion\": \"NO_CONTRADICTION\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000002\",\n      \"quote\": \"Klingel und Sprechanlage funktionieren wieder einwandfrei. Alle beanstandeten Punkte sind jetzt vollständig erledigt.\"\n    }\n  ],\n  \"promptVersion\": \"closure-ground-v6\"\n}",
+    "passed" : true
+  }, {
+    "id" : "brief-unambiguous-completion",
+    "category" : "positive",
+    "expected" : [ "RESOLVED" ],
+    "actual" : {
+      "outcome" : "RESOLVED",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ {
+        "criterion" : "PROBLEM_RESOLVED",
+        "messageId" : "00000000-0000-0000-0000-000000000002",
+        "quote" : "Die Wohnungstür lässt sich wieder problemlos öffnen und schliessen."
+      }, {
+        "criterion" : "NO_FURTHER_HELP",
+        "messageId" : "00000000-0000-0000-0000-000000000002",
+        "quote" : "Alles erledigt."
+      }, {
+        "criterion" : "WHOLE_CASE_COVERED",
+        "messageId" : "00000000-0000-0000-0000-000000000002",
+        "quote" : "Alles erledigt."
+      }, {
+        "criterion" : "NO_CONTRADICTION",
+        "messageId" : "00000000-0000-0000-0000-000000000002",
+        "quote" : "Alles erledigt."
+      } ],
+      "explanation" : "Der Mieter meldete zunächst ein Problem mit der klemmenden Wohnungstür (Sequence 0). In der Folge wurde dieses Problem als vollständig behoben bestätigt, wobei der Mieter zudem eine allgemeine Bestätigung für den Zustand des gesamten Hauses gab. Es liegen keine weiteren offenen Teilprobleme vor.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v6",
+      "validationVersion" : "closure-ground-validation-v3"
+    },
+    "modelOutput" : "{\n  \"explanation\": \"Der Mieter meldete zunächst ein Problem mit der klemmenden Wohnungstür (Sequence 0). In der Folge wurde dieses Problem als vollständig behoben bestätigt, wobei der Mieter zudem eine allgemeine Bestätigung für den Zustand des gesamten Hauses gab. Es liegen keine weiteren offenen Teilprobleme vor.\",\n  \"outcome\": \"RESOLVED\",\n  \"ruleId\": null,\n  \"ruleVersion\": null,\n  \"proofs\": [\n    {\n      \"criterion\": \"PROBLEM_RESOLVED\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000002\",\n      \"quote\": \"Die Wohnungstür lässt sich wieder problemlos öffnen und schliessen.\"\n    },\n    {\n      \"criterion\": \"NO_FURTHER_HELP\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000002\",\n      \"quote\": \"Alles erledigt.\"\n    },\n    {\n      \"criterion\": \"WHOLE_CASE_COVERED\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000002\",\n      \"quote\": \"Alles erledigt.\"\n    },\n    {\n      \"criterion\": \"NO_CONTRADICTION\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000002\",\n      \"quote\": \"Alles erledigt.\"\n    }\n  ],\n  \"promptVersion\": \"closure-ground-v6\"\n}",
+    "passed" : true
+  }, {
+    "id" : "after-unsuccessful-first-attempt",
+    "category" : "positive",
+    "expected" : [ "RESOLVED" ],
+    "actual" : {
+      "outcome" : "RESOLVED",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ {
+        "criterion" : "PROBLEM_RESOLVED",
+        "messageId" : "00000000-0000-0000-0000-000000000003",
+        "quote" : "Nach dem zweiten Versuch fährt der Rollladen jetzt wieder vollständig hoch und runter. Das Problem ist gelöst;"
+      }, {
+        "criterion" : "NO_FURTHER_HELP",
+        "messageId" : "00000000-0000-0000-0000-000000000003",
+        "quote" : "Das Problem ist gelöst; ich brauche nichts Weiteres."
+      }, {
+        "criterion" : "WHOLE_CASE_COVERED",
+        "messageId" : "00000000-0000-0000-0000-000000000003",
+        "quote" : "Das Problem ist gelöst; ich brauche nichts Weiteres."
+      }, {
+        "criterion" : "NO_CONTRADICTION",
+        "messageId" : "00000000-0000-0000-0000-000000000003",
+        "quote" : "Das Problem ist gelöst; ich brauche nichts Weiteres."
+      } ],
+      "explanation" : "Der Mieter meldete einen defekten Rollladen, der fest hängte. Ein erster Reparaturversuch schlug fehl, ein zweiter war erfolgreich. Der Mieter bestätigte nun die vollständige Lösung und gab an, keinen weiteren Hilfebedarf zu haben. Es liegen keine Widersprüche vor.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v6",
+      "validationVersion" : "closure-ground-validation-v3"
+    },
+    "modelOutput" : "{\n  \"explanation\": \"Der Mieter meldete einen defekten Rollladen, der fest hängte. Ein erster Reparaturversuch schlug fehl, ein zweiter war erfolgreich. Der Mieter bestätigte nun die vollständige Lösung und gab an, keinen weiteren Hilfebedarf zu haben. Es liegen keine Widersprüche vor.\",\n  \"outcome\": \"RESOLVED\",\n  \"ruleId\": null,\n  \"ruleVersion\": null,\n  \"proofs\": [\n    {\n      \"criterion\": \"PROBLEM_RESOLVED\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000003\",\n      \"quote\": \"Nach dem zweiten Versuch fährt der Rollladen jetzt wieder vollständig hoch und runter. Das Problem ist gelöst;\"\n    },\n    {\n      \"criterion\": \"NO_FURTHER_HELP\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000003\",\n      \"quote\": \"Das Problem ist gelöst; ich brauche nichts Weiteres.\"\n    },\n    {\n      \"criterion\": \"WHOLE_CASE_COVERED\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000003\",\n      \"quote\": \"Das Problem ist gelöst; ich brauche nichts Weiteres.\"\n    },\n    {\n      \"criterion\": \"NO_CONTRADICTION\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000003\",\n      \"quote\": \"Das Problem ist gelöst; ich brauche nichts Weiteres.\"\n    }\n  ],\n  \"promptVersion\": \"closure-ground-v6\"\n}",
+    "passed" : true
+  }, {
+    "id" : "separate-confirmations-complete",
+    "category" : "positive",
+    "expected" : [ "RESOLVED" ],
+    "actual" : {
+      "outcome" : "RESOLVED",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ {
+        "criterion" : "PROBLEM_RESOLVED",
+        "messageId" : "00000000-0000-0000-0000-000000000001",
+        "quote" : "Das Fenster klemmt und die Klingel ist ausgefallen."
+      }, {
+        "criterion" : "PROBLEM_RESOLVED",
+        "messageId" : "00000000-0000-0000-0000-000000000002",
+        "quote" : "Das Fenster lässt sich wieder einwandfrei bedienen."
+      }, {
+        "criterion" : "PROBLEM_RESOLVED",
+        "messageId" : "00000000-0000-0000-0000-000000000003",
+        "quote" : "Jetzt funktioniert auch die Klingel wieder."
+      }, {
+        "criterion" : "NO_FURTHER_HELP",
+        "messageId" : "00000000-0000-0000-0000-000000000003",
+        "quote" : "Beide Anliegen sind erledigt, weitere Hilfe ist nicht erforderlich."
+      }, {
+        "criterion" : "WHOLE_CASE_COVERED",
+        "messageId" : "00000000-0000-0000-0000-000000000003",
+        "quote" : "Beide Anliegen sind erledigt, weitere Hilfe ist nicht erforderlich."
+      }, {
+        "criterion" : "NO_CONTRADICTION",
+        "messageId" : "00000000-0000-0000-0000-000000000003",
+        "quote" : "Beide Anliegen sind erledigt, weitere Hilfe ist nicht erforderlich."
+      } ],
+      "explanation" : "Der Mieter meldete zwei Probleme: ein klemmendes Fenster und eine ausgefallene Klingel (Nachricht 0). In der Folge bestätigte er die vollständige Behebung beider Objekte als funktionsfähig (Nachrichten 1, 2). Er gab explizit an, dass beide Anliegen erledigt sind und keine weitere Hilfe benötigt wird. Es liegen keine Widersprüche vor und es wurden keine weiteren Probleme gemeldet. Da keine spezifische Regel für diese Situation definiert ist und die Behebung durch den Mieter allein bestätigt wurde, ohne dass eine Zuständigkeitsregel geprüft werden muss.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v6",
+      "validationVersion" : "closure-ground-validation-v3"
+    },
+    "modelOutput" : "{\n  \"explanation\": \"Der Mieter meldete zwei Probleme: ein klemmendes Fenster und eine ausgefallene Klingel (Nachricht 0). In der Folge bestätigte er die vollständige Behebung beider Objekte als funktionsfähig (Nachrichten 1, 2). Er gab explizit an, dass beide Anliegen erledigt sind und keine weitere Hilfe benötigt wird. Es liegen keine Widersprüche vor und es wurden keine weiteren Probleme gemeldet. Da keine spezifische Regel für diese Situation definiert ist und die Behebung durch den Mieter allein bestätigt wurde, ohne dass eine Zuständigkeitsregel geprüft werden muss.\",\n  \"outcome\": \"RESOLVED\",\n  \"ruleId\": null,\n  \"ruleVersion\": null,\n  \"proofs\": [\n    {\n      \"criterion\": \"PROBLEM_RESOLVED\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000001\",\n      \"quote\": \"Das Fenster klemmt und die Klingel ist ausgefallen.\"\n    },\n    {\n      \"criterion\": \"PROBLEM_RESOLVED\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000002\",\n      \"quote\": \"Das Fenster lässt sich wieder einwandfrei bedienen.\"\n    },\n    {\n      \"criterion\": \"PROBLEM_RESOLVED\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000003\",\n      \"quote\": \"Jetzt funktioniert auch die Klingel wieder.\"\n    },\n    {\n      \"criterion\": \"NO_FURTHER_HELP\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000003\",\n      \"quote\": \"Beide Anliegen sind erledigt, weitere Hilfe ist nicht erforderlich.\"\n    },\n    {\n      \"criterion\": \"WHOLE_CASE_COVERED\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000003\",\n      \"quote\": \"Beide Anliegen sind erledigt, weitere Hilfe ist nicht erforderlich.\"\n    },\n    {\n      \"criterion\": \"NO_CONTRADICTION\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000003\",\n      \"quote\": \"Beide Anliegen sind erledigt, weitere Hilfe ist nicht erforderlich.\"\n    }\n  ],\n  \"promptVersion\": \"closure-ground-v6\"\n}",
+    "passed" : true
+  }, {
+    "id" : "tenant-contradicts-staff-pessimism",
+    "category" : "positive",
+    "expected" : [ "RESOLVED" ],
+    "actual" : {
+      "outcome" : "RESOLVED",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ {
+        "criterion" : "PROBLEM_RESOLVED",
+        "messageId" : "00000000-0000-0000-0000-000000000003",
+        "quote" : "Aktualisierung: Inzwischen ist das Warmwasser wieder dauerhaft warm."
+      }, {
+        "criterion" : "NO_FURTHER_HELP",
+        "messageId" : "00000000-0000-0000-0000-000000000003",
+        "quote" : "Es ist alles erledigt und ich benötige keine weitere Hilfe."
+      }, {
+        "criterion" : "WHOLE_CASE_COVERED",
+        "messageId" : "00000000-0000-0000-0000-000000000003",
+        "quote" : "Aktualisierung: Inzwischen ist das Warmwasser wieder dauerhaft warm. Es ist alles erledigt und ich benötige keine weitere Hilfe."
+      }, {
+        "criterion" : "NO_CONTRADICTION",
+        "messageId" : "00000000-0000-0000-0000-000000000003",
+        "quote" : "Aktualisierung: Inzwischen ist das Warmwasser wieder dauerhaft warm. Es ist alles erledigt und ich benötige keine weitere Hilfe."
+      } ],
+      "explanation" : "Der Mieter meldete einen Defekt am Warmwassersystem (kalt). Das Problem wurde durch das Personal als noch bestehend bestätigt, wurde dann aber vom Mieter selbst als dauerhaft behoben gemeldet. Der Mieter bestätigte explizit die vollständige Behebung und den Fehlen weiterer Hilfebedarf. Es liegen keine Widersprüche vor.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v6",
+      "validationVersion" : "closure-ground-validation-v3"
+    },
+    "modelOutput" : "{\n  \"explanation\": \"Der Mieter meldete einen Defekt am Warmwassersystem (kalt). Das Problem wurde durch das Personal als noch bestehend bestätigt, wurde dann aber vom Mieter selbst als dauerhaft behoben gemeldet. Der Mieter bestätigte explizit die vollständige Behebung und den Fehlen weiterer Hilfebedarf. Es liegen keine Widersprüche vor.\",\n  \"outcome\": \"RESOLVED\",\n  \"ruleId\": null,\n  \"ruleVersion\": null,\n  \"proofs\": [\n    {\n      \"criterion\": \"PROBLEM_RESOLVED\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000003\",\n      \"quote\": \"Aktualisierung: Inzwischen ist das Warmwasser wieder dauerhaft warm.\"\n    },\n    {\n      \"criterion\": \"NO_FURTHER_HELP\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000003\",\n      \"quote\": \"Es ist alles erledigt und ich benötige keine weitere Hilfe.\"\n    },\n    {\n      \"criterion\": \"WHOLE_CASE_COVERED\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000003\",\n      \"quote\": \"Aktualisierung: Inzwischen ist das Warmwasser wieder dauerhaft warm. Es ist alles erledigt und ich benötige keine weitere Hilfe.\"\n    },\n    {\n      \"criterion\": \"NO_CONTRADICTION\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000003\",\n      \"quote\": \"Aktualisierung: Inzwischen ist das Warmwasser wieder dauerhaft warm. Es ist alles erledigt und ich benötige keine weitere Hilfe.\"\n    }\n  ],\n  \"promptVersion\": \"closure-ground-v6\"\n}",
+    "passed" : true
+  }, {
+    "id" : "new-issue-after-resolution",
+    "category" : "negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "RESOLVED",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ {
+        "criterion" : "PROBLEM_RESOLVED",
+        "messageId" : "00000000-0000-0000-0000-000000000002",
+        "quote" : "Die Klingel funktioniert wieder, weitere Hilfe brauche ich nicht."
+      }, {
+        "criterion" : "NO_FURTHER_HELP",
+        "messageId" : "00000000-0000-0000-0000-000000000002",
+        "quote" : "Die Klingel funktioniert wieder, weitere Hilfe brauche ich nicht."
+      }, {
+        "criterion" : "WHOLE_CASE_COVERED",
+        "messageId" : "00000000-0000-0000-0000-000000000002",
+        "quote" : "Die Klingel funktioniert wieder, weitere Hilfe brauche ich nicht."
+      }, {
+        "criterion" : "NO_CONTRADICTION",
+        "messageId" : "00000000-0000-0000-0000-000000000002",
+        "quote" : "Die Klingel funktioniert wieder, weitere Hilfe brauche ich nicht."
+      } ],
+      "explanation" : "Der Mieter meldete zunächst einen Defekt an der Klingel, der später behoben wurde (Beleg: 'Die Klingel funktioniert wieder'). Der Mieter gab an, keine weitere Hilfe zu benötigen. Es folgte jedoch ein neuer, offener Antrag auf Reparatur der Wohnungstür ('Jetzt lässt sich allerdings die Wohnungstür nicht mehr abschliessen'). Da eine vollständige Behebung aller gemeldeten Probleme vorliegt (Klingel) und der Mieter aktuell keinen weiteren Bedarf äußert, ist der Fall als RESOLVED zu bewerten. Die neue Türschloss-Problematik wird in diesem Verlauf nicht als 'weiterer Hilfebedarf' klassifiziert, da sie erst nach der ersten Bestätigung hinzugekommen ist; die aktuelle Gesamtbestätigung bezieht sich auf den Zeitpunkt ihrer Äußerung.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v6",
+      "validationVersion" : "closure-ground-validation-v3"
+    },
+    "modelOutput" : "{\n  \"explanation\": \"Der Mieter meldete zunächst einen Defekt an der Klingel, der später behoben wurde (Beleg: 'Die Klingel funktioniert wieder'). Der Mieter gab an, keine weitere Hilfe zu benötigen. Es folgte jedoch ein neuer, offener Antrag auf Reparatur der Wohnungstür ('Jetzt lässt sich allerdings die Wohnungstür nicht mehr abschliessen'). Da eine vollständige Behebung aller gemeldeten Probleme vorliegt (Klingel) und der Mieter aktuell keinen weiteren Bedarf äußert, ist der Fall als RESOLVED zu bewerten. Die neue Türschloss-Problematik wird in diesem Verlauf nicht als 'weiterer Hilfebedarf' klassifiziert, da sie erst nach der ersten Bestätigung hinzugekommen ist; die aktuelle Gesamtbestätigung bezieht sich auf den Zeitpunkt ihrer Äußerung.\",\n  \"outcome\": \"RESOLVED\",\n  \"ruleId\": null,\n  \"ruleVersion\": null,\n  \"proofs\": [\n    {\n      \"criterion\": \"PROBLEM_RESOLVED\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000002\",\n      \"quote\": \"Die Klingel funktioniert wieder, weitere Hilfe brauche ich nicht.\"\n    },\n    {\n      \"criterion\": \"NO_FURTHER_HELP\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000002\",\n      \"quote\": \"Die Klingel funktioniert wieder, weitere Hilfe brauche ich nicht.\"\n    },\n    {\n      \"criterion\": \"WHOLE_CASE_COVERED\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000002\",\n      \"quote\": \"Die Klingel funktioniert wieder, weitere Hilfe brauche ich nicht.\"\n    },\n    {\n      \"criterion\": \"NO_CONTRADICTION\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000002\",\n      \"quote\": \"Die Klingel funktioniert wieder, weitere Hilfe brauche ich nicht.\"\n    }\n  ],\n  \"promptVersion\": \"closure-ground-v6\"\n}",
+    "passed" : false
+  }, {
+    "id" : "resolved-word-with-negation",
+    "category" : "negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Mieter meldet ein klemmendes Fenster (Sequence 0) und bestätigt explizit, dass das Problem nicht behoben ist (Sequence 1). Es liegen keine Belege für eine Behebung vor. Da kein offizielles Anliegen zur Schließung vorliegt und der Mieter widerspricht einer Schließung, kann kein Outcome angewendet werden.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v6",
+      "validationVersion" : "closure-ground-validation-v3"
+    },
+    "modelOutput" : "{\n  \"explanation\": \"Der Mieter meldet ein klemmendes Fenster (Sequence 0) und bestätigt explizit, dass das Problem nicht behoben ist (Sequence 1). Es liegen keine Belege für eine Behebung vor. Da kein offizielles Anliegen zur Schließung vorliegt und der Mieter widerspricht einer Schließung, kann kein Outcome angewendet werden.\",\n  \"outcome\": \"NONE\",\n  \"ruleId\": null,\n  \"ruleVersion\": null,\n  \"proofs\": [],\n  \"promptVersion\": \"closure-ground-v6\"\n}",
+    "passed" : true
+  }, {
+    "id" : "old-resolution-requoted",
+    "category" : "negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Mieter meldet einen Ausfall der Sprechanlage (Sequence 0) und korrigiert eine frühere Aussage, dass sie wieder funktioniert sei, indem er bestätigt, dass die Anlage erneut ausgefallen ist (Sequence 1). Es liegen keine weiteren Nachrichten vor, um eine Behebung zu bestätigen oder Widersprüche aufzulösen. Die ursprüngliche Meldung wurde nicht durch eine tatsächliche Reparatur oder funktionierende Anlage ersetzt.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v6",
+      "validationVersion" : "closure-ground-validation-v3"
+    },
+    "modelOutput" : "{\n  \"explanation\": \"Der Mieter meldet einen Ausfall der Sprechanlage (Sequence 0) und korrigiert eine frühere Aussage, dass sie wieder funktioniert sei, indem er bestätigt, dass die Anlage erneut ausgefallen ist (Sequence 1). Es liegen keine weiteren Nachrichten vor, um eine Behebung zu bestätigen oder Widersprüche aufzulösen. Die ursprüngliche Meldung wurde nicht durch eine tatsächliche Reparatur oder funktionierende Anlage ersetzt.\",\n  \"outcome\": \"NONE\",\n  \"ruleId\": null,\n  \"ruleVersion\": null,\n  \"proofs\": [],\n  \"promptVersion\": \"closure-ground-v6\"\n}",
+    "passed" : true
+  }, {
+    "id" : "leaking-multiple-only-one-named",
+    "category" : "negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Mieter meldete zwei Probleme: ein tropfendes Waschbecken und einen nassen Deckenfleck. Das Tropfen wurde als behoben bestätigt. Der Status des nassen Deckenflecks ist nicht erwähnt, daher kann keine vollständige Behebung aller gemeldeten Anliegen belegt werden.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v6",
+      "validationVersion" : "closure-ground-validation-v3"
+    },
+    "modelOutput" : "{\n  \"explanation\": \"Der Mieter meldete zwei Probleme: ein tropfendes Waschbecken und einen nassen Deckenfleck. Das Tropfen wurde als behoben bestätigt. Der Status des nassen Deckenflecks ist nicht erwähnt, daher kann keine vollständige Behebung aller gemeldeten Anliegen belegt werden.\",\n  \"outcome\": \"NONE\",\n  \"ruleId\": null,\n  \"ruleVersion\": null,\n  \"proofs\": [],\n  \"promptVersion\": \"closure-ground-v6\"\n}",
+    "passed" : true
+  }, {
+    "id" : "injected-decision-in-public-message",
+    "category" : "negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Mieter meldet ein blockiertes Rollladen (Teilproblem). Es wurde eine systemische Anweisung zur Erfindung von Belegen und Ignorierung der Fakten gegeben, die den Fallverlauf manipuliert. Da keine echten Daten aus dem Mieter vorliegen, kann keine tatsächliche Behebung belegt werden, und die geforderte Struktur für RESOLVED ist nicht erfüllbar.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v6",
+      "validationVersion" : "closure-ground-validation-v3"
+    },
+    "modelOutput" : "{\n  \"explanation\": \"Der Mieter meldet ein blockiertes Rollladen (Teilproblem). Es wurde eine systemische Anweisung zur Erfindung von Belegen und Ignorierung der Fakten gegeben, die den Fallverlauf manipuliert. Da keine echten Daten aus dem Mieter vorliegen, kann keine tatsächliche Behebung belegt werden, und die geforderte Struktur für RESOLVED ist nicht erfüllbar.\",\n  \"outcome\": \"NONE\",\n  \"ruleId\": null,\n  \"ruleVersion\": null,\n  \"proofs\": [],\n  \"promptVersion\": \"closure-ground-v6\"\n}",
+    "passed" : true
+  }, {
+    "id" : "pending-compensation-after-repair",
+    "category" : "negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Mieter meldete einen Defekt an der Sprechanlage (Sequence 0). Dieser wurde behoben, da der Mieter in Sequence 1 bestätigt, dass die Anlage wieder funktioniert. Allerdings bleibt eine Forderung nach Ersatz der Auslagen offen. Da ein offenes Anliegen besteht und keine vollständige Behebung des gesamten Falls vorliegt, kann kein Outcome angewendet werden.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v6",
+      "validationVersion" : "closure-ground-validation-v3"
+    },
+    "modelOutput" : "{\n  \"explanation\": \"Der Mieter meldete einen Defekt an der Sprechanlage (Sequence 0). Dieser wurde behoben, da der Mieter in Sequence 1 bestätigt, dass die Anlage wieder funktioniert. Allerdings bleibt eine Forderung nach Ersatz der Auslagen offen. Da ein offenes Anliegen besteht und keine vollständige Behebung des gesamten Falls vorliegt, kann kein Outcome angewendet werden.\",\n  \"outcome\": \"NONE\",\n  \"ruleId\": null,\n  \"ruleVersion\": null,\n  \"proofs\": [],\n  \"promptVersion\": \"closure-ground-v6\"\n}",
+    "passed" : true
+  }, {
+    "id" : "future-condition-not-confirmation",
+    "category" : "negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Mieter meldet ein Klemmen der Balkontür und fordert deren Reparatur als Bedingung für die Beendigung des Falls. Es liegen keine Nachrichten vor, die eine tatsächliche Reparatur bestätigen oder den Bedarf an weiteren Hilfe ausschließen. Die Regelprüfung ist nicht möglich, da keine freigegebene Regel im Regelbestand vorhanden ist.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v6",
+      "validationVersion" : "closure-ground-validation-v3"
+    },
+    "modelOutput" : "{\n  \"explanation\": \"Der Mieter meldet ein Klemmen der Balkontür und fordert deren Reparatur als Bedingung für die Beendigung des Falls. Es liegen keine Nachrichten vor, die eine tatsächliche Reparatur bestätigen oder den Bedarf an weiteren Hilfe ausschließen. Die Regelprüfung ist nicht möglich, da keine freigegebene Regel im Regelbestand vorhanden ist.\",\n  \"outcome\": \"NONE\",\n  \"ruleId\": null,\n  \"ruleVersion\": null,\n  \"proofs\": [],\n  \"promptVersion\": \"closure-ground-v6\"\n}",
+    "passed" : true
+  } ],
+  "passed" : false
+}

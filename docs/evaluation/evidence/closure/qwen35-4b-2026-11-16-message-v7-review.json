@@ -1,0 +1,49 @@
+{
+  "reviewType": "development-agent-review-not-independent-human-approval",
+  "sourceReport": "qwen35-4b-2026-11-16-message-v7.json",
+  "sourceSha256": "0f706f039a44072a72aa920dced7254af2afbcd637a0bd82fab1802466be5cc1",
+  "cases": [
+    {
+      "id": "generate-heating",
+      "text": "Sie haben bestätigt, dass die kalte Heizung in Ihrem Objekt nun vollständig funktioniert und Sie benötigen keine weitere Unterstützung. Da der Mieter den vollständigen Funktionswiederherstellung anerkennt und keinen weiteren Bedarf äußert, ist das Anliegen abgeschlossen.",
+      "contentGrounded": true,
+      "recipientReady": false,
+      "passed": false,
+      "finding": "Der belegte Zustand ist richtig. Der zweite Satz wechselt zur dritten Person und enthält einen Grammatikfehler; sprachliche Überarbeitung nötig."
+    },
+    {
+      "id": "generate-tap",
+      "text": "Sie bestätigen, dass der tropfende Wasserhahn in Ihrem Objekt nicht mehr tropft und es keine Folgeschäden gibt. Da Sie ausdrücklich keine weitere Unterstützung benötigen, ist Ihr Anliegen vollständig abgehandelt.",
+      "contentGrounded": true,
+      "recipientReady": true,
+      "passed": true,
+      "finding": "Aktuell behobener Wasserhahn, fehlende Folgeschäden und fehlender Hilfebedarf sind belegt."
+    },
+    {
+      "id": "generate-door",
+      "text": "Sie haben uns mitgeteilt, dass die Wohnungstür in Ihrer Einheit wieder problemlos bedienbar ist und Sie nichts weiter tun müssen. Da Sie den vollständigen Abschluss des Falls bestätigt haben, besteht kein weiterer Hilfebedarf.",
+      "contentGrounded": false,
+      "recipientReady": false,
+      "passed": false,
+      "finding": "Die Quellaussage Sie müssen nichts mehr tun richtet sich an die Verwaltung. Der Entwurf schreibt dem Mieter dagegen eine Aussage über seine eigenen Pflichten zu; diese Rollenverschiebung ist nicht als Mieteraussage belegt."
+    },
+    {
+      "id": "generate-two-issues",
+      "text": "Sie haben bestätigt, dass die Klingel- und Sprechanlage am betroffenen Objekt dauerhaft wieder funktionieren. Da Sie beide Anliegen als erledigt deklariert haben und keinen weiteren Hilfebedarf anmelden, ist der Fall abgeschlossen.",
+      "contentGrounded": true,
+      "recipientReady": true,
+      "passed": true,
+      "finding": "Die vollständige Behebung beider Anlagen und der fehlende weitere Hilfebedarf sind belegt."
+    },
+    {
+      "id": "generate-tenant-rule",
+      "text": "Da Ihr mobiler Küchenwecker nicht fest eingebaut ist und Ihnen als Privatperson gehört, liegt kein Bearbeitungsbedarf der Verwaltung vor. Die Regel beschränkt sich ausschliesslich auf vom Mieter mitgebrachte mobile Geräte, die keinen Bestandteil der Mietsache darstellen, weshalb keine Reparatur oder andere Massnahmen erforderlich sind.",
+      "contentGrounded": true,
+      "recipientReady": true,
+      "passed": true,
+      "finding": "Der private mobile Gegenstand und fehlende Verwaltungsbedarf sind belegt. Der letzte Satz ist im Verwaltungskontext zu lesen; eine Reparatur wird nicht als erfolgt behauptet."
+    }
+  ],
+  "passed": false,
+  "releaseApproved": false
+}

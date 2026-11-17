@@ -35,6 +35,11 @@ Die fachliche Verantwortung verbleibt bei der Immobilienbewirtschaftung.
 Fälle können durch Mitarbeitende und in den vereinbarten eindeutigen Fällen
 durch das System nach [FALL-07](specifications/fallverwaltung.md#fall-07-abschluss-und-zeit-danach)
 abgeschlossen werden. Verpflichtende menschliche Prüfungen bleiben bestehen.
+Für Systemabschlüsse gelten die [bestätigten Abschlussregeln](specifications/fallverwaltung.md#regeln-für-den-automatischen-fallabschluss):
+nur «In Abklärung» oder «Wartet auf Mieterantwort», aktuelle Belege für die
+vollständige Behebung oder eine ausdrücklich freigegebene und vollständig
+anwendbare Fachregel, ohne offene Prüfgründe. Ein LLM-Vorschlag allein erteilt
+weder eine Abschluss- noch eine Veröffentlichungsfreigabe.
 
 Details:
 
@@ -69,6 +74,7 @@ eindeutig festgelegt sind.
 - Architekturentscheidungen werden über ADRs dokumentiert.
 - Datenbankschemaänderungen werden mit Flyway versioniert.
 - Bereits angewendete Flyway-Migrationen werden nicht nachträglich verändert.
+- Backend-Initialskripte sind nach Modulen aufgeteilt. Nach dem freigegebenen Hard Reset ohne Sicherung ist die Legacy-Kette entfernt; additive Updates V6–V8 sind vorhanden, neue Änderungen beginnen mit V9. Siehe [Datenbankmigrationen](architecture/datenbankmigrationen.md).
 - Kleine, fokussierte Änderungen und automatisierte Tests werden bevorzugt.
 
 ## 3. Kontext und Systemgrenzen
@@ -189,6 +195,19 @@ Details:
 
 ### 6.4 Workflow-Orchestrierung
 
+- Der [BPMN-Fachentwurf](architecture/bpmn/README.md) ist seit Stand 0.9 in
+  Hauptprozess, Mieterantwortprüfung, Mitarbeiterbearbeitung und Wiedervorlage
+  aufgeteilt. Die drei ausgelagerten Dateien werden über Call Activities
+  aufgerufen. Der Hauptprozess behält führende Fallzuordnung und Mieternachrichteneingang.
+  [Teilprozess-Verträge](architecture/bpmn/teilprozess-vertraege.md) regeln den
+  Entwurf für Eingaben/Rückgaben, Instanzzuordnung und laufende Aktualisierungen.
+  Seit Stand 0.10 liegt auch die Nachrichtenverarbeitung in
+  `mieternachricht-verarbeiten.bpmn`; der nicht unterbrechende Eingang bleibt
+  im Hauptprozess und ruft sie je gespeicherter Nachricht ohne Outputs auf.
+  Keine live gemeinsamen Variablen über Call-Grenzen annehmen. Die ausführbaren Modelle liegen seit 16.11.2026 verbindlich unter
+  `src/main/resources/bpmn`; `docs/architecture/bpmn` enthält die Beschreibung.
+  Der aktuelle Integrationsstand steht in der Umsetzungsmatrix; Ausführbarkeit
+  ersetzt weder fachliche Modellevaluation noch Produktionsabnahme.
 - PropertyFlow speichert neue Anliegen als «Eingegangen» und startet den
   Camunda-Fallprozess asynchron. Für anschliessende Statuswechsel ist
   ausschliesslich Camunda zuständig. Mitarbeitende lösen nur Aktionen aus,
@@ -282,6 +301,35 @@ erzeugten Zusammenfassungen und Fakten. Bewusst eingegebene kurze Sachanweisunge
 des Mitarbeiters sind nach KOM-02 zulässig, auch wenn dieselbe Information in
 einem Memo steht. Der Mitarbeiter prüft den Vorschlag vor dem Senden.
 
+Für automatische Rückfragen gilt [KOM-05](specifications/fallkommunikation.md#kom-05-automatische-rueckfragen):
+Das LLM wählt Frage-IDs aus einem freigegebenen Sachfragenkatalog; der Dienst
+prüft Prozessfreigabe, aktuellen Fallstand und offene Prüfgründe und übernimmt
+den Katalogtext mit Antwortbedarf. Freie LLM-Zusätze werden nicht automatisch
+veröffentlicht. Mitarbeiterbearbeitung und Wiedervorlage bleiben geschützt;
+doppelte oder veraltete Ergebnisse allein erzeugen keinen neuen Prüfbedarf.
+Die Regeln sind bestätigt, die technische Umsetzung steht aus.
+
+Für automatische Antworten vor Fallabschluss gilt
+[KOM-06](specifications/fallkommunikation.md#kom-06-automatische-antworten-vor-fallabschluss):
+Nach fachlicher Freigabe erzeugt das LLM eine individuelle Nachricht. Der Worker
+prüft sie, speichert sie extern und beauftragt zuverlässig den E-Mail-Versand.
+Danach aktuellen Fallstand erneut prüfen und abschliessen. Keine festen Vorlagen,
+kein separater Vorlagenprüfschritt, keine zusätzliche Abschlussmail. Technische
+Fehler folgen Job-Retries/Incidents; unzulässiger Inhalt führt zur Mitarbeiterprüfung.
+Bereits gespeicherte Nachrichten werden bei Wiederholung nicht nochmals gesendet.
+Mitarbeiterabschluss ist ohne Nachricht möglich und erzeugt keine automatische
+Mail. Die bestehende Formulierungshilfe im UI bleibt unverändert.
+
+Mieternachrichten sind in jedem aktiven Bearbeitungsstatus zulässig, auch ohne
+offene Rückfrage. Der Fallprozess muss während der aktiven Bearbeitung
+durchgängigen Nachrichtenempfang bereitstellen. Bei **«Mitarbeiterprüfung erforderlich»**
+ergänzt eine neue Nachricht mit ihrer zulässigen Auswertung dieselbe Aufgabe.
+Das System darf diesen Status nicht selbstständig verlassen, auch nicht nach
+einer Behebungsbestätigung und unabhängig vom Ursprung des Prüfbedarfs.
+Nur eine bewusste Mitarbeiterentscheidung veranlasst die Fortsetzung.
+[FALL-06](specifications/fallverwaltung.md#vorrang-einer-laufenden-mitarbeiterprüfung) ·
+[KOM-03](specifications/fallkommunikation.md#kom-03-asynchrone-fallkommunikation)
+
 ### 6.8 Fallanlage und Lebenszyklus
 
 Die [zentrale Spezifikation der Fallverwaltung](specifications/fallverwaltung.md)
@@ -292,7 +340,8 @@ Die acht Bearbeitungsstatus, die Zuordnung klärungsbedürftiger Fälle zu
 «Mitarbeiterprüfung erforderlich» und das Zeitmodell des letzten Mieterkontakts
 sind dort vereinbart. Mitarbeitende dürfen den Abschluss bestätigen; das
 System darf bei eindeutig bestätigter Behebung ohne weiteren Hilfebedarf oder
-eindeutig fehlendem Verwaltungsbedarf nach hinterlegter Fachregel abschliessen.
+eindeutig fehlendem Verwaltungsbedarf nach hinterlegter Fachregel abschliessen,
+sofern keine Mitarbeiterprüfung läuft und keine menschliche Entscheidung aussteht.
 Konkrete Prozessübergänge und die technische Umsetzung der Abschlussregeln
 bleiben zu konkretisieren. Use-Cases und Screens verweisen auf diese Quelle.
 

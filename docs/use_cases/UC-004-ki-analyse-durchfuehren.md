@@ -6,7 +6,7 @@
 **Use Case Name:** Externe Nachricht mit KI formulieren
 **Primary Actor:** Immobilienbewirtschaftung
 **Goal:** Aus einer kurzen fachlichen Mitarbeitereingabe einen freundlichen externen Nachrichtenvorschlag erzeugen, prüfen und bewusst senden.
-**Status:** Produktiver Gesamtprozess geplant; lokale Frontend-Demo mit Mock-Daten vorhanden. Die Demo ersetzt keine produktive Datenbank-, KI-, Mail- oder Camunda-Integration. Siehe [Demo-Nachweise](../evaluation/evaluationsgrundlage.md#testabdeckung-der-frontend-demo--ergänzung-vom-13102026).
+**Status:** Im integrierten Backend technisch umgesetzt (16.11.2026): Streaming, Abbruch, bewusste Übernahme und manueller Ersatzbetrieb. Die Modellevaluation bleibt zurückgestellt. [Annahmen](../architecture/ki-formulierung-2026-11-16.md) · [Prüfbericht](../evaluation/ki-formulierung-2026-11-16.md).
 **Fachlich präzisiert:** 10.10.2026
 
 ## Geltungsbereich
@@ -63,6 +63,10 @@ Das System bleibt in «Wartet». Der Mitarbeiter kann den Formulierungsversuch w
 Während Warten oder Streaming kann der Mitarbeiter abbrechen. Danach werden keine weiteren Antwortteile verarbeitet oder angezeigt; der Zustand ist «Abgebrochen». Es wird keine Nachricht gespeichert oder veröffentlicht. Die aktuelle Mitarbeitereingabe einschliesslich zwischenzeitlicher Bearbeitungen bleibt erhalten; ein abgebrochener Teiltext kann nicht als vollständiger Vorschlag übernommen werden. Ein neuer Formulierungsversuch bleibt möglich. Gespeicherte Fallinhalte bleiben erhalten.
 
 ### A3: Formulierungsfehler
+
+Der systemweite [manuelle Ersatzbetrieb bei KI-Ausfällen](../specifications/ki-tools.md)
+gilt auch bei vollständig deaktivierter KI-Anbindung. Eine erfolgreiche Generierung
+ist keine Voraussetzung für das manuelle Verfassen und Senden.
 
 **Bestätigt am 10.10.2026:** Das System zeigt «Die Nachricht konnte nicht formuliert werden.» Die aktuelle Mitarbeitereingabe und gespeicherte Fallinhalte bleiben erhalten. Der Mitarbeiter kann erneut «Mit KI formulieren» wählen oder den Text manuell bearbeiten und mit «Nachricht senden» veröffentlichen, sofern die geltenden Fachregeln dies zulassen. Es wird nichts automatisch gesendet. Dieser Fehler ist keine fehlgeschlagene automatische Fallanalyse; die in FALL-05 definierte Behandlung von Analysefehlern gilt weiterhin für die Analyse im Camunda-Prozess.
 

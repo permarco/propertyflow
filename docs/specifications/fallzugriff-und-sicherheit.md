@@ -5,6 +5,14 @@
 
 **Geltungsbereich:** Mieterzugriff über Fall-Link oder Konto, Mitarbeiteranmeldung und Kontoverwaltung, delegierte MCP-Zugriffe sowie Schutz und Versand persönlicher Fall-Links.
 
+**Backendstand 16.11.2026:** Persistente Mieterkonten, Codeanmeldung,
+Mitarbeiterkontoverwaltung und die separate geprüfte Fallzugangsverwaltung sind
+implementiert. Die historischen Demoangaben weiter unten sind keine aktuelle
+Implementierungsgrenze. [Umsetzungsmatrix](../use_cases/umsetzungsstand-2026-11-16.md) ·
+[Prüfverfahren und technische Annahmen](../architecture/konten-und-zugangsverwaltung-2026-11-16.md).
+MCP/OAuth bleibt ein eigener offener Ausbau. Die Kontoanlage vergibt weiterhin
+keine zusätzlichen Verwaltungsrechte.
+
 ## Zweck und Verbindlichkeit
 
 Mieterinnen und Mieter können Anliegen ohne Konto einreichen und über einen persönlichen Link auf den jeweiligen Fall zugreifen. **Der persönliche E-Mail-Link enthält als einzigen variablen Zugangswert einen geheimen Token.** PropertyFlow ermittelt den zugehörigen Fall serverseitig und rendert die Ansicht direkt unter `/mieter/fall/zugang/<geheimer-token>`. Der Benutzer bleibt auf dieser URL. Die lesbare Case-ID bleibt die unveränderliche Referenz des Falls und wird im Inhalt der Fallansicht angezeigt. Der zusätzliche Zugang über ein freiwilliges Mieterkonto und die Regeln für Mitarbeiterkonten und MCP stehen in [ZUG-04](#zug-04-rechte-und-vertrauensgrenzen).
@@ -65,7 +73,8 @@ Die Matrix gilt für das Zielmodell aus [ADR-005](../architecture/adr/ADR-005-zu
 | Browser mit gültigem persönlichem Fall-Link | Genau den dem Token zugeordneten Fall mit veröffentlichtem Verlauf, wirksamer Dringlichkeit und freigegebener Stufenhistorie nach DRING-07. | Eine externe Nachricht im zugeordneten aktiven Fall senden. |
 | Angemeldeter Mieter mit verifizierter E-Mail-Adresse | Alle Fälle mit derselben aktuellen Kontaktadresse und deren mieteröffentliche Daten. | Neues Anliegen einreichen und in einem zugehörigen aktiven Fall eine externe Nachricht senden. |
 | Angemeldeter Mitarbeiter mit aktiver Mitarbeiterrolle | Alle Fälle im Mitarbeiterbereich mit veröffentlichtem Verlauf und internen Memos. Die Volltextsuche umfasst diese freigegebenen Inhalte. | Im Fallprozess vorgesehene Fachaktionen anstossen, etwa die Dringlichkeit einstufen, ein Memo erfassen, eine Nachricht veröffentlichen oder den Abschluss bestätigen. Camunda veranlasst die Statuswechsel gemäss FALL-06. |
-| Angemeldete Person mit zusätzlichem Kontoverwaltungsrecht | Geschützte Kontoverwaltung. Fallzugriff richtet sich nach der Mitarbeiterrolle. | Mitarbeiterkonten anlegen und die Mitarbeiterrolle gemäss UC-007 vergeben. |
+| Angemeldete Person mit aktiver Mitarbeiterrolle und zusätzlichem Kontoverwaltungsrecht | Geschützte Kontoverwaltung. Fallzugriff richtet sich nach der Mitarbeiterrolle. | Mitarbeiterkonten anlegen und die Mitarbeiterrolle gemäss UC-007 vergeben. Mitarbeiterkonten sperren oder die Mitarbeiterrolle gemäss UC-029 entziehen. |
+| Angemeldete Person mit aktiver Mitarbeiterrolle und dem Zusatzrecht «Fallzugänge verwalten» | Geschützte Fallzugangsverwaltung für berechtigte Fälle. | Nach serverseitig hinterlegter Prüfung einen Fall-Link ersetzen oder die Fall-Kontaktadresse desselben Mieters korrigieren (UC-024, UC-025). |
 | MCP-Client mit gültigem OAuth-Zugriffstoken eines angemeldeten Benutzers | Freigegebene Tools und Daten für Fälle, auf die das Konto aktuell Zugriff hat. | Ausdrücklich delegierte fachliche Aktionen innerhalb der Kontorechte und der Regeln für den konkreten Fall. |
 | Camunda-Integration und Hintergrunddienste mit technischer Identität | Nur die für die jeweilige Aufgabe erforderlichen Daten. | Definierte Systemaktionen über autorisierte PropertyFlow-Dienste. Die Worker speichern die von Camunda veranlassten Statuswechsel. Die Entscheidung zur Wiedereröffnung bleibt bei Mitarbeitenden gemäss FALL-07. |
 
@@ -75,11 +84,15 @@ Die Matrix gilt für das Zielmodell aus [ADR-005](../architecture/adr/ADR-005-zu
 | --- | --- | --- |
 | **Mieter** | Durch freiwillige Registrierung und Verifikation der E-Mail-Adresse gemäss [UC-005](../use_cases/UC-005-userkonto-eroeffnen.md). | Die Person kann neue Anliegen einreichen, Fälle mit passender aktueller Kontaktadresse und deren mieteröffentliche Daten einsehen und diese Fälle in der aktiven Phase mit externen Nachrichten ergänzen. |
 | **Mitarbeiter** | Eine berechtigte Person der Verwaltung legt das Konto mit der geschäftlichen E-Mail-Adresse an und weist ihm die Mitarbeiterrolle gemäss [UC-007](../use_cases/UC-007-mitarbeiterkonto-anlegen.md) zu. | Die Person kann im Mitarbeiterbereich Fälle und interne Memos einsehen und suchen sowie die im Fallprozess zulässigen Bearbeitungsaktionen anstossen. Für kritische Handlungen gilt [FALL-10](fallverwaltung.md#fall-10-automatisierung-und-menschliche-freigabe). |
-| **Mitarbeiterkonten verwalten** | Das erste Verwaltungskonto erhält das Zusatzrecht zur Mitarbeiterrolle bei der Servereinrichtung gemäss [UC-007](../use_cases/UC-007-mitarbeiterkonto-anlegen.md). | Die Person kann in der geschützten Kontoverwaltung Mitarbeiterkonten anlegen und die Mitarbeiterrolle vergeben. Der Fallzugriff richtet sich nach der Mitarbeiterrolle. |
+| **Mitarbeiterkonten verwalten** | Das erste Verwaltungskonto erhält das Zusatzrecht zur Mitarbeiterrolle bei der Servereinrichtung gemäss [UC-007](../use_cases/UC-007-mitarbeiterkonto-anlegen.md). | Die Person kann in der geschützten Kontoverwaltung Mitarbeiterkonten anlegen, die Mitarbeiterrolle vergeben, Mitarbeiterkonten sperren oder die Mitarbeiterrolle entziehen. Der Fallzugriff richtet sich nach der Mitarbeiterrolle. |
+| **Fallzugänge verwalten** | Separates Zusatzrecht für dafür zuständige Mitarbeitende. Die technische Rechtevergabe ist bei der Umsetzung festzulegen. | Fall-Link ersetzen und die Fall-Kontaktadresse nach der Prüfung gemäss ZUG-05 korrigieren. |
 
-Wer Mitarbeiterkonten sperren oder die Mitarbeiterrolle entziehen darf, bleibt
-im Verwaltungsablauf nach [UC-029](../use_cases/UC-029-mitarbeiterzugriff-entziehen.md)
-zu konkretisieren.
+Der Entzug des Mitarbeiterzugriffs setzt eine aktive Mitarbeiterrolle und
+das Zusatzrecht «Mitarbeiterkonten verwalten» voraus. Nach der Aktion muss
+mindestens ein aktives Konto mit Mitarbeiterrolle und Kontoverwaltungsrecht
+verbleiben. Diese Prüfung gilt auch bei parallelen Aktionen. Den Ablauf und
+die Wirkung auf bestehende Sitzungen und Delegationen beschreibt
+[UC-029](../use_cases/UC-029-mitarbeiterzugriff-entziehen.md).
 
 Der persönliche Fall-Link gewährt Zugriff auf den zugeordneten Fall gemäss
 [ZUG-03](#zug-03-direkter-linkaufruf-und-tokenprüfung). Der MCP-Client handelt
@@ -97,20 +110,51 @@ Für den Kontozugriff müssen die nach dieser Regel vereinheitlichte Fall-Kontak
 
 Die Mieterrechte umfassen veröffentlichte Falldaten und externe Nachrichten. Der Zugriff auf interne Memos und deren Metadaten ist dem Mitarbeiterbereich vorbehalten. Fachaktionen wie eine Dringlichkeitseinstufung, Freigabe, Abschluss oder Wiedereröffnung richten sich nach den jeweiligen Mitarbeiter- und Systemrechten im Fallprozess. Ein abgeschlossener Fall bleibt bei gültiger Berechtigung lesbar. Für Nachrichten gilt die Schreibsperre nach [KOM-04](fallkommunikation.md#kom-04-nachrichtensperre-nach-fallabschluss).
 
-**Lokaler Implementierungsstand (13.11.2026):** Selbstregistrierung, E-Mail-Codeprüfung,
-«Meine Fälle» sowie die Prüfung bei Detail- und Nachrichtenzugriffen sind im Profil
-`frontend-demo` umgesetzt. Die Konto-Adresse stammt aus der Sitzung; Formularwerte
-ändern keine Zuordnung oder Rolle. Für die Codeprüfung gelten die [gemeinsamen
-Einmalcode-Regeln](#e-mail-einmalcode-für-registrierung-und-anmeldung).
-Konten und Fälle liegen im Arbeitsspeicher. Dauerhafte Speicherung, persönliche
-Audit-Zuordnung und OAuth-/MCP-Delegation sind damit noch nicht umgesetzt.
-Die [Testanleitung](../../src/test/README.md) beschreibt die Prüfungen mit Mailpit.
+**Implementierungsstand (16.11.2026):** Selbstregistrierung, E-Mail-Codeprüfung,
+«Meine Fälle» sowie die Berechtigung bei Detail- und Nachrichtenzugriffen verwenden
+im Profil `propertyflow-backend` persistente PostgreSQL-Konten und Fälle. Die
+verifizierte Konto-Adresse stammt aus der Sitzung; Formularwerte ändern weder
+Zuordnung noch Rolle. Es gelten die [gemeinsamen Einmalcode-Regeln](#e-mail-einmalcode-für-registrierung-und-anmeldung).
+Sitzungswechsel, CSRF, Eigentum, Rollenentzug und Neustartpersistenz werden im
+integrierten Testbetrieb geprüft. OAuth-/MCP-Delegation bleibt ausdrücklich ein
+separater Arbeitsumfang. Die [Testanleitung](../../src/test/README.md) und
+[Übertragungsmatrix](../architecture/frontend-demo-ablosung-2026-11-16.md) beschreiben
+Prüfaufbau und verbleibende Prototypabhängigkeiten.
 
 ### Mitarbeiteranmeldung und Kontoverwaltung
 
 UI2 und UI3 setzen für Lesen und Schreiben ein aktives, persönlich angemeldetes Konto mit Mitarbeiterrolle voraus. Die Anmeldung per E-Mail-Einmalcode beschreibt [UC-006](../use_cases/UC-006-mitarbeiter-anmelden.md). Für Kontoanlage und Rollenvergabe gelten die [Rollen und Zusatzrechte](#rollen-und-zusatzrechte).
 
 Die fachlichen Fallrechte sind für die Mitarbeiterrolle einheitlich. Vor Prozessstart und bei unerreichbarem Camunda können Mitarbeitende Fälle einsehen. Für Änderungen im Fallprozess muss Camunda die konkrete Fachaktion erlauben. PropertyFlow setzt diese Grenze auch bei direkten Web- und MCP-Aufrufen durch. Für die Prüfung und Freigaben gelten [FALL-06](fallverwaltung.md#fall-06-fachlicher-status-und-technischer-workflow), [FALL-07](fallverwaltung.md#fall-07-abschluss-und-zeit-danach) und [FALL-10](fallverwaltung.md#fall-10-automatisierung-und-menschliche-freigabe). PropertyFlow ordnet Änderungen und Freigaben der persönlichen Benutzer-ID zu. Fehlende oder abgelaufene Anmeldungen sperren den Mitarbeiterzugriff bis zur erneuten Anmeldung. Bei einem gesperrten Konto oder entzogener Mitarbeiterrolle weist der Dienst den nächsten Zugriff zurück.
+
+### Berechtigung bei verzögerter Ausführung von Mitarbeiteraufträgen (B09)
+
+**Bestätigt am 15.11.2026:** Der Dienst prüft die Berechtigung bei der Annahme
+und erneut unmittelbar vor der fachlichen Ausführung eines Mitarbeiterauftrags.
+Massgebend sind das aktuelle Konto, die aktive Mitarbeiterrolle und die für die
+konkrete Aktion erforderlichen Rechte. Die bei der Annahme geprüfte persönliche
+Benutzer-ID bleibt dem Auftrag zugeordnet; eine frühere Freigabe ersetzt die
+erneute Rechteprüfung nicht.
+
+- Ist das Konto inzwischen gesperrt oder ein erforderliches Recht entzogen,
+  wird der noch nicht ausgeführte Auftrag abgelehnt. Er bewirkt keine fachliche
+  Änderung. Ablehnungsgrund und Ergebnis werden am Auftrag protokolliert.
+- Ein Logout widerruft einen bereits gültig angenommenen Auftrag nicht. Seine
+  Ausführung setzt keine weiterhin offene Browsersitzung voraus, wohl aber die
+  aktuellen Rechte des Auftraggebers. Neue Web-Aufträge benötigen erneut eine
+  gültige Anmeldung.
+- Bereits wirksam ausgeführte Änderungen werden durch einen späteren Logout,
+  eine Kontosperre oder einen Rechteentzug nicht rückgängig gemacht. Wiederholungen
+  dürfen keine zweite Wirkung auslösen; der Wiederholungsschutz gemäss FALL-06
+  bleibt bestehen.
+- Die erneute Rechteprüfung ersetzt weder die Prüfung des aktuellen Fallstands
+  noch die Bindung an die zuständige Prozessfortsetzung.
+
+**Geplante Prüfung, noch kein Laufzeitnachweis:** Einen angenommenen Auftrag
+verzögert ausführen und vorher jeweils Konto sperren, Mitarbeiterrolle entziehen
+oder nur ausloggen. Sperre und Rechteentzug verhindern die Änderung; Logout
+allein verhindert sie nicht. Zusätzlich die Wiederholung eines bereits wirksam
+ausgeführten Auftrags auf ausbleibende Doppelwirkung prüfen.
 
 ### E-Mail-Einmalcode für Registrierung und Anmeldung
 
@@ -168,8 +212,9 @@ Anmeldedienst bleiben im technischen Zugriffsvertrag zu konkretisieren.
 
 - **Bestätigt am 10.10.2026:** Der persönliche Fall-Link läuft zeitlich nicht ab. Weder Inaktivität noch eine feste Dauer seit Ausstellung machen ihn ungültig. Auch der Fallabschluss setzt keine Ablauffrist. Eine Verlängerungs- oder Erneuerungsaktion aufgrund des Alters des Links ist nicht vorgesehen; die vorgeschlagene UI3-Aktion «Fall-Link ersetzen» wird nicht eingeführt.
 - **Vereinbart am 13.11.2026:** PropertyFlow aktiviert beim administrativen Ersatz einen neuen unabhängigen Token und sperrt den bisherigen in derselben Datenbanktransaktion. Nach dem Commit gilt der neue Link für denselben Fall. Weitere Lese- und Schreibaufrufe mit dem alten Token werden auch aus bereits geöffneten Tabs abgewiesen. Scheitert der Ersatz, gilt der bisherige Link weiter. Case-ID, Historie und Bearbeitungsstand bleiben erhalten.
-- Ein erforderlicher bewusster Ersatz eines verlorenen oder kompromittierten Links erfolgt über die Verwaltung nach geeigneter Identitätsprüfung an die bestätigte Kontaktadresse. Der sichere administrative Ablauf bleibt zu konkretisieren; daraus entsteht keine zusätzliche UI3-Aktion. Ein Adresswechsel benötigt einen separaten geprüften Ablauf.
-- Ob diese administrativen Zugriffsoperationen bei einem Camunda-Ausfall verfügbar sein müssen, bleibt in [UC-024](../use_cases/UC-024-fall-link-widerrufen-oder-ersetzen.md) und [UC-025](../use_cases/UC-025-fall-kontaktadresse-aendern.md) zu klären.
+- Der Zielvertrag für den administrativen Linkersatz und die Adresskorrektur verlangt das Zusatzrecht «Fallzugänge verwalten». Die Aktionen laufen in der separaten Fallzugangsverwaltung ausserhalb von UI3 und sind auch bei einem Camunda-Ausfall möglich. [UC-024](../use_cases/UC-024-fall-link-widerrufen-oder-ersetzen.md) · [UC-025](../use_cases/UC-025-fall-kontaktadresse-aendern.md)
+- PropertyFlow verlangt für jede Aktion einen serverseitig hinterlegten Prüfnachweis für Identität und bestätigte Adresse. Er ist an Fall, handelnde Person, geprüften Fallstand und Aktion gebunden, befristet und einmal verwendbar. Das konkrete Prüfverfahren und die Bedienung bleiben festzulegen.
+- Bei geprüfter Adresskorrektur desselben Mieters speichert PropertyFlow die neue aktuelle Adresse und ersetzt den bisherigen Link gemeinsam. Die neue Adresse gilt beim nächsten kontobasierten Abruf im Web und über MCP. Nach beiden Aktionen geht der gültige Link nachgelagert an die bestätigte Adresse. Der Versand liest die aktuell bestätigte Adresse und den aktuell gültigen Link aus PropertyFlow.
 - Automatischer öffentlicher Linkersatz ist eine optionale Erweiterung. Er muss neutral antworten, darf weder Fallbestand noch Kontaktzuordnung offenlegen und benötigt Missbrauchsschutz.
 - Normales Öffnen und normale Benachrichtigungen rotieren den Token nicht. Auch nach dem Fallabschluss bleibt der Fall über den gültigen Link lesbar. Die fachliche Abschlusssperre verhindert weitere Schreibzugriffe.
 - Die Aufbewahrung der Falldaten folgt eigenen Regeln. Der Ersatz betrifft ausschliesslich den persönlichen Zugang. Eine berechtigende Fallsitzung ist im direkten Tokenmodell nicht vorgesehen.
@@ -256,7 +301,7 @@ Die bisher in Screen 01 diskutierten Werte werden hier weitergeführt und sind *
 |---|---|
 | Tokenstärke | Mindestens 256 Bit kryptografische Zufallsentropie; URL-taugliche Darstellung und konkrete Hash-Verifikation im Service-Design festlegen. |
 | Routen | Direkte Fallansicht unter `/mieter/fall/zugang/{token}` gemäss ZUG-07; weitere Backend-Verträge werden bei der Umsetzung konkretisiert. |
-| Kontaktbestätigung und Linkersatz | Konkrete Identitätsprüfung, Adresswechsel, Berechtigung für den administrativen Linkersatz und Nachvollziehbarkeit festlegen. |
+| Kontaktbestätigung und Linkersatz | Verfahren zur Identitäts- und Adressprüfung, Rechtevergabe und Oberfläche konkretisieren. Der Zielvertrag definiert Prüfnachweis, Berechtigungsprüfung und Audit. |
 | Erstzugriff und Wiederholung | Sichere Bindung an den Einreichungskontext sowie Koordination von Annahme, Zugriffsdatensatz und Versandauftrag festlegen. |
 | Umsetzung der Token-Aufbewahrung | Hash für die Prüfung und separat verschlüsselte Kopie desselben Tokens für den Versand sind vereinbart. Verschlüsselungsverfahren, Schlüsselbereitstellung und -rotation, technische Entschlüsselungsrechte, Sicherungen und Löschfristen konkretisieren. |
 | Schutzparameter und Betrieb | Rate-Limit-Werte, Hash-Verfahren, Aufbewahrungsfristen, Formularschutz und technische Durchsetzung der Log-Redaktion konkretisieren. |

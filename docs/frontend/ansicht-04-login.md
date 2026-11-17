@@ -1,9 +1,15 @@
 # Screen 04 – Anmeldung per E-Mail-Einmalcode
 
 **Projekt:** PropertyFlow – FFHS CAS AISE  
-**Status:** Die Anmeldung für Mitarbeitende und Mieter sowie die Mieter-Selbstregistrierung per E-Mail-Einmalcode sind in der lokalen Frontend-Demo umgesetzt. Die Weiterführung zu MCP beschreibt das Zielbild.\
-**Stand:** 13.11.2026\
+**Status:** Der reguläre Mitarbeiter-Login per E-Mail-Einmalcode ist umgesetzt. Mieteranmeldung und Selbstregistrierung sind in der Frontend-Demo umgesetzt. Die Weiterführung zu MCP beschreibt das Zielbild.\
+**Stand:** 14.11.2026\
 **Darstellung:** Serverseitig gerendertes Formular mit Thymeleaf.
+
+Der reguläre Login prüft das Mitarbeiterkonto in PostgreSQL und versendet den
+Einmalcode per SMTP. Nach der Anmeldung öffnet die zuvor angeforderte
+Mitarbeiterseite oder die Fallübersicht. Die
+[Service-Anbindung und ihre Abnahmetests](../architecture/zugriffsvertrag-mitarbeiter-login.md)
+beschreiben beide Einstiege.
 
 ## 1. Zweck und Umfang
 
@@ -36,6 +42,7 @@ die angemeldete Adresse und [«Abmelden»](../specifications/fallzugriff-und-sic
 | **Erneute Anforderung vorübergehend begrenzt** | Die Ansicht zeigt einen verständlichen Wartehinweis. Dauer und Wiederholungsgrenzen werden im technischen Vertrag festgelegt. |
 | **Anmeldung fehlt oder ist abgelaufen** | Von [UI2](ansicht-02-mitarbeiter-falluebersicht.md) oder [UI3](ansicht-03-mitarbeiter-falldetail.md) zur Anmeldung führen. Nach erfolgreicher Anmeldung die angeforderte Seite neu laden, sofern der Zugriff erlaubt ist. Eine abgewiesene Schreibaktion wird nicht automatisch wiederholt. |
 | **Gültige Anmeldung ohne erforderliche Berechtigung** | Zugriffshinweis ohne geschützte Daten. |
+| **Technischer Fehler** | Ist der Kontodienst vorübergehend nicht verfügbar, antwortet das Formular mit HTTP 503. Unerwartete Fehler ergeben HTTP 500. Das Formular zeigt in beiden Fällen denselben neutralen Hinweis. Ein verzögerter SMTP-Fehler ändert die öffentliche Antwort der Codeanforderung nicht. |
 | **MCP-Freigabe** | Nach gültiger Anmeldung den anfragenden Client und die angeforderten Rechte anzeigen. Die Person kann den Zugriff erlauben oder ablehnen. |
 
 Felder haben sichtbare Beschriftungen. Der Einmalcode kann in ein Feld eingefügt werden. Die Schritte sind per Tastatur bedienbar und Fehler werden verständlich am jeweiligen Formular angezeigt.

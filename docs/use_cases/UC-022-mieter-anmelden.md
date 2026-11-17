@@ -5,7 +5,7 @@
 **Use Case ID:** UC-022  
 **Primary Actor:** Mieterin / Mieter  
 **Goal:** Ein bestehendes, verifiziertes Mieterkonto öffnen und Zugriff auf die eigenen Fälle erhalten.  
-**Status:** Anmeldung per E-Mail-Einmalcode in der lokalen Frontend-Demo umgesetzt. Dauerhafte Kontenspeicherung ist geplant.
+**Status:** Im integrierten Backend umgesetzt: bestehendes persistentes Mieterkonto per E-Mail-Einmalcode anmelden. [Umsetzung und Nachweise](umsetzungsstand-2026-11-16.md)
 
 ## Use-Case-Diagramm
 

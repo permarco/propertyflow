@@ -1,0 +1,10 @@
+{
+  "sourceReport": "qwen35-9b-2026-11-16-rule-v7-incomplete.json",
+  "sourceSha256": "7304fa02f1bb0c82a11dd2ccc4c1b041acf3cf025fe7e75a323c0dc7d46b92e7",
+  "completed": false,
+  "expectedCases": 13,
+  "observedCases": 1,
+  "passed": false,
+  "releaseApproved": false,
+  "terminationReason": "Auf ausdrücklichen Benutzerwunsch zurückgestellt. Neuer Fokus: konsolidierter produktionsnaher Betrieb mit persistenter Datenhaltung, Mieter-/Mitarbeiterinteraktionen und zugänglichem Camunda-Web-Interface. Eigener Surefire-Prozess beendet und 9B-Modell aus dem Arbeitsspeicher entladen; lokale Modelldateien bleiben erhalten."
+}

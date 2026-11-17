@@ -1,0 +1,19 @@
+# Isolated disposable database. Never point the integration tests at the development database.
+name: propertyflow-backend-test
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: propertyflow_test
+      POSTGRES_USER: propertyflow_test
+      POSTGRES_PASSWORD: propertyflow_test
+    ports:
+      - "127.0.0.1:5434:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U propertyflow_test -d propertyflow_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 20

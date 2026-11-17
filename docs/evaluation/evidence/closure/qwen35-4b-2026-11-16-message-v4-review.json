@@ -1,0 +1,39 @@
+{
+  "reviewType": "development-agent-review-not-independent-human-approval",
+  "sourceReport": "qwen35-4b-2026-11-16-message-v4.json",
+  "sourceSha256": "e9bd1c62887c4a3142b6db673575439063e953d95aaed975eb8624d20f730e7e",
+  "cases": [
+    {
+      "id": "generate-heating",
+      "text": "Die Meldung, dass die Heizung kalt ist, wurde von Ihnen als vollständig behoben bestätigt. Sie haben mitgeteilt, dass die Heizung nun wieder vollständig funktioniert und keine weitere Hilfe benötigt wird.",
+      "passed": true,
+      "finding": "Aktuelle vollständige Behebung und fehlender Hilfebedarf sind belegt; die Modellprüfung lehnt diesen zulässigen Text ab."
+    },
+    {
+      "id": "generate-tap",
+      "text": "Die Störung am Wasserhahn ist behoben. Der Mieter bestätigt, dass das Tropfen nicht mehr auftritt, keine Folgeschäden vorliegen und keine weitere Unterstützung benötigt wird.",
+      "passed": false,
+      "finding": "Sachlich belegt, aber interne Zusammenfassung über den Mieter statt direkter Mieteransprache."
+    },
+    {
+      "id": "generate-door",
+      "text": "Die Wohnungstür lässt sich gemäß Ihrer Meldung vom [Datum der Mietermeldung] wieder problemlos bedienen. Die Störung ist vollständig behoben und es besteht kein weiterer Hilfebedarf.",
+      "passed": false,
+      "finding": "Unausgefüllter Datumsplatzhalter; keine Meldungszeit in den Quellen vorhanden."
+    },
+    {
+      "id": "generate-two-issues",
+      "text": "Die Störung an der Klingel- und Sprechanlage wurde behoben. Der Mieter bestätigt, dass beide Anlagen dauerhaft funktionieren und keine weitere Hilfe benötigt wird.",
+      "passed": false,
+      "finding": "Sachlich belegt, aber Zusammenfassung über den Mieter statt direkter Ansprache."
+    },
+    {
+      "id": "generate-tenant-rule",
+      "text": "Gemäss der Regel EVAL-PRIVATE-TIMER fällt die Störung Ihres privaten, mobilen Küchenweckers unter Ihre Verantwortung. Da es sich um ein von Ihnen mitgebrachtes Gerät handelt, das nicht fest eingebaut ist und keinen Schaden am Gebäude oder an der Installation verursacht hat, besteht kein Bearbeitungsbedarf für die Verwaltung.",
+      "passed": false,
+      "finding": "Interne technische Regelkennung und weitergehende Verantwortungszuschreibung statt ausschliesslich fehlendem Verwaltungsbedarf."
+    }
+  ],
+  "passed": false,
+  "releaseApproved": false
+}

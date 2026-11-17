@@ -1,6 +1,6 @@
 package com.pertegato.propertyflow.access.service;
 
-import com.pertegato.propertyflow.access.demo.DemoAccounts;
+import com.pertegato.propertyflow.access.contract.StaffAuthenticationException;
 import jakarta.mail.Message;
 import jakarta.mail.Multipart;
 import jakarta.mail.Session;
@@ -25,6 +25,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -33,7 +34,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -41,66 +41,36 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
-import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.context.WebApplicationContext;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.spring6.SpringTemplateEngine;
+import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(properties = {
-        "spring.mail.host=127.0.0.1",
-        "spring.mail.properties.mail.smtp.auth=false",
-        "spring.mail.properties.mail.smtp.starttls.enable=false",
-        "spring.mail.properties.mail.smtp.starttls.required=false",
-        "spring.mail.properties.mail.smtp.connectiontimeout=500",
-        "spring.mail.properties.mail.smtp.timeout=500",
-        "spring.mail.properties.mail.smtp.writetimeout=500",
-        "propertyflow.staff.mail.from=sender@example.test"
-})
-@ActiveProfiles("frontend-demo")
-@Import(SmtpDeliveryTest.LoginConfiguration.class)
+@SpringJUnitConfig(SmtpDeliveryTest.LoginConfiguration.class)
+@ActiveProfiles("propertyflow-backend")
+@TestPropertySource(properties = "propertyflow.staff.mail.from=sender@example.test")
 @Timeout(15)
 class SmtpDeliveryTest {
 
     @Autowired
-    WebApplicationContext context;
-    @Autowired
     JavaMailSenderImpl sender;
     @Autowired
     StaffCodeDelivery delivery;
-    @Autowired
-    DemoAccounts accounts;
-    @Autowired
-    MutableClock clock;
-    @Autowired
-    AttemptedCode attempted;
-
-    private MockMvc mvc;
-
-    @BeforeEach
-    void setUp() {
-        mvc = MockMvcBuilders.webAppContextSetup(context).build();
-        attempted.value = null;
-    }
+    private final MutableClock clock = new MutableClock();
 
     @Test
     void realSmtpTransportDeliversUtf8AlternativePartsAndCorrectEnvelope() throws Exception {
@@ -154,62 +124,38 @@ class SmtpDeliveryTest {
 
     @ParameterizedTest
     @MethodSource("recoveryScenarios")
-    void failedSmtpRevokesCodeAndNewRequestRecoversThroughRealMvc(Mode mode, String path) throws Exception {
+    void failedSmtpRevokesCodeAndNewBackendRequestRecovers(Mode mode, String path) throws Exception {
         String email = UUID.randomUUID() + "@example.test";
         boolean registration = path.equals("/registrieren");
-        if (!registration) {
-            accounts.activateVerifiedTenant(email);
-        }
-        MockHttpSession session = (MockHttpSession) mvc.perform(get(path))
-                .andReturn().getRequest().getSession(false);
-        String csrf = session.getAttribute("csrf").toString();
+        TenantAccountService accounts = org.mockito.Mockito.mock(TenantAccountService.class);
+        UUID accountId = UUID.randomUUID();
+        org.mockito.Mockito.when(accounts.exists(email)).thenReturn(true);
+        org.mockito.Mockito.when(accounts.authenticate(email, registration)).thenReturn(Optional.of(accountId));
+        AttemptedCode attempted = new AttemptedCode();
+        TenantOtpService login = new TenantOtpService(accounts, (address, code) -> {
+            attempted.value = code;
+            delivery.send(address, code);
+        }, clock, Runnable::run, Duration.ofMinutes(10), Duration.ofMinutes(1), 5, 5);
+        UUID failedFlow = UUID.randomUUID();
         try (SmtpPeer failed = new SmtpPeer(mode)) {
             sender.setPort(failed.port());
-            mvc.perform(post(path + "/code")
-                    .session(session)
-                    .param("csrf", csrf)
-                    .param("email", email))
-                    .andExpect(status().isOk())
-                    .andExpect(content().string(containsString("id=\"login-code\"")))
-                    .andExpect(content().string(not(containsString("550"))))
-                    .andExpect(content().string(not(containsString("127.0.0.1"))));
-            String failedCode = attempted.value;
-            assertNotNull(failedCode);
-            mvc.perform(post(path + "/pruefen")
-                    .session(session)
-                    .param("csrf", csrf)
-                    .param("code", failedCode))
-                    .andExpect(status().isBadRequest());
-            mvc.perform(get("/mieter/faelle")
-                    .session(session))
-                    .andExpect(status().isUnauthorized());
-            assertEquals(!registration, accounts.findActiveByEmail(email).isPresent());
-            mvc.perform(post(path + "/code")
-                    .session(session)
-                    .param("csrf", csrf))
-                    .andExpect(status().isTooManyRequests());
+            login.requestCode(failedFlow, email, registration);
+            assertNotNull(attempted.value);
+            assertTrue(login.verifyCode(failedFlow, attempted.value).isEmpty());
+            org.mockito.Mockito.verify(accounts, org.mockito.Mockito.never()).authenticate(email, registration);
+            assertThrows(StaffAuthenticationException.class,
+                    () -> login.requestCode(UUID.randomUUID(), email, registration));
         }
-
         clock.advance(Duration.ofMinutes(1));
         try (SmtpPeer recovered = new SmtpPeer(Mode.ACCEPT)) {
             sender.setPort(recovered.port());
-            mvc.perform(post(path + "/code")
-                    .session(session)
-                    .param("csrf", csrf))
-                    .andExpect(status().isOk());
+            UUID flow = UUID.randomUUID();
+            login.requestCode(flow, email, registration);
             Multipart parts = (Multipart) recovered.message().getContent();
-            String text = (String) parts.getBodyPart(0).getContent();
-            Matcher code = Pattern.compile("\\b[0-9]{6}\\b").matcher(text);
+            Matcher code = Pattern.compile("\\b[0-9]{6}\\b").matcher((String) parts.getBodyPart(0).getContent());
             assertTrue(code.find());
-            mvc.perform(post(path + "/pruefen")
-                    .session(session)
-                    .param("csrf", csrf)
-                    .param("code", code.group()))
-                    .andExpect(status().isSeeOther());
-            mvc.perform(get("/mieter/faelle")
-                    .session(session))
-                    .andExpect(status().isOk());
-            assertTrue(accounts.findActiveByEmail(email).orElseThrow().tenant());
+            assertEquals(accountId, login.verifyCode(flow, code.group()).orElseThrow().accountId());
+            assertTrue(login.verifyCode(flow, code.group()).isEmpty());
             assertEquals(1, recovered.commands.stream().filter("DATA"::equals).count());
         }
     }
@@ -223,27 +169,31 @@ class SmtpDeliveryTest {
         return false;
     }
 
-    @TestConfiguration(proxyBeanMethods = false)
+    @Configuration(proxyBeanMethods = false)
+    @ComponentScan(basePackages = "com.pertegato.propertyflow.access.mail",
+            useDefaultFilters = false, includeFilters = @ComponentScan.Filter(
+                    type = FilterType.REGEX, pattern = ".*SmtpStaffCodeDelivery"))
+    @ActiveProfiles("propertyflow-backend")
     static class LoginConfiguration {
-
         @Bean
-        MutableClock smtpTestClock() {
-            return new MutableClock();
+        JavaMailSenderImpl sender() {
+            JavaMailSenderImpl sender = new JavaMailSenderImpl();
+            sender.setHost("127.0.0.1");
+            for (String setting : new String[] {"connectiontimeout", "timeout", "writetimeout"}) {
+                sender.getJavaMailProperties().setProperty("mail.smtp." + setting, "500");
+            }
+            return sender;
         }
 
         @Bean
-        AttemptedCode smtpAttemptedCode() {
-            return new AttemptedCode();
-        }
-
-        @Bean
-        @Primary
-        StaffLogin smtpTestLogin(DemoAccounts accounts, StaffCodeDelivery delivery, MutableClock clock, AttemptedCode attempted) {
-            // Observe the generated code, but send through the production adapter and a real TCP connection.
-            return new StaffLogin(accounts, (email, code) -> {
-                attempted.value = code;
-                delivery.send(email, code);
-            }, clock, Runnable::run);
+        TemplateEngine templateEngine() {
+            ClassLoaderTemplateResolver resolver = new ClassLoaderTemplateResolver();
+            resolver.setPrefix("templates/");
+            resolver.setSuffix(".html");
+            resolver.setCharacterEncoding("UTF-8");
+            SpringTemplateEngine engine = new SpringTemplateEngine();
+            engine.setTemplateResolver(resolver);
+            return engine;
         }
     }
 
@@ -376,3 +326,4 @@ class SmtpDeliveryTest {
         }
     }
 }
+

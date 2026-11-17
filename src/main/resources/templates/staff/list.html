@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="de-CH" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{tenant/fragments :: head('Fallübersicht')}"></head>
+<body class="list-page staff-page" th:attr="data-login-url=@{/anmelden}">
+<header th:replace="~{staff/fragments :: header(null, ${csrf})}"></header>
+<main th:with="keys=${ {'title', 'unit', 'received', 'contact', 'followUp', 'urgency', 'status'} },
+               columns=${ {'Fall', 'Objekt / Wohnung', 'Eingang', 'Letzte Aktion des Mieters', 'Wiedervorlage', 'Dringlichkeit', 'Bearbeitungsstatus'} }">
+    <h1>Fallübersicht</h1>
+    <section class="card filters" aria-label="Such- und Sortieroptionen">
+        <form id="filters" th:action="@{/mitarbeiter/faelle}" method="get">
+            <div class="filter-grid">
+                <div>
+                    <label for="q">Fälle durchsuchen</label>
+                    <input id="q" type="search" name="q" maxlength="200" th:value="${query}"
+                           placeholder="Case-ID, Betreff, Objekt oder Nachrichteninhalt">
+                </div>
+                <div>
+                    <label for="urgency">Dringlichkeit</label>
+                    <select id="urgency" name="urgency">
+                        <option value="">Alle</option>
+                        <option th:each="option : ${urgencyOptions}" th:value="${option}" th:text="${option}"
+                                th:selected="${option == urgencyFilter}"></option>
+                    </select>
+                </div>
+                <div class="mobile-sort">
+                    <label for="sort">Sortieren nach</label>
+                    <select id="sort" name="sort">
+                        <option value="default" th:selected="${sort == 'default'}">Standardsortierung</option>
+                        <option th:each="key, i : ${keys}" th:value="${key}" th:text="${columns[i.index]}"
+                                th:selected="${key == sort}"></option>
+                    </select>
+                </div>
+                <div class="mobile-sort">
+                    <label for="desc">Richtung</label>
+                    <select id="desc" name="desc">
+                        <option value="false" th:selected="${!descending}">Aufsteigend ↑</option>
+                        <option value="true" th:selected="${descending}">Absteigend ↓</option>
+                    </select>
+                </div>
+            </div>
+            <div class="actions">
+                <label class="toggle">
+                    <input id="closed" type="checkbox" role="switch" name="closed" value="true" th:checked="${includeClosed}">
+                    Abgeschlossene Fälle
+                </label>
+                <a id="reset" class="button secondary push-right" th:href="@{/mitarbeiter/faelle}">Filter zurücksetzen</a>
+                <button type="submit">Suchen / Filter anwenden</button>
+            </div>
+        </form>
+    </section>
+    <p id="load-state" role="status" aria-live="polite"></p>
+    <section id="results" tabindex="-1" th:attr="data-page=${page}">
+        <p class="result-count" th:text="${total == 1 ? '1 Fall' : total + ' Fälle'}"></p>
+        <div class="card table-card" tabindex="0" role="region" aria-label="Fallliste">
+            <table>
+                <thead>
+                <tr>
+                    <th th:each="key, i : ${keys}" scope="col"
+                        th:attr="aria-sort=${sort == key ? (descending ? 'descending' : 'ascending') : 'none'}">
+                        <a th:href="@{/mitarbeiter/faelle(q=${query},urgency=${urgencyFilter},closed=${includeClosed},sort=${key},desc=${sort == key and !descending})}"
+                           th:text="${columns[i.index] + (sort == key ? (descending ? ' ↓' : ' ↑') : '')}"></a>
+                    </th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="row : ${rows}" th:attr="data-case=${row.caseId()}">
+                    <td data-label="Fall">
+                        <a class="case-link" th:href="@{/mitarbeiter/faelle/{id}(id=${row.caseId()},returnTo=${listUrl})}"
+                           th:text="${row.caseId()}"></a>
+                        <p th:text="${row.title()}"></p>
+                    </td>
+                    <td data-label="Objekt / Wohnung"><span th:text="${row.unit()}"></span></td>
+                    <td class="date" data-label="Eingang"><span th:text="${row.received()}"></span></td>
+                    <td class="date" data-label="Letzte Aktion des Mieters"><span th:text="${row.lastContact()}"></span></td>
+                    <td data-label="Wiedervorlage"><span th:text="${#strings.isEmpty(row.followUp()) ? '–' : row.followUp()}"></span></td>
+                    <td data-label="Dringlichkeit"><span class="badge" th:classappend="${row.urgencyCss()}" th:text="${row.urgency()}"></span></td>
+                    <td data-label="Bearbeitungsstatus"><span class="badge" th:text="${row.status()}"></span></td>
+                </tr>
+                </tbody>
+            </table>
+            <div th:if="${total == 0}" class="empty">
+                <h2 th:if="${!#strings.isEmpty(query) or !#strings.isEmpty(urgencyFilter)}">Keine Fälle für diese Auswahl.</h2>
+                <h2 th:if="${#strings.isEmpty(query) and #strings.isEmpty(urgencyFilter)}"
+                    th:text="${includeClosed ? 'Keine Fälle verfügbar.' : 'Heute nichts zu bearbeiten.'}"></h2>
+            </div>
+        </div>
+        <nav class="pagination" aria-label="Seitennavigation">
+            <a class="button secondary" th:if="${page > 1}"
+               th:href="@{/mitarbeiter/faelle(q=${query},urgency=${urgencyFilter},closed=${includeClosed},sort=${sort},desc=${descending},page=${page - 1})}">← Rückwärts</a>
+            <button type="button" th:unless="${page > 1}" disabled>← Rückwärts</button>
+            <span th:text="|Seite ${page} von ${totalPages}|"></span>
+            <a class="button secondary" th:if="${page < totalPages}"
+               th:href="@{/mitarbeiter/faelle(q=${query},urgency=${urgencyFilter},closed=${includeClosed},sort=${sort},desc=${descending},page=${page + 1})}">Vorwärts →</a>
+            <button type="button" th:unless="${page < totalPages}" disabled>Vorwärts →</button>
+        </nav>
+    </section>
+</main>
+<script th:src="@{/js/staff-case-read.js}" defer></script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="https://propertyflow.local/test">
+  <bpmn:process id="PropertyFlow_Automatic_Draft" isExecutable="true">
+    <bpmn:documentation>INITIAL integration fixture. Stops at Recommend, which has no test worker.</bpmn:documentation>
+    <bpmn:startEvent id="AStart" />
+    <bpmn:sequenceFlow id="A01" sourceRef="AStart" targetRef="AEntry" />
+    <bpmn:serviceTask id="AEntry">
+      <bpmn:extensionElements><zeebe:taskDefinition type="propertyflow-register-automatic" /></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="A02" sourceRef="AEntry" targetRef="AEntryRoute" />
+    <bpmn:exclusiveGateway id="AEntryRoute" />
+    <bpmn:sequenceFlow id="A03" sourceRef="AEntryRoute" targetRef="Clarification">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=entryKind = "INITIAL"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:serviceTask id="Clarification">
+      <bpmn:extensionElements><zeebe:taskDefinition type="propertyflow-start-clarification" /></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="F03" sourceRef="Clarification" targetRef="Triage" />
+    <bpmn:serviceTask id="Triage">
+      <bpmn:extensionElements><zeebe:taskDefinition type="propertyflow.triage.initial" /></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="F04" sourceRef="Triage" targetRef="Recommend" />
+    <bpmn:serviceTask id="Recommend">
+      <bpmn:extensionElements><zeebe:taskDefinition type="propertyflow-test-unimplemented-recommend" /></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="TestEndFlow" sourceRef="Recommend" targetRef="TestEnd" />
+    <bpmn:endEvent id="TestEnd" />
+  </bpmn:process>
+</bpmn:definitions>

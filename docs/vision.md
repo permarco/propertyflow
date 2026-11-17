@@ -110,3 +110,5 @@ Mieterin oder den Mieter formulieren.
 
 Diese Funktion gehört nicht zum verpflichtenden MVP und wird nur umgesetzt,
 wenn der Projektfortschritt und der verfügbare Umfang dies zulassen.
+Die Regeln für automatische Katalogrückfragen und notwendige Mitarbeiterprüfung
+stehen in [KOM-05](specifications/fallkommunikation.md#kom-05-automatische-rueckfragen).

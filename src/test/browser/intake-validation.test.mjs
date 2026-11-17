@@ -1,10 +1,10 @@
 import { launchBrowser } from './browser-launcher.mjs';
-// UI1 AK-02: run against a disposable frontend-demo (default port 8082).
+// UI1 AK-02 gegen das integrierte Backend im isolierten Testbetrieb.
 // node --test src/test/browser/intake-validation.test.mjs
 import { before, after, test } from 'node:test';
 import assert from 'node:assert/strict';
 
-const base = process.env.DEMO_URL || 'http://127.0.0.1:8082';
+import { base } from './integrated-helpers.mjs';
 let browser;
 before(async () => { browser = await launchBrowser(); });
 after(async () => { await browser?.close(); });

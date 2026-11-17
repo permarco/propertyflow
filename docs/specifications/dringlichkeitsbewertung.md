@@ -1,7 +1,7 @@
 # Dringlichkeitsbewertung
 
 **Status:** Stufen, Farben, Bewertungsablauf, manuelle Anpassung und transparente Änderungshistorie vereinbart; technische Umsetzung und konkurrierende Änderungen noch zu konkretisieren.  
-**Stand:** 21.10.2026 (Farbdefinitionen zentralisiert)<br>
+**Stand:** 14.11.2026 (Neubewertung während Mitarbeiterprüfung präzisiert)<br>
 **Geltungsbereich:** Triage, fachliche Fallbearbeitung und Darstellung der Dringlichkeit in PropertyFlow.
 
 ## Zweck und Verbindlichkeit
@@ -61,6 +61,8 @@ Die Kennzeichnung ergänzt immer den sichtbaren Stufentext. Status, Prüfbedarf 
 
 Die Erstbewertung verwendet die ursprüngliche Fallbeschreibung. Für jede Neubewertung übergibt Camunda die Case-ID und die ID der auslösenden gespeicherten Mieternachricht. Der Worker lädt aus der Falldatenbank die ursprüngliche Beschreibung und den für die Dringlichkeit relevanten Nachrichtenverlauf bis einschliesslich dieser Nachricht. Er kennzeichnet sie in der Eingabe an Triage als Auslöser. Später gespeicherte Nachrichten gehören zu ihren jeweiligen Neubewertungen. [UC-016](../use_cases/UC-016-dringlichkeit-automatisch-bewerten.md) · [SS-003](../architecture/schnittstellenentwurf-block-3.md#ss-003--camunda-integrationsvertrag)
 
+**Bestätigt am 14.11.2026:** Die Neubewertung findet auch während «Mitarbeiterprüfung erforderlich» statt. Ein zulässiges aktuelles Ergebnis darf unter Wahrung des manuellen Vorrangs nach DRING-06 gespeichert werden. Dringlichkeit und Bearbeitungsstatus bleiben getrennt: Eine geänderte Dringlichkeit oder eine erkannte Behebung beendet die Mitarbeiterprüfung nicht. Der Status bleibt bis zu einer bewussten Mitarbeiterentscheidung erhalten, unabhängig davon, wer den Prüfbedarf ausgelöst hat. Veraltete Ergebnisse überschreiben keine spätere Mitarbeiterentscheidung. [FALL-06](fallverwaltung.md#vorrang-einer-laufenden-mitarbeiterprüfung)
+
 Die Grenze von 2’000 UTF-16-Codeeinheiten gilt je Fallbeschreibung und je Mieternachricht. Für den zusammengesetzten Modellkontext sind eine eigene Grenze und die Auswahl des relevanten Verlaufs bei längeren Fällen festzulegen. [FALL-02](fallverwaltung.md#fall-02-erfolgreiche-annahme) · [KOM-03](fallkommunikation.md#kom-03-asynchrone-fallkommunikation)
 
 Solange weder eine erfolgreiche Systembewertung noch eine manuelle Einstufung vorliegt, gilt «Noch nicht bewertet». Eine im Fallprozess zugelassene manuelle Einstufung kann bereits vor dem ersten Systemergebnis wirksam sein und ist gemäss DRING-06 geschützt. Während einer Neubewertung bleibt die bisher gespeicherte Stufe sichtbar. Ein fehlgeschlagener Versuch ersetzt sie nicht durch eine erfundene Stufe und erzeugt keine erfolgreiche Stufenänderung. Bei aktivem Fall gilt für den Bearbeitungsstatus und den Analysehinweis FALL-05.
@@ -112,6 +114,8 @@ Diese offenen Umsetzungs- und Konfliktregeln ändern die vereinbarten Auslöser,
 - **DRING-AK-07:** Erstbewertung und spätere Stufenänderungen erhalten eine konsistente Historie mit altem/neuem Wert, Zeitpunkt und Quelle. Der Mieter sieht diese strukturierten Änderungen, jedoch keine internen Memos, Begründungen oder Prozessreferenzen.
 - **DRING-AK-08:** Bei fehlgeschlagener Neubewertung bleibt die bisherige Stufe erhalten. Unveränderte Neubewertung erzeugt keinen Stufenwechsel oder zusätzliche Änderungsmail. Konkurrenz- und Wiederholungsfälle werden nach dem noch festzulegenden Vertrag geprüft.
 - **DRING-AK-09:** Eine manuelle Einstufung bleibt nach neuen Mieter-Nachrichten und automatischen Neubewertungen wirksam. Ein gezielter Konkurrenztest mit verspätetem Systemergebnis weist nach, dass das System die manuelle Stufe nicht überschreibt. Das getrennte Systemergebnis erzeugt keinen mieteröffentlichen Stufenwechsel oder Änderungs-Mailauftrag. Eine weitere berechtigte manuelle Änderung wird historisiert.
+
+- **DRING-AK-10:** Während «Mitarbeiterprüfung erforderlich» eine Mieternachricht speichern und die Neubewertung ausführen. Ohne manuelle Einstufung kann die neue zulässige Systembewertung wirksam werden; mit manueller Einstufung bleibt deren Vorrang erhalten. In beiden Fällen bleiben Bearbeitungsstatus und dieselbe Mitarbeiteraufgabe unverändert, auch bei erkannter Behebung oder niedrigerer Dringlichkeit. Die Herkunft des Prüfbedarfs erlaubt keine Ausnahme.
 
 Dies sind Anforderungen an spätere Prüfungen, keine ausgeführten Testnachweise.
 

@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="de-CH" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{tenant/fragments :: head('Anmelden')}"></head>
+<body>
+<header class="app-header">
+    <a th:href="@{/mieter/fall}" class="brand"><span class="brand-mark" aria-hidden="true">▰▥</span> PropertyFlow</a>
+    <span class="area">Anmeldung</span>
+</header>
+<main class="login-page">
+    <p>Mitarbeiteranmeldung · Verwenden Sie die Adresse Ihres eingerichteten Mitarbeiterkontos.</p>
+    <p th:if="${developmentStaffEmail != null}">Lokales Verwaltungskonto: <strong th:text="${developmentStaffEmail}"></strong>.
+        Den angeforderten Code finden Sie in <a href="http://127.0.0.1:8025/" target="_blank" rel="noopener noreferrer">Mailpit</a>.</p>
+    <section th:replace="~{access/login-form :: card(false, '/anmelden', false)}"></section>
+    <p><a th:href="@{/mieter/anmelden}">Als Mieter anmelden</a> · <a th:href="@{/registrieren}">Mieterkonto eröffnen</a></p>
+</main>
+</body>
+</html>

@@ -7,7 +7,7 @@
 **Primary Actor:** Angemeldete Person der Verwaltung mit der Berechtigung «Mitarbeiterkonten verwalten»  
 **Supporting Actor:** Verantwortliche Person für die Servereinrichtung beim Anlegen des ersten Verwaltungskontos  
 **Goal:** Ein persönliches Mitarbeiterkonto mit geschäftlicher E-Mail-Adresse und zugewiesener Rolle bereitstellen.  
-**Status:** Die Kontoanlage ist als Zielablauf spezifiziert. Die Frontend-Demo lädt ein Mitarbeiter-Testkonto aus der lokalen Konfiguration. [Demo-Anleitung](../../dev/README.md#mitarbeiterkonto-konfigurieren-und-mieterkonto-eröffnen)
+**Status:** Ersteinrichtung und geschützte Browser-Kontoanlage im PostgreSQL-Backend umgesetzt. Die reguläre Anlage vergibt ausschliesslich die Mitarbeiterrolle. [Umsetzung und Nachweise](umsetzungsstand-2026-11-16.md)
 
 **Fachliche Grundlage:** [ADR-005](../architecture/adr/ADR-005-zugriffsmodell.md#mitarbeiteridentität) beschreibt das Zugriffsmodell. Die erste Anmeldung der Person folgt [UC-006](UC-006-mitarbeiter-anmelden.md).
 

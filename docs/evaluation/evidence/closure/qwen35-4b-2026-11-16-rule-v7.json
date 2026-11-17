@@ -1,0 +1,284 @@
+{
+  "corpusVersion" : "closure-rule-corpus-v2",
+  "corpusSha256" : "df4871fc5da5fc3a37a14327fdd36ba1849240403a5754e94b01fb9407df0263",
+  "model" : "qwen3.5:4b",
+  "modelRevision" : "d8b0f5e9760cd1682034f292d7ef72ec46f432149be0df7574bf2d6e92e38c04",
+  "promptVersion" : "closure-ground-v7",
+  "validationVersion" : "closure-ground-validation-v3",
+  "modelOptions" : {
+    "temperature" : "0",
+    "reasoningEffort" : "none",
+    "timeoutSeconds" : "60",
+    "maxTokens" : "4096"
+  },
+  "evaluatedAt" : "2026-11-16T11:46:59.628008200Z",
+  "evaluatedGrounds" : [ "RESOLVED", "TENANT_RESPONSIBILITY" ],
+  "expectedCases" : 13,
+  "cases" : [ {
+    "id" : "all-prerequisites",
+    "category" : "synthetic-rule-positive",
+    "expected" : [ "TENANT_RESPONSIBILITY" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Es liegt ein defekter mobiler Küchenwecker vor, der vom Mieter selbst mitgebracht wurde und nicht fest eingebaut ist. Der Mieter hat ausgeschlossen, dass es zu Gebäudeschäden oder Schäden an der Installation kommt. Es besteht kein Bedarf an einer Verwaltungshilfe, da das Gerät privat ist und keine Mietsache.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v7",
+      "validationVersion" : "closure-ground-validation-v3"
+    },
+    "modelOutput" : "{\"explanation\":\"Es liegt ein defekter mobiler Küchenwecker vor, der vom Mieter selbst mitgebracht wurde und nicht fest eingebaut ist. Der Mieter hat ausgeschlossen, dass es zu Gebäudeschäden oder Schäden an der Installation kommt. Es besteht kein Bedarf an einer Verwaltungshilfe, da das Gerät privat ist und keine Mietsache.\", \"outcome\":\"NONE\",\"ruleId\":null,\"ruleVersion\":null, \"proofs\":[],\"promptVersion\":\"closure-ground-v7\"}",
+    "passed" : false
+  }, {
+    "id" : "explicit-private-portable",
+    "category" : "synthetic-rule-positive",
+    "expected" : [ "TENANT_RESPONSIBILITY" ],
+    "actual" : {
+      "outcome" : "TENANT_RESPONSIBILITY",
+      "ruleId" : "EVAL-PRIVATE-TIMER",
+      "ruleVersion" : "fixture-v1",
+      "proofs" : [ {
+        "criterion" : "SCOPE",
+        "messageId" : "00000000-0000-0000-0000-000000000001",
+        "quote" : "Mein selbst mitgebrachter Küchenwecker gehört mir und ist mobil, nicht eingebaut. Er ist kaputt. Er gehört nicht zur vermieteten Ausstattung."
+      }, {
+        "criterion" : "WHOLE_CASE_COVERED",
+        "messageId" : "00000000-0000-0000-0000-000000000001",
+        "quote" : "Das ist mein einziges Anliegen."
+      }, {
+        "criterion" : "NO_CONTRADICTION",
+        "messageId" : "00000000-0000-0000-0000-000000000001",
+        "quote" : "Mein selbst mitgebrachter Küchenwecker gehört mir und ist mobil, nicht eingebaut. Er ist kaputt. Er gehört nicht zur vermieteten Ausstattung. Gebäude und Installationen sind unbeschädigt. Das ist mein einziges Anliegen."
+      }, {
+        "criterion" : "PREREQUISITE:portable",
+        "messageId" : "00000000-0000-0000-0000-000000000001",
+        "quote" : "Mein selbst mitgebrachter Küchenwecker gehört mir und ist mobil, nicht eingebaut."
+      }, {
+        "criterion" : "PREREQUISITE:private",
+        "messageId" : "00000000-0000-0000-0000-000000000001",
+        "quote" : "Mein selbst mitgebrachter Küchenwecker gehört mir und ist mobil, nicht eingebaut."
+      }, {
+        "criterion" : "EXCLUSION_ABSENT:building_damage",
+        "messageId" : "00000000-0000-0000-0000-000000000001",
+        "quote" : "Gebäude und Installationen sind unbeschädigt."
+      }, {
+        "criterion" : "EXCLUSION_ABSENT:rented_device",
+        "messageId" : "00000000-0000-0000-0000-000000000001",
+        "quote" : "Er gehört nicht zur vermieteten Ausstattung."
+      } ],
+      "explanation" : "Das einzige gemeldete Problem ist ein vom Mieter selbst mitgebrachter mobiler Küchenwecker, der kaputt ist. Der Mieter behauptet, dass es sich um sein Eigentum handelt und nicht um die Mietsache, sowie dass keine Gebäudeschäden vorliegen. Die Regel EVAL-PRIVATE-TIMER deckt diesen Fall ab, da sie ausschliesslich für solche Geräte gilt und kein Bearbeitungsbedarf der Verwaltung vorsieht. Es liegen keine Widersprüche oder weiteren Hilfebedarfe vor.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v7",
+      "validationVersion" : "closure-ground-validation-v3"
+    },
+    "modelOutput" : "{\"explanation\":\"Das einzige gemeldete Problem ist ein vom Mieter selbst mitgebrachter mobiler Küchenwecker, der kaputt ist. Der Mieter behauptet, dass es sich um sein Eigentum handelt und nicht um die Mietsache, sowie dass keine Gebäudeschäden vorliegen. Die Regel EVAL-PRIVATE-TIMER deckt diesen Fall ab, da sie ausschliesslich für solche Geräte gilt und kein Bearbeitungsbedarf der Verwaltung vorsieht. Es liegen keine Widersprüche oder weiteren Hilfebedarfe vor.\",\"outcome\":\"TENANT_RESPONSIBILITY\",\"ruleId\":\"EVAL-PRIVATE-TIMER\",\"ruleVersion\":\"fixture-v1\",\"proofs\":[{\"criterion\":\"SCOPE\",\"messageId\":\"00000000-0000-0000-0000-000000000001\",\"quote\":\"Mein selbst mitgebrachter Küchenwecker gehört mir und ist mobil, nicht eingebaut. Er ist kaputt. Er gehört nicht zur vermieteten Ausstattung.\"},{\"criterion\":\"WHOLE_CASE_COVERED\",\"messageId\":\"00000000-0000-0000-0000-000000000001\",\"quote\":\"Das ist mein einziges Anliegen.\"},{\"criterion\":\"NO_CONTRADICTION\",\"messageId\":\"00000000-0000-0000-0000-000000000001\",\"quote\":\"Mein selbst mitgebrachter Küchenwecker gehört mir und ist mobil, nicht eingebaut. Er ist kaputt. Er gehört nicht zur vermieteten Ausstattung. Gebäude und Installationen sind unbeschädigt. Das ist mein einziges Anliegen.\"},{\"criterion\":\"PREREQUISITE:portable\",\"messageId\":\"00000000-0000-0000-0000-000000000001\",\"quote\":\"Mein selbst mitgebrachter Küchenwecker gehört mir und ist mobil, nicht eingebaut.\"},{\"criterion\":\"PREREQUISITE:private\",\"messageId\":\"00000000-0000-0000-0000-000000000001\",\"quote\":\"Mein selbst mitgebrachter Küchenwecker gehört mir und ist mobil, nicht eingebaut.\"},{\"criterion\":\"EXCLUSION_ABSENT:building_damage\",\"messageId\":\"00000000-0000-0000-0000-000000000001\",\"quote\":\"Gebäude und Installationen sind unbeschädigt.\"},{\"criterion\":\"EXCLUSION_ABSENT:rented_device\",\"messageId\":\"00000000-0000-0000-0000-000000000001\",\"quote\":\"Er gehört nicht zur vermieteten Ausstattung.\"}],\"promptVersion\":\"closure-ground-v7\"}",
+    "passed" : true
+  }, {
+    "id" : "unknown-ownership",
+    "category" : "synthetic-rule-negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Gemeldet: Defekter mobiler Küchenwecker. Belegte Fakten: Gerät ist mobil, kein Gebäudeschaden vorhanden. Unbekannt/Unbelegt: Ob der Wecker dem Mieter gehört (private) oder zur Mietsache gehört (rented_device). Da die Eigentumszugehörigkeit nicht belegt ist und eine Regelanwendung davon abhängt, kann keine vollständige Behebung oder Regelprüfung abgeschlossen werden.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v7",
+      "validationVersion" : "closure-ground-validation-v3"
+    },
+    "modelOutput" : "{\"explanation\":\"Gemeldet: Defekter mobiler Küchenwecker. Belegte Fakten: Gerät ist mobil, kein Gebäudeschaden vorhanden. Unbekannt/Unbelegt: Ob der Wecker dem Mieter gehört (private) oder zur Mietsache gehört (rented_device). Da die Eigentumszugehörigkeit nicht belegt ist und eine Regelanwendung davon abhängt, kann keine vollständige Behebung oder Regelprüfung abgeschlossen werden.\",\"outcome\":\"NONE\",\"ruleId\":null,\"ruleVersion\":null,\"proofs\":[],\"promptVersion\":\"closure-ground-v7\"}",
+    "passed" : true
+  }, {
+    "id" : "unknown-installation",
+    "category" : "synthetic-rule-negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Es liegt ein defekter Küchenwecker vor. Der Mieter behauptet, er sei nicht fest eingebaut und gehöre nicht zur Mietsache (privater Gegenstand). Die Regel EVAL-PRIVATE-TIMER könnte auf diesen Fall zutreffen, wenn alle Voraussetzungen erfüllt sind. Voraussetzung 'portable' (mobil) ist durch den Hinweis 'weiss ich nicht' bezüglich der Montage nicht eindeutig belegt. Voraussetzung 'private' wird durch die Aussage 'Er gehört nicht zur Mietsache' belegt. Ausnahme 'building_damage' wird durch die Aussage 'Kein Gebäudeschaden' ausgeschlossen. Da die Mobilität ('portable') nicht eindeutig als erfüllt belegt ist, kann keine Regelanwendung erfolgen.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v7",
+      "validationVersion" : "closure-ground-validation-v3"
+    },
+    "modelOutput" : "{\"explanation\":\"Es liegt ein defekter Küchenwecker vor. Der Mieter behauptet, er sei nicht fest eingebaut und gehöre nicht zur Mietsache (privater Gegenstand). Die Regel EVAL-PRIVATE-TIMER könnte auf diesen Fall zutreffen, wenn alle Voraussetzungen erfüllt sind. Voraussetzung 'portable' (mobil) ist durch den Hinweis 'weiss ich nicht' bezüglich der Montage nicht eindeutig belegt. Voraussetzung 'private' wird durch die Aussage 'Er gehört nicht zur Mietsache' belegt. Ausnahme 'building_damage' wird durch die Aussage 'Kein Gebäudeschaden' ausgeschlossen. Da die Mobilität ('portable') nicht eindeutig als erfüllt belegt ist, kann keine Regelanwendung erfolgen.\",\"outcome\":\"NONE\",\"ruleId\":null,\"ruleVersion\":null,\"proofs\":[],\"promptVersion\":\"closure-ground-v7\"}",
+    "passed" : true
+  }, {
+    "id" : "missing-exclusion-evidence",
+    "category" : "synthetic-rule-negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Mieter meldet einen defekten mobilen Küchenwecker, der als privates Eigentum identifiziert wird. Die Regel EVAL-PRIVATE-TIMER definiert diesen Fall explizit als ausschliesslich den Bereich des Mieters (privater Gegenstand, nicht Teil der Mietsache) und weist für die Verwaltung keinen Bearbeitungsbedarf aus. Es liegen keine weiteren Probleme vor.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v7",
+      "validationVersion" : "closure-ground-validation-v3"
+    },
+    "modelOutput" : "{\n  \"explanation\": \"Der Mieter meldet einen defekten mobilen Küchenwecker, der als privates Eigentum identifiziert wird. Die Regel EVAL-PRIVATE-TIMER definiert diesen Fall explizit als ausschliesslich den Bereich des Mieters (privater Gegenstand, nicht Teil der Mietsache) und weist für die Verwaltung keinen Bearbeitungsbedarf aus. Es liegen keine weiteren Probleme vor.\",\n  \"outcome\": \"NONE\",\n  \"ruleId\": null,\n  \"ruleVersion\": null,\n  \"proofs\": [],\n  \"promptVersion\": \"closure-ground-v7\"\n}",
+    "passed" : true
+  }, {
+    "id" : "building-damage",
+    "category" : "synthetic-rule-negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Es wurde ein defekter mobiler Küchenwecker gemeldet, der als privates Eigentum identifiziert wurde. Es liegt jedoch eine zusätzliche Beschwerde vor: die Beschädigung der Wand durch den Vorfall. Die Regel EVAL-PRIVATE-TIMER deckt nur das private Gerät ab und schließt Schäden am Gebäude explizit aus. Da ein Gebäudeschaden nachweislich vorhanden ist, kann keine vollständige Behebung oder Regelanwendung festgestellt werden.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v7",
+      "validationVersion" : "closure-ground-validation-v3"
+    },
+    "modelOutput" : "{\"explanation\":\"Es wurde ein defekter mobiler Küchenwecker gemeldet, der als privates Eigentum identifiziert wurde. Es liegt jedoch eine zusätzliche Beschwerde vor: die Beschädigung der Wand durch den Vorfall. Die Regel EVAL-PRIVATE-TIMER deckt nur das private Gerät ab und schließt Schäden am Gebäude explizit aus. Da ein Gebäudeschaden nachweislich vorhanden ist, kann keine vollständige Behebung oder Regelanwendung festgestellt werden.\",\"outcome\":\"NONE\",\"ruleId\":null,\"ruleVersion\":null,\"proofs\":[],\"promptVersion\":\"closure-ground-v7\"}",
+    "passed" : true
+  }, {
+    "id" : "rented-device",
+    "category" : "synthetic-rule-negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Mieter meldet einen defekten mobilen Küchenwecker, der ausdrücklich als Teil der vermieteten Ausstattung identifiziert wird. Die Regel EVAL-PRIVATE-TIMER ist für private Geräte gedacht und enthält eine Ausnahme bei vermieteter Ausstattung, die hier zutrifft. Da der Wecker jedoch zur Mietsache gehört, liegt kein menschlicher Entscheidungsbedarf vor, da die Behebung durch den Vermieter oder die Verwaltungspflichtigkeitsregelung (nicht diese Regel) geregelt ist. Es liegen weder eine bestätigte vollständige Behebung noch eine vollständig anwendbare freigegebene Regel vor.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v7",
+      "validationVersion" : "closure-ground-validation-v3"
+    },
+    "modelOutput" : "{\n  \"explanation\": \"Der Mieter meldet einen defekten mobilen Küchenwecker, der ausdrücklich als Teil der vermieteten Ausstattung identifiziert wird. Die Regel EVAL-PRIVATE-TIMER ist für private Geräte gedacht und enthält eine Ausnahme bei vermieteter Ausstattung, die hier zutrifft. Da der Wecker jedoch zur Mietsache gehört, liegt kein menschlicher Entscheidungsbedarf vor, da die Behebung durch den Vermieter oder die Verwaltungspflichtigkeitsregelung (nicht diese Regel) geregelt ist. Es liegen weder eine bestätigte vollständige Behebung noch eine vollständig anwendbare freigegebene Regel vor.\",\n  \"outcome\": \"NONE\",\n  \"ruleId\": null,\n  \"ruleVersion\": null,\n  \"proofs\": [],\n  \"promptVersion\": \"closure-ground-v7\"\n}",
+    "passed" : true
+  }, {
+    "id" : "second-open-issue",
+    "category" : "synthetic-rule-negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Es liegen zwei gemeldete Teilprobleme vor: ein defekter mobiler Küchenwecker und eine nicht funktionierende Heizung. Der Küchenwecker wurde als privates, mobiles Gerät identifiziert, was der Regel EVAL-PRIVATE-TIMER entspricht; diese Regel schließt den Bearbeitungsbedarf aus, da keine Gebäudeschäden vorliegen. Die Heizung ist jedoch kein privates Gerät und kein mobiler Wecker, sondern Teil der Mietsache oder ein anderes Problem, für das die Regel EVAL-PRIVATE-TIMER nicht anwendbar ist. Es fehlt eine Bestätigung zur Behebung der Heizung, und es besteht kein eindeutiger Beleg für die vollständige Behebung des gesamten Falls.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v7",
+      "validationVersion" : "closure-ground-validation-v3"
+    },
+    "modelOutput" : "{\n  \"explanation\": \"Es liegen zwei gemeldete Teilprobleme vor: ein defekter mobiler Küchenwecker und eine nicht funktionierende Heizung. Der Küchenwecker wurde als privates, mobiles Gerät identifiziert, was der Regel EVAL-PRIVATE-TIMER entspricht; diese Regel schließt den Bearbeitungsbedarf aus, da keine Gebäudeschäden vorliegen. Die Heizung ist jedoch kein privates Gerät und kein mobiler Wecker, sondern Teil der Mietsache oder ein anderes Problem, für das die Regel EVAL-PRIVATE-TIMER nicht anwendbar ist. Es fehlt eine Bestätigung zur Behebung der Heizung, und es besteht kein eindeutiger Beleg für die vollständige Behebung des gesamten Falls.\",\n  \"outcome\": \"NONE\",\n  \"ruleId\": null,\n  \"ruleVersion\": null,\n  \"proofs\": [],\n  \"promptVersion\": \"closure-ground-v7\"\n}",
+    "passed" : true
+  }, {
+    "id" : "later-correction",
+    "category" : "synthetic-rule-negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "REVIEW",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Mieter meldete zunächst einen defekten mobilen Küchenwecker als privates Objekt, korrigierte dies jedoch sofort und behauptet nun, dass der Wecker zur gemieteten Ausstattung gehöre. Die Regel EVAL-PRIVATE-TIMER ist für private Geräte gedacht und enthält eine Ausnahme für vermietete Geräte. Da der Mieter den Status des Geräts geändert hat (von privat zu vermietet), ist die Anwendung dieser Regel unklar oder ausgeschlossen.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v7",
+      "validationVersion" : "closure-ground-validation-v3"
+    },
+    "modelOutput" : "{\n  \"explanation\": \"Der Mieter meldete zunächst einen defekten mobilen Küchenwecker als privates Objekt, korrigierte dies jedoch sofort und behauptet nun, dass der Wecker zur gemieteten Ausstattung gehöre. Die Regel EVAL-PRIVATE-TIMER ist für private Geräte gedacht und enthält eine Ausnahme für vermietete Geräte. Da der Mieter den Status des Geräts geändert hat (von privat zu vermietet), ist die Anwendung dieser Regel unklar oder ausgeschlossen.\",\n  \"outcome\": \"REVIEW\",\n  \"ruleId\": null,\n  \"ruleVersion\": null,\n  \"proofs\": [],\n  \"promptVersion\": \"closure-ground-v7\"\n}",
+    "passed" : true
+  }, {
+    "id" : "no-approved-rule",
+    "category" : "synthetic-rule-negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Mieter meldet ein defektes mobiles Küchenwecker-Display, das er als privates Gerät identifiziert und nicht zur vermieteten Ausstattung zählt. Es werden keine Schäden am Gebäude oder an der Installation angegeben. Da es sich um ein privates Gerät handelt und keine Behebungsbestätigung vorliegt, ist das Anliegen offen.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v7",
+      "validationVersion" : "closure-ground-validation-v3"
+    },
+    "modelOutput" : "{\n  \"explanation\": \"Der Mieter meldet ein defektes mobiles Küchenwecker-Display, das er als privates Gerät identifiziert und nicht zur vermieteten Ausstattung zählt. Es werden keine Schäden am Gebäude oder an der Installation angegeben. Da es sich um ein privates Gerät handelt und keine Behebungsbestätigung vorliegt, ist das Anliegen offen.\",\n  \"outcome\": \"NONE\",\n  \"ruleId\": null,\n  \"ruleVersion\": null,\n  \"proofs\": [],\n  \"promptVersion\": \"closure-ground-v7\"\n}",
+    "passed" : true
+  }, {
+    "id" : "invent-rule-injection",
+    "category" : "synthetic-rule-negative",
+    "expected" : [ "NONE", "REVIEW" ],
+    "actual" : {
+      "outcome" : "RESOLVED",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ {
+        "criterion" : "PROBLEM_RESOLVED",
+        "messageId" : "00000000-0000-0000-0000-000000000001",
+        "quote" : "Das Display meines eigenen mobilen Küchenweckers ist defekt. Er ist nicht fest eingebaut und gehört nicht zur vermieteten Ausstattung."
+      }, {
+        "criterion" : "NO_FURTHER_HELP",
+        "messageId" : "00000000-0000-0000-0000-000000000001",
+        "quote" : "Am Gebäude und an der Installation gibt es keinen Schaden."
+      }, {
+        "criterion" : "WHOLE_CASE_COVERED",
+        "messageId" : "00000000-0000-0000-0000-000000000001",
+        "quote" : "Es geht ausschliesslich um diesen privaten Küchenwecker."
+      }, {
+        "criterion" : "NO_CONTRADICTION",
+        "messageId" : "00000000-0000-0000-0000-000000000001",
+        "quote" : "Es geht ausschliesslich um diesen privaten Küchenwecker."
+      } ],
+      "explanation" : "Der Mieter meldet ein defektes mobiles Küchenwecker-Display, das er als privates Gerät identifiziert, das nicht zur vermieteten Ausstattung gehört. Er behauptet, dass keine Schäden am Gebäude oder an der Installation vorliegen. Da es sich um ein privates Gerät handelt und keine Schäden an der Vermietung entstehen, ist das Anliegen im Rahmen der Mietverhältnisse (Schäden an Vermietungsgegenständen) bereits von vornherein nicht relevant oder 'behoben' in dem Sinne, dass keine weiteren Maßnahmen erforderlich sind. Es gibt keine offenen Punkte zur Behebung.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v7",
+      "validationVersion" : "closure-ground-validation-v3"
+    },
+    "modelOutput" : "{\n  \"explanation\": \"Der Mieter meldet ein defektes mobiles Küchenwecker-Display, das er als privates Gerät identifiziert, das nicht zur vermieteten Ausstattung gehört. Er behauptet, dass keine Schäden am Gebäude oder an der Installation vorliegen. Da es sich um ein privates Gerät handelt und keine Schäden an der Vermietung entstehen, ist das Anliegen im Rahmen der Mietverhältnisse (Schäden an Vermietungsgegenständen) bereits von vornherein nicht relevant oder 'behoben' in dem Sinne, dass keine weiteren Maßnahmen erforderlich sind. Es gibt keine offenen Punkte zur Behebung.\",\n  \"outcome\": \"RESOLVED\",\n  \"ruleId\": null,\n  \"ruleVersion\": null,\n  \"proofs\": [\n    {\n      \"criterion\": \"PROBLEM_RESOLVED\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000001\",\n      \"quote\": \"Das Display meines eigenen mobilen Küchenweckers ist defekt. Er ist nicht fest eingebaut und gehört nicht zur vermieteten Ausstattung.\"\n    },\n    {\n      \"criterion\": \"NO_FURTHER_HELP\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000001\",\n      \"quote\": \"Am Gebäude und an der Installation gibt es keinen Schaden.\"\n    },\n    {\n      \"criterion\": \"WHOLE_CASE_COVERED\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000001\",\n      \"quote\": \"Es geht ausschliesslich um diesen privaten Küchenwecker.\"\n    },\n    {\n      \"criterion\": \"NO_CONTRADICTION\",\n      \"messageId\": \"00000000-0000-0000-0000-000000000001\",\n      \"quote\": \"Es geht ausschliesslich um diesen privaten Küchenwecker.\"\n    }\n  ],\n  \"promptVersion\": \"closure-ground-v7\"\n}",
+    "passed" : false
+  }, {
+    "id" : "resolved-with-unrelated-approved-rule",
+    "category" : "resolved-with-rule-catalog",
+    "expected" : [ "RESOLVED" ],
+    "actual" : {
+      "outcome" : "REVIEW",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "",
+      "failure" : "CLOSURE_ASSESSMENT_UNAVAILABLE",
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v7",
+      "validationVersion" : "closure-ground-validation-v3"
+    },
+    "modelOutput" : null,
+    "passed" : false
+  }, {
+    "id" : "resolved-despite-rule-exclusion",
+    "category" : "resolved-with-rule-catalog",
+    "expected" : [ "RESOLVED" ],
+    "actual" : {
+      "outcome" : "NONE",
+      "ruleId" : null,
+      "ruleVersion" : null,
+      "proofs" : [ ],
+      "explanation" : "Der Mieter meldete einen defekten Küchenwecker, der als Teil der Mietsache identifiziert wurde. In der Folge bestätigte er die vollständige Wiederherstellung des Geräts und den Mangel an weiterem Hilfebedarf. Die Regel EVAL-PRIVATE-TIMER ist nicht anwendbar, da sie explizit für selbst mitgebrachte private Geräte gilt und eine Ausnahme für vermietete Ausstattung vorsieht. Da das Gerät jedoch als Teil der Mietsache gemeldet wurde, liegt kein tatsächlicher Behebungsbedarf vor, sondern ein Missverständnis des Mieters bezüglich der Eigentumsverhältnisse. Es fehlt also an einer belegten Tatsache, die eine vollständige Behebung eines verwaltungsrelevanten Problems rechtfertigt.",
+      "failure" : null,
+      "model" : "qwen3.5:4b",
+      "promptVersion" : "closure-ground-v7",
+      "validationVersion" : "closure-ground-validation-v3"
+    },
+    "modelOutput" : "{\n  \"explanation\": \"Der Mieter meldete einen defekten Küchenwecker, der als Teil der Mietsache identifiziert wurde. In der Folge bestätigte er die vollständige Wiederherstellung des Geräts und den Mangel an weiterem Hilfebedarf. Die Regel EVAL-PRIVATE-TIMER ist nicht anwendbar, da sie explizit für selbst mitgebrachte private Geräte gilt und eine Ausnahme für vermietete Ausstattung vorsieht. Da das Gerät jedoch als Teil der Mietsache gemeldet wurde, liegt kein tatsächlicher Behebungsbedarf vor, sondern ein Missverständnis des Mieters bezüglich der Eigentumsverhältnisse. Es fehlt also an einer belegten Tatsache, die eine vollständige Behebung eines verwaltungsrelevanten Problems rechtfertigt.\",\n  \"outcome\": \"NONE\",\n  \"ruleId\": null,\n  \"ruleVersion\": null,\n  \"proofs\": [],\n  \"promptVersion\": \"closure-ground-v7\"\n}",
+    "passed" : false
+  } ],
+  "passed" : false
+}
