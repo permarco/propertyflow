@@ -128,7 +128,7 @@ class TenantLoginController {
                 return error(response, model, session, true, HttpStatus.BAD_REQUEST, INVALID_CODE);
             }
 
-            String target = "/mieter/faelle";
+            String target = McpConfirmationLogin.takeReturnTarget(session, false, TenantOAuthLogin.takeReturnTarget(session));
             request.changeSessionId();
             session.removeAttribute(StaffWebSession.ACCOUNT);
             session.setAttribute(TenantWebSession.ACCOUNT, verified.orElseThrow().accountId());

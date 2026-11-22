@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="de-CH" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{tenant/fragments :: head('PropertyFlow-Aktion bestätigen')}"></head>
+<body>
+<main class="narrow">
+    <h1 th:text="${draft.intake()} ? 'Neue Meldung bestätigen' : (${draft.transition()} ? 'Statusänderung bestätigen' : 'Fallnachricht bestätigen')"></h1>
+    <section class="card">
+        <h2 th:text="${draft.title()}"></h2>
+        <p th:if="${draft.caseId() != null}">Case-ID <span th:text="${draft.caseId()}"></span></p>
+        <p th:if="${draft.intake()}">Objekt / Wohnung <span th:text="${draft.actionArgument()}"></span></p>
+        <div th:if="${draft.transition()}">
+            <p th:text="${draft.changeLabel()}"></p>
+            <p><a th:href="@{/mitarbeiter/faelle/{caseId}(caseId=${draft.caseId()})}" target="_blank" rel="noopener noreferrer">Fall in PropertyFlow prüfen</a></p>
+        </div>
+        <div th:unless="${draft.intake() or draft.transition()}">
+            <p th:text="${staff} ? 'Empfänger: Mieter' : 'Empfänger: Bewirtschaftung'"></p>
+            <p th:if="${draft.answerRequired()}">Eine Antwort des Mieters ist erforderlich.</p>
+        </div>
+        <pre th:unless="${draft.transition()}" th:text="${draft.text()}"></pre>
+        <form method="post" data-mcp-confirmation th:if="${draft.status().name() == 'WAITING'}" th:action="@{${target}}">
+            <input type="hidden" name="csrf" th:value="${csrf}">
+            <button type="submit" name="decision" value="send"
+                    th:text="${draft.intake()} ? 'Meldung einreichen' : (${draft.transition()} ? ${draft.changeLabel()} : 'Nachricht senden')"
+                    th:attr="data-busy-label=${draft.intake() or draft.transition()} ? 'Wird verarbeitet …' : 'Wird gesendet …'"></button>
+            <button type="submit" name="decision" value="cancel">Abbrechen</button>
+        </form>
+        <div th:switch="${draft.status().name()}">
+            <p th:case="'SENT'" th:text="${draft.intake()} ? 'Meldung erfasst.' : (${draft.transition()} ? 'Statusänderung ausgeführt.' : 'Nachricht gesendet.')"></p>
+            <div th:case="'SUBMITTED'">
+                <p th:if="${draft.intake()}">Die Fallanlage wird noch geprüft.</p>
+                <p th:if="${draft.transition()}">Der Auftrag wird von Camunda verarbeitet. Die Statusänderung ist noch nicht bestätigt.</p>
+                <p th:if="${staff and !draft.transition()}">Die Veröffentlichung läuft noch.</p>
+                <p th:if="${!staff and !draft.intake()}">Deine Nachricht wurde gespeichert. Die Verarbeitung läuft noch. Du musst sie nicht erneut senden.</p>
+                <p><a th:href="@{${target}}">Status aktualisieren</a></p>
+            </div>
+            <p th:case="'CANCELLED'">Vorgang abgebrochen.</p>
+            <p th:case="'REJECTED'">Die Aktion konnte nicht ausgeführt werden.</p>
+        </div>
+    </section>
+</main>
+<script th:src="@{/js/mcp-confirm-message.js}" defer></script>
+</body>
+</html>

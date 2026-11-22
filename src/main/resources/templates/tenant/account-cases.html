@@ -6,6 +6,7 @@
 <main class="narrow">
     <h1>Meine Fälle</h1>
     <p><a th:href="@{/mieter/fall}">Neues Anliegen melden</a></p>
+    <p th:if="${connectedAppsAvailable}"><a th:href="@{/mieter/verbundene-apps}">Verbundene Apps</a></p>
     <form method="post" th:action="@{/abmelden}"><input type="hidden" name="csrf" th:value="${csrf}"><button>Abmelden</button></form>
     <p th:if="${cases.isEmpty()}">Für Ihre verifizierte E-Mail-Adresse sind noch keine Fälle vorhanden.</p>
     <section class="card" th:each="entry : ${cases}">

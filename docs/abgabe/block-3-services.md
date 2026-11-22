@@ -212,6 +212,10 @@ Rechtevergabe, Oberfläche und Integrationstests stehen noch aus.
 
 ## 3. MCP-Werkzeug
 
+Die [Spezifikation der MCP-Werkzeuge](../specifications/mcp-werkzeuge.md)
+beschreibt den vereinbarten Zielumfang für Mieter und Bewirtschaftung im
+regulären Backend. Der folgende Absatz dokumentiert den bisherigen Stand der Demo.
+
 Das MCP-Werkzeug `fallstand_abrufen` ist in der lokalen Frontend-Demo verfügbar.
 Für eigene Fälle liefert es Case-ID, Bearbeitungsstatus und wirksame Dringlichkeit.
 Der HTTP-Integrationstest prüft, dass ein fremder und ein unbekannter Fall
@@ -224,6 +228,10 @@ dauerhafte Datenhaltung stehen aus.
 
 ## 4. Sicherheitskonzept für Agent und Werkzeug
 
+Das [Sicherheitskonzept für den geplanten MCP-Zugang](../specifications/mcp-werkzeuge.md#sicherheitskonzept-für-agent-und-werkzeug)
+definiert die verbindlichen Regeln und die Prüffälle für das reguläre Backend.
+Der folgende Absatz beschreibt den bisherigen Stand der Demo.
+
 Der PropertyFlow-Dienst prüft selbst die Eingabe, das delegierte Leserecht und
 die Fallberechtigung. Er protokolliert Erfolg und Ablehnung ohne Zugangstokens
 oder Fallinhalte. Kritische Schreibaktionen erfordern eine menschliche Freigabe.
@@ -231,6 +239,7 @@ Der erste Abruf ist lesend. Für die lokale Demo sind Freigabe, Eingabeprüfung,
 Fallberechtigung und Widerruf über HTTP geprüft. Die produktive OAuth-Prüfung
 und der Nachweis einer kritischen Schreibaktion stehen aus.
 [Zugriffsmodell](../architecture/adr/ADR-005-zugriffsmodell.md) ·
+[Entscheid zur serverseitigen Bestätigung](../architecture/adr/ADR-006-mcp-mieterwerkzeuge-und-nachrichtenfreigabe.md) ·
 [Freigaberegeln](../specifications/fallverwaltung.md#fall-10-automatisierung-und-menschliche-freigabe)
 
 ## 5. Kommunikationsentscheid
