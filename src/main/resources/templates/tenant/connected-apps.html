@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="de-CH" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{tenant/fragments :: head('Verbundene Apps')}"></head>
+<body>
+<header th:unless="${staff}" th:insert="~{tenant/fragments :: header}"></header>
+<main class="narrow">
+    <p th:unless="${staff}"><a th:href="@{/mieter/faelle}">Meine Fälle</a></p>
+    <p th:if="${staff}"><a th:href="@{/mitarbeiter/faelle}">Fälle der Bewirtschaftung</a></p>
+    <h1>Verbundene Apps</h1>
+    <section class="card" th:unless="${#lists.isEmpty(permissions)}">
+        <h2>ChatGPT</h2>
+        <ul><li th:each="permission : ${permissions}" th:text="${permission}"></li></ul>
+        <form method="post" th:action="@{${revokePath}}">
+            <input type="hidden" name="csrf" th:value="${csrf}">
+            <button>Zugriff widerrufen</button>
+        </form>
+    </section>
+    <p th:if="${#lists.isEmpty(permissions)}">Es ist keine App mit deinem Konto verbunden.</p>
+</main>
+</body>
+</html>

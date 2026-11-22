@@ -142,6 +142,14 @@ public class StaffMessageStore {
             database.update("INSERT INTO pf_staff_answer_requirement (message_id, case_id) VALUES (?, ?)", command.id(), command.caseId());
         }
         database.update("INSERT INTO pf_staff_message_mail_order (id, case_id) VALUES (?, ?)", command.id(), command.caseId());
+        if (command.operation().startsWith("mcp:")) {
+            database.update("""
+                    INSERT INTO pf_mcp_audit (id, action, account_id, client_id, case_id, operation_id, outcome)
+                    SELECT ?, action, account_id, client_id, case_id, operation_id, 'PUBLISHED'
+                    FROM pf_mcp_audit WHERE operation_id = ? AND account_id = ? AND case_id = ?
+                    AND action = 'STAFF_MESSAGES' AND outcome = 'PREPARED'
+                    """, UUID.randomUUID(), UUID.fromString(command.operation().substring(4)), command.actor(), command.caseId());
+        }
         database.update("UPDATE pf_staff_message_command SET state = 'PUBLISHED' WHERE id = ?", command.id());
     }
 

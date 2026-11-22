@@ -18,7 +18,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
@@ -59,17 +61,33 @@ public class TenantMessageService implements TenantMessageSubmission {
         }
         String hash = links.hash(token);
         return sendAuthorized(lock -> messages.access(hash, lock).orElseThrow(() -> new CaseActionException("CASE_NOT_AVAILABLE")),
-                operation, rawText, null);
+                operation, rawText, null, null);
     }
 
     public UUID sendForAccount(UUID accountId, String caseId, String operation, String rawText) {
+        return sendForAccount(accountId, caseId, operation, rawText, null);
+    }
+
+    UUID sendForAccount(UUID accountId, String caseId, String operation, String rawText, Consumer<UUID> onStored) {
         if (operation == null || operation.isBlank() || operation.length() > 80) {
             throw new CaseActionException("INVALID_MESSAGE");
         }
-        return sendAuthorized(lock -> {
-            String email = accounts.verifiedEmail(accountId).orElseThrow(() -> new CaseActionException("CASE_NOT_AVAILABLE"));
-            return messages.accountAccess(caseId, email, lock).orElseThrow(() -> new CaseActionException("CASE_NOT_AVAILABLE"));
-        }, accountOperation(accountId, operation), rawText, accountId);
+        return sendAuthorized(lock -> accountAccess(accountId, caseId, lock),
+                accountOperation(accountId, operation), rawText, accountId, onStored);
+    }
+
+    boolean availableForAccount(UUID accountId, String caseId) {
+        accountAccess(accountId, caseId, false);
+        return cases.leader(caseId).filter(leader -> availability.active(leader.key(), leader.tenant())).isPresent();
+    }
+
+    Optional<Message> findForAccount(UUID accountId, String caseId, String operation) {
+        return messages.find(accountAccess(accountId, caseId, false), accountOperation(accountId, operation));
+    }
+
+    private Access accountAccess(UUID accountId, String caseId, boolean lock) {
+        String email = accounts.verifiedEmail(accountId).orElseThrow(() -> new CaseActionException("CASE_NOT_AVAILABLE"));
+        return messages.accountAccess(caseId, email, lock).orElseThrow(() -> new CaseActionException("CASE_NOT_AVAILABLE"));
     }
 
     private String accountOperation(UUID accountId, String operation) {
@@ -81,7 +99,8 @@ public class TenantMessageService implements TenantMessageSubmission {
         }
     }
 
-    private UUID sendAuthorized(Function<Boolean, Access> authorize, String operation, String rawText, UUID actor) {
+    private UUID sendAuthorized(Function<Boolean, Access> authorize, String operation, String rawText, UUID actor,
+            Consumer<UUID> onStored) {
         String text = CaseDescription.normalizeLineEndings(rawText);
         if (operation == null || operation.isBlank() || operation.length() > 80 || text == null || text.isBlank() || text.length() > 2000) {
             throw new CaseActionException("INVALID_MESSAGE");
@@ -124,6 +143,9 @@ public class TenantMessageService implements TenantMessageSubmission {
             Message created = messages.save(access, operation, text, leader.key(), leader.tenant());
             if (actor != null) {
                 messages.recordActor(created.id(), actor);
+            }
+            if (onStored != null) {
+                onStored.accept(created.id());
             }
             return created;
         });

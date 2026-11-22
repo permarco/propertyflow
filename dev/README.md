@@ -201,6 +201,44 @@ Browserprüfungen mit demselben Mitarbeiterkonto nacheinander und mit mindestens
 Minute Abstand zwischen Codeanforderungen ausführen. Der reguläre Missbrauchsschutz
 bleibt auch im Devprofil aktiv.
 
+## MCP-Fallstand mit OAuth
+
+Für den ersten Test ein verifiziertes Mieterkonto und synthetische Fälle
+verwenden. Der MCP-Zugang wird je Start eingeschaltet. Die Redirect-URI muss
+exakt zum vorregistrierten OAuth-Client passen. Für einen lokalen Client auf
+demselben Rechner kann ein Loopback-Callback verwendet werden.
+
+```powershell
+pwsh -File dev/stop.ps1 -ApplicationOnly
+$env:PROPERTYFLOW_MCP_ENABLED = 'true'
+$env:PROPERTYFLOW_MCP_ISSUER = 'http://127.0.0.1:8081'
+$env:PROPERTYFLOW_MCP_CLIENT_ID = 'propertyflow-local-test'
+$env:PROPERTYFLOW_MCP_REDIRECT_URI = 'http://127.0.0.1:8787/callback'
+pwsh -File dev/start.ps1
+```
+
+Den lokalen OAuth-Client mit diesem Clientnamen und Callback-Port konfigurieren
+und `http://127.0.0.1:8081/mcp` hinzufügen. Er muss Authorization Code mit
+PKCE (`S256`) für öffentliche Clients unterstützen. Der Browser führt zur
+Mieteranmeldung und anschliessend zur Freigabe. Unter «Meine Fälle» steht
+«Verbundene Apps» für den Widerruf bereit.
+
+Für ChatGPT die erreichbare HTTPS-Adresse oder den sicheren MCP-Tunnel
+verwenden und die Client-ID und exakte Redirect-URI aus der Einrichtung
+eintragen. Das Backend unterstützt Streamable HTTP für `2025-11-25` und
+`2026-07-28`. Für Nachrichten ist `2026-07-28` mit URL-Elicitation erforderlich.
+
+| Konto | OAuth-Scopes in der ChatGPT-App |
+| --- | --- |
+| Mieter | `tenant:cases:read`, für Kommentare `tenant:messages:write`, für neue Meldungen `tenant:cases:create` |
+| Bewirtschaftung | `staff:cases:read`, für Kommentare und Nachrichten `staff:messages:write`, für Statuswechsel `staff:cases:transition` |
+
+Je Verbindung die Scopes einer Rolle anfordern. Nach einer Änderung der
+Scopes die App erneut verbinden und die gewünschte Freigabe erteilen.
+Schreibaktionen werden in PropertyFlow geprüft und bestätigt. Die Bestätigung
+läuft nach zehn Minuten ab. Flyway legt die Bestätigungs- und Audit-Tabellen
+mit V10 an und ergänzt mit V11 Felder für Meldungen und Statuswechsel.
+
 ## KI-Formulierung im Mitarbeiterdetail
 
 Eine kurze externe Sachanweisung eingeben und «Mit KI formulieren» wählen.

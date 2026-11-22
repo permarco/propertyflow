@@ -123,7 +123,9 @@ class RegularStaffLoginController {
                 return error(response, model, session, true, HttpStatus.BAD_REQUEST, INVALID_CODE);
             }
 
-            String target = StaffWebSession.safeTarget((String) session.getAttribute(StaffWebSession.RETURN_TO));
+            String target = TenantOAuthLogin.takeStaffReturnTarget(session,
+                    StaffWebSession.safeTarget((String) session.getAttribute(StaffWebSession.RETURN_TO)));
+            target = McpConfirmationLogin.takeReturnTarget(session, true, target);
             request.changeSessionId();
             session.removeAttribute(TenantWebSession.ACCOUNT);
             session.setAttribute(StaffWebSession.ACCOUNT, verified.orElseThrow().accountId());

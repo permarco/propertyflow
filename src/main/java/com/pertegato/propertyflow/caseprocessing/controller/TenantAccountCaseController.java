@@ -14,6 +14,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -30,6 +31,9 @@ public class TenantAccountCaseController {
     private final TenantMessageService messages;
     private final TenantAccountAccess accounts;
     private final GuestRequestLimits limits;
+
+    @Value("${propertyflow.mcp.backend.enabled:false}")
+    private boolean connectedAppsAvailable;
 
     public TenantAccountCaseController(PersistentCaseService cases, TenantMessageService messages,
             TenantAccountAccess accounts, GuestRequestLimits limits) {
@@ -54,6 +58,7 @@ public class TenantAccountCaseController {
         model.addAttribute("cases", cases.listForAccount(account).stream().map(view -> new AccountRow(
                 view.state().caseId(), view.title(), view.originalUnit(), PersonalCaseController.statusLabel(view.state().status()))).toList());
         model.addAttribute("csrf", request.getSession(false).getAttribute(StaffWebSession.CSRF));
+        model.addAttribute("connectedAppsAvailable", connectedAppsAvailable);
         return "tenant/account-cases";
     }
 

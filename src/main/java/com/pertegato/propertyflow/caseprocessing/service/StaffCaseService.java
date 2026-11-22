@@ -11,6 +11,7 @@ import com.pertegato.propertyflow.caseprocessing.contract.CaseErrorCode;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseServiceException;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseStatus;
 import com.pertegato.propertyflow.caseprocessing.contract.InternalChange;
+import com.pertegato.propertyflow.caseprocessing.contract.McpCaseReading.CaseStateFilter;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffCaseListing;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffCasePage;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffCaseQuery;
@@ -133,14 +134,31 @@ class StaffCaseService implements StaffCaseListing, AccountCaseReading {
 
     @Override
     public StaffCasePage listForStaff(WebAccountContext context, StaffCaseQuery query) {
-        return authorizedRead(context, () -> findPage(query));
+        return authorizedRead(context, () -> findPage(query, filters(query)));
     }
 
-    private StaffCasePage findPage(StaffCaseQuery query) {
+    StaffCasePage listForMcp(WebAccountContext context, CaseStateFilter state, CaseStatus status, String urgency, int page) {
+        StaffCaseQuery query = new StaffCaseQuery("", urgency, state != CaseStateFilter.ACTIVE, "default", true, page);
+        Specification<CaseEntity> matching = filters(query).and((root, criteria, builder) -> {
+            Predicate filter = state == CaseStateFilter.CLOSED
+                    ? builder.equal(root.get("status"), CaseStatus.CLOSED)
+                    : builder.conjunction();
+            return status == null ? filter : builder.and(filter, builder.equal(root.get("status"), status));
+        });
+        return authorizedRead(context, () -> findPage(query, matching));
+    }
+
+    TenantCaseView readPublicForStaff(WebAccountContext context, String caseId) {
+        return authorizedRead(context, () -> {
+            CaseEntity stored = cases.findById(caseId).orElseThrow(() -> failure(CaseErrorCode.CASE_NOT_AVAILABLE));
+            return CaseProjections.tenantView(stored, List.of(), messages.history(caseId), staffMessages.history(caseId));
+        });
+    }
+
+    private StaffCasePage findPage(StaffCaseQuery query, Specification<CaseEntity> matching) {
         if (query.query().length() > 200 || !URGENCIES.contains(query.urgency()) || !SORT_PROPERTIES.containsKey(query.sort())) {
             throw failure(CaseErrorCode.INVALID_INPUT);
         }
-        Specification<CaseEntity> matching = filters(query);
         long total = cases.count(matching);
         int totalPages = (int) Math.max(1, Math.min(Integer.MAX_VALUE, Math.ceil((double) total / PAGE_SIZE)));
         int page = Math.clamp(query.page(), 1, totalPages);

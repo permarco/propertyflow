@@ -93,6 +93,8 @@ public class StaffDecisionStore {
                 SELECT ?, case_id, ?, access_id, 'STATUS_CHANGED' FROM pf_acceptance_mail_order WHERE case_id = ?
                 """, UUID.randomUUID(), event, state.id());
         database.update("UPDATE pf_staff_decision SET state = 'APPLIED', completed_at = CURRENT_TIMESTAMP WHERE id = ?", decisionId);
+        Decision decision = get(decisionId);
+        McpTransitionAudit.applied(database, state.id(), decision.actor(), decision.operation());
         database.update("""
                 UPDATE pf_case_review_signal SET state = 'CONSUMED', considered_decision_id = ?
                 WHERE case_id = ? AND considered_decision_id IS NULL AND considered_wait_command_id IS NULL AND considered_direct_command_id IS NULL

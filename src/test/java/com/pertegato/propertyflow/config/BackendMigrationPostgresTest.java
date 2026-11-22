@@ -30,14 +30,16 @@ class BackendMigrationPostgresTest {
                     .schemas(schema)
                     .locations("classpath:db/backend-migration")
                     .load();
-            assertEquals(8, flyway.migrate().migrationsExecuted);
-            assertEquals(54, database.queryForObject("""
+            assertEquals(11, flyway.migrate().migrationsExecuted);
+            assertEquals(56, database.queryForObject("""
                     SELECT count(*) FROM information_schema.tables WHERE table_schema = ?
                         AND table_name <> 'flyway_schema_history'
                     """, Integer.class, schema));
             assertEquals(List.of("access/V1__initial_schema.sql", "caseprocessing/V2__initial_schema.sql",
                     "intake/V3__initial_schema.sql", "triage/V4__initial_schema.sql", "recommendation/V5__initial_schema.sql",
-                    "updates/V6__account_management.sql", "updates/V7__case_access_administration.sql", "updates/V8__administrative_command_contracts.sql"),
+                    "updates/V6__account_management.sql", "updates/V7__case_access_administration.sql",
+                    "updates/V8__administrative_command_contracts.sql", "updates/V9__mcp_oauth.sql",
+                    "updates/V10__mcp_message_confirmation.sql", "updates/V11__mcp_case_actions.sql"),
                     database.queryForList("SELECT script FROM " + schema
                             + ".flyway_schema_history WHERE version IS NOT NULL ORDER BY installed_rank", String.class));
             assertEquals(1, database.queryForObject("SELECT count(*) FROM " + schema

@@ -27,6 +27,7 @@ public class CaseClosureStore {
     public void close(CaseState state, Decision decision, long leader) {
         close(state, decision.id(), decision.actor(), leader, decision.id(), null, null);
         database.update("UPDATE pf_staff_decision SET state = 'APPLIED', completed_at = CURRENT_TIMESTAMP WHERE id = ?", decision.id());
+        McpTransitionAudit.applied(database, state.id(), decision.actor(), decision.operation());
     }
 
     public void close(CaseState state, Command command, long leader) {

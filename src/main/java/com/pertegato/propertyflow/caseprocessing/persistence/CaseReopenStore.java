@@ -34,7 +34,8 @@ public class CaseReopenStore {
         return database.query("SELECT * FROM pf_case_reopen_order WHERE " + condition, (row, index) -> new Order(
                 row.getObject("id", UUID.class), row.getString("case_id"), row.getObject("actor_id", UUID.class), row.getLong("previous_instance_key"),
                 row.getLong("expected_version"), row.getLong("definition_key"), row.getString("tenant_id"), row.getString("state"),
-                row.getObject("new_instance_key", Long.class), row.getObject("continuation_id", UUID.class), row.getString("target_status")), args);
+                row.getObject("new_instance_key", Long.class), row.getObject("continuation_id", UUID.class), row.getString("target_status"),
+                row.getObject("operation_id", UUID.class)), args);
     }
 
     public Order request(CaseState state, UUID actor, UUID operation) {
@@ -113,10 +114,11 @@ public class CaseReopenStore {
                 UPDATE pf_case_reopen_order SET state = 'APPLIED', applied_at = CURRENT_TIMESTAMP, new_instance_key = ?,
                     continuation_id = ?, target_status = ? WHERE id = ?
                 """, leader, continuation, target, order.id());
+        McpTransitionAudit.applied(database, state.id(), order.actor(), order.operation());
         return get(order.id()).orElseThrow();
     }
 
     public record Order(UUID id, String caseId, UUID actor, long previous, long version, long definition, String tenant,
-            String state, Long leader, UUID continuation, String target) {
+            String state, Long leader, UUID continuation, String target, UUID operation) {
     }
 }

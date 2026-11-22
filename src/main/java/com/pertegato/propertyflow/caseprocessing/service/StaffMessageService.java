@@ -82,6 +82,13 @@ public class StaffMessageService implements StaffMessageSubmission {
 
     @Override
     public String send(WebAccountContext context, String caseId, String operation, String text, boolean answerRequired) {
+        if (operation != null && operation.startsWith("mcp:")) {
+            throw new CaseActionException("INVALID_INPUT");
+        }
+        return send(context, caseId, operation, text, answerRequired, null);
+    }
+
+    String send(WebAccountContext context, String caseId, String operation, String text, boolean answerRequired, Long expectedVersion) {
         authorize(context);
         if (operation == null || operation.isEmpty() || operation.length() > 80 || text == null || text.isBlank()) {
             throw new CaseActionException("INVALID_INPUT");
@@ -96,6 +103,9 @@ public class StaffMessageService implements StaffMessageSubmission {
         Basis candidate = writes.execute(transaction -> basis(caseId));
         if (candidate == null || answerRequired && !questionsAllowed(candidate.status())) {
             throw new CaseActionException("CASE_NOT_ACTIVE");
+        }
+        if (expectedVersion != null && candidate.version() != expectedVersion) {
+            throw new CaseActionException("CASE_CHANGED");
         }
         Long task = candidate.binding() == null ? null : tasks.currentTask(candidate.binding()).orElse(null);
         if (!availability.active(candidate.leader().key(), candidate.leader().tenant())
