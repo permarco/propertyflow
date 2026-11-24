@@ -1,5 +1,7 @@
 package com.pertegato.propertyflow.caseprocessing.workflow;
 
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants;
 import com.pertegato.propertyflow.caseprocessing.service.StaffDecisionService;
 import com.pertegato.propertyflow.caseprocessing.service.WorkflowRejectedException;
 import io.camunda.client.CamundaClient;
@@ -10,38 +12,42 @@ import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.worker.JobClient;
 import java.time.Duration;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.CASE_ID;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.LEADING_PROCESS_INSTANCE_KEY;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.STAFF_DECISION_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.ErrorCode.STAFF_DECISION_STALE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.JobType.STAFF_PROGRESS;
+
 @Component
 @Profile("propertyflow-backend & !frontend-demo")
 @ConditionalOnProperty(name = "propertyflow.workflow.enabled", havingValue = "true")
+@RequiredArgsConstructor
 public class StaffDecisionWorkers {
 
-    public static final String PROGRESS = "propertyflow.staff.progress";
-    public static final String STALE_DECISION = "STAFF_DECISION_STALE";
     private final CamundaClient engine;
     private final StaffDecisionService service;
 
-    public StaffDecisionWorkers(CamundaClient engine, StaffDecisionService service) {
-        this.engine = engine;
-        this.service = service;
-    }
-
-    @JobWorker(type = PROGRESS, autoComplete = false)
+    @JobWorker(type = STAFF_PROGRESS, autoComplete = false)
     public void progress(JobClient client, ActivatedJob job) {
         String result;
         try {
-            require(StaffReviewWorkers.STAFF_PROCESS.equals(job.getBpmnProcessId()) && "SProgress".equals(job.getElementId()));
+            require(StaffProcessingBpmnConstants.PROCESS_ID.equals(job.getBpmnProcessId())
+                    && StaffProcessingBpmnConstants.ServiceTask.CONTINUE_WORK.equals(job.getElementId()));
             ProcessInstance child = engine.newProcessInstanceGetRequest(job.getProcessInstanceKey()).send().join();
             require(child.getParentProcessInstanceKey() != null && child.getParentElementInstanceKey() != null
-                    && Long.toString(child.getParentProcessInstanceKey()).equals(text(job, "leadingProcessInstanceKey")));
+                    && Long.toString(child.getParentProcessInstanceKey()).equals(text(job, LEADING_PROCESS_INSTANCE_KEY)));
             ElementInstance call = engine.newElementInstanceGetRequest(child.getParentElementInstanceKey()).send().join();
-            require("Staff".equals(call.getElementId()) && child.getParentProcessInstanceKey().equals(call.getProcessInstanceKey())
-                    && InitialCaseWorkers.CASE_PROCESS.equals(call.getProcessDefinitionId()) && job.getTenantId().equals(call.getTenantId()));
-            result = service.progress(text(job, "caseId"), child.getParentProcessInstanceKey(), job.getProcessInstanceKey(),
-                    UUID.fromString(text(job, "staffDecisionRef")));
+            require(CaseProcessBpmnConstants.CallActivity.STAFF_PROCESSING_CALL.equals(call.getElementId())
+                    && child.getParentProcessInstanceKey().equals(call.getProcessInstanceKey())
+                    && CaseProcessBpmnConstants.PROCESS_ID.equals(call.getProcessDefinitionId())
+                    && job.getTenantId().equals(call.getTenantId()));
+            result = service.progress(text(job, CASE_ID), child.getParentProcessInstanceKey(), job.getProcessInstanceKey(),
+                    UUID.fromString(text(job, STAFF_DECISION_REF)));
         } catch (RuntimeException exception) {
             fail(client, job, exception instanceof WorkflowRejectedException || exception instanceof IllegalArgumentException);
             return;
@@ -49,7 +55,7 @@ public class StaffDecisionWorkers {
         if ("APPLIED".equals(result)) {
             client.newCompleteCommand(job.getKey()).send().join();
         } else if ("REVIEW_AGAIN".equals(result)) {
-            client.newThrowErrorCommand(job.getKey()).errorCode(STALE_DECISION).errorMessage("CURRENT_CASE_REQUIRES_NEW_DECISION").send().join();
+            client.newThrowErrorCommand(job.getKey()).errorCode(STAFF_DECISION_STALE).errorMessage("CURRENT_CASE_REQUIRES_NEW_DECISION").send().join();
         } else {
             fail(client, job, false);
         }

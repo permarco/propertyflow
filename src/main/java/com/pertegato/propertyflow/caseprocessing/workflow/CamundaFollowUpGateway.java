@@ -1,6 +1,8 @@
 package com.pertegato.propertyflow.caseprocessing.workflow;
 
 import com.pertegato.propertyflow.caseprocessing.contract.CaseActionException;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.FollowUpBpmnConstants;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants;
 import com.pertegato.propertyflow.caseprocessing.delivery.FollowUpGateway;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientHttpException;
@@ -13,6 +15,8 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
+
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.FollowUpBpmnConstants.Variablen.FOLLOW_UP_COMMAND_REF;
 
 @Component
 @Profile("propertyflow-backend & !frontend-demo")
@@ -37,9 +41,10 @@ public class CamundaFollowUpGateway implements FollowUpGateway {
         CamundaClient client = clients.getObject();
         ProcessInstance process = client.newProcessInstanceGetRequest(child).send().join();
         ProcessInstance parent = client.newProcessInstanceGetRequest(staff).send().join();
-        if (!CaseWaitWorkers.FOLLOW_UP_PROCESS.equals(process.getProcessDefinitionId()) || !"ACTIVE".equals(process.getState().name())
+        if (!FollowUpBpmnConstants.PROCESS_ID.equals(process.getProcessDefinitionId())
+                || !"ACTIVE".equals(process.getState().name())
                 || !Long.valueOf(staff).equals(process.getParentProcessInstanceKey()) || !tenant.equals(process.getTenantId())
-                || !StaffReviewWorkers.STAFF_PROCESS.equals(parent.getProcessDefinitionId())
+                || !StaffProcessingBpmnConstants.PROCESS_ID.equals(parent.getProcessDefinitionId())
                 || !Long.valueOf(leader).equals(parent.getParentProcessInstanceKey()) || !tenant.equals(parent.getTenantId())) {
             return false;
         }
@@ -67,7 +72,7 @@ public class CamundaFollowUpGateway implements FollowUpGateway {
                     .messageName(message)
                     .correlationKey(waitId.toString())
                     .tenantId(tenant)
-                    .variables(Map.of("followUpCommandRef", command.toString()))
+                    .variables(Map.of(FOLLOW_UP_COMMAND_REF, command.toString()))
                     .send()
                     .join();
             if (!Long.valueOf(child).equals(response.getProcessInstanceKey()) || !tenant.equals(response.getTenantId())) {

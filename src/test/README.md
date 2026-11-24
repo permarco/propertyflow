@@ -16,6 +16,38 @@ Maven löst den Pfad der verwendeten `mockito-core`-JAR auf und übergibt sie al
 Java-Agent an Surefire. Ein lokaler absoluter Pfad und dynamisches Self-Attach
 sind dadurch nicht nötig.
 
+## Workflowtests mit den Anwendungsmodellen
+
+Alle `*CamundaTest`-Klassen deployen über `WorkflowTestModels` die acht
+unveränderten BPMN-Dateien aus `src/main/resources/bpmn`. Haupt- und Teilprozesse
+werden gemeinsam deployt, damit Aufrufe mit `bindingType="deployment"` dieselbe
+Modellversion verwenden. Separate BPMN-Kopien unter den Testressourcen und die
+Übersetzung auf historische Test-IDs entfallen.
+
+Die Tests steuern die echten Worker und Engine-Schritte; fachliche KI-Antworten
+bleiben kontrollierte Testeingaben. Modellbedingungen, Variablenübergaben,
+Ereignisse und Timer werden für die Tests nicht umgeschrieben. Die statischen
+Bindungsprüfungen prüfen ihre Erwartungen direkt an den Originaldateien.
+
+Die Engine-Tests benötigen eine **isolierte** PostgreSQL-Datenbank namens
+`propertyflow_test` und Camunda. Die Tests leeren die Falltabellen. Parallele
+Testläufe müssen eigene Datenbanken und Engines verwenden.
+
+```powershell
+docker compose -f dev/compose.backend-test.yaml up -d --wait
+docker compose -f dev/compose.workflow-test.yaml up -d --wait
+$env:PROPERTYFLOW_TEST_DATABASE_URL = 'jdbc:postgresql://127.0.0.1:5434/propertyflow_test'
+$env:PROPERTYFLOW_TEST_CAMUNDA_URL = 'http://127.0.0.1:8085'
+$env:PROPERTYFLOW_TEST_SMTP_PORT = '1027'
+$env:PROPERTYFLOW_TEST_MAILPIT_URL = 'http://127.0.0.1:8027'
+.\mvnw.cmd '-Dtest=*CamundaTest,InitialWorkflowBindingTest,ReviewWorkflowBindingTest,BpmnTechnicalConstantsTest,ProcessVariablesContractTest' test
+```
+
+Ohne Datenbank- und Camunda-URL werden die Engine-Tests übersprungen;
+für die SMTP-Prozessprüfung ist zusätzlich der SMTP-Port erforderlich; ein solcher
+Lauf ist kein Nachweis der Prozessausführung. Ergebnisse stehen in
+`target/surefire-reports/`.
+
 ## Stufe 1 · Gastanlage und persönlicher Fall-Link
 
 `BackendMigrationPostgresTest` prüft den Neuaufbau aus den fünf Modulskripten,
@@ -116,7 +148,7 @@ node src/test/browser/run-integrated-regression.mjs
 node --test --test-concurrency=1 src/test/browser/stage3/*.test.mjs
 ```
 
-Der portable Runner startet PostgreSQL, Camunda und Mailpit über `dev/compose.integration.yaml`, richtet das Mitarbeiterkonto ein, deployt die sieben BPMNs aus dem JAR und startet das echte Backend. Er prüft Mieter-/Mitarbeiterinteraktionen, Operate, Kontenverwaltung, Backendneustart und echte Sitzungsabläufe nach 65 Sekunden Leerlauf. Fallaufnahme, 51 persistente Fälle mit Seitennavigation, Such-/Schreibfehler, Barrierefreiheit und Tastatur werden gegen diese Instanz geprüft. Externe KI ist deaktiviert; manuelle Arbeit muss möglich bleiben.
+Der portable Runner startet PostgreSQL, Camunda und Mailpit über `dev/compose.integration.yaml`, richtet das Mitarbeiterkonto ein, deployt die acht BPMNs aus dem JAR und startet das echte Backend. Er prüft Mieter-/Mitarbeiterinteraktionen, Operate, Kontenverwaltung, Backendneustart und echte Sitzungsabläufe nach 65 Sekunden Leerlauf. Fallaufnahme, 51 persistente Fälle mit Seitennavigation, Such-/Schreibfehler, Barrierefreiheit und Tastatur werden gegen diese Instanz geprüft. Externe KI ist deaktiviert; manuelle Arbeit muss möglich bleiben.
 
 Die Ports 8084, 8086, 26506, 5440, 8028 und 1028 müssen frei sein. Belegte Ports werden nicht übernommen. Die Container und Datenbanken gehören ausschliesslich diesem Lauf; die Entwicklungsdatenbank bleibt erhalten. Testkonten und Link-Schlüssel werden für den Lauf neu eingerichtet. Der Runner entfernt die eigenen Container auch bei Fehlern.
 

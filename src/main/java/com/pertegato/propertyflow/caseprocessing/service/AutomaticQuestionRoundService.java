@@ -1,11 +1,12 @@
 package com.pertegato.propertyflow.caseprocessing.service;
 
-import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore.CaseState;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore.Entry;
-import com.pertegato.propertyflow.caseprocessing.persistence.TenantReplyStore;
+import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.TenantReplyStore.Call;
+import com.pertegato.propertyflow.caseprocessing.persistence.TenantReplyStore;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -14,15 +15,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Profile("propertyflow-backend & !frontend-demo")
 @Transactional(propagation = Propagation.REQUIRES_NEW)
+@RequiredArgsConstructor
 public class AutomaticQuestionRoundService {
 
     private final CaseWorkflowStore workflow;
     private final TenantReplyStore replies;
-
-    public AutomaticQuestionRoundService(CaseWorkflowStore workflow, TenantReplyStore replies) {
-        this.workflow = workflow;
-        this.replies = replies;
-    }
 
     public Call source(UUID decision, String caseId, long leader) {
         return source(decision, caseId, leader, "QUESTION");

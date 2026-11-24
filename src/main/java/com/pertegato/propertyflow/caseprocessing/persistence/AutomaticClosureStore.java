@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -16,14 +17,11 @@ import tools.jackson.databind.json.JsonMapper;
 
 @Repository
 @Profile("propertyflow-backend & !frontend-demo")
+@RequiredArgsConstructor
 public class AutomaticClosureStore {
 
     private final JdbcTemplate database;
     private final JsonMapper json = JsonMapper.builder().build();
-
-    public AutomaticClosureStore(JdbcTemplate database) {
-        this.database = database;
-    }
 
     public Optional<Command> find(UUID entry, UUID evaluation) {
         return rows("automatic_entry_id = ? AND evaluation_id = ?", entry, evaluation).stream().findFirst();

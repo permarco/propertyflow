@@ -4,9 +4,9 @@ import com.pertegato.propertyflow.access.contract.WebAccountContext;
 import com.pertegato.propertyflow.access.web.BrowserResponses;
 import com.pertegato.propertyflow.access.web.StaffWebSession;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseActionException;
-import com.pertegato.propertyflow.caseprocessing.service.MessageFormulationService;
 import com.pertegato.propertyflow.caseprocessing.service.MessageFormulationService.Attempt;
 import com.pertegato.propertyflow.caseprocessing.service.MessageFormulationService.Attempts;
+import com.pertegato.propertyflow.caseprocessing.service.MessageFormulationService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Set;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -31,14 +32,11 @@ import org.springframework.web.util.WebUtils;
 @Controller
 @Profile("propertyflow-backend & !frontend-demo")
 @RequestMapping("/mitarbeiter/faelle/{caseId}/ki-formulierung")
+@RequiredArgsConstructor
 public class MessageFormulationController {
 
     private static final String ATTEMPTS = "propertyflow.staff.formulationAttempts";
     private final MessageFormulationService service;
-
-    public MessageFormulationController(MessageFormulationService service) {
-        this.service = service;
-    }
 
     @PostMapping(produces = "text/event-stream", consumes = "application/x-www-form-urlencoded")
     SseEmitter start(@PathVariable String caseId, @RequestParam MultiValueMap<String, String> fields,

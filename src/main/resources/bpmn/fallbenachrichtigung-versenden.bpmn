@@ -1,179 +1,198 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_PropertyFlow_Mail_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1">
-  <bpmn:error id="Error_MailClarification" name="Versand fachlich klären" errorCode="MAIL_CLARIFICATION_REQUIRED" />
-  <bpmn:process id="PropertyFlow_Mail_Draft" name="Fallbenachrichtigung versenden · 0.23" isExecutable="true">
+<bpmn:definitions xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Fallbenachrichtigung_versenden_DEFINITIONS" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1">
+  <bpmn:error id="Versand_fachlich_klaeren_ERROR" name="Versand fachlich klären" errorCode="MAIL_CLARIFICATION_REQUIRED" />
+  <bpmn:process id="Fallbenachrichtigung_versenden_PROCESS" name="Fallbenachrichtigung versenden" isExecutable="true">
     <bpmn:documentation>BEN-03: Eigenständige Camunda-Versandinstanz je dauerhaftem Mailauftrag, kein führender Fallprozess und kein Call innerhalb des abbrechbaren ActiveCase. Der dauerhafte Starter übergibt nur mailOrderRef. CaseMailService koordiniert Registrierung, Versandversuche und Wiederholungsschutz. Höchstens fünf eindeutige technische Fehlversuche mit 30 Sekunden Job-Backoff; ein unklarer SMTP-Ausgang wird nicht automatisch erneut versendet. MailProblem speichert einen dauerhaften Prüfbedarf für den führenden Fallprozess; dessen separate Verarbeitung muss ebenfalls aktiv sein.</bpmn:documentation>
-    <bpmn:startEvent id="MailStart" name="Dauerhafter Auftrag">
+    <bpmn:startEvent id="Dauerhafter_Auftrag_START" name="Dauerhafter Auftrag">
       <bpmn:documentation>Start erst nach Commit von Ereignis und Mailpflicht. Automatische Abschlussnachricht darf anschliessend unabhängig vom Fallabschluss versendet werden.</bpmn:documentation>
-      <bpmn:outgoing>M01</bpmn:outgoing>
+      <bpmn:outgoing>Dauerhafter_Auftrag_START_zu_Mailauftrag_pruefen_SERVICE_FLOW</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:serviceTask id="MailLoad" name="Mailauftrag prüfen&#10;Versandart bestimmen">
+    <bpmn:serviceTask id="Mailauftrag_pruefen_SERVICE" name="Mailauftrag pruefen">
       <bpmn:documentation>mailOrderRef laden, Ereignis/Empfänger prüfen und exklusiven Versandversuch koordinieren. Keine Abschlussstatusmail, Memo-Mail oder zusätzliche Mail zur Ursprungsmeldung. Bereits erledigter Auftrag liefert SKIP. Neue fachliche Ereignisse liefern CHANGE oder MESSAGE. Ungültiger technischer Vertrag darf keinen Default-Versand auslösen. Keine Adressen, Tokens, Nachrichtentexte oder SMTP-Zugangsdaten in Camunda-Variablen.</bpmn:documentation>
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="propertyflow.mail.prepare" />
       </bpmn:extensionElements>
-      <bpmn:incoming>M01</bpmn:incoming>
-      <bpmn:outgoing>M02</bpmn:outgoing>
+      <bpmn:incoming>Dauerhafter_Auftrag_START_zu_Mailauftrag_pruefen_SERVICE_FLOW</bpmn:incoming>
+      <bpmn:outgoing>Mailauftrag_pruefen_SERVICE_zu_Versandart_XOR_FLOW</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:exclusiveGateway id="MailRoute" name="Versandart">
+    <bpmn:exclusiveGateway id="Versandart_XOR" name="Versandart">
       <bpmn:documentation>CHANGE: Status oder Dringlichkeit. MESSAGE: Annahme oder veröffentlichte externe Nachricht. SKIP: kein neuer Versand nötig. Andere Werte technischer Vertragsfehler.</bpmn:documentation>
-      <bpmn:incoming>M02</bpmn:incoming>
-      <bpmn:outgoing>M03</bpmn:outgoing>
-      <bpmn:outgoing>M04</bpmn:outgoing>
-      <bpmn:outgoing>M05</bpmn:outgoing>
+      <bpmn:incoming>Mailauftrag_pruefen_SERVICE_zu_Versandart_XOR_FLOW</bpmn:incoming>
+      <bpmn:outgoing>Versandart_XOR_Status_Dringlichkeit_zu_Statusmail_versenden_SENDTASK_FLOW</bpmn:outgoing>
+      <bpmn:outgoing>Versandart_XOR_Annahme_Nachricht_zu_Annahme_oder_Nachrichtenmail_versenden_FLOW</bpmn:outgoing>
+      <bpmn:outgoing>Versandart_XOR_Bereits_erledigt_keine_neue_Mail_zu_Versandauftrag_erledigt_zusammenfuehren_XOR_FLOW</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:sendTask id="MailSendChange" name="Status-/Dringlichkeitsmail&#10;Mail-Worker beauftragen">
+    <bpmn:sendTask id="Statusmail_versenden_SENDTASK" name="Statusmail versenden">
       <bpmn:documentation>Camunda stellt Job propertyflow.mail.send bereit. Mail-Worker lädt anhand mailOrderRef die Ereignisdaten, bestätigte Kontaktadresse und gültigen Fall-Link über PropertyFlow-Anwendungsdienste; Versand über SMTP, lokal Mailpit. Gleiche logische Auftragskennung bei Wiederholung. Bekannter erfolgreicher Versuch wird nicht erneut gesendet. SMTP-Annahme ist keine Zustell-/Lesegarantie. Unklarer Ausgang nach BEN-04, keine behauptete Exactly-once-SMTP-Garantie. Technischer Fehler: Job-Retry/Incident, keine Rücknahme fachlicher Änderung. Klärungsbedürftiger fachlicher Versandfehler ausdrücklich MAIL_CLARIFICATION_REQUIRED.</bpmn:documentation>
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="propertyflow.mail.send" />
       </bpmn:extensionElements>
-      <bpmn:incoming>M03</bpmn:incoming>
-      <bpmn:outgoing>M06</bpmn:outgoing>
+      <bpmn:incoming>Versandart_XOR_Status_Dringlichkeit_zu_Statusmail_versenden_SENDTASK_FLOW</bpmn:incoming>
+      <bpmn:outgoing>Statusmail_versenden_SENDTASK_zu_Versandauftrag_erledigt_zusammenfuehren_XOR_FLOW</bpmn:outgoing>
     </bpmn:sendTask>
-    <bpmn:boundaryEvent id="MailSendChangeProblem" name="Versand klären" attachedToRef="MailSendChange">
+    <bpmn:boundaryEvent id="Versand_klaeren_Statusmail_versenden_BOUNDARY" name="Versand klaeren" attachedToRef="Statusmail_versenden_SENDTASK">
       <bpmn:documentation>Fachliche Einstufung durch Versanddienst; ein Retry allein löst dies nicht aus. Nach ausgeschöpften technischen Retries bleibt Incident sichtbar; Wiederholungsgrenzen und Überführung in fachlichen Klärbedarf vor Ausführung konkretisieren.</bpmn:documentation>
-      <bpmn:outgoing>M08</bpmn:outgoing>
-      <bpmn:errorEventDefinition id="MailSendChangeProblem_definition" errorRef="Error_MailClarification" />
+      <bpmn:outgoing>Versand_klaeren_Statusmail_zu_Versandproblem_festhalten_zusammenfuehren_XOR_FLOW</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="Versand_klaeren_Statusmail_versenden_BOUNDARY_ERROR_DEF" errorRef="Versand_fachlich_klaeren_ERROR" />
     </bpmn:boundaryEvent>
-    <bpmn:sendTask id="MailSendMessage" name="Annahme-/Nachrichtenmail&#10;Mail-Worker beauftragen">
+    <bpmn:sendTask id="Annahme_oder_Nachrichtenmail_versenden_SENDTASK" name="Annahme- oder Nachrichtenmail versenden">
       <bpmn:documentation>Camunda stellt Job propertyflow.mail.send bereit. Mail-Worker lädt anhand mailOrderRef die Ereignisdaten, bestätigte Kontaktadresse und gültigen Fall-Link über PropertyFlow-Anwendungsdienste; Versand über SMTP, lokal Mailpit. Gleiche logische Auftragskennung bei Wiederholung. Bekannter erfolgreicher Versuch wird nicht erneut gesendet. SMTP-Annahme ist keine Zustell-/Lesegarantie. Unklarer Ausgang nach BEN-04, keine behauptete Exactly-once-SMTP-Garantie. Technischer Fehler: Job-Retry/Incident, keine Rücknahme fachlicher Änderung. Klärungsbedürftiger fachlicher Versandfehler ausdrücklich MAIL_CLARIFICATION_REQUIRED.</bpmn:documentation>
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="propertyflow.mail.send" />
       </bpmn:extensionElements>
-      <bpmn:incoming>M04</bpmn:incoming>
-      <bpmn:outgoing>M07</bpmn:outgoing>
+      <bpmn:incoming>Versandart_XOR_Annahme_Nachricht_zu_Annahme_oder_Nachrichtenmail_versenden_FLOW</bpmn:incoming>
+      <bpmn:outgoing>Annahme_oder_Nachrichtenmail_zu_Versandauftrag_erledigt_zusammenfuehren_XOR_FLOW</bpmn:outgoing>
     </bpmn:sendTask>
-    <bpmn:boundaryEvent id="MailSendMessageProblem" name="Versand klären" attachedToRef="MailSendMessage">
+    <bpmn:boundaryEvent id="Versand_klaeren_Annahme_oder_Nachrichtenmail_versenden_BOUNDARY" name="Versand klaeren" attachedToRef="Annahme_oder_Nachrichtenmail_versenden_SENDTASK">
       <bpmn:documentation>Fachliche Einstufung durch Versanddienst; ein Retry allein löst dies nicht aus. Nach ausgeschöpften technischen Retries bleibt Incident sichtbar; Wiederholungsgrenzen und Überführung in fachlichen Klärbedarf vor Ausführung konkretisieren.</bpmn:documentation>
-      <bpmn:outgoing>M09</bpmn:outgoing>
-      <bpmn:errorEventDefinition id="MailSendMessageProblem_definition" errorRef="Error_MailClarification" />
+      <bpmn:outgoing>Versand_klaeren_Annahme_zu_Versandproblem_festhalten_zusammenfuehren_XOR_FLOW</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="Versand_klaeren_Annahme_oder_Nachrichtenmail_versenden_BOUNDARY_ERROR_DEF" errorRef="Versand_fachlich_klaeren_ERROR" />
     </bpmn:boundaryEvent>
-    <bpmn:exclusiveGateway id="Merge_MailEnd" gatewayDirection="Converging">
-      <bpmn:incoming>M05</bpmn:incoming>
-      <bpmn:incoming>M06</bpmn:incoming>
-      <bpmn:incoming>M07</bpmn:incoming>
-      <bpmn:outgoing>Flow_Merge_MailEnd</bpmn:outgoing>
+    <bpmn:exclusiveGateway id="Versandauftrag_erledigt_zusammenfuehren_XOR" gatewayDirection="Converging">
+      <bpmn:incoming>Versandart_XOR_Bereits_erledigt_keine_neue_Mail_zu_Versandauftrag_erledigt_zusammenfuehren_XOR_FLOW</bpmn:incoming>
+      <bpmn:incoming>Statusmail_versenden_SENDTASK_zu_Versandauftrag_erledigt_zusammenfuehren_XOR_FLOW</bpmn:incoming>
+      <bpmn:incoming>Annahme_oder_Nachrichtenmail_zu_Versandauftrag_erledigt_zusammenfuehren_XOR_FLOW</bpmn:incoming>
+      <bpmn:outgoing>Versandauftrag_erledigt_zusammenfuehren_zu_Versandauftrag_erledigt_END_FLOW</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:endEvent id="MailEnd" name="Versandauftrag erledigt">
+    <bpmn:endEvent id="Versandauftrag_erledigt_END" name="Versandauftrag erledigt">
       <bpmn:documentation>Nach dokumentierter SMTP-Annahme oder bereits erfolgreich erledigtem identischen Auftrag. Kein Fallabschluss und kein Statuswechsel durch dieses Ende.</bpmn:documentation>
-      <bpmn:incoming>Flow_Merge_MailEnd</bpmn:incoming>
+      <bpmn:incoming>Versandauftrag_erledigt_zusammenfuehren_zu_Versandauftrag_erledigt_END_FLOW</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="Flow_Merge_MailEnd" sourceRef="Merge_MailEnd" targetRef="MailEnd" />
-    <bpmn:exclusiveGateway id="Merge_MailProblem" gatewayDirection="Converging">
-      <bpmn:incoming>M08</bpmn:incoming>
-      <bpmn:incoming>M09</bpmn:incoming>
-      <bpmn:outgoing>Flow_Merge_MailProblem</bpmn:outgoing>
+    <bpmn:sequenceFlow id="Versandauftrag_erledigt_zusammenfuehren_zu_Versandauftrag_erledigt_END_FLOW" sourceRef="Versandauftrag_erledigt_zusammenfuehren_XOR" targetRef="Versandauftrag_erledigt_END" />
+    <bpmn:exclusiveGateway id="Versandproblem_festhalten_zusammenfuehren_XOR" gatewayDirection="Converging">
+      <bpmn:incoming>Versand_klaeren_Statusmail_zu_Versandproblem_festhalten_zusammenfuehren_XOR_FLOW</bpmn:incoming>
+      <bpmn:incoming>Versand_klaeren_Annahme_zu_Versandproblem_festhalten_zusammenfuehren_XOR_FLOW</bpmn:incoming>
+      <bpmn:outgoing>Versandproblem_festhalten_zusammenfuehren_zu_Versandproblem_festhalten_SERVICE_FLOW</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:serviceTask id="MailProblem" name="Versandproblem speichern&#10;Prüfbedarf bereitstellen">
+    <bpmn:serviceTask id="Versandproblem_festhalten_SERVICE" name="Versandproblem festhalten">
       <bpmn:documentation>Auftrag nicht als erfolgreich markieren. Aktiver Fall: neuen fachlichen Grund E-Mail-Versand klären über den unabhängigen Prüfbedarf-Eingang bereitstellen. Bereits offene Prüfung ergänzen, identische oder berücksichtigte Erkenntnis nicht erneut eskalieren. Abgeschlossener Fall: nur interner Hinweis, keine Wiedereröffnung. Keine automatische Neuanlage identischer Statusmail-Aufträge durch Wiederholung.</bpmn:documentation>
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="propertyflow.mail.record-problem" />
       </bpmn:extensionElements>
-      <bpmn:incoming>Flow_Merge_MailProblem</bpmn:incoming>
-      <bpmn:outgoing>M10</bpmn:outgoing>
+      <bpmn:incoming>Versandproblem_festhalten_zusammenfuehren_zu_Versandproblem_festhalten_SERVICE_FLOW</bpmn:incoming>
+      <bpmn:outgoing>Versandproblem_festhalten_SERVICE_zu_Klaerbedarf_dokumentiert_END_FLOW</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:sequenceFlow id="Flow_Merge_MailProblem" sourceRef="Merge_MailProblem" targetRef="MailProblem" />
-    <bpmn:endEvent id="MailProblemEnd" name="Klärbedarf dokumentiert">
+    <bpmn:sequenceFlow id="Versandproblem_festhalten_zusammenfuehren_zu_Versandproblem_festhalten_SERVICE_FLOW" sourceRef="Versandproblem_festhalten_zusammenfuehren_XOR" targetRef="Versandproblem_festhalten_SERVICE" />
+    <bpmn:endEvent id="Klaerbedarf_dokumentiert_END" name="Klaerbedarf dokumentiert">
       <bpmn:documentation>Versand nicht als erfolgreich deklarieren; gespeicherter Auftrag bleibt nachvollziehbar.</bpmn:documentation>
-      <bpmn:incoming>M10</bpmn:incoming>
+      <bpmn:incoming>Versandproblem_festhalten_SERVICE_zu_Klaerbedarf_dokumentiert_END_FLOW</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="M01" name="" sourceRef="MailStart" targetRef="MailLoad" />
-    <bpmn:sequenceFlow id="M02" name="" sourceRef="MailLoad" targetRef="MailRoute" />
-    <bpmn:sequenceFlow id="M03" name="Status / Dringlichkeit" sourceRef="MailRoute" targetRef="MailSendChange">
+    <bpmn:sequenceFlow id="Dauerhafter_Auftrag_START_zu_Mailauftrag_pruefen_SERVICE_FLOW" name="" sourceRef="Dauerhafter_Auftrag_START" targetRef="Mailauftrag_pruefen_SERVICE" />
+    <bpmn:sequenceFlow id="Mailauftrag_pruefen_SERVICE_zu_Versandart_XOR_FLOW" name="" sourceRef="Mailauftrag_pruefen_SERVICE" targetRef="Versandart_XOR" />
+    <bpmn:sequenceFlow id="Versandart_XOR_Status_Dringlichkeit_zu_Statusmail_versenden_SENDTASK_FLOW" name="Status / Dringlichkeit" sourceRef="Versandart_XOR" targetRef="Statusmail_versenden_SENDTASK">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= mailRoute = "CHANGE"</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="M04" name="Annahme / Nachricht" sourceRef="MailRoute" targetRef="MailSendMessage">
+    <bpmn:sequenceFlow id="Versandart_XOR_Annahme_Nachricht_zu_Annahme_oder_Nachrichtenmail_versenden_FLOW" name="Annahme / Nachricht" sourceRef="Versandart_XOR" targetRef="Annahme_oder_Nachrichtenmail_versenden_SENDTASK">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= mailRoute = "MESSAGE"</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="M05" name="Bereits erledigt / keine neue Mail" sourceRef="MailRoute" targetRef="Merge_MailEnd">
+    <bpmn:sequenceFlow id="Versandart_XOR_Bereits_erledigt_keine_neue_Mail_zu_Versandauftrag_erledigt_zusammenfuehren_XOR_FLOW" name="Bereits erledigt / keine neue Mail" sourceRef="Versandart_XOR" targetRef="Versandauftrag_erledigt_zusammenfuehren_XOR">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= mailRoute = "SKIP"</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="M06" name="" sourceRef="MailSendChange" targetRef="Merge_MailEnd" />
-    <bpmn:sequenceFlow id="M07" name="" sourceRef="MailSendMessage" targetRef="Merge_MailEnd" />
-    <bpmn:sequenceFlow id="M08" name="" sourceRef="MailSendChangeProblem" targetRef="Merge_MailProblem" />
-    <bpmn:sequenceFlow id="M09" name="" sourceRef="MailSendMessageProblem" targetRef="Merge_MailProblem" />
-    <bpmn:sequenceFlow id="M10" name="" sourceRef="MailProblem" targetRef="MailProblemEnd" />
+    <bpmn:sequenceFlow id="Statusmail_versenden_SENDTASK_zu_Versandauftrag_erledigt_zusammenfuehren_XOR_FLOW" name="" sourceRef="Statusmail_versenden_SENDTASK" targetRef="Versandauftrag_erledigt_zusammenfuehren_XOR" />
+    <bpmn:sequenceFlow id="Annahme_oder_Nachrichtenmail_zu_Versandauftrag_erledigt_zusammenfuehren_XOR_FLOW" name="" sourceRef="Annahme_oder_Nachrichtenmail_versenden_SENDTASK" targetRef="Versandauftrag_erledigt_zusammenfuehren_XOR" />
+    <bpmn:sequenceFlow id="Versand_klaeren_Statusmail_zu_Versandproblem_festhalten_zusammenfuehren_XOR_FLOW" name="" sourceRef="Versand_klaeren_Statusmail_versenden_BOUNDARY" targetRef="Versandproblem_festhalten_zusammenfuehren_XOR" />
+    <bpmn:sequenceFlow id="Versand_klaeren_Annahme_zu_Versandproblem_festhalten_zusammenfuehren_XOR_FLOW" name="" sourceRef="Versand_klaeren_Annahme_oder_Nachrichtenmail_versenden_BOUNDARY" targetRef="Versandproblem_festhalten_zusammenfuehren_XOR" />
+    <bpmn:sequenceFlow id="Versandproblem_festhalten_SERVICE_zu_Klaerbedarf_dokumentiert_END_FLOW" name="" sourceRef="Versandproblem_festhalten_SERVICE" targetRef="Klaerbedarf_dokumentiert_END" />
+    <bpmn:group id="Versandauftrag_pruefen_GROUP" categoryValueRef="Versandauftrag_pruefen_CATEGORY_VALUE" />
+    <bpmn:group id="Mail_Worker_beauftragen_GROUP" categoryValueRef="Mail_Worker_beauftragen_CATEGORY_VALUE" />
+    <bpmn:group id="Versandauftrag_erledigen_GROUP" categoryValueRef="Versandauftrag_erledigen_CATEGORY_VALUE" />
+    <bpmn:group id="Versandproblem_dokumentieren_GROUP" categoryValueRef="Versandproblem_dokumentieren_CATEGORY_VALUE" />
+    <bpmn:textAnnotation id="Der_gespeicherte_Auftrag_bestimmt_die_NOTE">
+      <bpmn:text>Der gespeicherte Auftrag bestimmt die Mailart. Der Mail-Worker übernimmt den Versand. Fachlicher Klärbedarf wird separat dokumentiert.</bpmn:text>
+    </bpmn:textAnnotation>
   </bpmn:process>
-  <bpmndi:BPMNDiagram id="Mail_diagram">
-    <bpmndi:BPMNPlane id="Mail_plane" bpmnElement="PropertyFlow_Mail_Draft">
-      <bpmndi:BPMNShape id="MailStart_di" bpmnElement="MailStart">
+  <bpmn:category id="Versandauftrag_pruefen_CATEGORY">
+    <bpmn:categoryValue id="Versandauftrag_pruefen_CATEGORY_VALUE" value="Versandauftrag pruefen" />
+  </bpmn:category>
+  <bpmn:category id="Mail_Worker_beauftragen_CATEGORY">
+    <bpmn:categoryValue id="Mail_Worker_beauftragen_CATEGORY_VALUE" value="Mail-Worker beauftragen" />
+  </bpmn:category>
+  <bpmn:category id="Versandauftrag_erledigen_CATEGORY">
+    <bpmn:categoryValue id="Versandauftrag_erledigen_CATEGORY_VALUE" value="Versandauftrag erledigen" />
+  </bpmn:category>
+  <bpmn:category id="Versandproblem_dokumentieren_CATEGORY">
+    <bpmn:categoryValue id="Versandproblem_dokumentieren_CATEGORY_VALUE" value="Versandproblem dokumentieren" />
+  </bpmn:category>
+  <bpmndi:BPMNDiagram id="Fallbenachrichtigung_versenden_PROCESS_DIAGRAM">
+    <bpmndi:BPMNPlane id="Fallbenachrichtigung_versenden_PROCESS_PLANE" bpmnElement="Fallbenachrichtigung_versenden_PROCESS">
+      <bpmndi:BPMNShape id="Dauerhafter_Auftrag_START_SHAPE" bpmnElement="Dauerhafter_Auftrag_START">
         <dc:Bounds x="170" y="262" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="126.25" y="310" width="123.5" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="MailLoad_di" bpmnElement="MailLoad" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+      <bpmndi:BPMNShape id="Mailauftrag_pruefen_SERVICE_SHAPE" bpmnElement="Mailauftrag_pruefen_SERVICE" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
         <dc:Bounds x="265" y="230" width="250" height="100" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="MailRoute_di" bpmnElement="MailRoute" isMarkerVisible="true">
+      <bpmndi:BPMNShape id="Versandart_XOR_SHAPE" bpmnElement="Versandart_XOR" isMarkerVisible="true">
         <dc:Bounds x="586" y="255" width="50" height="50" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="543" y="243" width="54" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="MailSendChange_di" bpmnElement="MailSendChange" bioc:stroke="#134e4a" bioc:fill="#ccfbf1">
+      <bpmndi:BPMNShape id="Statusmail_versenden_SENDTASK_SHAPE" bpmnElement="Statusmail_versenden_SENDTASK" bioc:stroke="#134e4a" bioc:fill="#ccfbf1">
         <dc:Bounds x="764" y="230" width="250" height="100" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="MailSendMessage_di" bpmnElement="MailSendMessage" bioc:stroke="#134e4a" bioc:fill="#ccfbf1">
+      <bpmndi:BPMNShape id="Annahme_oder_Nachrichtenmail_versenden_SENDTASK_SHAPE" bpmnElement="Annahme_oder_Nachrichtenmail_versenden_SENDTASK" bioc:stroke="#134e4a" bioc:fill="#ccfbf1">
         <dc:Bounds x="775" y="420" width="250" height="100" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Merge_MailEnd_di" bpmnElement="Merge_MailEnd" isMarkerVisible="true">
+      <bpmndi:BPMNShape id="Versandauftrag_erledigt_zusammenfuehren_XOR_SHAPE" bpmnElement="Versandauftrag_erledigt_zusammenfuehren_XOR" isMarkerVisible="true">
         <dc:Bounds x="1101" y="255" width="50" height="50" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="MailEnd_di" bpmnElement="MailEnd">
+      <bpmndi:BPMNShape id="Versandauftrag_erledigt_END_SHAPE" bpmnElement="Versandauftrag_erledigt_END">
         <dc:Bounds x="1432" y="262" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="1375.25" y="310" width="149.5" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Merge_MailProblem_di" bpmnElement="Merge_MailProblem" isMarkerVisible="true">
+      <bpmndi:BPMNShape id="Versandproblem_festhalten_zusammenfuehren_XOR_SHAPE" bpmnElement="Versandproblem_festhalten_zusammenfuehren_XOR" isMarkerVisible="true">
         <dc:Bounds x="1025" y="598" width="50" height="50" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="MailProblem_di" bpmnElement="MailProblem" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+      <bpmndi:BPMNShape id="Versandproblem_festhalten_SERVICE_SHAPE" bpmnElement="Versandproblem_festhalten_SERVICE" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
         <dc:Bounds x="1135" y="573" width="250" height="100" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="MailProblemEnd_di" bpmnElement="MailProblemEnd">
+      <bpmndi:BPMNShape id="Klaerbedarf_dokumentiert_END_SHAPE" bpmnElement="Klaerbedarf_dokumentiert_END">
         <dc:Bounds x="1452" y="605" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="1395.25" y="653" width="149.5" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="MailSendMessageProblem_di" bpmnElement="MailSendMessageProblem">
+      <bpmndi:BPMNShape id="Versand_klaeren_Annahme_oder_Nachrichtenmail_versenden_BOUNDARY_SHAPE" bpmnElement="Versand_klaeren_Annahme_oder_Nachrichtenmail_versenden_BOUNDARY">
         <dc:Bounds x="952" y="502" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="867" y="550" width="91" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="MailSendChangeProblem_di" bpmnElement="MailSendChangeProblem">
+      <bpmndi:BPMNShape id="Versand_klaeren_Statusmail_versenden_BOUNDARY_SHAPE" bpmnElement="Versand_klaeren_Statusmail_versenden_BOUNDARY">
         <dc:Bounds x="952" y="312" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="867" y="360" width="91" height="30" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="Flow_Merge_MailEnd_di" bpmnElement="Flow_Merge_MailEnd">
+      <bpmndi:BPMNEdge id="Versandauftrag_erledigt_zusammenfuehren_zu_Versandauftrag_erledigt_END_FLOW_EDGE" bpmnElement="Versandauftrag_erledigt_zusammenfuehren_zu_Versandauftrag_erledigt_END_FLOW">
         <di:waypoint x="1151" y="280" />
         <di:waypoint x="1432" y="280" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_Merge_MailProblem_di" bpmnElement="Flow_Merge_MailProblem">
+      <bpmndi:BPMNEdge id="Versandproblem_festhalten_zusammenfuehren_zu_Versandproblem_festhalten_SERVICE_FLOW_EDGE" bpmnElement="Versandproblem_festhalten_zusammenfuehren_zu_Versandproblem_festhalten_SERVICE_FLOW">
         <di:waypoint x="1075" y="623" />
         <di:waypoint x="1135" y="623" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="M01_di" bpmnElement="M01">
+      <bpmndi:BPMNEdge id="Dauerhafter_Auftrag_START_zu_Mailauftrag_pruefen_SERVICE_FLOW_EDGE" bpmnElement="Dauerhafter_Auftrag_START_zu_Mailauftrag_pruefen_SERVICE_FLOW">
         <di:waypoint x="206" y="280" />
         <di:waypoint x="265" y="280" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="M02_di" bpmnElement="M02">
+      <bpmndi:BPMNEdge id="Mailauftrag_pruefen_SERVICE_zu_Versandart_XOR_FLOW_EDGE" bpmnElement="Mailauftrag_pruefen_SERVICE_zu_Versandart_XOR_FLOW">
         <di:waypoint x="515" y="280" />
         <di:waypoint x="586" y="280" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="M03_di" bpmnElement="M03">
+      <bpmndi:BPMNEdge id="Versandart_XOR_Status_Dringlichkeit_zu_Statusmail_versenden_SENDTASK_FLOW_EDGE" bpmnElement="Versandart_XOR_Status_Dringlichkeit_zu_Statusmail_versenden_SENDTASK_FLOW">
         <di:waypoint x="636" y="280" />
         <di:waypoint x="764" y="280" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="650" y="263" width="101" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="M04_di" bpmnElement="M04">
+      <bpmndi:BPMNEdge id="Versandart_XOR_Annahme_Nachricht_zu_Annahme_oder_Nachrichtenmail_versenden_FLOW_EDGE" bpmnElement="Versandart_XOR_Annahme_Nachricht_zu_Annahme_oder_Nachrichtenmail_versenden_FLOW">
         <di:waypoint x="611" y="305" />
         <di:waypoint x="611" y="470" />
         <di:waypoint x="775" y="470" />
@@ -181,7 +200,7 @@
           <dc:Bounds x="618" y="453" width="103" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="M05_di" bpmnElement="M05">
+      <bpmndi:BPMNEdge id="Versandart_XOR_Bereits_erledigt_keine_neue_Mail_zu_Versandauftrag_erledigt_zusammenfuehren_XOR_FLOW_EDGE" bpmnElement="Versandart_XOR_Bereits_erledigt_keine_neue_Mail_zu_Versandauftrag_erledigt_zusammenfuehren_XOR_FLOW">
         <di:waypoint x="611" y="255" />
         <di:waypoint x="611" y="110" />
         <di:waypoint x="1126" y="110" />
@@ -190,30 +209,57 @@
           <dc:Bounds x="640" y="93" width="160" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="M06_di" bpmnElement="M06">
+      <bpmndi:BPMNEdge id="Statusmail_versenden_SENDTASK_zu_Versandauftrag_erledigt_zusammenfuehren_XOR_FLOW_EDGE" bpmnElement="Statusmail_versenden_SENDTASK_zu_Versandauftrag_erledigt_zusammenfuehren_XOR_FLOW">
         <di:waypoint x="1014" y="280" />
         <di:waypoint x="1101" y="280" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="M07_di" bpmnElement="M07">
+      <bpmndi:BPMNEdge id="Annahme_oder_Nachrichtenmail_zu_Versandauftrag_erledigt_zusammenfuehren_XOR_FLOW_EDGE" bpmnElement="Annahme_oder_Nachrichtenmail_zu_Versandauftrag_erledigt_zusammenfuehren_XOR_FLOW">
         <di:waypoint x="1025" y="470" />
         <di:waypoint x="1126" y="470" />
         <di:waypoint x="1126" y="305" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="M08_di" bpmnElement="M08">
+      <bpmndi:BPMNEdge id="Versand_klaeren_Statusmail_zu_Versandproblem_festhalten_zusammenfuehren_XOR_FLOW_EDGE" bpmnElement="Versand_klaeren_Statusmail_zu_Versandproblem_festhalten_zusammenfuehren_XOR_FLOW">
         <di:waypoint x="970" y="348" />
         <di:waypoint x="970" y="380" />
         <di:waypoint x="1050" y="380" />
         <di:waypoint x="1050" y="598" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="M09_di" bpmnElement="M09">
+      <bpmndi:BPMNEdge id="Versand_klaeren_Annahme_zu_Versandproblem_festhalten_zusammenfuehren_XOR_FLOW_EDGE" bpmnElement="Versand_klaeren_Annahme_zu_Versandproblem_festhalten_zusammenfuehren_XOR_FLOW">
         <di:waypoint x="970" y="538" />
         <di:waypoint x="970" y="623" />
         <di:waypoint x="1025" y="623" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="M10_di" bpmnElement="M10">
+      <bpmndi:BPMNEdge id="Versandproblem_festhalten_SERVICE_zu_Klaerbedarf_dokumentiert_END_FLOW_EDGE" bpmnElement="Versandproblem_festhalten_SERVICE_zu_Klaerbedarf_dokumentiert_END_FLOW">
         <di:waypoint x="1385" y="623" />
         <di:waypoint x="1452" y="623" />
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Versandauftrag_pruefen_GROUP_SHAPE" bpmnElement="Versandauftrag_pruefen_GROUP">
+        <dc:Bounds x="105" y="172" width="540" height="184" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="247" y="180" width="255" height="15" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Mail_Worker_beauftragen_GROUP_SHAPE" bpmnElement="Mail_Worker_beauftragen_GROUP">
+        <dc:Bounds x="756" y="172" width="285" height="375" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="771" y="180" width="255" height="15" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Versandauftrag_erledigen_GROUP_SHAPE" bpmnElement="Versandauftrag_erledigen_GROUP">
+        <dc:Bounds x="1082" y="172" width="458" height="183" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1183" y="180" width="255" height="15" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Versandproblem_dokumentieren_GROUP_SHAPE" bpmnElement="Versandproblem_dokumentieren_GROUP">
+        <dc:Bounds x="995" y="551" width="565" height="150" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1150" y="559" width="255" height="15" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Der_gespeicherte_Auftrag_bestimmt_die_NOTE_SHAPE" bpmnElement="Der_gespeicherte_Auftrag_bestimmt_die_NOTE">
+        <dc:Bounds x="126" y="73" width="435" height="73" />
+      </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>

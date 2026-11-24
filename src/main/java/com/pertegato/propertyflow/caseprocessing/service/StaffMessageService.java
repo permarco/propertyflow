@@ -6,6 +6,7 @@ import com.pertegato.propertyflow.access.contract.WebAccountContext;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseActionException;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffDecisionAction;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffMessageSubmission;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants;
 import com.pertegato.propertyflow.caseprocessing.delivery.CaseProcessGateway;
 import com.pertegato.propertyflow.caseprocessing.delivery.StaffMessageGateway;
 import com.pertegato.propertyflow.caseprocessing.delivery.StaffTaskGateway;
@@ -143,7 +144,8 @@ public class StaffMessageService implements StaffMessageSubmission {
                 Entry entry = workflow.entryForCase(caseId).orElseThrow();
                 UUID continuation = reviews.forCall(caseId, entry.callRef()).orElseThrow().id();
                 UUID decision = decisions.prepare(caseId, continuation, context.accountId(), UUID.randomUUID(), task, candidate.version(),
-                        decisions.reviewFingerprint(caseId, candidate.leader().key()), StaffDecisionAction.QUESTION, "SWork", "").id();
+                        decisions.reviewFingerprint(caseId, candidate.leader().key()), StaffDecisionAction.QUESTION,
+                                StaffProcessingBpmnConstants.UserTask.WORK_TASK, "").id();
                 messages.bindDecision(prepared.id(), decision);
             }
             return prepared;
@@ -308,8 +310,10 @@ public class StaffMessageService implements StaffMessageSubmission {
             return null;
         }
         return new Basis(state.version(), state.status(), leader, null, new Binding(leader.key(), continuation.childKey(),
-                continuation.parentElementKey(), leader.tenant(), "STAFF_REVIEW_REQUIRED".equals(state.status()) ? "SReview"
-                        : "WAITING_FOR_EXTERNAL".equals(state.status()) ? "SExternalWait" : "SWork"), null, null);
+                continuation.parentElementKey(), leader.tenant(),
+                        "STAFF_REVIEW_REQUIRED".equals(state.status()) ? StaffProcessingBpmnConstants.UserTask.REVIEW_TASK
+                        : "WAITING_FOR_EXTERNAL".equals(state.status()) ? StaffProcessingBpmnConstants.UserTask.EXTERNAL_WAIT_TASK
+                                : StaffProcessingBpmnConstants.UserTask.WORK_TASK), null, null);
     }
 
     private boolean live(Basis basis) {

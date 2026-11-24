@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -13,16 +14,13 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @Profile("propertyflow-backend & !frontend-demo")
+@RequiredArgsConstructor
 public class StaffAccountStore {
 
     private static final RowMapper<Account> ACCOUNT = (row, rowNumber) -> new Account(
             row.getObject("id", UUID.class), row.getString("email"), row.getBoolean("active"), row.getBoolean("staff_role"));
 
     private final JdbcTemplate database;
-
-    public StaffAccountStore(JdbcTemplate database) {
-        this.database = database;
-    }
 
     public Optional<Account> findByEmail(String email) {
         return database.query("select id, email, active, staff_role from pf_staff_account where email = ?", ACCOUNT, email)

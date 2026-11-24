@@ -1,5 +1,7 @@
 package com.pertegato.propertyflow.caseprocessing.workflow;
 
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.AutomaticClarificationBpmnConstants;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore.Entry;
 import com.pertegato.propertyflow.caseprocessing.service.CaseWorkflowService;
 import com.pertegato.propertyflow.caseprocessing.service.WorkflowRejectedException;
@@ -14,6 +16,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataAccessResourceFailureException;
@@ -21,91 +24,99 @@ import org.springframework.dao.TransientDataAccessException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.TransactionException;
 
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.AutomaticClarificationBpmnConstants.JobType.REGISTER_AUTOMATIC;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.AutomaticClarificationBpmnConstants.JobType.START_CLARIFICATION;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.PREPARE_INITIAL;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.PREPARE_PROCESS_KEY;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.REGISTER_CASE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.AUTOMATIC_ENTRY_CONTEXT_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.PROCESS_INSTANCE_KEY;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.START_KIND;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.START_ORDER_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.AUTOMATIC_CALL_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.AUTOMATIC_INTERRUPTION_CALL_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.AUTOMATIC_INTERRUPTION_READY;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.CASE_ID;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.ENTRY_CONTEXT_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.ENTRY_KIND;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.LEADING_PROCESS_INSTANCE_KEY;
+
 @Component
 @Profile("propertyflow-backend & !frontend-demo")
 @ConditionalOnProperty(name = "propertyflow.workflow.enabled", havingValue = "true")
+@RequiredArgsConstructor
 public class InitialCaseWorkers {
-
-    public static final String CASE_PROCESS = "PropertyFlow_Case_Draft";
-    public static final String AUTOMATIC_PROCESS = "PropertyFlow_Automatic_Draft";
-    public static final String PREPARE_KEY = "propertyflow-prepare-process-key";
-    public static final String REGISTER = "propertyflow-register-case";
-    public static final String PREPARE_INITIAL = "propertyflow-prepare-initial";
-    public static final String REGISTER_AUTOMATIC = "propertyflow-register-automatic";
-    public static final String CLARIFICATION = "propertyflow-start-clarification";
 
     private final CamundaClient camunda;
     private final CaseWorkflowService service;
 
-    public InitialCaseWorkers(CamundaClient camunda, CaseWorkflowService service) {
-        this.camunda = camunda;
-        this.service = service;
-    }
-
-    @JobWorker(type = PREPARE_KEY, autoComplete = false)
+    @JobWorker(type = PREPARE_PROCESS_KEY, autoComplete = false)
     public void prepareKey(JobClient client, ActivatedJob job) {
         execute(client, job, () -> {
-            verifyRoot(job, "PrepareProcessKey");
-            String kind = service.verifyStart(text(job, "caseId"), uuid(job, "startOrderRef"), job.getProcessInstanceKey(),
+            verifyRoot(job, CaseProcessBpmnConstants.ServiceTask.PREPARE_PROCESS_KEY);
+            String kind = service.verifyStart(text(job, CASE_ID), uuid(job, START_ORDER_REF), job.getProcessInstanceKey(),
                     job.getProcessDefinitionKey(), job.getTenantId());
-            return Map.of("processInstanceKey", Long.toString(job.getProcessInstanceKey()), "startKind", kind,
-                    "automaticInterruptionReady", false, "automaticInterruptionCallRef", "");
+            return Map.of(PROCESS_INSTANCE_KEY, Long.toString(job.getProcessInstanceKey()), START_KIND, kind,
+                    AUTOMATIC_INTERRUPTION_READY, false, AUTOMATIC_INTERRUPTION_CALL_REF, "");
         });
     }
 
-    @JobWorker(type = REGISTER, autoComplete = false)
+    @JobWorker(type = REGISTER_CASE, autoComplete = false)
     public void register(JobClient client, ActivatedJob job) {
         execute(client, job, () -> {
-            verifyRoot(job, "Register");
-            service.register(text(job, "caseId"), uuid(job, "startOrderRef"), job.getProcessInstanceKey(),
+            verifyRoot(job, CaseProcessBpmnConstants.ServiceTask.REGISTER_CASE);
+            service.register(text(job, CASE_ID), uuid(job, START_ORDER_REF), job.getProcessInstanceKey(),
                     job.getProcessDefinitionKey(), job.getTenantId());
-            return Map.of("processInstanceKey", Long.toString(job.getProcessInstanceKey()));
+            return Map.of(PROCESS_INSTANCE_KEY, Long.toString(job.getProcessInstanceKey()));
         });
     }
 
     @JobWorker(type = PREPARE_INITIAL, autoComplete = false)
     public void prepareInitial(JobClient client, ActivatedJob job) {
         execute(client, job, () -> {
-            verifyRoot(job, "PrepareInitialAuto");
-            Entry entry = service.prepareInitial(text(job, "caseId"), job.getProcessInstanceKey(), job.getElementInstanceKey());
-            return Map.of("automaticEntryContextRef", entry.id().toString(), "automaticCallRef", entry.callRef().toString());
+            verifyRoot(job, CaseProcessBpmnConstants.ServiceTask.PREPARE_INITIAL_CLARIFICATION);
+            Entry entry = service.prepareInitial(text(job, CASE_ID), job.getProcessInstanceKey(), job.getElementInstanceKey());
+            return Map.of(AUTOMATIC_ENTRY_CONTEXT_REF, entry.id().toString(), AUTOMATIC_CALL_REF, entry.callRef().toString());
         });
     }
 
     @JobWorker(type = REGISTER_AUTOMATIC, autoComplete = false)
     public void registerAutomatic(JobClient client, ActivatedJob job) {
         execute(client, job, () -> {
-            ProcessInstance child = verifyChild(job, "AEntry");
-            service.registerAutomatic(text(job, "caseId"), uuid(job, "entryContextRef"), uuid(job, "automaticCallRef"),
+            ProcessInstance child = verifyChild(job, AutomaticClarificationBpmnConstants.ServiceTask.CHECK_ENTRY);
+            service.registerAutomatic(text(job, CASE_ID), uuid(job, ENTRY_CONTEXT_REF), uuid(job, AUTOMATIC_CALL_REF),
                     child.getParentProcessInstanceKey(), job.getProcessInstanceKey(), child.getParentElementInstanceKey());
-            return Map.of("entryKind", service.entryKind(uuid(job, "entryContextRef")));
+            return Map.of(ENTRY_KIND, service.entryKind(uuid(job, ENTRY_CONTEXT_REF)));
         });
     }
 
-    @JobWorker(type = CLARIFICATION, autoComplete = false)
+    @JobWorker(type = START_CLARIFICATION, autoComplete = false)
     public void clarification(JobClient client, ActivatedJob job) {
         execute(client, job, () -> {
-            ProcessInstance child = verifyChild(job, "Clarification");
-            service.startClarification(text(job, "caseId"), uuid(job, "entryContextRef"), uuid(job, "automaticCallRef"),
+            ProcessInstance child = verifyChild(job, AutomaticClarificationBpmnConstants.ServiceTask.START_CLARIFICATION);
+            service.startClarification(text(job, CASE_ID), uuid(job, ENTRY_CONTEXT_REF), uuid(job, AUTOMATIC_CALL_REF),
                     child.getParentProcessInstanceKey(), job.getProcessInstanceKey());
             return Map.of();
         });
     }
 
     private void verifyRoot(ActivatedJob job, String elementId) {
-        require(CASE_PROCESS.equals(job.getBpmnProcessId()) && elementId.equals(job.getElementId()), "UNEXPECTED_JOB_ORIGIN");
+        require(CaseProcessBpmnConstants.PROCESS_ID.equals(job.getBpmnProcessId())
+                && elementId.equals(job.getElementId()), "UNEXPECTED_JOB_ORIGIN");
         ProcessInstance instance = camunda.newProcessInstanceGetRequest(job.getProcessInstanceKey()).send().join();
-        require(instance.getParentProcessInstanceKey() == null && text(job, "startOrderRef").equals(instance.getBusinessId()),
+        require(instance.getParentProcessInstanceKey() == null && text(job, START_ORDER_REF).equals(instance.getBusinessId()),
                 "INVALID_START_IDENTITY");
     }
 
     private ProcessInstance verifyChild(ActivatedJob job, String elementId) {
-        require(AUTOMATIC_PROCESS.equals(job.getBpmnProcessId()) && elementId.equals(job.getElementId()), "UNEXPECTED_JOB_ORIGIN");
+        require(AutomaticClarificationBpmnConstants.PROCESS_ID.equals(job.getBpmnProcessId())
+                && elementId.equals(job.getElementId()), "UNEXPECTED_JOB_ORIGIN");
         ProcessInstance child = camunda.newProcessInstanceGetRequest(job.getProcessInstanceKey()).send().join();
         require(child.getParentProcessInstanceKey() != null && child.getParentElementInstanceKey() != null, "MISSING_PARENT");
-        require(Long.toString(child.getParentProcessInstanceKey()).equals(text(job, "leadingProcessInstanceKey")), "WRONG_PARENT");
+        require(Long.toString(child.getParentProcessInstanceKey()).equals(text(job, LEADING_PROCESS_INSTANCE_KEY)), "WRONG_PARENT");
         ElementInstance call = camunda.newElementInstanceGetRequest(child.getParentElementInstanceKey()).send().join();
-        require("Automatic".equals(call.getElementId()) && CASE_PROCESS.equals(call.getProcessDefinitionId())
+        require(CaseProcessBpmnConstants.CallActivity.AUTOMATIC_CLARIFICATION_CALL.equals(call.getElementId())
+                && CaseProcessBpmnConstants.PROCESS_ID.equals(call.getProcessDefinitionId())
                 && child.getParentProcessInstanceKey().equals(call.getProcessInstanceKey())
                 && job.getTenantId().equals(call.getTenantId()), "WRONG_CALL");
         return child;

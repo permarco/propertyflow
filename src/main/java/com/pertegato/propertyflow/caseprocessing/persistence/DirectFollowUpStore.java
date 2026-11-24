@@ -9,23 +9,19 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 @Repository
 @Profile("propertyflow-backend & !frontend-demo")
+@RequiredArgsConstructor
 public class DirectFollowUpStore {
 
     private final JdbcTemplate database;
     private final CaseWaitStore waits;
     private final StaffTakeoverStore takeovers;
-
-    public DirectFollowUpStore(JdbcTemplate database, CaseWaitStore waits, StaffTakeoverStore takeovers) {
-        this.database = database;
-        this.waits = waits;
-        this.takeovers = takeovers;
-    }
 
     public boolean available(CaseState state, long leader) {
         return Boolean.TRUE.equals(database.queryForObject("""

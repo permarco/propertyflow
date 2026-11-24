@@ -64,7 +64,7 @@ Regeln bleiben gültig. Modellstände je Datei sind im Review aufgeführt.
 Dieser Abschnitt ersetzt die technischen Einzelmarker und Randpfade der Abschnitte
 0.24 bis 0.30. Die dort festgehaltenen fachlichen Regeln bleiben bestehen.
 
-- `Automatic` ruft `PropertyFlow_Automatic_Draft` mit `bindingType=deployment` auf.
+- `Automatische_Abklaerung_CALL` ruft `Automatische_Abklaerung_PROCESS` mit `bindingType=deployment` auf.
   Eingaben: caseId, leadingProcessInstanceKey, entryContextRef, automaticCallRef.
   Keine automatische Eltern-/Kindvariablenpropagation, nur explizite Mappings.
 - PrepareInitialAuto, PrepareQuestionAuto und PrepareCloseAuto erzeugen geprüfte
@@ -72,11 +72,23 @@ Dieser Abschnitt ersetzt die technischen Einzelmarker und Randpfade der Abschnit
   stammt aus registrierter Erstanlage; QUESTION/CLOSE aus aktuellem replyDecisionRef.
   AEntry prüft und registriert den tatsächlichen Call-/Kindbezug. Fortsetzungen
   setzen nicht erneut «In Abklärung», sondern prüfen den aktuellen Datenstand.
+- Der Erstlauf, die Aktualisierung der automatischen Abklärung und neue
+  Mieternachrichten rufen den Teilprozess `Gespraech_auswerten_PROCESS` auf.
+  Dort liegen die Service Tasks
+  «Gespraech analysieren», «Vorgehen empfehlen» und bei fachlicher Eignung
+  «Fallabschluss beurteilen».
+  Wiederverwendbare Ergebnisse überspringen weitere Modellaufrufe. Teilergebnisse
+  liegen in der gemeinsamen Auswertung in PropertyFlow. Camunda führt nur die
+  Referenz, den Versuchsschlüssel und die Wegwahl. Ändert sich die Grundlage
+  zwischen den Modellaufrufen, beginnt der Pfad erneut bei der Gesprächsanalyse.
+  `evaluationRefresh` steuert den Folgeweg. Der Erstlauf prüft Auswertung und
+  Prüfbedarf. Nach einer Aktualisierung folgt direkt die Prüfung der zulässigen
+  Automatikaktion.
 - Zentrale Mieternachrichtenverarbeitung stellt auch für die neue Automatik-Kindinstanz
   passende Auswertungen anhand des registrierten Call-Bezugs bereit. Kein weiterer
   Nachrichteneingang, keine parallele unabhängige LLM-Auswertung. Meldungen vor der
-  Registrierung werden nachgeliefert. CurrentAnalysis darf nicht auf Elternvariablen
-  als live geteilten Speicher vertrauen.
+  Registrierung werden nachgeliefert. Die gemeinsame Auswertung verwendet den
+  gespeicherten Stand in PropertyFlow.
 - Normales Ende liefert outcome/decisionRef; AutomaticResult prüft den aktuellen
   Stand und erstellt replyEntryContextRef oder staffEntryContextRef. CLOSED gilt
   nur nach gespeichertem Abschluss und führt zum vorhandenen ActiveEnd. Unbekannte
@@ -97,7 +109,8 @@ Dieser Abschnitt ersetzt die technischen Einzelmarker und Randpfade der Abschnit
   offene neue Prüfentscheide dürfen beim Initialisieren eines Calls nicht gelöscht
   werden. Nach Call-Ende muss die aktuelle Phase die Meldung übernehmen. Bestehende
   Prüfung ergänzen, niemals einen zweiten parallelen Staff-Call erzeugen.
-- Der gemeinsame Error-Randpfad fängt TRIAGE_ANALYSIS_FAILED von Triage oder Recommend.
+- Der gemeinsame Error-Randpfad fängt TRIAGE_ANALYSIS_FAILED aus der
+  Ergebnisprüfung der Erstauswertung.
   Ungültige LLM-Empfehlung wird ausdrücklich fachlich gemeldet; technische Fehler
   bleiben Retry/Incident. Lokale Fehler wegen veralteter Grundlagen bleiben im Kind
   und führen zu CurrentAnalysis; unzulässiger Nachrichtentext führt zu REVIEW.
@@ -113,23 +126,23 @@ Prüfplan: FALL-AK-42 ergänzt die bisherigen fachlichen Prüffälle. Keine dies
 
 | Datei | Prozess-ID | Aufrufstelle |
 |---|---|---|
-| [propertyflow-fallprozess-entwurf.bpmn](../../../src/main/resources/bpmn/propertyflow-fallprozess-entwurf.bpmn) | `PropertyFlow_Case_Draft` | Asynchroner Fallstart |
-| [automatische-abklaerung.bpmn](../../../src/main/resources/bpmn/automatische-abklaerung.bpmn) | `PropertyFlow_Automatic_Draft` | `Automatic` im Hauptprozess |
-| [mieterantwort-pruefen.bpmn](../../../src/main/resources/bpmn/mieterantwort-pruefen.bpmn) | `PropertyFlow_TenantReply_Draft` | `Reply` im Hauptprozess |
-| [mitarbeiterbearbeitung.bpmn](../../../src/main/resources/bpmn/mitarbeiterbearbeitung.bpmn) | `PropertyFlow_Staff_Draft` | `Staff` im Hauptprozess |
-| [wiedervorlage.bpmn](../../../src/main/resources/bpmn/wiedervorlage.bpmn) | `PropertyFlow_FollowUp_Draft` | `FollowUp` im Mitarbeiterprozess |
-| [mieternachricht-verarbeiten.bpmn](../../../src/main/resources/bpmn/mieternachricht-verarbeiten.bpmn) | `PropertyFlow_TenantMessage_Draft` | `ProcessTenantMessage` im Ereignis-Teilprozess `TenantInbox` |
-| [fallbenachrichtigung-versenden.bpmn](../../../src/main/resources/bpmn/fallbenachrichtigung-versenden.bpmn) | `PropertyFlow_Mail_Draft` | Eigenständiger Start anhand dauerhafter Mailpflicht, kein Call des Fallprozesses |
+| [propertyflow-fallprozess-entwurf.bpmn](../../../src/main/resources/bpmn/propertyflow-fallprozess-entwurf.bpmn) | `Fall_bearbeiten_PROCESS` | Asynchroner Fallstart |
+| [automatische-abklaerung.bpmn](../../../src/main/resources/bpmn/automatische-abklaerung.bpmn) | `Automatische_Abklaerung_PROCESS` | `Automatische_Abklaerung_CALL` im Hauptprozess |
+| [gespraech-auswerten.bpmn](../../../src/main/resources/bpmn/gespraech-auswerten.bpmn) | `Gespraech_auswerten_PROCESS` | `Gespraech_auswerten_CALL` in der automatischen Abklärung und in der Mieterantwortprüfung sowie `Gespraech_auswerten_Mieternachricht_CALL` und `Gespraech_auswerten_Aktualisierung_CALL` in der Mieternachrichtenverarbeitung. Alle zeigen «Gespraech auswerten». |
+| [mieterantwort-pruefen.bpmn](../../../src/main/resources/bpmn/mieterantwort-pruefen.bpmn) | `Mieterantwort_pruefen_PROCESS` | `Auf_ausgewertete_Mieterantwort_warten_CALL` im Hauptprozess |
+| [mitarbeiterbearbeitung.bpmn](../../../src/main/resources/bpmn/mitarbeiterbearbeitung.bpmn) | `Mitarbeiterbearbeitung_PROCESS` | `Mitarbeiterpruefung_und_Bearbeitung_CALL` im Hauptprozess |
+| [wiedervorlage.bpmn](../../../src/main/resources/bpmn/wiedervorlage.bpmn) | `Wiedervorlage_verwalten_PROCESS` | `Wiedervorlage_verwalten_CALL` im Mitarbeiterprozess |
+| [mieternachricht-verarbeiten.bpmn](../../../src/main/resources/bpmn/mieternachricht-verarbeiten.bpmn) | `Mieternachricht_verarbeiten_PROCESS` | `Mieternachricht_verarbeiten_CALL` im Zweig `Mieternachricht_mit_LLM_verarbeiten_SUBPROCESS` des Aktionsrundlaufs |
+| [fallbenachrichtigung-versenden.bpmn](../../../src/main/resources/bpmn/fallbenachrichtigung-versenden.bpmn) | `Fallbenachrichtigung_versenden_PROCESS` | Eigenständiger Start anhand dauerhafter Mailpflicht, kein Call des Fallprozesses |
 
-`ActiveCase` und der Ereignis-Teilprozess `TenantInbox` bleiben eingebettet im
+`Aktiven_Fall_bearbeiten_SUBPROCESS` und der Ereignis-Teilprozess `Aktionsrundlauf_SUBPROCESS` bleiben eingebettet im
 Hauptprozess. Die Nebenaktion für Mitarbeiterrückfragen während Wiedervorlage
 bleibt eingebettet in der Wiedervorlage. Es gibt weiterhin genau einen externen
 Empfänger für gespeicherte Mieternachrichten und einen führenden Fallprozess.
 Call Activities erzeugen zusätzliche **untergeordnete** Instanzen, keine neuen Fälle.
 
 Die Calls verwenden statische Prozess-IDs und `bindingType="deployment"`.
-Eine spätere ausführbare Fassung muss die sechs per Call verbundenen Dateien zusammen versioniert
-bereitstellen. Jetzt sind alle Prozesse `isExecutable="false"`; kein Deployment.
+Das Deployment stellt die verbundenen ausführbaren Dateien gemeinsam bereit.
 Die Calls kopieren nur explizite Eingaben und geben nur explizite Ergebnisse zurück.
 [Camunda: Call Activities](https://docs.camunda.io/docs/8.9/components/modeler/bpmn/call-activities/)
 
@@ -148,11 +161,20 @@ Die ausführbaren Worker, Ergebniszuweisungen und Gateway-Bedingungen fehlen noc
   Wiedervorlage. Der aufrufende Dienst muss sie vor dem Call bereitstellen.
   Keine vollständigen Falltexte, Tokens oder internen Memos in den Variablen.
 
-Die aufrufende Instanz stellt dafür `replyEntryContextRef` vor `Reply`,
-`staffEntryContextRef` vor `Staff` beziehungsweise `followUpEntryContextRef`
-vor `FollowUp` bereit. Das jeweilige Input-Mapping benennt diese Referenz im
+Die aufrufende Instanz stellt dafür `replyEntryContextRef` vor `Auf_ausgewertete_Mieterantwort_warten_CALL`,
+`staffEntryContextRef` vor `Mitarbeiterpruefung_und_Bearbeitung_CALL` beziehungsweise `followUpEntryContextRef`
+vor `Wiedervorlage_verwalten_CALL` bereit. Das jeweilige Input-Mapping benennt diese Referenz im
 Kindprozess in `entryContextRef` um. Auch bei erneutem Aufruf ist eine aktuelle
 Eintrittsgrundlage erforderlich.
+
+Bei einer neuen Auswertung am Wartepunkt oder einer überholten Grundlage ruft
+die Mieterantwortprüfung `Gespraech_auswerten_PROCESS` mit `bindingType=deployment`
+auf. Eingaben sind `caseId`, `leadingProcessInstanceKey` und der Antwortbezug
+`entryContextRef`. Zurück kommen `evaluationRef` und `evaluationCurrent`.
+Eine aktuelle Auswertung wird wiederverwendet. «Antwortauswertung uebernehmen»
+wendet sie im Kontext der Wartephase an. Ändert sich die Grundlage vor der
+Übernahme oder Fortsetzungsprüfung, führt `ANALYSIS_BASIS_STALE` zurück zur
+gemeinsamen Gesprächsauswertung.
 
 Die vier fachlichen Entscheidungsprozesse liefern `outcome` und `decisionRef`. Die Referenz bezeichnet
 die nachvollziehbar gespeicherte Entscheidungsgrundlage samt Versionen und
@@ -160,10 +182,10 @@ Aufrufzuordnung; sie ist keine dauerhafte Freigabe späterer Aktionen.
 
 | Kindprozess | Erlaubtes `outcome` | Erzeugendes Ende | Zielvariablen beim Aufrufer |
 |---|---|---|---|
-| Automatische Abklärung | `WAIT_FOR_REPLY`, `REVIEW`, `CLOSED` | `AWaitEnd`, `AReviewEnd`, `AClosedEnd` | `automaticOutcome`, `automaticDecisionRef` |
-| Mieterantwort | `CLOSE`, `REVIEW`, `QUESTION`, `WAIT` | `RClose`, `RReview`, `RQuestion`, `RWait` | `replyOutcome`, `replyDecisionRef` |
-| Mitarbeiterbearbeitung | `CLOSE`, `WAIT_FOR_REPLY` | `SCloseEnd`, `SReplyEnd` | `staffOutcome`, `staffDecisionRef` |
-| Wiedervorlage | `REVIEW`, `CONTINUE`, `CLOSE` | `WReviewEnd`, `WProgressEnd`, `WCloseEnd` | `followUpOutcome`, `followUpDecisionRef` |
+| Automatische Abklärung | `WAIT_FOR_REPLY`, `REVIEW`, `CLOSED` | `WAIT_FOR_REPLY_END`, `REVIEW_END`, `CLOSED_END` | `automaticOutcome`, `automaticDecisionRef` |
+| Mieterantwort | `CLOSE`, `REVIEW`, `QUESTION`, `WAIT` | `Systemabschluss_geprueft_END`, `Mitarbeiterpruefung_END`, `Weitere_Katalogrueckfrage_END`, `Weiter_warten_END` | `replyOutcome`, `replyDecisionRef` |
+| Mitarbeiterbearbeitung | `CLOSE`, `WAIT_FOR_REPLY` | `Abschluss_bestaetigt_END`, `Auf_Mieterantwort_warten_END` | `staffOutcome`, `staffDecisionRef` |
+| Wiedervorlage | `REVIEW`, `CONTINUE`, `CLOSE` | `Zur_Mitarbeiterpruefung_END`, `Bearbeitung_fortsetzen_END`, `Zum_fachlichen_Abschluss_END` | `followUpOutcome`, `followUpDecisionRef` |
 
 Das normale Ende eines Kindprozesses schliesst den Fall nicht ab. Der letzte
 entscheidende Dienst muss Ergebnis und Referenz passend zum Ende setzen; das
@@ -175,23 +197,23 @@ Status, Dringlichkeit und Nachrichtenzähler werden nicht pauschal zurückkopier
 ## Laufende Aktualisierungen über Instanzgrenzen
 
 Call-Eingaben sind keine live gemeinsam genutzten Variablen. Insbesondere
-weckt eine Änderung im Hauptprozess nicht automatisch `RMessage` im Kindprozess
-oder `SContactDuringFollowUp` im Mitarbeiterprozess.
+weckt eine Änderung im Hauptprozess nicht automatisch `Auf_ausgewertete_Mieterantwort_warten_CATCH` im Kindprozess
+oder `Wiedervorlage_unterbrochen_BOUNDARY` im Mitarbeiterprozess.
 
 Für die Umsetzung ist eine dauerhaft nachvollziehbare Zuordnung nötig:
 führende Instanz → Call-Aufruf → aktuelle Kindinstanz → relevanter Empfangsbereich.
 Sie wird aus Engine-Metadaten geprüft, nicht aus frei übergebenen Benutzerwerten.
-`RStatus`, `SReviewStatus` und `WSave` prüfen beim Eintritt ihren Instanzbezug und
+`Mieterwarten_registrieren_SERVICE`, `Mitarbeiterpruefung_festhalten_SERVICE` und `Wiedervorlagetermin_speichern_SERVICE` prüfen beim Eintritt ihren Instanzbezug und
 stellen den aktuellen Stand für ihren Bereich bereit, bevor darauf gewartet wird.
 Das begründet keine zweite führende Fallzuordnung.
 
 | Anlass | Quelle | Zuständiger Zielbereich / Wirkung |
 |---|---|---|
-| Gespeicherte Mieternachricht | HTTP/MCP → Hauptprozess `TenantInbox` | Unveränderter externer Eingang; öffentliche Bestätigung wartet auf dessen Korrelation, nicht auf die LLM-Auswertung. |
-| Aktuelle Auswertung fertig | `NApply` / zentrale Verarbeitung | Ergebnis dauerhaft sichern; Bereitschaft für die aktuelle Antwort-Kindinstanz herstellen. `tenantEvaluationVersion` und Verbrauch sind lokal zu dieser Kindinstanz zu führen. Fallinhalt aus PropertyFlow lesen. |
+| Gespeicherte Mieternachricht | HTTP/MCP → `Aktionsrundlauf_SUBPROCESS` → `Mieternachricht_mit_LLM_verarbeiten_SUBPROCESS` | Öffentliche Bestätigung wartet auf die Korrelation, nicht auf die LLM-Auswertung. |
+| Aktuelle Auswertung fertig | `Aktuelle_Auswertung_bereitstellen_SERVICE` / zentrale Verarbeitung | Ergebnis dauerhaft sichern; Bereitschaft für die aktuelle Antwort-Kindinstanz herstellen. `tenantEvaluationVersion` und Verbrauch sind lokal zu dieser Kindinstanz zu führen. Fallinhalt aus PropertyFlow lesen. |
 | Nachricht während Mitarbeiterprüfung | Zentrale Verarbeitung | Dieselbe aktuelle Aufgabe erhält die neue Grundlage; keine automatische Erledigung oder neue Aufgabe. Der Mitarbeiterprozess liest den aktuellen Fallstand. |
-| Kontakt während Wiedervorlage | `NWake`, vor dem LLM-Aufruf | Versionsgebundenen Kontakt in die aktuelle **Mitarbeiterinstanz** bringen, in der die Call Activity `FollowUp` und ihr Randereignis liegen. Nicht nur im Hauptprozess setzen. |
-| Wiedervorlage gesetzt/geändert | `WSave` / `WUpdate` | Aktuelle Wiedervorlage-Version auch im zuständigen Mitarbeiterbereich bereitstellen; gespeicherte Kontakte gegen denselben Stand prüfen. |
+| Kontakt während Wiedervorlage | `Kontakt_zur_Wiedervorlage_bereitstellen_SERVICE`, vor dem LLM-Aufruf | Versionsgebundenen Kontakt in die aktuelle **Mitarbeiterinstanz** bringen, in der die Call Activity `Wiedervorlage_verwalten_CALL` und ihr Randereignis liegen. Nicht nur im Hauptprozess setzen. |
+| Wiedervorlage gesetzt/geändert | `Wiedervorlagetermin_speichern_SERVICE` / `Neuen_Wiedervorlagetermin_speichern_SERVICE` | Aktuelle Wiedervorlage-Version auch im zuständigen Mitarbeiterbereich bereitstellen; gespeicherte Kontakte gegen denselben Stand prüfen. |
 | Mitarbeiteraktionen zur Wiedervorlage | Autorisierter Dienst | Engine-Ziel der aktuellen Wiedervorlage-Kindinstanz serverseitig ermitteln. Die bestehenden Änderungs-/Lösch-/Abschluss-/Rückfragenereignisse sind keine Mieternachrichten. |
 
 Bereitstellung bedeutet hier eine ausdrücklich noch zu implementierende interne,
@@ -210,9 +232,10 @@ Ein Versand-/Bereitstellungsfehler darf nicht als erfolgreicher Empfang gelten.
 
 ## Abbruch, Rechte und Gleichzeitigkeit
 
-`SContactDuringFollowUp` bleibt an der Call Activity `FollowUp` im Mitarbeiterprozess.
-Bei passendem Kontakt unterbricht es den Call und die Kindinstanz einschliesslich
-Timer/Nebenaktion. Der Randereignispfad darf keine erst beim normalen Call-Ende
+`SFollowUpInterrupted` sitzt an der Call Activity `FollowUp` im Mitarbeiterprozess.
+Neuer Mieterkontakt oder zwingender Prüfbedarf zur aktiven Terminversion
+unterbricht den Call und die Kindinstanz einschliesslich Timer und Nebenaktionen.
+Der Randereignispfad darf keine erst beim normalen Call-Ende
 erwartete Rückgabe voraussetzen; aktuelle Wiedervorlagedaten liegen in PropertyFlow.
 Eine neuere bewusste Terminentscheidung darf ein alter Kontakt nicht aufheben.
 
@@ -252,8 +275,26 @@ ist in KOM-03 bestätigt; KOM-AK-25 beschreibt die ausstehenden Laufzeitprüfung
 
 ## Nachrichtenverarbeitung als eigener Aufruf (Stand 0.10)
 
-`TenantInbox` bleibt nicht unterbrechend im aktiven Hauptprozess eingebettet:
-`NStart` (einziger externer Empfang) → `ProcessTenantMessage` → `NReceptionEnd`.
+`ActionLoop` empfängt Fallaktionen über `NStart` (Nachricht
+`PropertyFlow-Fallaktion`) und korreliert sie über den Schlüssel der führenden
+Instanz im zugehörigen Mandanten. `actionType` wählt genau eine der neun
+Aktionen. Die Hauptansicht zeigt davon Mieternachricht mit LLM-Auswertung,
+Mitarbeiteraktion, neuen Prüfbedarf und Fallabschluss. Die eingebetteten
+Gruppen `ActionStaffGroup` und `ActionCloseGroup` verzweigen auf ihre fünf
+beziehungsweise zwei bestehenden Aktionswege. Unbekannte Aktionsarten
+enden weiterhin mit `UNKNOWN_CASE_ACTION`, ohne einen Auftrag auszuführen. Bei
+`TENANT_MESSAGE` ruft `TenantInbox` über `ProcessTenantMessage` die zentrale
+Auswertung auf. Jeder Eingang erhält einen eigenen Variablenbereich und der
+Zweig übernimmt die zugehörige Auftragsreferenz. Zustandsänderungen werden
+weiterhin über die geprüften Schnittstellen an den zuständigen Prozessbereich
+übertragen.
+
+Die Subskription bleibt parallel zu aktiven Zweigen geöffnet. Der Abschluss
+eines Durchlaufs beendet nur diese Aktion. Der Fallabschluss beendet den
+Empfang und noch laufende Aktionen zusammen mit `ActiveCase`. Für ältere,
+bereits laufende Modellversionen verwendet der Gateway nach einem bestätigten
+404 die bisherige Nachricht. Ein technisch unklarer Ausgang löst keine
+Ersatzzustellung aus.
 Jeder Eingang startet einen eigenen Aufruf der Verarbeitung. Der Kindprozess
 beginnt mit einem gewöhnlichen Start, ohne weitere Nachrichten-Subscription.
 Das Ende des Aufrufs beendet nur diesen Eingang; der Empfang bleibt aktiv.
@@ -292,8 +333,9 @@ zur Mitarbeiterprüfung. Aktuelle Grundlage und Wiederholungsschutz bleiben Pfli
 
 ## Mitarbeiternachricht während Prüfung, Bearbeitung oder externer Wartephase (Stand 0.33)
 
-`Message_StaffReviewSend` startet `SMessageSide` nicht unterbrechend in der
-aktuellen Mitarbeiterinstanz. Nur autorisierte Aufträge zur aktuellen offenen
+`Message_StaffReviewSend` startet `SMessageSide` in der aktuellen Mitarbeiterinstanz,
+während die Aufgabe offen bleibt. Die Schritte sind im zugeklappten Teilprozess
+«Nachricht senden» einsehbar. Nur autorisierte Aufträge zur aktuellen offenen
 `SReview`- oder `SExternalWait`-Aufgabe sowie reine Informationsaufträge ohne neuen Antwortbedarf zur aktuellen `SWork`-Aufgabe sind zulässig. Rückfragen mit Antwortbedarf aus SWork verwenden weiterhin SQuestion als bewusste Fortsetzung. Die tatsächliche Engine-Korrelation und
 Rückmeldung an den sendenden HTTP-Aufruf sind noch festzulegen; dies ändert
 keinen öffentlichen HTTP-Vertrag. Keine zusätzliche externe Mieter-Subscription.
@@ -336,8 +378,12 @@ Rückgaben und die bestehende Nachrichten-Nebenaktion bleiben unverändert.
 `SExternalStatus` und `SExternalWait` gehören zur bestehenden Mitarbeiterinstanz;
 keine zusätzliche führende Instanz und kein neuer öffentlicher Nachrichteneingang.
 Die bewusste Mitarbeiteraktion wird gegen aktuelle Aufgabe und Fallstand geprüft.
-`SExternalDecision` verwendet die vorhandenen Fortsetzungs-, Wiedervorlage- und
-Abschlusswege; die bisherigen Call-Ein-/Ausgaben bleiben bestehen.
+Nach bestätigtem Abschluss von `SExternalWait` führt das Link-Ereignis
+`STAFF_DECISION` zur XOR-Zusammenführung `Merge_SDecision`. Dort trifft es
+auf den Pfad nach bestätigtem Abschluss von `SReview`. Das gemeinsame
+Gateway `SDecision` prüft in beiden Fällen dieselben Ergebniscodes
+`CONTINUE`, `FOLLOW_UP` und `CLOSE`. Aufgabenschlüssel, Aktionsprüfung,
+Variablen und Call-Ein-/Ausgaben folgen den bestehenden Verträgen.
 
 Der zentrale Nachrichtenauswerter stellt einen serverseitig festgestellten neuen
 zwingenden Prüfbedarf zur aktuellen externen Wartephase ausdrücklich für die
@@ -448,9 +494,11 @@ Aufgaben-/Call-Bezug sind serverseitig zu prüfen; keine live gemeinsam genutzte
 Elternvariablen und keine Korrelation anhand beliebiger Client-Schlüssel.
 
 `SWorkReviewNeeded` beendet nur die aktuelle Bearbeitungsaufgabe.
-`SFollowUpReviewNeeded` beendet den aktuellen Wiedervorlage-Call samt Timer und
-Nebenaktionen. `SStopFollowUp` lädt den persistierten Prüfentscheid und entfernt
-den betroffenen Termin ohne normale Call-Outputs. Timer-, Kontakt- und Prüfweg
+Prüfbedarf zur aktiven Terminversion löst ebenso wie neuer Mieterkontakt
+`SFollowUpInterrupted` aus. Das Ereignis beendet den aktuellen Wiedervorlage-Call
+samt Timer und Nebenaktionen. Bei Prüfbedarf lädt `SStopFollowUp` den
+persistierten Prüfentscheid und entfernt den betroffenen Termin ohne normale
+Call-Outputs. Timer-, Kontakt- und Prüfweg
 müssen dieselbe logische Prüfzuordnung verwenden. Vor Ausführung sind Marker,
 Aufgaben-/Terminversion, Abbruch und Speicherung gegen neuere Entscheidungen
 atomar beziehungsweise zuverlässig zu koordinieren; ein nachträglicher Check
@@ -460,7 +508,7 @@ Bestehende Call-Eingaben und Rückgaben bleiben unverändert.
 
 ## Eigenständiger Versandprozess (0.23)
 
-`PropertyFlow_Mail_Draft` in `fallbenachrichtigung-versenden.bpmn` wird je
+`Fallbenachrichtigung_versenden_PROCESS` in `fallbenachrichtigung-versenden.bpmn` wird je
 persistiertem Versandauftrag unabhängig gestartet. Einziger Eingabebezug ist
 `mailOrderRef`; keine Eltern-Call-Bindung und keine Rückgaben an den Fallprozess.
 Er ersetzt oder registriert niemals dessen führenden Prozessschlüssel.
@@ -555,11 +603,39 @@ sind Implementierungsanforderungen, noch kein ausgeführter Laufzeitnachweis.
 
 FALL-11, Übergang 32: Der bestehende Eingang `StaffFollowSide` nimmt auch
 Terminaufträge aus «Wartet auf Mieterantwort» entgegen. Nach geprüfter Speicherung
-unterbricht `StaffFollowAtReply` den Call «Mieterantwort abwarten und Fortsetzung
-prüfen». `StaffFollowContinue` führt über `SEntryCheck` direkt zu `FollowUp`.
+unterbricht der gemeinsame Ausgang `ReplyExit` den Call `Reply`. Das Gateway
+`ReplyExitRoute` wählt anhand von `replyExitReason = "FOLLOW_UP"` den bisherigen
+Weg zu `StaffFollowContinue`, das über `SEntryCheck` direkt zu `FollowUp` führt.
 Die Übergabegarantien aus 0.26 gelten unverändert; Marker sind an den abgelösten
 Aufruf gebunden und müssen auch Aktivitätswechsel abdecken. Ab Commit dürfen
 alte Auswertungen nicht mehr wirken; keine Outputs abgebrochener Calls übernehmen.
+
+`ReplyExit` enthält die bisherigen sechs Bedingungen mit ihrem jeweiligen
+Aufruf- oder Eintrittsbezug. Beim Verlassen des Calls übernimmt das Ereignis
+den Grund. Bei gleichzeitig passenden Bedingungen gilt die Reihenfolge, in der
+Camunda 8.9.19 die sechs bisherigen Randereignisse ausgewertet hat.
+`ReplyExitRoute` unterscheidet `CLEAR_ANSWER`, `CLOSE`, `FOLLOW_UP`,
+`MANUAL_QUESTION`, `REVIEW` und `TAKEOVER`. Für Abschluss und Wiedervorlage
+werden die geprüften Referenzen wie bisher übergeben. Für Übernahme und
+veröffentlichte Rückfrage bleibt `AutomaticInterruptionPrepare` die
+gemeinsame Fortsetzungsprüfung. Ein regulär zurückgegebenes Ergebnis
+der Antwortprüfung läuft weiterhin über `ReplyRoute`. Beide Weichen
+liegen im eingebetteten Teilprozess `ReplyContinuation`. Jeder Einstieg
+setzt `replyContinuationSource` ausdrücklich neu. Die Automatik verwendet
+für ihre gemeinsam genutzten Fortsetzungen denselben Teilprozess. Die
+bisherigen Jobtypen, Element-IDs und geprüften Auftragsreferenzen werden
+weiterverwendet. Über `replyContinuationOutcome` gibt der Teilprozess
+`WAIT`, `STAFF`, `AUTOMATIC` oder `CLOSE` für den nächsten
+Abschnitt im führenden Fallablauf zurück.
+
+Bei der Übernahme des Automatik-Ergebnisses fängt `AutomaticResultInterrupted`
+die drei bisherigen Bedingungen für Mitarbeiterrückfrage, Übernahme
+einschliesslich direkter Wiedervorlage und Aufhebung des Antwortbedarfs ab.
+Die Bedingungen bleiben an den betroffenen Automatikaufruf gebunden. Der
+gemeinsame Weg verwendet `AUTOMATIC` für Rückfrage, Übernahme und direkte
+Wiedervorlage, sowie `CLEAR` für aufgehobenen Antwortbedarf. Sind mehrere
+Bedingungen gleichzeitig erfüllt, bleibt die bisherige Auslösereihenfolge
+massgebend.
 
 Offene Rückfragen bleiben erhalten. Nachrichteneingang oder Timer führen nach
 FALL-11 zur Mitarbeiterprüfung. Bei gültiger Terminlöschung führt `WDeleteTask`

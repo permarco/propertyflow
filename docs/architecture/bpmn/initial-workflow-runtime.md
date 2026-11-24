@@ -317,21 +317,16 @@ Die bisherigen Memo-Lesewege bleiben kompatibel.
 
 ## Initiale Dringlichkeitsanalyse
 
-`TriageWorkers`, `CaseAnalysisService` und `CaseAnalysisStore` verbinden den
-vorhandenen `AnalyzeTool`-Vertrag mit dem tatsächlichen automatischen Kindprozess.
-Die Eingabe besteht ausschliesslich aus der ursprünglichen Fallbeschreibung.
-Adresse, Zuordnung, Memos und interne Begründungen werden nicht nachgeladen.
-`V8__initial_analysis.sql` und `V10__analysis_job_reference.sql` speichern
-Eingangsnachricht, Analyseversion, Call-Bezug, Job-Schlüssel, Promptversion,
-Versuch und validiertes Ergebnis beziehungsweise sicheren Fehlercode.
+Die automatische Abklärung ruft den Teilprozess «Gespraech auswerten» auf.
+`AutomaticEvaluationWorkers` führt Analyse, Empfehlung und bei Bedarf die
+Abschlussbeurteilung in einzelnen Jobs aus. `ConversationEvaluationService`
+prüft den tatsächlichen Aufruf und speichert versuchs- und versionsgebundene
+Ergebnisse über `ConversationEvaluationStore`. Die Analyse berücksichtigt den
+relevanten Gesprächsstand gemäss KOM-02.
 
-Der externe Aufruf hält keine Datenbanktransaktion offen. Ein begrenzter Executor
-erlaubt vier gleichzeitig laufende und vier wartende Modellaufrufe; nach standardmässig
-20 Sekunden wird der Aufruf abgebrochen. Konfigurierbar ist höchstens eine Minute.
-Die zweiminütige Versuchssperre und eine eigene Versuchskennung verhindern, dass
-eine alte Antwort ein neueres Ergebnis überschreibt. Vor dem Ergebniscommit werden
-Phase, führender Prozess, tatsächliches Kind, Call, aktuelle Analysegrundlage und
-entzogene automatische Schreibfreigabe erneut geprüft.
+Der externe Aufruf hält keine Datenbanktransaktion offen. Vor einer neuen
+Auswertung prüft der Dienst, ob bereits ein aktuelles Ergebnis vorliegt. Vor
+dem Speichern und Anwenden prüft er erneut Aufruf und Analysegrundlage.
 
 Eine manuelle Stufe bleibt wirksam. Das Systemergebnis bleibt getrennt nachvollziehbar;
 ohne wirksamen Stufenwechsel entstehen weder öffentliche Historie noch Mailauftrag.
@@ -340,12 +335,11 @@ niedrigerer manueller Stufe. Eine unveränderte Systemstufe erzeugt ebenfalls ke
 zweite Änderungsmail. Fallversionen aus blossen Memos verwerfen keine gültige Analyse;
 eine geänderte Zuordnungs-/Analysegrundlage dagegen schon.
 
-Ein gespeicherter fachlicher Analysefehler wird als `TRIAGE_ANALYSIS_FAILED` am
-Eltern-Call gefangen. `AutomaticFailurePrepare` verwendet ausschliesslich den
-gespeicherten aktuellen Fehler und führt über dieselbe exklusive Prüffortsetzung
-zur echten SReview-Aufgabe. Die Empfehlung wird bei diesem Fehler nicht aufgerufen.
-Speicher- und Enginefehler bleiben technische Retries. Eine erfolgreiche Triage
-wartet in der Test-Fixture am noch nicht implementierten Empfehlungsschritt.
+Bei einem gespeicherten Analysefehler entfällt die Empfehlung. Die Prüfung des
+Auswertungsergebnisses meldet `TRIAGE_ANALYSIS_FAILED` an den Elternprozess.
+«Analysefehler und Pruefkontext sichern» prüft den gespeicherten aktuellen
+Fehler für die Fortsetzung zur Mitarbeiterprüfung. Speicher- und Enginefehler
+führen zu technischen Wiederholungen.
 
 Ohne `PROPERTYFLOW_TRIAGE_PROVIDER` bleibt der Chat-Provider deaktiviert und der
 Analyseversuch liefert einen typisierten Fehler für die Mitarbeiterprüfung.

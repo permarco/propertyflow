@@ -7,7 +7,7 @@
 **Primary Actor:** Mitarbeitende der Immobilienbewirtschaftung  
 **Supporting Actor:** Camunda-Fallprozess\
 **Goal:** Nach einer Prüfung die Bearbeitung fortsetzen oder eine zulässige Dringlichkeits- oder Zuordnungsänderung veranlassen.\
-**Status:** Zielablauf über Camunda. Die lokale Frontend-Demo enthält noch die bisherige direkte Statusauswahl und speichert Falländerungen im Arbeitsspeicher.
+**Status:** Die Fortsetzungsaktion ist im integrierten Backend über eine konkrete Camunda-Aufgabe umgesetzt. Der Web-Pfad lautet `POST /mitarbeiter/faelle/{id}/bearbeitung-fortsetzen`. Der vollständige HTTP-Zielvertrag ist noch nicht angeglichen; siehe Umsetzungsabgrenzung unten. Die separate lokale Frontend-Demo enthält weiterhin die direkte Statusauswahl und speichert Falländerungen im Arbeitsspeicher.
 
 ## Use-Case-Diagramm
 
@@ -35,7 +35,7 @@ style PF fill:#1e293b,stroke:#006fbb,stroke-width:2px,color:#ffffff
 ## Main Success Scenario
 
 1. Der Mitarbeiter prüft den aktuellen Fallstand und wählt eine vom Prozess freigegebene Aktion in UI3.
-2. Bei «Mitarbeiterprüfung erforderlich» bestätigt er «Bearbeitung fortsetzen», wenn das weitere Vorgehen feststeht und die Verwaltung es umsetzt. Das UI sendet dabei den `userTaskKey` der angezeigten Mitarbeiteraufgabe. Bei «Dringlichkeit ändern» wählt er eine der vier Stufen. Für die Objektzuordnung wählt er einen Vorschlag oder gibt die Zuordnung frei ein. Bei der Fortsetzung und der Dringlichkeit ist eine interne Begründung optional.
+2. Bei «Mitarbeiterprüfung erforderlich» bestätigt er «Bearbeitung fortsetzen», wenn das weitere Vorgehen feststeht und die Verwaltung es umsetzt. Dieselbe Aktion beendet bewusst eine externe Wartephase bei «Wartet auf externe Rückmeldung», sofern die zugehörige Aufgabe freigegeben ist. Das UI sendet dabei den `userTaskKey` der angezeigten Mitarbeiteraufgabe. Bei «Dringlichkeit ändern» wählt er eine der vier Stufen. Für die Objektzuordnung wählt er einen Vorschlag oder gibt die Zuordnung frei ein. Bei der Fortsetzung und der Dringlichkeit ist eine interne Begründung optional.
 3. PropertyFlow prüft die Berechtigung und gleicht den geprüften Fallstand mit dem aktuellen Stand ab. Der Dienst prüft die Eingabe und bei einer strukturierten Objektzuordnung zusätzlich die Zusammengehörigkeit von Objekt und Wohnung. PropertyFlow ermittelt die dem Fall zugeordnete Camunda-Prozessinstanz serverseitig. Bei «Bearbeitung fortsetzen» prüft es, ob die angezeigte Aufgabe zu diesem Fall und seiner Prozessinstanz gehört und für die Aktion zulässig ist.
 4. PropertyFlow schliesst für «Bearbeitung fortsetzen» genau diese Aufgabe synchron in Camunda ab. Für die weiteren Aktionen bestimmt das BPMN-Modell die Übergabe. Ist ein Nachrichtenempfang modelliert, korreliert PropertyFlow die Nachricht synchron mit der wartenden Stelle der Instanz. Erst nach Bestätigung durch Camunda antwortet PropertyFlow dem Browser mit `200`. Das UI lädt den gespeicherten Fallstand neu.
 5. Camunda veranlasst bei «Bearbeitung fortsetzen» den Wechsel auf «In Bearbeitung». Der zuständige PropertyFlow-Worker speichert die Änderung mit dem fachlichen Nachweis. Fallübersicht und Falldetail zeigen den neuen Status nach der Speicherung. Sichtbare Status- und wirksame Dringlichkeitsänderungen lösen eine Benachrichtigung nach BEN-01 aus.
@@ -59,6 +59,22 @@ Für fachliche Nachrichten verwendet PropertyFlow den `processInstanceKey` als `
 - Bei ausstehendem Prozessstart oder unerreichbarem Camunda ist die Ansicht lesend. Direkte Schreibaufrufe werden abgewiesen und der gespeicherte Fallstand bleibt erhalten.
 - Für Wiedervorlage, Abschluss und Wiedereröffnung verwendet der Mitarbeiter die jeweiligen Aktionen. [UC-013](UC-013-wiedervorlage-verwalten.md) · [UC-014](UC-014-fall-abschliessen.md) · [UC-015](UC-015-fall-wiedereroeffnen.md)
 
+### Umsetzungsabgrenzung der Fortsetzungsaktion (24.11.2026)
+
+Das integrierte Mitarbeiterdetail bezeichnet den Bereich als «Bearbeitung fortsetzen»;
+es bietet dort keine freie Statusauswahl. Die Bestätigung berücksichtigt die geprüften
+Gründe, erledigt sie aber nicht pauschal und erteilt keine Kosten-, Auftrags- oder
+automatische Abschlussfreigabe. Konkrete kritische Entscheidungen bleiben von
+[UC-027](UC-027-kritische-fallentscheidung-treffen.md) zu unterscheiden.
+
+Der Web-Pfad entspricht dem [OpenAPI-Zielvertrag](../architecture/openapi/propertyflow-web.yaml).
+Die Implementierung verlangt zusätzlich eine `operationId` zur Verhinderung eines
+erneuten Aufgabenabschlusses und einen `reviewToken` zur Prüfung der aktuellen
+Prüfgrundlage. Sie antwortet bei Erfolg mit `{"state":"CONFIRMED"}`; OpenAPI beschreibt
+noch einen leeren Antwortkörper und führt die beiden zusätzlichen Pflichtfelder
+nicht auf. Auch die externe Wartephase ist dort noch nicht beschrieben.
+Die Pfadangleichung bedeutet daher noch keine vollständige Vertragskonformität.
+
 ## Postconditions
 
 - Der bestätigte Wert und seine Änderungshistorie sind nachvollziehbar. Die ursprüngliche Objekt-/Wohnungsangabe des Mieters bleibt erhalten. Der gespeicherte Status folgt dem vom führenden Fallprozess veranlassten Übergang.
@@ -74,3 +90,4 @@ Für fachliche Nachrichten verwendet PropertyFlow den `processInstanceKey` als `
 - **UC-012-AK-04** «Bearbeitung fortsetzen» an der freigegebenen Mitarbeiteraufgabe führt erst nach Ausführung des Camunda-Übergangs zum gespeicherten Status «In Bearbeitung». Ein ausstehender Prozessstart oder eine veraltete Mitarbeiteraufgabe erlaubt keinen direkten Schreibzugriff auf den Fall.
 - **UC-012-AK-05** PropertyFlow antwortet mit `200`, sobald Camunda den Abschluss der konkreten User Task mit `204` oder die Korrelation einer fachlichen Nachricht zur richtigen Fallprozessinstanz bestätigt. Eine ungültige Aktion, eine veraltete User Task oder eine fehlende wartende Stelle ergeben `400`. Technischer Fehler oder Timeout ergeben `500`. Bei verlorener Antwort zeigt der erneute Abruf den gespeicherten Stand, sobald der Worker den Übergang ausgeführt hat. Der Timeout löst keine automatische Wiederholung aus.
 - **UC-012-AK-06** Dieselbe Fallprozessinstanz öffnet nacheinander zwei Mitarbeiteraufgaben mit unterschiedlichen `userTaskKey`. Die erste Aufgabe bleibt in einem alten Browser-Tab sichtbar, während sie in einem zweiten Tab abgeschlossen wird und ein neuer Prüfgrund zur zweiten Aufgabe führt. «Bearbeitung fortsetzen» im alten Tab ergibt `400` und lädt den aktuellen Fallstand. Die zweite Aufgabe bleibt offen und die Aktion aus dem alten Tab löst keinen Statuswechsel und keinen neuen fachlichen Nachweis aus.
+- **UC-012-AK-07** Bei «Wartet auf externe Rückmeldung» beendet «Bearbeitung fortsetzen» über die aktuelle Camunda-Aufgabe die externe Wartephase und führt nach Speicherung zu «In Bearbeitung». Eine optionale Begründung bleibt intern. Der Bereich bietet keine freie Statusauswahl und behauptet keine Kosten-, Auftrags- oder automatische Abschlussfreigabe.

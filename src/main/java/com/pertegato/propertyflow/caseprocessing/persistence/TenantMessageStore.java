@@ -5,6 +5,7 @@ import com.pertegato.propertyflow.caseprocessing.contract.PublicMessage;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @Profile("propertyflow-backend & !frontend-demo")
+@RequiredArgsConstructor
 public class TenantMessageStore {
 
     private static final RowMapper<Message> MESSAGE = (row, index) -> new Message(row.getObject("id", UUID.class),
@@ -19,10 +21,6 @@ public class TenantMessageStore {
             row.getLong("leading_instance_key"), row.getString("tenant_id"), row.getString("state"), row.getBoolean("correlated"),
             row.getObject("child_instance_key", Long.class), row.getObject("parent_element_key", Long.class));
     private final JdbcTemplate database;
-
-    public TenantMessageStore(JdbcTemplate database) {
-        this.database = database;
-    }
 
     public Optional<Access> access(String hash, boolean lock) {
         return database.query("SELECT id, case_id FROM pf_case_access WHERE token_hash = ? AND revoked_at IS NULL"

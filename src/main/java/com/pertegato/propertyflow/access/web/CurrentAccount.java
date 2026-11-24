@@ -1,11 +1,12 @@
 package com.pertegato.propertyflow.access.web;
 
-import com.pertegato.propertyflow.access.demo.DemoAccounts;
 import com.pertegato.propertyflow.access.demo.DemoAccounts.Account;
+import com.pertegato.propertyflow.access.demo.DemoAccounts;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -13,13 +14,10 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Component
 @Profile("frontend-demo")
+@RequiredArgsConstructor
 public class CurrentAccount {
 
     private final DemoAccounts accounts;
-
-    public CurrentAccount(DemoAccounts accounts) {
-        this.accounts = accounts;
-    }
 
     public Optional<Account> find(HttpServletRequest request) {
         HttpSession session = request.getSession(false);

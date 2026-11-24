@@ -6,6 +6,7 @@ import com.pertegato.propertyflow.access.persistence.AccountAdministrationStore.
 import com.pertegato.propertyflow.access.persistence.AccountAdministrationStore;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -14,12 +15,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @Profile("propertyflow-backend & !frontend-demo")
+@RequiredArgsConstructor
 public class AccountAdministrationService implements AccountAdministration {
     private final AccountAdministrationStore accounts;
-
-    public AccountAdministrationService(AccountAdministrationStore accounts) {
-        this.accounts = accounts;
-    }
 
     public List<Entry> list(UUID actor) {
         requireAdministrator(actor);

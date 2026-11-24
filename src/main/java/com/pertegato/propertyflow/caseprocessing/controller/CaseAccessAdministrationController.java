@@ -10,6 +10,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
@@ -23,14 +24,10 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Controller
 @Profile("propertyflow-backend & !frontend-demo")
+@RequiredArgsConstructor
 public class CaseAccessAdministrationController {
     private final CaseAccessAdministrationService service;
     private final AccountAdministration accounts;
-
-    public CaseAccessAdministrationController(CaseAccessAdministrationService service, AccountAdministration accounts) {
-        this.service = service;
-        this.accounts = accounts;
-    }
 
     @ModelAttribute
     void protect(HttpServletResponse response) {
@@ -112,5 +109,4 @@ public class CaseAccessAdministrationController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         }
     }
-
 }

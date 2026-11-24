@@ -6,7 +6,7 @@
 **Primary Actor:** Berechtigter Mitarbeiter der Immobilienverwaltung  
 **Supporting Actor:** Camunda-Fallprozess\
 **Goal:** Über eine fachlich kritische Handlung entscheiden und die Entscheidung am konkreten Fall nachvollziehbar festhalten.  
-**Status:** Entscheidungsgrenzen und [HTTP-Zielvertrag](../architecture/openapi/propertyflow-web.yaml) beschrieben. Bedienung, BPMN-Modell und Umsetzung stehen aus.
+**Status:** Entscheidungsgrenzen und [HTTP-Zielvertrag](../architecture/openapi/propertyflow-web.yaml) beschrieben. Menschliche Prüfgründe und die allgemeine Fortsetzungsaktion sind im integrierten Backend vorhanden. Die eigenständige, auf eine konkrete kritische Handlung bezogene Bedienung mit Freigeben, Ablehnen oder Klärung sowie deren vollständige BPMN-/Backend-Umsetzung stehen aus.
 
 ## Use-Case-Diagramm
 
@@ -25,6 +25,16 @@ classDef participant fill:#1e293b,stroke:#94a3b8,color:#ffffff
 classDef goal fill:#334155,stroke:#6d8eae,color:#ffffff
 style PF fill:#1e293b,stroke:#006fbb,stroke-width:2px,color:#ffffff
 ```
+
+## Abgrenzung zu «Bearbeitung fortsetzen»
+
+[UC-012](UC-012-fall-fachlich-steuern.md) bestätigt den geprüften Fallstand und
+setzt die Bearbeitung fort. Seine optionale interne Begründung ersetzt weder
+den konkreten Handlungsbezug noch die begründete Entscheidung dieses Use Cases.
+Eine Fortsetzung gilt nicht als pauschale Freigabe für Kosten, Aufträge,
+Folgehandlungen oder einen Systemabschluss. Die Umsetzung dieses Use Cases
+führt keine automatische externe Beauftragung ein; diese organisiert die
+Verwaltung weiterhin ausserhalb von PropertyFlow.
 
 ## Preconditions
 

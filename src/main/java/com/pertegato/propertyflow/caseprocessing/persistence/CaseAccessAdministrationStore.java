@@ -3,18 +3,16 @@ package com.pertegato.propertyflow.caseprocessing.persistence;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 @Repository
 @Profile("propertyflow-backend & !frontend-demo")
+@RequiredArgsConstructor
 public class CaseAccessAdministrationStore {
     private final JdbcTemplate database;
-
-    public CaseAccessAdministrationStore(JdbcTemplate database) {
-        this.database = database;
-    }
 
     public Optional<CaseContact> contact(String caseId, boolean lock) {
         return database.query("SELECT id, contact_email, version FROM pf_case WHERE id = ?" + (lock ? " FOR UPDATE" : ""),

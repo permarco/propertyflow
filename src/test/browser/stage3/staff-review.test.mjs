@@ -14,10 +14,11 @@ async function setup(t, initial = {}) {
     t.after(() => context.close());
     const page = await context.newPage();
     page.setDefaultTimeout(5000);
-    const state = { taskKey: '700', version: 2, reviewToken: 'reasons-one', actor: 'staff-one', available: true, postStatus: 200, posts: [], ...initial };
+    const state = { taskKey: '700', version: 2, reviewToken: 'reasons-one', actor: 'staff-one', available: true, postStatus: 200, posts: [], postUrls: [], ...initial };
     await page.route(`${origin}/**`, route => {
         const request = route.request();
         if (request.method() === 'POST') {
+            state.postUrls.push(new URL(request.url()).pathname);
             state.posts.push(Object.fromEntries(new URLSearchParams(request.postData())));
             return route.fulfill({ status: state.postStatus, json: { state: 'CONFIRMED' } });
         }
@@ -29,7 +30,7 @@ async function setup(t, initial = {}) {
         return route.fulfill({ contentType: 'text/html; charset=utf-8', body: `<!doctype html><html lang="de">
             <head><meta charset="utf-8"></head><body><div id="case-head" data-version="2"></div>
             <span id="case-status">Mitarbeiterprüfung erforderlich</span><section hidden>
-            <form id="staff-review-form" action="/mitarbeiter/faelle/CASE/fortsetzen" data-review-url="/mitarbeiter/faelle/CASE/pruefung"
+            <form id="staff-review-form" action="/mitarbeiter/faelle/CASE/bearbeitung-fortsetzen" data-review-url="/mitarbeiter/faelle/CASE/pruefung"
                   data-actor="staff-one"><textarea name="reason" aria-label="Interne Begründung"></textarea>
                 <button type="submit" disabled>Bearbeitung fortsetzen</button>
                 <button type="button" data-review-reload>Neu laden</button><p role="status"></p>
@@ -41,6 +42,22 @@ async function setup(t, initial = {}) {
     else await page.getByRole('status').getByText('Derzeit liegt keine freigegebene Mitarbeiterprüfung vor.', { exact: false }).waitFor();
     return { page, state };
 }
+
+test('continuation posts the reviewed basis and optional internal reason to the canonical HTTP path', async t => {
+    const { page, state } = await setup(t);
+    await page.getByRole('textbox').fill('Fallstand geprüft');
+    await page.getByRole('button', { name: 'Bearbeitung fortsetzen' }).click();
+    await page.waitForFunction(() => document.querySelector('[role="status"]').textContent.includes('Entscheidung bestätigt'));
+    assert.deepEqual(state.postUrls, ['/mitarbeiter/faelle/CASE/bearbeitung-fortsetzen']);
+    assert.equal(state.posts[0].userTaskKey, '700');
+    assert.equal(state.posts[0].version, '2');
+    assert.equal(state.posts[0].reviewToken, 'reasons-one');
+    assert.equal(state.posts[0].csrf, 'csrf-test');
+    assert.equal(state.posts[0].reason, 'Fallstand geprüft');
+    assert.match(state.posts[0].operationId, /^[0-9a-f-]{36}$/);
+    assert.equal(await page.locator('#case-status').textContent(), 'Mitarbeiterprüfung erforderlich');
+    assert.equal(await page.locator('[type="submit"]').isDisabled(), true);
+});
 
 test('an old tab submits only its displayed task and never silently targets a new task', async t => {
     const { page, state } = await setup(t);

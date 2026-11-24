@@ -12,6 +12,8 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseNotificationBpmnConstants.Variablen.MAIL_ORDER_REF;
+
 @Component
 @Profile("propertyflow-backend & !frontend-demo")
 @ConditionalOnProperty(name = {"propertyflow.workflow.enabled", "propertyflow.case-mail.enabled"}, havingValue = "true")
@@ -45,7 +47,7 @@ public class MailProcessDispatcher {
             }
             MailStart start = claimed.get();
             StartResult result = gateway.ensureStarted(start.id(), start.definitionKey(), start.tenantId(),
-                    Map.of("mailOrderRef", start.id().toString()));
+                    Map.of(MAIL_ORDER_REF, start.id().toString()));
             boolean blocked = result == StartResult.REJECTED || result == StartResult.ENDED_BEFORE_REGISTRATION;
             store.finishStart(start, result.name(), blocked, Duration.ofSeconds(Math.min(300, 5L << Math.min(start.attempts() - 1, 6))));
         }

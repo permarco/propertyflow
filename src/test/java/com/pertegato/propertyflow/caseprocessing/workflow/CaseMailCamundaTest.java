@@ -4,6 +4,7 @@ import com.pertegato.propertyflow.access.contract.SubmissionContext;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseAccepted;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseCreation;
 import com.pertegato.propertyflow.caseprocessing.contract.CreateCaseCommand;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseNotificationBpmnConstants;
 import com.pertegato.propertyflow.caseprocessing.persistence.MailDeliveryStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.MailDeliveryStore.MailStart;
 import com.pertegato.propertyflow.caseprocessing.service.CaseMailService;
@@ -32,6 +33,10 @@ import org.springframework.test.context.DynamicPropertySource;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseNotificationBpmnConstants.JobType.MAIL_PREPARE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseNotificationBpmnConstants.JobType.MAIL_RECORD_PROBLEM;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseNotificationBpmnConstants.JobType.MAIL_SEND;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseNotificationBpmnConstants.Variablen.MAIL_ORDER_REF;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -78,9 +83,9 @@ class CaseMailCamundaTest {
         database.execute("TRUNCATE pf_case CASCADE");
         engine = CamundaClient.newClientBuilder().restAddress(URI.create(System.getenv("PROPERTYFLOW_TEST_CAMUNDA_URL")))
                 .preferRestOverGrpc(true).defaultRequestTimeout(Duration.ofSeconds(5)).build();
-        long definitionKey = engine.newDeployResourceCommand()
-                .addResourceFromClasspath("bpmn/fallbenachrichtigung-versenden.bpmn")
-                .send().join().getProcesses().getFirst().getProcessDefinitionKey();
+        long definitionKey = WorkflowTestModels.deploy(engine).getProcesses().stream()
+                .filter(process -> CaseNotificationBpmnConstants.PROCESS_ID.equals(process.getBpmnProcessId()))
+                .findFirst().orElseThrow().getProcessDefinitionKey();
         recipient = "mail-" + UUID.randomUUID() + "@example.test";
         accepted = creation.create(new SubmissionContext.Guest(UUID.randomUUID()),
                 new CreateCaseCommand("mail", "Private subject", "Apartment 4", "Private message", recipient));
@@ -88,7 +93,7 @@ class CaseMailCamundaTest {
         start = store.claimStart(definitionKey, "<default>").orElseThrow();
         workers = new CaseMailWorkers(engine, service);
         assertEquals(StartResult.STARTED, new CamundaProcessStartGateway(engine)
-                .ensureStarted(start.id(), start.definitionKey(), start.tenantId(), Map.of("mailOrderRef", start.id().toString())));
+                .ensureStarted(start.id(), start.definitionKey(), start.tenantId(), Map.of(MAIL_ORDER_REF, start.id().toString())));
     }
 
     @AfterEach
@@ -107,8 +112,8 @@ class CaseMailCamundaTest {
 
     @Test
     void canonicalMailProcessHandsOffToRealSmtpAndKeepsCaseInactive() throws Exception {
-        workers.prepare(engine, job("propertyflow.mail.prepare"));
-        ActivatedJob sending = job("propertyflow.mail.send");
+        workers.prepare(engine, job(MAIL_PREPARE));
+        ActivatedJob sending = job(MAIL_SEND);
         workers.send(engine, sending);
         assertEquals("SENT", database.queryForObject("SELECT state FROM pf_mail_delivery", String.class));
         assertEquals("RECEIVED", database.queryForObject("SELECT status FROM pf_case", String.class));
@@ -122,11 +127,11 @@ class CaseMailCamundaTest {
 
     @Test
     void canonicalBoundaryErrorCreatesOneDurableReviewSignalWithoutReopeningClosedCase() throws Exception {
-        workers.prepare(engine, job("propertyflow.mail.prepare"));
+        workers.prepare(engine, job(MAIL_PREPARE));
         database.update("UPDATE pf_case_access SET revoked_at = CURRENT_TIMESTAMP");
         database.update("UPDATE pf_case SET status = 'CLOSED'");
-        workers.send(engine, job("propertyflow.mail.send"));
-        ActivatedJob problem = job("propertyflow.mail.record-problem");
+        workers.send(engine, job(MAIL_SEND));
+        ActivatedJob problem = job(MAIL_RECORD_PROBLEM);
         workers.recordProblem(engine, problem);
         service.recordProblem(start.id(), problem.getProcessInstanceKey());
         assertEquals("FAILED", database.queryForObject("SELECT state FROM pf_mail_delivery", String.class));
@@ -138,8 +143,8 @@ class CaseMailCamundaTest {
 
     @Test
     void urgencyChangeUsesCanonicalChangeRouteAndSmtpWithoutInternalReason() throws Exception {
-        workers.prepare(engine, job("propertyflow.mail.prepare"));
-        ActivatedJob acceptance = job("propertyflow.mail.send");
+        workers.prepare(engine, job(MAIL_PREPARE));
+        ActivatedJob acceptance = job(MAIL_SEND);
         workers.send(engine, acceptance);
         awaitCompletion(acceptance.getProcessInstanceKey());
         UUID command = UUID.randomUUID();
@@ -159,10 +164,10 @@ class CaseMailCamundaTest {
         start = store.claimStart(start.definitionKey(), "<default>").orElseThrow();
         assertEquals(order, start.id());
         assertEquals(StartResult.STARTED, new CamundaProcessStartGateway(engine)
-                .ensureStarted(start.id(), start.definitionKey(), start.tenantId(), Map.of("mailOrderRef", start.id().toString())));
-        workers.prepare(engine, job("propertyflow.mail.prepare"));
-        ActivatedJob sending = job("propertyflow.mail.send");
-        assertEquals("MailSendChange", sending.getElementId());
+                .ensureStarted(start.id(), start.definitionKey(), start.tenantId(), Map.of(MAIL_ORDER_REF, start.id().toString())));
+        workers.prepare(engine, job(MAIL_PREPARE));
+        ActivatedJob sending = job(MAIL_SEND);
+        assertEquals(CaseNotificationBpmnConstants.SendTask.SEND_STATUS_MAIL, sending.getElementId());
         workers.send(engine, sending);
         assertEquals("SENT", database.queryForObject("SELECT state FROM pf_urgency_mail_order", String.class));
         JsonNode mail = deliveredMail();
@@ -173,8 +178,8 @@ class CaseMailCamundaTest {
 
     @Test
     void publishedStaffMessageMailSurvivesCaseClosureAndContainsOnlyThePortalNotice() throws Exception {
-        workers.prepare(engine, job("propertyflow.mail.prepare"));
-        ActivatedJob acceptance = job("propertyflow.mail.send");
+        workers.prepare(engine, job(MAIL_PREPARE));
+        ActivatedJob acceptance = job(MAIL_SEND);
         workers.send(engine, acceptance);
         awaitCompletion(acceptance.getProcessInstanceKey());
         UUID message = UUID.randomUUID();
@@ -194,10 +199,10 @@ class CaseMailCamundaTest {
         start = store.claimStart(start.definitionKey(), "<default>").orElseThrow();
         assertEquals(message, start.id());
         assertEquals(StartResult.STARTED, new CamundaProcessStartGateway(engine)
-                .ensureStarted(start.id(), start.definitionKey(), start.tenantId(), Map.of("mailOrderRef", start.id().toString())));
-        workers.prepare(engine, job("propertyflow.mail.prepare"));
-        ActivatedJob sending = job("propertyflow.mail.send");
-        assertEquals("MailSendMessage", sending.getElementId());
+                .ensureStarted(start.id(), start.definitionKey(), start.tenantId(), Map.of(MAIL_ORDER_REF, start.id().toString())));
+        workers.prepare(engine, job(MAIL_PREPARE));
+        ActivatedJob sending = job(MAIL_SEND);
+        assertEquals(CaseNotificationBpmnConstants.SendTask.SEND_ACCEPTANCE_OR_MESSAGE_MAIL, sending.getElementId());
         workers.send(engine, sending);
         assertEquals("SENT", database.queryForObject("SELECT state FROM pf_staff_message_mail_order", String.class));
         JsonNode mail = deliveredMail();

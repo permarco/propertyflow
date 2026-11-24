@@ -6,6 +6,7 @@ import com.pertegato.propertyflow.access.contract.WebAccountContext;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseActionException;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffDecisionAction;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffTaskDecisions;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants;
 import com.pertegato.propertyflow.caseprocessing.delivery.StaffTaskGateway;
 import com.pertegato.propertyflow.caseprocessing.delivery.StaffTaskGateway.Binding;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseDataStore;
@@ -58,7 +59,7 @@ public class StaffDecisionService implements StaffTaskDecisions {
         }
         Long task = engine.currentTask(snapshot.binding()).orElse(null);
         return new StaffTask(task != null, task == null ? null : Long.toString(task), snapshot.version(), snapshot.reviewToken(),
-                task != null && !"SWork".equals(snapshot.binding().element()), task != null);
+                task != null && !StaffProcessingBpmnConstants.UserTask.WORK_TASK.equals(snapshot.binding().element()), task != null);
     }
 
     @Override
@@ -95,8 +96,10 @@ public class StaffDecisionService implements StaffTaskDecisions {
         }
         Snapshot snapshot = transaction.execute(status -> snapshot(caseId));
         require(snapshot != null && snapshot.version() == version && snapshot.reviewToken().equals(reviewToken));
-        require(action != StaffDecisionAction.CONTINUE || !"SWork".equals(snapshot.binding().element()));
-        require(action != StaffDecisionAction.WAIT_EXTERNAL || "SWork".equals(snapshot.binding().element()));
+        require(action != StaffDecisionAction.CONTINUE
+                || !StaffProcessingBpmnConstants.UserTask.WORK_TASK.equals(snapshot.binding().element()));
+        require(action != StaffDecisionAction.WAIT_EXTERNAL
+                || StaffProcessingBpmnConstants.UserTask.WORK_TASK.equals(snapshot.binding().element()));
         require(engine.currentTask(snapshot.binding()).filter(key -> key == taskKey).isPresent());
         Decision decision = transaction.execute(status -> {
             authorize(context);
@@ -133,7 +136,7 @@ public class StaffDecisionService implements StaffTaskDecisions {
             }
             Decision decision = decisions.get(decisionId);
             Continuation continuation = reviews.continuation(decision.continuation(), caseId);
-            if (decision.action() != StaffDecisionAction.CONTINUE || "SWork".equals(decision.element())
+            if (decision.action() != StaffDecisionAction.CONTINUE || StaffProcessingBpmnConstants.UserTask.WORK_TASK.equals(decision.element())
                     || !decision.caseId().equals(caseId) || continuation.leader() != leader || continuation.childKey() == null
                     || continuation.childKey() != child || workflow.leadingInstance(caseId).filter(key -> key == leader).isEmpty()) {
                 throw new WorkflowRejectedException("OTHER_STAFF_DECISION_PROCESS");
@@ -145,7 +148,8 @@ public class StaffDecisionService implements StaffTaskDecisions {
                 decisions.reject(decisionId, "STAFF_CALL_SUPERSEDED");
                 return "SUPERSEDED";
             }
-            String expectedStatus = "SExternalWait".equals(decision.element()) ? "WAITING_FOR_EXTERNAL" : "STAFF_REVIEW_REQUIRED";
+            String expectedStatus = StaffProcessingBpmnConstants.UserTask.EXTERNAL_WAIT_TASK.equals(decision.element())
+                    ? "WAITING_FOR_EXTERNAL" : "STAFF_REVIEW_REQUIRED";
             if (!expectedStatus.equals(state.status())) {
                 decisions.reject(decisionId, "CASE_PHASE_CHANGED");
                 return "SUPERSEDED";
@@ -175,8 +179,9 @@ public class StaffDecisionService implements StaffTaskDecisions {
             return null;
         }
         return new Snapshot(continuation.id(), new Binding(leader.key(), continuation.childKey(), continuation.parentElementKey(), leader.tenant(),
-                "STAFF_REVIEW_REQUIRED".equals(state.status()) ? "SReview"
-                        : "WAITING_FOR_EXTERNAL".equals(state.status()) ? "SExternalWait" : "SWork"),
+                "STAFF_REVIEW_REQUIRED".equals(state.status()) ? StaffProcessingBpmnConstants.UserTask.REVIEW_TASK
+                        : "WAITING_FOR_EXTERNAL".equals(state.status()) ? StaffProcessingBpmnConstants.UserTask.EXTERNAL_WAIT_TASK
+                                : StaffProcessingBpmnConstants.UserTask.WORK_TASK),
                 state.version(), decisions.reviewFingerprint(caseId, leader.key()));
     }
 

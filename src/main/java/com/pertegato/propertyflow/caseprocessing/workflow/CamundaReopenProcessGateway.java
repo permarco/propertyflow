@@ -1,5 +1,6 @@
 package com.pertegato.propertyflow.caseprocessing.workflow;
 
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants;
 import com.pertegato.propertyflow.caseprocessing.delivery.ReopenProcessGateway;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.response.ProcessInstance;
@@ -27,6 +28,7 @@ public class CamundaReopenProcessGateway implements ReopenProcessGateway {
         }
         ProcessInstance instance = clients.getObject().newProcessInstanceGetRequest(leader).send().join();
         return "COMPLETED".equals(instance.getState().name()) && instance.getParentProcessInstanceKey() == null
-                && InitialCaseWorkers.CASE_PROCESS.equals(instance.getProcessDefinitionId()) && tenant.equals(instance.getTenantId());
+                && CaseProcessBpmnConstants.PROCESS_ID.equals(instance.getProcessDefinitionId())
+                && tenant.equals(instance.getTenantId());
     }
 }

@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.util.Map;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -20,16 +21,12 @@ import org.springframework.web.util.WebUtils;
 
 @Controller
 @Profile("propertyflow-backend & !frontend-demo")
+@RequiredArgsConstructor
 public class TenantMessageController {
 
     private static final String CSRF = "propertyflow.tenant-message.csrf";
     private final TenantMessageSubmission messages;
     private final GuestRequestLimits limits;
-
-    public TenantMessageController(TenantMessageSubmission messages, GuestRequestLimits limits) {
-        this.messages = messages;
-        this.limits = limits;
-    }
 
     static String csrf(HttpSession session) {
         synchronized (WebUtils.getSessionMutex(session)) {

@@ -1,440 +1,543 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_PropertyFlow_TenantMessage_Draft" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
-  <bpmn:error id="Error_TenantEvaluationStale" name="Nachrichtenauswertung veraltet" errorCode="TENANT_EVALUATION_STALE" />
-  <bpmn:error id="Error_TriageFailure" name="KI-Analyse fehlgeschlagen" errorCode="TRIAGE_ANALYSIS_FAILED">
+<bpmn:definitions xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Mieternachricht_verarbeiten_DEFINITIONS" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+  <bpmn:error id="Nachrichtenauswertung_veraltet_ERROR" name="Nachrichtenauswertung veraltet" errorCode="TENANT_EVALUATION_STALE" />
+  <bpmn:error id="KI_Analyse_fehlgeschlagen_ERROR" name="KI-Analyse fehlgeschlagen" errorCode="TRIAGE_ANALYSIS_FAILED">
     <bpmn:documentation>Fachliche Fehlerreaktion des Entwurfs. Der spätere Worker meldet eine festgestellte fehlgeschlagene Analyse oder ungültige Modellausgabe ausdrücklich als diesen BPMN-Fehler. Ein technischer Jobfehler allein aktiviert den Fehlerpfad nicht. Die Mitarbeiterprüfung wartet nicht auf das Ausschöpfen automatischer Wiederholungen.</bpmn:documentation>
   </bpmn:error>
-  <bpmn:process id="PropertyFlow_TenantMessage_Draft" name="Mieternachricht verarbeiten · Fachentwurf 0.12" isExecutable="true">
+  <bpmn:category id="Fallkontext_vorbereiten_CATEGORY">
+    <bpmn:categoryValue id="Fallkontext_vorbereiten_CATEGORY_VALUE" value="Fallkontext vorbereiten" />
+  </bpmn:category>
+  <bpmn:category id="LLM_Auswertung_und_Fehlerpfad_CATEGORY">
+    <bpmn:categoryValue id="LLM_Auswertung_und_Fehlerpfad_CATEGORY_VALUE" value="LLM-Auswertung und Fehlerpfad" />
+  </bpmn:category>
+  <bpmn:category id="Aktuelles_Ergebnis_bereitstellen_CATEGORY">
+    <bpmn:categoryValue id="Aktuelles_Ergebnis_bereitstellen_CATEGORY_VALUE" value="Aktuelles Ergebnis bereitstellen" />
+  </bpmn:category>
+  <bpmn:process id="Mieternachricht_verarbeiten_PROCESS" name="Mieternachricht verarbeiten" isExecutable="true">
     <bpmn:documentation>Nur per Call Activity aus dem zentralen Nachrichteneingang starten. Eingaben caseId, leadingProcessInstanceKey und tenantMessageId; keine Rückgabe von Variablen. Pro Nachricht eigener Aufruf. NIdentify prüft Fall, führende Instanz, Aufrufzuordnung und gespeicherte Nachricht. NApply/NWake liefern aktuelle Steuerinformationen ausdrücklich an den richtigen fremden Instanzbereich; keine impliziten gemeinsamen Variablen. Kein eigener Mieterempfang, keine führende Fallzuordnung. teilprozess-vertraege.md; keine Backend-Implementierung.</bpmn:documentation>
-    <bpmn:startEvent id="NProcessingStart" name="Nachrichtenverarbeitung aufgerufen">
-      <bpmn:outgoing>N01</bpmn:outgoing>
+    <bpmn:startEvent id="Nachrichtenverarbeitung_aufgerufen_START" name="Nachrichtenverarbeitung aufgerufen">
+      <bpmn:outgoing>Nachrichtenverarbeitung_aufgerufen_START_zu_Nachricht_und_Fallstand_pruefen_FLOW</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:serviceTask id="NIdentify" name="Gespeicherten Eingang&#10;und Fallstand prüfen">
+    <bpmn:serviceTask id="Nachricht_und_Fallstand_pruefen_SERVICE" name="Nachricht und Fallstand pruefen">
       <bpmn:documentation>Gespeicherte Eingangs-ID, Fall- und Prozesszuordnung prüfen. Einmalige fachliche Wirkung dauerhaft über Eingangs-ID und Auswertungsstand sichern; Broker-Korrelation allein ist keine fachliche Idempotenz. Geschlossenen Fall und falsche/alte Instanz ausschliessen. Gleichzeitige Wiederholungen koordinieren. Neue ältere Nachrichten nicht pauschal verwerfen: nur bereits verarbeitete Eingänge sind Duplikate; aktuelle Auswertung berücksichtigt alle noch offenen Eingänge.</bpmn:documentation>
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="propertyflow.tenant-message.identify" />
       </bpmn:extensionElements>
-      <bpmn:incoming>N01</bpmn:incoming>
-      <bpmn:outgoing>N02</bpmn:outgoing>
+      <bpmn:incoming>Nachrichtenverarbeitung_aufgerufen_START_zu_Nachricht_und_Fallstand_pruefen_FLOW</bpmn:incoming>
+      <bpmn:outgoing>Nachricht_und_Fallstand_zu_Neu_zu_verarbeiten_XOR_FLOW</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:exclusiveGateway id="NAccept" name="Neu zu verarbeiten?" default="N03">
-      <bpmn:incoming>N02</bpmn:incoming>
-      <bpmn:outgoing>N03</bpmn:outgoing>
-      <bpmn:outgoing>N04</bpmn:outgoing>
+    <bpmn:exclusiveGateway id="Neu_zu_verarbeiten_XOR" name="Neu zu verarbeiten?" default="Neu_zu_verarbeiten_Bereits_verarbeitet_nicht_mehr_zulaessig_zu_Keine_neue_Wirkung_Mieternachricht_FLOW">
+      <bpmn:incoming>Nachricht_und_Fallstand_zu_Neu_zu_verarbeiten_XOR_FLOW</bpmn:incoming>
+      <bpmn:outgoing>Neu_zu_verarbeiten_Bereits_verarbeitet_nicht_mehr_zulaessig_zu_Keine_neue_Wirkung_Mieternachricht_FLOW</bpmn:outgoing>
+      <bpmn:outgoing>Neu_zu_verarbeiten_Ja_zu_Aktuelle_Bearbeitung_XOR_FLOW</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:endEvent id="NNoOpEnd" name="Keine neue Wirkung">
-      <bpmn:incoming>N03</bpmn:incoming>
+    <bpmn:endEvent id="Keine_neue_Wirkung_Mieternachricht_verarbeiten_END" name="Keine neue Wirkung">
+      <bpmn:incoming>Keine_neue_Wirkung_zusammenfuehren_zu_Keine_neue_Wirkung_FLOW</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:exclusiveGateway id="NState" name="Aktuelle Bearbeitung" default="N07">
-      <bpmn:incoming>N04</bpmn:incoming>
-      <bpmn:outgoing>N05</bpmn:outgoing>
-      <bpmn:outgoing>N06</bpmn:outgoing>
-      <bpmn:outgoing>N07</bpmn:outgoing>
+    <bpmn:exclusiveGateway id="Aktuelle_Bearbeitung_XOR" name="Aktuelle Bearbeitung" default="Aktuelle_Bearbeitung_XOR_Sonstige_aktive_Phase_zu_Neuen_Eingang_vormerken_SERVICE_FLOW">
+      <bpmn:categoryValueRef>Fallkontext_vorbereiten_CATEGORY_VALUE</bpmn:categoryValueRef>
+      <bpmn:incoming>Neu_zu_verarbeiten_Ja_zu_Aktuelle_Bearbeitung_XOR_FLOW</bpmn:incoming>
+      <bpmn:outgoing>Aktuelle_Bearbeitung_XOR_Mitarbeiterpruefung_zu_Laufende_Mitarbeiterpruefung_ergaenzen_SERVICE_FLOW</bpmn:outgoing>
+      <bpmn:outgoing>Aktuelle_Bearbeitung_XOR_Wiedervorlage_zu_Kontakt_zur_Wiedervorlage_bereitstellen_FLOW</bpmn:outgoing>
+      <bpmn:outgoing>Aktuelle_Bearbeitung_XOR_Sonstige_aktive_Phase_zu_Neuen_Eingang_vormerken_SERVICE_FLOW</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:serviceTask id="NKeepReview" name="Dieselbe Mitarbeiteraufgabe&#10;um Nachricht ergänzen">
+    <bpmn:serviceTask id="Laufende_Mitarbeiterpruefung_ergaenzen_SERVICE" name="Laufende Mitarbeiterpruefung ergaenzen">
       <bpmn:documentation>Mitarbeiterprüfung erforderlich bleibt unabhängig vom Ursprung bestehen. Auch eine Behebungsbestätigung schliesst weder Fall noch Aufgabe. Keine zweite Aufgabe. Eine inzwischen erfolgte Mitarbeiterentscheidung hat Vorrang; dieser Nebenpfad darf keine alte Aufgabe reaktivieren.
 Die aktuelle Mitarbeiteraufgabe gehört zur verifizierten Kindinstanz. Persistente neue Grundlage bereitstellen; keine Kopie alter Statusvariablen in die Kindinstanz und keine neue Aufgabe nur durch Nachrichteneingang.
 Unmittelbar vor Wirkung aktuelle Aufgabe prüfen. Bei inzwischen erledigter Aufgabe nur aktuellen Kontext verwenden, keine Reaktivierung; KOM-03 Worker-Regeln.</bpmn:documentation>
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="propertyflow.conversation.context" />
       </bpmn:extensionElements>
-      <bpmn:incoming>N05</bpmn:incoming>
-      <bpmn:outgoing>N08</bpmn:outgoing>
+      <bpmn:categoryValueRef>Fallkontext_vorbereiten_CATEGORY_VALUE</bpmn:categoryValueRef>
+      <bpmn:incoming>Aktuelle_Bearbeitung_XOR_Mitarbeiterpruefung_zu_Laufende_Mitarbeiterpruefung_ergaenzen_SERVICE_FLOW</bpmn:incoming>
+      <bpmn:outgoing>Laufende_Mitarbeiterpruefung_ergaenzen_zu_Weiter_auswerten_XOR_FLOW</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:serviceTask id="NWake" name="Kontakt versionsgebunden&#10;vor KI bereitstellen">
+    <bpmn:serviceTask id="Kontakt_zur_Wiedervorlage_bereitstellen_SERVICE" name="Kontakt zur Wiedervorlage&#10;bereitstellen">
       <bpmn:documentation>Vor jedem LLM-Aufruf den neuen Kontakt mit der betroffenen Wiedervorlage-Version ausdrücklich im zuständigen Bereich der aktuellen Mitarbeiterinstanz bereitstellen. Das unterbrechende bedingte Randereignis an FollowUp hebt den Wartevorgang auf und führt sofort zur Mitarbeiterprüfung. Ändert ein Mitarbeiter inzwischen bewusst den Termin, darf ein verspäteter Kontaktmarker keine neue Wiedervorlage aufheben. Eingang, Wiedervorlage-Version und Verbrauch müssen dauerhaft nachvollziehbar sein; keine unversionierte Reset-Flag.
 Dateiaufteilung: Der Kontaktmarker muss ausdrücklich in der aktuellen Mitarbeiter-Kindinstanz ankommen, die den Call FollowUp und sein Randereignis besitzt. Vor dem LLM-Aufruf. Versionen und aktueller Aufruf werden serverseitig geprüft; nur im Hauptprozess gespeicherte Marker wecken das Kind nicht.
 FALL-11 Zeile 5 / FALL-AK-27: Nachricht an die bei Speicherung betroffene Wiedervorlage-Version und den geprüften Aufruf binden. Alten Kontakt nicht auf neuen Termin umdeuten. Vor unterbrechender Zustellung gegen Terminänderung und Abschluss koordinieren; nur aktuelle Mitarbeiterinstanz adressieren. Timer/Kontakt teilen dieselbe logische Erledigung; keine zweite Aufgabe. Erst danach LLM auswerten. Technische Synchronisierung noch offen.</bpmn:documentation>
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="propertyflow.conversation.context" />
       </bpmn:extensionElements>
-      <bpmn:incoming>N06</bpmn:incoming>
-      <bpmn:outgoing>N09</bpmn:outgoing>
+      <bpmn:categoryValueRef>Fallkontext_vorbereiten_CATEGORY_VALUE</bpmn:categoryValueRef>
+      <bpmn:incoming>Aktuelle_Bearbeitung_XOR_Wiedervorlage_zu_Kontakt_zur_Wiedervorlage_bereitstellen_FLOW</bpmn:incoming>
+      <bpmn:outgoing>Kontakt_zur_Wiedervorlage_zu_Weiter_auswerten_XOR_FLOW</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:serviceTask id="NRefresh" name="Neuen Eingang für laufende&#10;Bearbeitung vormerken">
+    <bpmn:serviceTask id="Neuen_Eingang_vormerken_SERVICE" name="Neuen Eingang vormerken">
       <bpmn:documentation>Auch während Analyse, Mitarbeiterbearbeitung oder zwischen zwei Schritten wird angenommen. Den neuen Fallstand im laufenden Prozess berücksichtigen; eine bereits berechnete Empfehlung ist vor Wirkung gegen diesen Stand zu prüfen. Der Nebenpfad entscheidet keinen Statuswechsel eigenmächtig.</bpmn:documentation>
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="propertyflow.conversation.context" />
       </bpmn:extensionElements>
-      <bpmn:incoming>N07</bpmn:incoming>
-      <bpmn:outgoing>N10</bpmn:outgoing>
+      <bpmn:categoryValueRef>Fallkontext_vorbereiten_CATEGORY_VALUE</bpmn:categoryValueRef>
+      <bpmn:incoming>Aktuelle_Bearbeitung_XOR_Sonstige_aktive_Phase_zu_Neuen_Eingang_vormerken_SERVICE_FLOW</bpmn:incoming>
+      <bpmn:outgoing>Neuen_Eingang_vormerken_zu_Weiter_auswerten_XOR_FLOW</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:exclusiveGateway id="NJoin" name="Weiter auswerten">
-      <bpmn:incoming>N08</bpmn:incoming>
-      <bpmn:incoming>N09</bpmn:incoming>
-      <bpmn:incoming>N10</bpmn:incoming>
-      <bpmn:outgoing>N11</bpmn:outgoing>
+    <bpmn:exclusiveGateway id="Weiter_auswerten_XOR" name="Weiter auswerten">
+      <bpmn:categoryValueRef>Fallkontext_vorbereiten_CATEGORY_VALUE</bpmn:categoryValueRef>
+      <bpmn:incoming>Laufende_Mitarbeiterpruefung_ergaenzen_zu_Weiter_auswerten_XOR_FLOW</bpmn:incoming>
+      <bpmn:incoming>Kontakt_zur_Wiedervorlage_zu_Weiter_auswerten_XOR_FLOW</bpmn:incoming>
+      <bpmn:incoming>Neuen_Eingang_vormerken_zu_Weiter_auswerten_XOR_FLOW</bpmn:incoming>
+      <bpmn:outgoing>Weiter_auswerten_XOR_zu_Mieternachricht_mit_LLM_auswerten_FLOW</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:serviceTask id="NAnalyze" name="Antwortbedarf und&#10;Dringlichkeit neu bewerten">
-      <bpmn:documentation>KOM-03 / DRING-05/06: jede offene Frage einzeln gegen den aktuellen Nachrichtenstand prüfen. Teilantworten lassen andere Fragen offen. Nachricht ohne offene Rückfrage ebenfalls auswerten. Manuelle Dringlichkeit nicht überschreiben. Modellaufruf über Port; Datenschutz und nachvollziehbare Herkunft beachten. Fachlicher Analysefehler meldet TRIAGE_ANALYSIS_FAILED; kein stiller Erfolgsdefault.</bpmn:documentation>
+    <bpmn:callActivity id="Gespraech_auswerten_Mieternachricht_CALL" name="Gespraech auswerten">
+      <bpmn:documentation>KOM-03 / DRING-05/06: Die gemeinsame Auswertung berücksichtigt alle relevanten Nachrichten und den offenen Antwortbedarf. Teilantworten lassen weitere Fragen offen, und manuelle Dringlichkeit hat Vorrang. Anschliessend prüft der Nachrichtenprozess die Auswertung und ihre Verwendung.</bpmn:documentation>
       <bpmn:extensionElements>
-        <zeebe:taskDefinition type="propertyflow.conversation.evaluate" />
+        <zeebe:calledElement processId="Gespraech_auswerten_PROCESS" propagateAllChildVariables="false" propagateAllParentVariables="false" bindingType="deployment" />
+        <zeebe:ioMapping>
+          <zeebe:input source="= caseId" target="caseId" />
+          <zeebe:input source="= leadingProcessInstanceKey" target="leadingProcessInstanceKey" />
+          <zeebe:input source="= tenantMessageId" target="tenantMessageId" />
+          <zeebe:output source="= evaluationRef" target="evaluationRef" />
+          <zeebe:output source="= evaluationCurrent" target="evaluationCurrent" />
+        </zeebe:ioMapping>
       </bpmn:extensionElements>
-      <bpmn:incoming>N11</bpmn:incoming>
-      <bpmn:outgoing>N12</bpmn:outgoing>
-    </bpmn:serviceTask>
-    <bpmn:serviceTask id="NRecommend" name="Vorgehen neu empfehlen&#10;LLM + Fachkontext">
+      <bpmn:categoryValueRef>LLM_Auswertung_und_Fehlerpfad_CATEGORY_VALUE</bpmn:categoryValueRef>
+      <bpmn:incoming>Weiter_auswerten_XOR_zu_Mieternachricht_mit_LLM_auswerten_FLOW</bpmn:incoming>
+      <bpmn:outgoing>Mieternachricht_mit_LLM_zu_Nachrichtenauswertung_pruefen_SERVICE_FLOW</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:serviceTask id="Nachrichtenauswertung_pruefen_SERVICE" name="Nachrichtenauswertung pruefen">
       <bpmn:documentation>UC-018/021: Empfehlung aus aktuellem freigegebenem Fallkontext, auch als Ergänzung der Mitarbeiterprüfung. Keine internen Memos oder Ableitungen daraus ans Kommunikations-LLM. Katalogregeln KOM-05 beachten. Eine Empfehlung ist keine Ausführungsfreigabe. Fehlgeschlagene oder ungültige Analyse meldet TRIAGE_ANALYSIS_FAILED. Für einen vorgeschlagenen Systemabschluss genau einen der bestätigten FALL-07-Gründe mit Belegstellen zur vollständigen Behebung beziehungsweise mit Regelkennung und -version für den gesamten Sachverhalt begründen. Keine unbekannten Tatsachen oder Zuständigkeitsregeln ergänzen. Fehlende Belege und Widersprüche offen ausweisen. Der Vorschlag erteilt keine dauerhafte Abschluss- oder Veröffentlichungsfreigabe; diese werden separat am aktuellen Stand geprüft.
  Die Empfehlung enthält noch keinen zu versendenden Text; AutoAnswer erzeugt später die individuelle LLM-Nachricht und prüft sie im Worker. Empfehlung ist keine Ausführungsfreigabe; Kontextgrenze KOM-02 bleibt verbindlich.
 KOM-06: Dieser Task empfiehlt das Vorgehen. Bei zulässigem Systemabschluss erzeugt AutoAnswer später die individuelle Nachricht und prüft ihren Inhalt im selben Worker. Kein fester Vorlagenkatalog und kein Mitarbeiter-UI-Entwurf.</bpmn:documentation>
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="propertyflow.conversation.recommendation" />
       </bpmn:extensionElements>
-      <bpmn:incoming>N12</bpmn:incoming>
-      <bpmn:outgoing>N13</bpmn:outgoing>
+      <bpmn:categoryValueRef>LLM_Auswertung_und_Fehlerpfad_CATEGORY_VALUE</bpmn:categoryValueRef>
+      <bpmn:incoming>Mieternachricht_mit_LLM_zu_Nachrichtenauswertung_pruefen_SERVICE_FLOW</bpmn:incoming>
+      <bpmn:outgoing>Nachrichtenauswertung_pruefen_SERVICE_zu_Mieternachricht_verarbeiten_zusammenfuehren_XOR_FLOW</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:boundaryEvent id="NAnalysisFailure" name="Analysefehler" attachedToRef="NAnalyze">
-      <bpmn:outgoing>N15</bpmn:outgoing>
-      <bpmn:errorEventDefinition id="NAnalysisFailure_definition" errorRef="Error_TriageFailure" />
+    <bpmn:boundaryEvent id="Analysefehler_Mieternachricht_mit_LLM_auswerten_BOUNDARY" name="Analysefehler" attachedToRef="Gespraech_auswerten_Mieternachricht_CALL">
+      <bpmn:categoryValueRef>LLM_Auswertung_und_Fehlerpfad_CATEGORY_VALUE</bpmn:categoryValueRef>
+      <bpmn:outgoing>Analysefehler_Mieternachricht_mit_zu_Analysefehler_festhalten_zusammenfuehren_XOR_FLOW</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="Analysefehler_Mieternachricht_mit_LLM_auswerten_BOUNDARY_ERROR_DEF" errorRef="KI_Analyse_fehlgeschlagen_ERROR" />
     </bpmn:boundaryEvent>
-    <bpmn:boundaryEvent id="NRecommendationFailure" name="Analysefehler" attachedToRef="NRecommend">
-      <bpmn:outgoing>N16</bpmn:outgoing>
-      <bpmn:errorEventDefinition id="NRecommendationFailure_definition" errorRef="Error_TriageFailure" />
+    <bpmn:boundaryEvent id="Analysefehler_Nachrichtenauswertung_pruefen_BOUNDARY" name="Analysefehler" attachedToRef="Nachrichtenauswertung_pruefen_SERVICE">
+      <bpmn:categoryValueRef>LLM_Auswertung_und_Fehlerpfad_CATEGORY_VALUE</bpmn:categoryValueRef>
+      <bpmn:outgoing>Analysefehler_Nachrichtenauswertung_pruefen_zu_Analysefehler_festhalten_zusammenfuehren_XOR_FLOW</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="Analysefehler_Nachrichtenauswertung_pruefen_BOUNDARY_ERROR_DEF" errorRef="KI_Analyse_fehlgeschlagen_ERROR" />
     </bpmn:boundaryEvent>
-    <bpmn:exclusiveGateway id="Merge_NFailure" gatewayDirection="Converging">
-      <bpmn:incoming>N15</bpmn:incoming>
-      <bpmn:incoming>N16</bpmn:incoming>
-      <bpmn:outgoing>Flow_Merge_NFailure</bpmn:outgoing>
+    <bpmn:exclusiveGateway id="Analysefehler_festhalten_zusammenfuehren_XOR" gatewayDirection="Converging">
+      <bpmn:categoryValueRef>LLM_Auswertung_und_Fehlerpfad_CATEGORY_VALUE</bpmn:categoryValueRef>
+      <bpmn:incoming>Analysefehler_Mieternachricht_mit_zu_Analysefehler_festhalten_zusammenfuehren_XOR_FLOW</bpmn:incoming>
+      <bpmn:incoming>Analysefehler_Nachrichtenauswertung_pruefen_zu_Analysefehler_festhalten_zusammenfuehren_XOR_FLOW</bpmn:incoming>
+      <bpmn:outgoing>Analysefehler_festhalten_zusammenfuehren_zu_Analysefehler_festhalten_SERVICE_FLOW</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:serviceTask id="NFailure" name="Analysefehler als&#10;Prüfbedarf festhalten">
+    <bpmn:serviceTask id="Analysefehler_festhalten_SERVICE" name="Analysefehler festhalten">
       <bpmn:documentation>FALL-12: Auch ein neuer Analysefehler während externer Wartephase muss als aktueller Prüfbedarf ausdrücklich zur Mitarbeiterinstanz übertragen werden (SExternalReview); nicht auf NApply warten. FALL-05: vorhandene Einstufung erhalten, keine erfundene Dringlichkeit. Fehlerergebnis für die aktuelle Bearbeitung bereitstellen; keine erneute LLM-Empfehlung in diesem Durchlauf. Bestehende Mitarbeiterprüfung ergänzen statt neue Aufgabe erzeugen. Ausführbare Koordination zum jeweils aktiven Hauptpfad noch zu konkretisieren.</bpmn:documentation>
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="propertyflow.conversation.context" />
       </bpmn:extensionElements>
-      <bpmn:incoming>Flow_Merge_NFailure</bpmn:incoming>
-      <bpmn:outgoing>N17</bpmn:outgoing>
+      <bpmn:categoryValueRef>LLM_Auswertung_und_Fehlerpfad_CATEGORY_VALUE</bpmn:categoryValueRef>
+      <bpmn:incoming>Analysefehler_festhalten_zusammenfuehren_zu_Analysefehler_festhalten_SERVICE_FLOW</bpmn:incoming>
+      <bpmn:outgoing>Analysefehler_festhalten_SERVICE_zu_Mieternachricht_verarbeiten_zusammenfuehren_XOR_FLOW</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:sequenceFlow id="Flow_Merge_NFailure" sourceRef="Merge_NFailure" targetRef="NFailure" />
-    <bpmn:exclusiveGateway id="Merge_NApply" gatewayDirection="Converging">
-      <bpmn:incoming>N13</bpmn:incoming>
-      <bpmn:incoming>N17</bpmn:incoming>
-      <bpmn:outgoing>Flow_Merge_NApply</bpmn:outgoing>
+    <bpmn:sequenceFlow id="Analysefehler_festhalten_zusammenfuehren_zu_Analysefehler_festhalten_SERVICE_FLOW" sourceRef="Analysefehler_festhalten_zusammenfuehren_XOR" targetRef="Analysefehler_festhalten_SERVICE">
+      <bpmn:categoryValueRef>LLM_Auswertung_und_Fehlerpfad_CATEGORY_VALUE</bpmn:categoryValueRef>
+    </bpmn:sequenceFlow>
+    <bpmn:exclusiveGateway id="Mieternachricht_verarbeiten_zusammenfuehren_XOR" gatewayDirection="Converging">
+      <bpmn:categoryValueRef>LLM_Auswertung_und_Fehlerpfad_CATEGORY_VALUE</bpmn:categoryValueRef>
+      <bpmn:incoming>Nachrichtenauswertung_pruefen_SERVICE_zu_Mieternachricht_verarbeiten_zusammenfuehren_XOR_FLOW</bpmn:incoming>
+      <bpmn:incoming>Analysefehler_festhalten_SERVICE_zu_Mieternachricht_verarbeiten_zusammenfuehren_XOR_FLOW</bpmn:incoming>
+      <bpmn:outgoing>Mieternachricht_verarbeiten_zusammenfuehren_zu_Aktuelle_Auswertung_bereitstellen_zusammenfuehren_FLOW</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:serviceTask id="NApply" name="Aktuelle Auswertung&#10;geschützt bereitstellen">
+    <bpmn:serviceTask id="Aktuelle_Auswertung_bereitstellen_SERVICE" name="Aktuelle Auswertung bereitstellen">
       <bpmn:documentation>BEN-03 / 0.23: Bei tatsächlicher benachrichtigungspflichtiger Änderung Ereignis und Mailpflicht dauerhaft zusammen sichern. Der dauerhafte Starter startet fallbenachrichtigung-versenden.bpmn mit mailOrderRef; dort beauftragen Camunda-Send-Tasks den Mail-Worker. Hier kein direkter SMTP-Aufruf und kein Warten auf SMTP. Unveränderte Werte und identische Wiederholungen erzeugen keine neue Mailpflicht. FALL-12: Während externer Wartephase normale Nachrichtenauswertung ohne automatisches Beenden der Wartephase. Neuen zwingenden Prüfbedarf mit Referenz zur aktuellen Wartephase serverseitig feststellen und der aktuellen Mitarbeiterinstanz für SExternalReview ausdrücklich bereitstellen. Kein zweiter öffentlicher Nachrichtenempfang; alte Marker nicht auf neue Wartephase übertragen. Vor Speicherung Fallversion, Nachrichtensatz, Prozess, Aufgabenstand und manuelle Dringlichkeit erneut prüfen. Aktuelle Auswertung bzw. Fehlerergebnis dauerhaft speichern; überholte Ergebnisse verwerfen oder mit neuem Stand neu bewerten. Mitarbeiterprüfung erforderlich bleibt geschützt, auch wenn die Auswertung alles erledigt empfiehlt. Versionierten Bereitschaftsstand für den Hauptpfad im ActiveCase-Bereich bereitstellen und an die aktuelle Antwort-Kindinstanz ausdrücklich nachliefern; eine lokale Variable im Ereignispfad genügt nicht. Eine bereits vor Beginn des Antwortwartens fertige Auswertung bleibt konsumierbar. Idempotente Wiederholung repariert gegebenenfalls die Bereitstellung, erzeugt aber keine zweite fachliche Wirkung. Genaue Variablen, atomare Aktualisierung und Reaktionswege vor Ausführung festlegen. Eine hier gespeicherte Empfehlung für einen Systemabschluss ist nur Entscheidungsgrundlage. Sie umgeht weder die beiden zulässigen Status noch die Grund- und Belegprüfung in Validate/RValidate und Close. Während Mitarbeiterprüfung bleibt der Statusschutz erhalten. Neue Nachrichten müssen in den geprüften Stand eingehen; ein älteres Ergebnis darf diesen Stand nicht als aktuell markieren.
 Dateiaufteilung: Ergebnis in PropertyFlow dauerhaft sichern und die aktuelle Antwort-Kindinstanz gezielt mit versionierter Bereitschaft versorgen. Mitarbeiteraufgaben lesen den aktuellen Fallstand. Nachlieferung und Registrierung ohne Lücke, keine ungültige alte Kindinstanz überschreiben. Kein automatischer Variablendurchgriff über Call Activities.
-KOM-03 Zeile 4: Bei noch nicht wirksam gespeicherter veralteter Grundlage ausdrücklich TENANT_EVALUATION_STALE melden; keine fachliche Änderung oder Bereitschaftsmeldung mit altem Ergebnis. Rückweg NCurrentEvaluation und erneute Prüfung. Technischer Fehler bleibt Retry, bereits erfolgreicher identischer Auftrag bleibt idempotent.</bpmn:documentation>
+KOM-03 Zeile 4: Bei noch nicht wirksam gespeicherter veralteter Grundlage ausdrücklich TENANT_EVALUATION_STALE melden; keine fachliche Änderung oder Bereitschaftsmeldung mit altem Ergebnis. Rückweg zu «Gespraech auswerten» und erneute Prüfung. Technischer Fehler bleibt Retry, bereits erfolgreicher identischer Auftrag bleibt idempotent.</bpmn:documentation>
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="propertyflow.conversation.apply" />
       </bpmn:extensionElements>
-      <bpmn:incoming>Flow_0t8mepo</bpmn:incoming>
-      <bpmn:outgoing>N14</bpmn:outgoing>
+      <bpmn:categoryValueRef>Aktuelles_Ergebnis_bereitstellen_CATEGORY_VALUE</bpmn:categoryValueRef>
+      <bpmn:incoming>Aktuelle_Auswertung_bereitstellen_zu_Aktuelle_Auswertung_bereitstellen_SERVICE_FLOW</bpmn:incoming>
+      <bpmn:outgoing>Aktuelle_Auswertung_bereitstellen_zu_Eingang_verarbeitet_Hauptpfad_laeuft_FLOW</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:sequenceFlow id="Flow_Merge_NApply" sourceRef="Merge_NApply" targetRef="Gateway_16yi5cc" />
-    <bpmn:endEvent id="NEnd" name="Eingang verarbeitet;&#10;Hauptpfad läuft weiter">
-      <bpmn:incoming>N14</bpmn:incoming>
+    <bpmn:sequenceFlow id="Mieternachricht_verarbeiten_zusammenfuehren_zu_Aktuelle_Auswertung_bereitstellen_zusammenfuehren_FLOW" sourceRef="Mieternachricht_verarbeiten_zusammenfuehren_XOR" targetRef="Aktuelle_Auswertung_bereitstellen_zusammenfuehren_XOR" />
+    <bpmn:endEvent id="Eingang_verarbeitet_Hauptpfad_laeuft_weiter_END" name="Eingang verarbeitet;&#10;Hauptpfad laeuft weiter">
+      <bpmn:incoming>Aktuelle_Auswertung_bereitstellen_zu_Eingang_verarbeitet_Hauptpfad_laeuft_FLOW</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="N01" sourceRef="NProcessingStart" targetRef="NIdentify" />
-    <bpmn:sequenceFlow id="N02" sourceRef="NIdentify" targetRef="NAccept" />
-    <bpmn:sequenceFlow id="N03" name="Bereits verarbeitet / nicht mehr zulässig" sourceRef="NAccept" targetRef="NNoOpEnd" />
-    <bpmn:sequenceFlow id="N04" name="Ja" sourceRef="NAccept" targetRef="NState">
+    <bpmn:sequenceFlow id="Nachrichtenverarbeitung_aufgerufen_START_zu_Nachricht_und_Fallstand_pruefen_FLOW" sourceRef="Nachrichtenverarbeitung_aufgerufen_START" targetRef="Nachricht_und_Fallstand_pruefen_SERVICE" />
+    <bpmn:sequenceFlow id="Nachricht_und_Fallstand_zu_Neu_zu_verarbeiten_XOR_FLOW" sourceRef="Nachricht_und_Fallstand_pruefen_SERVICE" targetRef="Neu_zu_verarbeiten_XOR" />
+    <bpmn:sequenceFlow id="Neu_zu_verarbeiten_Bereits_verarbeitet_nicht_mehr_zulaessig_zu_Keine_neue_Wirkung_Mieternachricht_FLOW" name="Bereits verarbeitet / nicht mehr zulaessig" sourceRef="Neu_zu_verarbeiten_XOR" targetRef="Keine_neue_Wirkung_zusammenfuehren_XOR" />
+    <bpmn:sequenceFlow id="Neu_zu_verarbeiten_Ja_zu_Aktuelle_Bearbeitung_XOR_FLOW" name="Ja" sourceRef="Neu_zu_verarbeiten_XOR" targetRef="Aktuelle_Bearbeitung_XOR">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= tenantMessageAccepted = true</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="N05" name="Mitarbeiterprüfung" sourceRef="NState" targetRef="NKeepReview">
+    <bpmn:sequenceFlow id="Aktuelle_Bearbeitung_XOR_Mitarbeiterpruefung_zu_Laufende_Mitarbeiterpruefung_ergaenzen_SERVICE_FLOW" name="Mitarbeiterpruefung" sourceRef="Aktuelle_Bearbeitung_XOR" targetRef="Laufende_Mitarbeiterpruefung_ergaenzen_SERVICE">
+      <bpmn:categoryValueRef>Fallkontext_vorbereiten_CATEGORY_VALUE</bpmn:categoryValueRef>
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= casePhase = "STAFF_REVIEW_REQUIRED"</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="N06" name="Wiedervorlage" sourceRef="NState" targetRef="NWake">
+    <bpmn:sequenceFlow id="Aktuelle_Bearbeitung_XOR_Wiedervorlage_zu_Kontakt_zur_Wiedervorlage_bereitstellen_FLOW" name="Wiedervorlage" sourceRef="Aktuelle_Bearbeitung_XOR" targetRef="Kontakt_zur_Wiedervorlage_bereitstellen_SERVICE">
+      <bpmn:categoryValueRef>Fallkontext_vorbereiten_CATEGORY_VALUE</bpmn:categoryValueRef>
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= casePhase = "WAITING_FOR_FOLLOW_UP"</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="N07" name="Sonstige aktive Phase" sourceRef="NState" targetRef="NRefresh" />
-    <bpmn:sequenceFlow id="N08" sourceRef="NKeepReview" targetRef="NJoin" />
-    <bpmn:sequenceFlow id="N09" sourceRef="NWake" targetRef="NJoin" />
-    <bpmn:sequenceFlow id="N10" sourceRef="NRefresh" targetRef="NJoin" />
-    <bpmn:sequenceFlow id="N11" sourceRef="NJoin" targetRef="NAnalyze" />
-    <bpmn:sequenceFlow id="N12" sourceRef="NAnalyze" targetRef="NRecommend" />
-    <bpmn:sequenceFlow id="N13" sourceRef="NRecommend" targetRef="Merge_NApply" />
-    <bpmn:sequenceFlow id="N14" sourceRef="NApply" targetRef="NEnd" />
-    <bpmn:sequenceFlow id="N15" sourceRef="NAnalysisFailure" targetRef="Merge_NFailure" />
-    <bpmn:sequenceFlow id="N16" sourceRef="NRecommendationFailure" targetRef="Merge_NFailure" />
-    <bpmn:sequenceFlow id="N17" sourceRef="NFailure" targetRef="Merge_NApply" />
-    <bpmn:boundaryEvent id="NApplyStale" name="Auswertung veraltet" attachedToRef="NApply">
-      <bpmn:outgoing>N_Stale_Current</bpmn:outgoing>
-      <bpmn:errorEventDefinition id="NApplyStale_definition" errorRef="Error_TenantEvaluationStale" />
+    <bpmn:sequenceFlow id="Aktuelle_Bearbeitung_XOR_Sonstige_aktive_Phase_zu_Neuen_Eingang_vormerken_SERVICE_FLOW" name="Sonstige aktive Phase" sourceRef="Aktuelle_Bearbeitung_XOR" targetRef="Neuen_Eingang_vormerken_SERVICE">
+      <bpmn:categoryValueRef>Fallkontext_vorbereiten_CATEGORY_VALUE</bpmn:categoryValueRef>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Laufende_Mitarbeiterpruefung_ergaenzen_zu_Weiter_auswerten_XOR_FLOW" sourceRef="Laufende_Mitarbeiterpruefung_ergaenzen_SERVICE" targetRef="Weiter_auswerten_XOR">
+      <bpmn:categoryValueRef>Fallkontext_vorbereiten_CATEGORY_VALUE</bpmn:categoryValueRef>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Kontakt_zur_Wiedervorlage_zu_Weiter_auswerten_XOR_FLOW" sourceRef="Kontakt_zur_Wiedervorlage_bereitstellen_SERVICE" targetRef="Weiter_auswerten_XOR">
+      <bpmn:categoryValueRef>Fallkontext_vorbereiten_CATEGORY_VALUE</bpmn:categoryValueRef>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Neuen_Eingang_vormerken_zu_Weiter_auswerten_XOR_FLOW" sourceRef="Neuen_Eingang_vormerken_SERVICE" targetRef="Weiter_auswerten_XOR">
+      <bpmn:categoryValueRef>Fallkontext_vorbereiten_CATEGORY_VALUE</bpmn:categoryValueRef>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Weiter_auswerten_XOR_zu_Mieternachricht_mit_LLM_auswerten_FLOW" sourceRef="Weiter_auswerten_XOR" targetRef="Gespraech_auswerten_Mieternachricht_CALL" />
+    <bpmn:sequenceFlow id="Mieternachricht_mit_LLM_zu_Nachrichtenauswertung_pruefen_SERVICE_FLOW" sourceRef="Gespraech_auswerten_Mieternachricht_CALL" targetRef="Nachrichtenauswertung_pruefen_SERVICE">
+      <bpmn:categoryValueRef>LLM_Auswertung_und_Fehlerpfad_CATEGORY_VALUE</bpmn:categoryValueRef>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Nachrichtenauswertung_pruefen_SERVICE_zu_Mieternachricht_verarbeiten_zusammenfuehren_XOR_FLOW" sourceRef="Nachrichtenauswertung_pruefen_SERVICE" targetRef="Mieternachricht_verarbeiten_zusammenfuehren_XOR">
+      <bpmn:categoryValueRef>LLM_Auswertung_und_Fehlerpfad_CATEGORY_VALUE</bpmn:categoryValueRef>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Aktuelle_Auswertung_bereitstellen_zu_Eingang_verarbeitet_Hauptpfad_laeuft_FLOW" sourceRef="Aktuelle_Auswertung_bereitstellen_SERVICE" targetRef="Eingang_verarbeitet_Hauptpfad_laeuft_weiter_END" />
+    <bpmn:sequenceFlow id="Analysefehler_Mieternachricht_mit_zu_Analysefehler_festhalten_zusammenfuehren_XOR_FLOW" sourceRef="Analysefehler_Mieternachricht_mit_LLM_auswerten_BOUNDARY" targetRef="Analysefehler_festhalten_zusammenfuehren_XOR">
+      <bpmn:categoryValueRef>LLM_Auswertung_und_Fehlerpfad_CATEGORY_VALUE</bpmn:categoryValueRef>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Analysefehler_Nachrichtenauswertung_pruefen_zu_Analysefehler_festhalten_zusammenfuehren_XOR_FLOW" sourceRef="Analysefehler_Nachrichtenauswertung_pruefen_BOUNDARY" targetRef="Analysefehler_festhalten_zusammenfuehren_XOR">
+      <bpmn:categoryValueRef>LLM_Auswertung_und_Fehlerpfad_CATEGORY_VALUE</bpmn:categoryValueRef>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Analysefehler_festhalten_SERVICE_zu_Mieternachricht_verarbeiten_zusammenfuehren_XOR_FLOW" sourceRef="Analysefehler_festhalten_SERVICE" targetRef="Mieternachricht_verarbeiten_zusammenfuehren_XOR">
+      <bpmn:categoryValueRef>LLM_Auswertung_und_Fehlerpfad_CATEGORY_VALUE</bpmn:categoryValueRef>
+    </bpmn:sequenceFlow>
+    <bpmn:boundaryEvent id="Auswertung_veraltet_BOUNDARY" name="Auswertung veraltet" attachedToRef="Aktuelle_Auswertung_bereitstellen_SERVICE">
+      <bpmn:categoryValueRef>Aktuelles_Ergebnis_bereitstellen_CATEGORY_VALUE</bpmn:categoryValueRef>
+      <bpmn:outgoing>Auswertung_veraltet_BOUNDARY_zu_Nachrichtenauswertung_aktualisieren_SERVICE_FLOW</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="Auswertung_veraltet_BOUNDARY_ERROR_DEF" errorRef="Nachrichtenauswertung_veraltet_ERROR" />
     </bpmn:boundaryEvent>
-    <bpmn:serviceTask id="NCurrentEvaluation" name="Aktuelle Grundlage&#10;übernehmen / abwarten">
-      <bpmn:documentation>KOM-03 Zeile 4 / KOM-AK-25: Zuerst aktuellen Fall, Bearbeitungszyklus und führende Instanz prüfen. Abgeschlossen, alter Aufruf oder bereits wirksam verarbeitet: keine neue Wirkung. Sonst aktuelle zentrale Auswertung übernehmen, laufende abwarten oder fehlende zentral veranlassen; keine doppelte Analyse und kein Warten auf eigenes verworfenes Ergebnis. NKeepReview/NWake nicht erneut ausführen. Keine Rücknahme neuer Mitarbeiterentscheidung. Anschliessend NApply erneut prüfen lassen. Warteverfahren und Ergebnisrouting noch nicht implementiert.</bpmn:documentation>
+    <bpmn:callActivity id="Gespraech_auswerten_Aktualisierung_CALL" name="Gespraech auswerten">
+      <bpmn:documentation>KOM-03 Zeile 4 / KOM-AK-25: Die gemeinsame Auswertung übernimmt ein aktuelles Ergebnis oder erneuert es. Veraltete und bereits erledigte Aufträge haben keine neue Wirkung. Anschliessend wird geprüft, ob das Ergebnis noch anzuwenden ist.</bpmn:documentation>
       <bpmn:extensionElements>
-        <zeebe:taskDefinition type="propertyflow.conversation.evaluate" />
+        <zeebe:calledElement processId="Gespraech_auswerten_PROCESS" propagateAllChildVariables="false" propagateAllParentVariables="false" bindingType="deployment" />
+        <zeebe:ioMapping>
+          <zeebe:input source="= caseId" target="caseId" />
+          <zeebe:input source="= leadingProcessInstanceKey" target="leadingProcessInstanceKey" />
+          <zeebe:input source="= tenantMessageId" target="tenantMessageId" />
+          <zeebe:output source="= evaluationRef" target="evaluationRef" />
+          <zeebe:output source="= evaluationCurrent" target="evaluationCurrent" />
+        </zeebe:ioMapping>
       </bpmn:extensionElements>
-      <bpmn:incoming>N_Stale_Current</bpmn:incoming>
-      <bpmn:outgoing>N_Current_Route</bpmn:outgoing>
-    </bpmn:serviceTask>
-    <bpmn:exclusiveGateway id="NCurrentRoute" name="Noch anzuwenden?">
-      <bpmn:incoming>N_Current_Route</bpmn:incoming>
-      <bpmn:outgoing>N_Current_Apply</bpmn:outgoing>
-      <bpmn:outgoing>N_Current_End</bpmn:outgoing>
+      <bpmn:categoryValueRef>Aktuelles_Ergebnis_bereitstellen_CATEGORY_VALUE</bpmn:categoryValueRef>
+      <bpmn:incoming>Auswertung_veraltet_BOUNDARY_zu_Nachrichtenauswertung_aktualisieren_SERVICE_FLOW</bpmn:incoming>
+      <bpmn:outgoing>Nachrichtenauswertung_aktualisieren_SERVICE_zu_Noch_anzuwenden_XOR_FLOW</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:exclusiveGateway id="Noch_anzuwenden_XOR" name="Noch anzuwenden?">
+      <bpmn:categoryValueRef>Aktuelles_Ergebnis_bereitstellen_CATEGORY_VALUE</bpmn:categoryValueRef>
+      <bpmn:incoming>Nachrichtenauswertung_aktualisieren_SERVICE_zu_Noch_anzuwenden_XOR_FLOW</bpmn:incoming>
+      <bpmn:outgoing>Noch_anzuwenden_XOR_Aktuelle_Grundlage_zu_Aktuelle_Auswertung_bereitstellen_zusammenfuehren_FLOW</bpmn:outgoing>
+      <bpmn:outgoing>Noch_anzuwenden_XOR_Ueberholt_bereits_erledigt_zu_Keine_neue_Wirkung_Mieternachricht_FLOW</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:endEvent id="NObsoleteEnd" name="Keine neue Wirkung">
-      <bpmn:incoming>N_Current_End</bpmn:incoming>
-    </bpmn:endEvent>
-    <bpmn:sequenceFlow id="N_Stale_Current" sourceRef="NApplyStale" targetRef="NCurrentEvaluation" />
-    <bpmn:sequenceFlow id="N_Current_Route" sourceRef="NCurrentEvaluation" targetRef="NCurrentRoute" />
-    <bpmn:sequenceFlow id="N_Current_Apply" name="Aktuelle Grundlage" sourceRef="NCurrentRoute" targetRef="Gateway_16yi5cc">
+    <bpmn:sequenceFlow id="Auswertung_veraltet_BOUNDARY_zu_Nachrichtenauswertung_aktualisieren_SERVICE_FLOW" sourceRef="Auswertung_veraltet_BOUNDARY" targetRef="Gespraech_auswerten_Aktualisierung_CALL">
+      <bpmn:categoryValueRef>Aktuelles_Ergebnis_bereitstellen_CATEGORY_VALUE</bpmn:categoryValueRef>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Nachrichtenauswertung_aktualisieren_SERVICE_zu_Noch_anzuwenden_XOR_FLOW" sourceRef="Gespraech_auswerten_Aktualisierung_CALL" targetRef="Noch_anzuwenden_XOR">
+      <bpmn:categoryValueRef>Aktuelles_Ergebnis_bereitstellen_CATEGORY_VALUE</bpmn:categoryValueRef>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Noch_anzuwenden_XOR_Aktuelle_Grundlage_zu_Aktuelle_Auswertung_bereitstellen_zusammenfuehren_FLOW" name="Aktuelle Grundlage" sourceRef="Noch_anzuwenden_XOR" targetRef="Aktuelle_Auswertung_bereitstellen_zusammenfuehren_XOR">
+      <bpmn:categoryValueRef>Aktuelles_Ergebnis_bereitstellen_CATEGORY_VALUE</bpmn:categoryValueRef>
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= evaluationCurrent = true</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="N_Current_End" name="Überholt / bereits erledigt" sourceRef="NCurrentRoute" targetRef="NObsoleteEnd">
+    <bpmn:sequenceFlow id="Noch_anzuwenden_XOR_Ueberholt_bereits_erledigt_zu_Keine_neue_Wirkung_Mieternachricht_FLOW" name="Ueberholt / bereits erledigt" sourceRef="Noch_anzuwenden_XOR" targetRef="Keine_neue_Wirkung_zusammenfuehren_XOR">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= evaluationCurrent = false</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:exclusiveGateway id="Gateway_16yi5cc">
-      <bpmn:incoming>Flow_Merge_NApply</bpmn:incoming>
-      <bpmn:incoming>N_Current_Apply</bpmn:incoming>
-      <bpmn:outgoing>Flow_0t8mepo</bpmn:outgoing>
+    <bpmn:exclusiveGateway id="Aktuelle_Auswertung_bereitstellen_zusammenfuehren_XOR">
+      <bpmn:categoryValueRef>Aktuelles_Ergebnis_bereitstellen_CATEGORY_VALUE</bpmn:categoryValueRef>
+      <bpmn:incoming>Mieternachricht_verarbeiten_zusammenfuehren_zu_Aktuelle_Auswertung_bereitstellen_zusammenfuehren_FLOW</bpmn:incoming>
+      <bpmn:incoming>Noch_anzuwenden_XOR_Aktuelle_Grundlage_zu_Aktuelle_Auswertung_bereitstellen_zusammenfuehren_FLOW</bpmn:incoming>
+      <bpmn:outgoing>Aktuelle_Auswertung_bereitstellen_zu_Aktuelle_Auswertung_bereitstellen_SERVICE_FLOW</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:sequenceFlow id="Flow_0t8mepo" sourceRef="Gateway_16yi5cc" targetRef="NApply" />
-    <bpmn:textAnnotation id="NRule">
+    <bpmn:sequenceFlow id="Aktuelle_Auswertung_bereitstellen_zu_Aktuelle_Auswertung_bereitstellen_SERVICE_FLOW" sourceRef="Aktuelle_Auswertung_bereitstellen_zusammenfuehren_XOR" targetRef="Aktuelle_Auswertung_bereitstellen_SERVICE">
+      <bpmn:categoryValueRef>Aktuelles_Ergebnis_bereitstellen_CATEGORY_VALUE</bpmn:categoryValueRef>
+    </bpmn:sequenceFlow>
+    <bpmn:exclusiveGateway id="Keine_neue_Wirkung_zusammenfuehren_XOR" gatewayDirection="Converging">
+      <bpmn:incoming>Neu_zu_verarbeiten_Bereits_verarbeitet_nicht_mehr_zulaessig_zu_Keine_neue_Wirkung_Mieternachricht_FLOW</bpmn:incoming>
+      <bpmn:incoming>Noch_anzuwenden_XOR_Ueberholt_bereits_erledigt_zu_Keine_neue_Wirkung_Mieternachricht_FLOW</bpmn:incoming>
+      <bpmn:outgoing>Keine_neue_Wirkung_zusammenfuehren_zu_Keine_neue_Wirkung_FLOW</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Keine_neue_Wirkung_zusammenfuehren_zu_Keine_neue_Wirkung_FLOW" sourceRef="Keine_neue_Wirkung_zusammenfuehren_XOR" targetRef="Keine_neue_Wirkung_Mieternachricht_verarbeiten_END" />
+    <bpmn:group id="Fallkontext_vorbereiten_GROUP" categoryValueRef="Fallkontext_vorbereiten_CATEGORY_VALUE" />
+    <bpmn:group id="LLM_Auswertung_und_Fehlerpfad_GROUP" categoryValueRef="LLM_Auswertung_und_Fehlerpfad_CATEGORY_VALUE" />
+    <bpmn:group id="Aktuelles_Ergebnis_bereitstellen_GROUP" categoryValueRef="Aktuelles_Ergebnis_bereitstellen_CATEGORY_VALUE" />
+    <bpmn:textAnnotation id="Der_Prozess_gibt_nur_eine_NOTE">
+      <bpmn:text>Der Prozess gibt nur eine zum aktuellen Fall- und Nachrichtenstand passende Auswertung weiter. Ändert sich der Stand, prüft er erneut.</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:textAnnotation id="Ein_Eingang_pro_gespeicherter_Nachricht_NOTE">
       <bpmn:text>Ein Eingang pro gespeicherter Nachricht; keine zweite Fallprozessinstanz.
 Mitarbeiterprüfung: dieselbe Aufgabe bleibt offen, kein automatischer Abschluss.
 Wiedervorlage: Hauptpfad sofort wecken; KI-Auswertung läuft danach parallel.
 Doppelte oder überholte Ergebnisse ändern keine menschliche Entscheidung.</bpmn:text>
     </bpmn:textAnnotation>
-    <bpmn:textAnnotation id="NScope">
-      <bpmn:text>Entwurf, nicht ausführbar: lokale Eingangs-ID je Ereignispfad;
+    <bpmn:textAnnotation id="Lokale_Eingangs_ID_je_Ereignispfad_NOTE">
+      <bpmn:text>Lokale Eingangs-ID je Ereignispfad;
 Versionen im Hauptprozess; explizite Übergabe an zuständigen Kind-Scope.
 Hauptpfad prüft aktuelle Eingänge vor Veröffentlichung oder Abschluss.
 Ein normales Ende hier beendet nur diese Nachrichtenauswertung.
 Dateigrenze: aktuelle Kindinstanz gezielt aktualisieren; keine gemeinsamen Call-Variablen.</bpmn:text>
     </bpmn:textAnnotation>
   </bpmn:process>
-  <bpmndi:BPMNDiagram id="TenantMessage_diagram" name="07 · Mieternachricht verarbeiten">
-    <bpmndi:BPMNPlane id="TenantMessage_plane" bpmnElement="PropertyFlow_TenantMessage_Draft">
-      <bpmndi:BPMNShape id="NProcessingStart_di" bpmnElement="NProcessingStart" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
-        <dc:Bounds x="340" y="662" width="36" height="36" />
+  <bpmndi:BPMNDiagram id="Mieternachricht_verarbeiten_PROCESS_DIAGRAM" name="07 · Mieternachricht verarbeiten">
+    <bpmndi:BPMNPlane id="Mieternachricht_verarbeiten_PROCESS_PLANE" bpmnElement="Mieternachricht_verarbeiten_PROCESS">
+      <bpmndi:BPMNShape id="Nachrichtenverarbeitung_aufgerufen_START_SHAPE" bpmnElement="Nachrichtenverarbeitung_aufgerufen_START" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="270" y="662" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="148" y="710" width="176" height="14" />
+          <dc:Bounds x="152" y="733" width="176" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="NIdentify_di" bpmnElement="NIdentify" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
-        <dc:Bounds x="445" y="630" width="250" height="100" />
+      <bpmndi:BPMNShape id="Nachricht_und_Fallstand_pruefen_SERVICE_SHAPE" bpmnElement="Nachricht_und_Fallstand_pruefen_SERVICE" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="375" y="630" width="250" height="100" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="NAccept_di" bpmnElement="NAccept" isMarkerVisible="true" bioc:stroke="#334155" bioc:fill="#f1f5f9">
-        <dc:Bounds x="755" y="655" width="50" height="50" />
+      <bpmndi:BPMNShape id="Neu_zu_verarbeiten_XOR_SHAPE" bpmnElement="Neu_zu_verarbeiten_XOR" isMarkerVisible="true" bioc:stroke="#334155" bioc:fill="#f1f5f9">
+        <dc:Bounds x="685" y="655" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="804" y="717" width="100" height="14" />
+          <dc:Bounds x="660" y="623" width="100" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="NState_di" bpmnElement="NState" isMarkerVisible="true" bioc:stroke="#334155" bioc:fill="#f1f5f9">
-        <dc:Bounds x="895" y="655" width="50" height="50" />
+      <bpmndi:BPMNShape id="Aktuelle_Bearbeitung_XOR_SHAPE" bpmnElement="Aktuelle_Bearbeitung_XOR" isMarkerVisible="true" bioc:stroke="#334155" bioc:fill="#f1f5f9">
+        <dc:Bounds x="965" y="655" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="946" y="717" width="102" height="14" />
+          <dc:Bounds x="859" y="643" width="102" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="NKeepReview_di" bpmnElement="NKeepReview" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
-        <dc:Bounds x="1085" y="440" width="250" height="100" />
+      <bpmndi:BPMNShape id="Laufende_Mitarbeiterpruefung_ergaenzen_SERVICE_SHAPE" bpmnElement="Laufende_Mitarbeiterpruefung_ergaenzen_SERVICE" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="1155" y="440" width="250" height="100" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="NWake_di" bpmnElement="NWake" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
-        <dc:Bounds x="1085" y="630" width="250" height="100" />
+      <bpmndi:BPMNShape id="Kontakt_zur_Wiedervorlage_bereitstellen_SERVICE_SHAPE" bpmnElement="Kontakt_zur_Wiedervorlage_bereitstellen_SERVICE" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="1155" y="630" width="250" height="100" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="NRefresh_di" bpmnElement="NRefresh" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
-        <dc:Bounds x="1085" y="820" width="250" height="100" />
+      <bpmndi:BPMNShape id="Neuen_Eingang_vormerken_SERVICE_SHAPE" bpmnElement="Neuen_Eingang_vormerken_SERVICE" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="1155" y="820" width="250" height="100" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="NJoin_di" bpmnElement="NJoin" isMarkerVisible="true" bioc:stroke="#334155" bioc:fill="#f1f5f9">
-        <dc:Bounds x="1425" y="655" width="50" height="50" />
+      <bpmndi:BPMNShape id="Weiter_auswerten_XOR_SHAPE" bpmnElement="Weiter_auswerten_XOR" isMarkerVisible="true" bioc:stroke="#334155" bioc:fill="#f1f5f9">
+        <dc:Bounds x="1495" y="655" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1471" y="717" width="86" height="14" />
+          <dc:Bounds x="1541" y="717" width="86" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="NAnalyze_di" bpmnElement="NAnalyze" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
-        <dc:Bounds x="1575" y="630" width="250" height="100" />
+      <bpmndi:BPMNShape id="Nachrichtenauswertung_pruefen_SERVICE_SHAPE" bpmnElement="Nachrichtenauswertung_pruefen_SERVICE" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="2105" y="630" width="250" height="100" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="NRecommend_di" bpmnElement="NRecommend" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
-        <dc:Bounds x="1935" y="630" width="250" height="100" />
+      <bpmndi:BPMNShape id="Gespraech_auswerten_Mieternachricht_CALL_SHAPE" bpmnElement="Gespraech_auswerten_Mieternachricht_CALL" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
+        <dc:Bounds x="1765" y="630" width="250" height="100" />
+        <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Merge_NFailure_di" bpmnElement="Merge_NFailure" isMarkerVisible="true">
-        <dc:Bounds x="1963" y="845" width="50" height="50" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="NFailure_di" bpmnElement="NFailure" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
-        <dc:Bounds x="2074" y="820" width="250" height="100" />
+      <bpmndi:BPMNShape id="Analysefehler_festhalten_SERVICE_SHAPE" bpmnElement="Analysefehler_festhalten_SERVICE" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="2435" y="820" width="250" height="100" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2130.75" y="932" width="136.5" height="36" />
+          <dc:Bounds x="2491.75" y="932" width="136.5" height="36" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Merge_NApply_di" bpmnElement="Merge_NApply" isMarkerVisible="true">
-        <dc:Bounds x="2334" y="655" width="50" height="50" />
+      <bpmndi:BPMNShape id="Analysefehler_festhalten_zusammenfuehren_XOR_SHAPE" bpmnElement="Analysefehler_festhalten_zusammenfuehren_XOR" isMarkerVisible="true">
+        <dc:Bounds x="2295" y="845" width="50" height="50" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="NApply_di" bpmnElement="NApply" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
-        <dc:Bounds x="2584" y="630" width="250" height="100" />
+      <bpmndi:BPMNShape id="Mieternachricht_verarbeiten_zusammenfuehren_XOR_SHAPE" bpmnElement="Mieternachricht_verarbeiten_zusammenfuehren_XOR" isMarkerVisible="true">
+        <dc:Bounds x="2755" y="655" width="50" height="50" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="NCurrentEvaluation_di" bpmnElement="NCurrentEvaluation" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
-        <dc:Bounds x="2755" y="820" width="250" height="100" />
+      <bpmndi:BPMNShape id="Aktuelle_Auswertung_bereitstellen_SERVICE_SHAPE" bpmnElement="Aktuelle_Auswertung_bereitstellen_SERVICE" bioc:stroke="#1e3a5f" bioc:fill="#e2ecff">
+        <dc:Bounds x="3124" y="630" width="250" height="100" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="NCurrentRoute_di" bpmnElement="NCurrentRoute" isMarkerVisible="true">
-        <dc:Bounds x="3064" y="845" width="50" height="50" />
+      <bpmndi:BPMNShape id="Aktuelle_Auswertung_bereitstellen_zusammenfuehren_XOR_SHAPE" bpmnElement="Aktuelle_Auswertung_bereitstellen_zusammenfuehren_XOR" isMarkerVisible="true">
+        <dc:Bounds x="3014" y="655" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Noch_anzuwenden_XOR_SHAPE" bpmnElement="Noch_anzuwenden_XOR" isMarkerVisible="true">
+        <dc:Bounds x="3775" y="845" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="3040" y="823" width="98" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_16yi5cc_di" bpmnElement="Gateway_16yi5cc" isMarkerVisible="true">
-        <dc:Bounds x="2474" y="655" width="50" height="50" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="NNoOpEnd_di" bpmnElement="NNoOpEnd" bioc:stroke="#334155" bioc:fill="#f1f5f9">
-        <dc:Bounds x="3331" y="1062" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="3299" y="1110" width="100" height="14" />
+          <dc:Bounds x="3751" y="823" width="98" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="NEnd_di" bpmnElement="NEnd" bioc:stroke="#14532d" bioc:fill="#dcfce7">
-        <dc:Bounds x="3331" y="662" width="36" height="36" />
+      <bpmndi:BPMNShape id="Gespraech_auswerten_Aktualisierung_CALL_SHAPE" bpmnElement="Gespraech_auswerten_Aktualisierung_CALL" bioc:stroke="#4c1d95" bioc:fill="#ede9fe">
+        <dc:Bounds x="3455" y="820" width="250" height="100" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Eingang_verarbeitet_Hauptpfad_laeuft_weiter_END_SHAPE" bpmnElement="Eingang_verarbeitet_Hauptpfad_laeuft_weiter_END" bioc:stroke="#14532d" bioc:fill="#dcfce7">
+        <dc:Bounds x="4252" y="662" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="3295" y="710" width="108" height="27" />
+          <dc:Bounds x="4210" y="710" width="120" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="NObsoleteEnd_di" bpmnElement="NObsoleteEnd" bioc:stroke="#9a3412" bioc:fill="#fff7ed">
-        <dc:Bounds x="3331" y="852" width="36" height="36" />
+      <bpmndi:BPMNShape id="Keine_neue_Wirkung_zusammenfuehren_XOR_SHAPE" bpmnElement="Keine_neue_Wirkung_zusammenfuehren_XOR" isMarkerVisible="true">
+        <dc:Bounds x="4055" y="1055" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Keine_neue_Wirkung_Mieternachricht_verarbeiten_END_SHAPE" bpmnElement="Keine_neue_Wirkung_Mieternachricht_verarbeiten_END" bioc:stroke="#334155" bioc:fill="#f1f5f9">
+        <dc:Bounds x="4252" y="1062" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="3370" y="900" width="100" height="14" />
+          <dc:Bounds x="4220" y="1110" width="100" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="NApplyStale_di" bpmnElement="NApplyStale" bioc:stroke="#9a3412" bioc:fill="#fff7ed">
-        <dc:Bounds x="2619" y="712" width="36" height="36" />
+      <bpmndi:BPMNShape id="Analysefehler_Nachrichtenauswertung_pruefen_BOUNDARY_SHAPE" bpmnElement="Analysefehler_Nachrichtenauswertung_pruefen_BOUNDARY" bioc:stroke="#7f1d1d" bioc:fill="#fee2e2">
+        <dc:Bounds x="2302" y="712" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2662" y="760" width="98" height="14" />
+          <dc:Bounds x="2341" y="760" width="67" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="NRecommendationFailure_di" bpmnElement="NRecommendationFailure" bioc:stroke="#7f1d1d" bioc:fill="#fee2e2">
-        <dc:Bounds x="1970" y="712" width="36" height="36" />
+      <bpmndi:BPMNShape id="Analysefehler_Mieternachricht_mit_LLM_auswerten_BOUNDARY_SHAPE" bpmnElement="Analysefehler_Mieternachricht_mit_LLM_auswerten_BOUNDARY" bioc:stroke="#7f1d1d" bioc:fill="#fee2e2">
+        <dc:Bounds x="1962" y="712" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2009" y="760" width="67" height="14" />
+          <dc:Bounds x="2001" y="760" width="67" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="NAnalysisFailure_di" bpmnElement="NAnalysisFailure" bioc:stroke="#7f1d1d" bioc:fill="#fee2e2">
-        <dc:Bounds x="1610" y="712" width="36" height="36" />
+      <bpmndi:BPMNShape id="Auswertung_veraltet_BOUNDARY_SHAPE" bpmnElement="Auswertung_veraltet_BOUNDARY" bioc:stroke="#9a3412" bioc:fill="#fff7ed">
+        <dc:Bounds x="3302" y="712" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1649" y="760" width="67" height="14" />
+          <dc:Bounds x="3345" y="760" width="98" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="NRule_di" bpmnElement="NRule" bioc:stroke="#334155" bioc:fill="#f1f5f9">
-        <dc:Bounds x="300" y="80" width="500" height="140" />
+      <bpmndi:BPMNShape id="Ein_Eingang_pro_gespeicherter_Nachricht_NOTE_SHAPE" bpmnElement="Ein_Eingang_pro_gespeicherter_Nachricht_NOTE" bioc:stroke="#334155" bioc:fill="#f1f5f9">
+        <dc:Bounds x="230" y="80" width="500" height="140" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="NScope_di" bpmnElement="NScope" bioc:stroke="#334155" bioc:fill="#f1f5f9">
-        <dc:Bounds x="290" y="290" width="500" height="140" />
+      <bpmndi:BPMNShape id="Lokale_Eingangs_ID_je_Ereignispfad_NOTE_SHAPE" bpmnElement="Lokale_Eingangs_ID_je_Ereignispfad_NOTE" bioc:stroke="#334155" bioc:fill="#f1f5f9">
+        <dc:Bounds x="220" y="290" width="500" height="140" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="N01_di" bpmnElement="N01" bioc:stroke="#334155">
-        <di:waypoint x="376" y="680" />
-        <di:waypoint x="445" y="680" />
+      <bpmndi:BPMNEdge id="Analysefehler_festhalten_zusammenfuehren_zu_Analysefehler_festhalten_SERVICE_FLOW_EDGE" bpmnElement="Analysefehler_festhalten_zusammenfuehren_zu_Analysefehler_festhalten_SERVICE_FLOW">
+        <di:waypoint x="2345" y="870" />
+        <di:waypoint x="2435" y="870" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="N02_di" bpmnElement="N02" bioc:stroke="#334155">
-        <di:waypoint x="695" y="680" />
-        <di:waypoint x="755" y="680" />
+      <bpmndi:BPMNEdge id="Mieternachricht_verarbeiten_zusammenfuehren_zu_Aktuelle_Auswertung_bereitstellen_zusammenfuehren_FLOW_EDGE" bpmnElement="Mieternachricht_verarbeiten_zusammenfuehren_zu_Aktuelle_Auswertung_bereitstellen_zusammenfuehren_FLOW">
+        <di:waypoint x="2805" y="680" />
+        <di:waypoint x="3014" y="680" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="N03_di" bpmnElement="N03" bioc:stroke="#334155">
-        <di:waypoint x="780" y="705" />
-        <di:waypoint x="780" y="1080" />
-        <di:waypoint x="3331" y="1080" />
+      <bpmndi:BPMNEdge id="Nachrichtenverarbeitung_aufgerufen_START_zu_Nachricht_und_Fallstand_pruefen_FLOW_EDGE" bpmnElement="Nachrichtenverarbeitung_aufgerufen_START_zu_Nachricht_und_Fallstand_pruefen_FLOW" bioc:stroke="#334155">
+        <di:waypoint x="306" y="680" />
+        <di:waypoint x="375" y="680" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Nachricht_und_Fallstand_zu_Neu_zu_verarbeiten_XOR_FLOW_EDGE" bpmnElement="Nachricht_und_Fallstand_zu_Neu_zu_verarbeiten_XOR_FLOW" bioc:stroke="#334155">
+        <di:waypoint x="625" y="680" />
+        <di:waypoint x="685" y="680" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Neu_zu_verarbeiten_Bereits_verarbeitet_nicht_mehr_zulaessig_zu_Keine_neue_Wirkung_Mieternachricht_FLOW_EDGE" bpmnElement="Neu_zu_verarbeiten_Bereits_verarbeitet_nicht_mehr_zulaessig_zu_Keine_neue_Wirkung_Mieternachricht_FLOW" bioc:stroke="#334155">
+        <di:waypoint x="710" y="705" />
+        <di:waypoint x="710" y="1080" />
+        <di:waypoint x="4055" y="1080" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1959" y="1032" width="193" height="14" />
+          <dc:Bounds x="774" y="1430" width="343" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="N04_di" bpmnElement="N04" bioc:stroke="#334155">
-        <di:waypoint x="805" y="680" />
-        <di:waypoint x="895" y="680" />
+      <bpmndi:BPMNEdge id="Neu_zu_verarbeiten_Ja_zu_Aktuelle_Bearbeitung_XOR_FLOW_EDGE" bpmnElement="Neu_zu_verarbeiten_Ja_zu_Aktuelle_Bearbeitung_XOR_FLOW" bioc:stroke="#334155">
+        <di:waypoint x="735" y="680" />
+        <di:waypoint x="965" y="680" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="844" y="605" width="12" height="14" />
+          <dc:Bounds x="743" y="663" width="13" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="N05_di" bpmnElement="N05" bioc:stroke="#334155">
-        <di:waypoint x="920" y="655" />
-        <di:waypoint x="920" y="490" />
-        <di:waypoint x="1085" y="490" />
+      <bpmndi:BPMNEdge id="Aktuelle_Bearbeitung_XOR_Mitarbeiterpruefung_zu_Laufende_Mitarbeiterpruefung_ergaenzen_SERVICE_FLOW_EDGE" bpmnElement="Aktuelle_Bearbeitung_XOR_Mitarbeiterpruefung_zu_Laufende_Mitarbeiterpruefung_ergaenzen_SERVICE_FLOW" bioc:stroke="#334155">
+        <di:waypoint x="990" y="655" />
+        <di:waypoint x="990" y="490" />
+        <di:waypoint x="1155" y="490" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="946" y="558" width="90" height="14" />
+          <dc:Bounds x="1021" y="473" width="96" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="N06_di" bpmnElement="N06" bioc:stroke="#334155">
-        <di:waypoint x="945" y="680" />
-        <di:waypoint x="1085" y="680" />
+      <bpmndi:BPMNEdge id="Aktuelle_Bearbeitung_XOR_Wiedervorlage_zu_Kontakt_zur_Wiedervorlage_bereitstellen_FLOW_EDGE" bpmnElement="Aktuelle_Bearbeitung_XOR_Wiedervorlage_zu_Kontakt_zur_Wiedervorlage_bereitstellen_FLOW" bioc:stroke="#334155">
+        <di:waypoint x="1015" y="680" />
+        <di:waypoint x="1155" y="680" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="980" y="638" width="71" height="14" />
+          <dc:Bounds x="1031" y="663" width="71" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="N07_di" bpmnElement="N07" bioc:stroke="#334155">
-        <di:waypoint x="920" y="705" />
-        <di:waypoint x="920" y="870" />
-        <di:waypoint x="1085" y="870" />
+      <bpmndi:BPMNEdge id="Aktuelle_Bearbeitung_XOR_Sonstige_aktive_Phase_zu_Neuen_Eingang_vormerken_SERVICE_FLOW_EDGE" bpmnElement="Aktuelle_Bearbeitung_XOR_Sonstige_aktive_Phase_zu_Neuen_Eingang_vormerken_SERVICE_FLOW" bioc:stroke="#334155">
+        <di:waypoint x="990" y="705" />
+        <di:waypoint x="990" y="870" />
+        <di:waypoint x="1155" y="870" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="946" y="773" width="109" height="14" />
+          <dc:Bounds x="1012" y="853" width="109" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="N08_di" bpmnElement="N08" bioc:stroke="#334155">
-        <di:waypoint x="1335" y="490" />
-        <di:waypoint x="1450" y="490" />
-        <di:waypoint x="1450" y="655" />
+      <bpmndi:BPMNEdge id="Laufende_Mitarbeiterpruefung_ergaenzen_zu_Weiter_auswerten_XOR_FLOW_EDGE" bpmnElement="Laufende_Mitarbeiterpruefung_ergaenzen_zu_Weiter_auswerten_XOR_FLOW" bioc:stroke="#334155">
+        <di:waypoint x="1405" y="490" />
+        <di:waypoint x="1520" y="490" />
+        <di:waypoint x="1520" y="655" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="N09_di" bpmnElement="N09" bioc:stroke="#334155">
-        <di:waypoint x="1335" y="680" />
-        <di:waypoint x="1425" y="680" />
+      <bpmndi:BPMNEdge id="Kontakt_zur_Wiedervorlage_zu_Weiter_auswerten_XOR_FLOW_EDGE" bpmnElement="Kontakt_zur_Wiedervorlage_zu_Weiter_auswerten_XOR_FLOW" bioc:stroke="#334155">
+        <di:waypoint x="1405" y="680" />
+        <di:waypoint x="1495" y="680" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="N10_di" bpmnElement="N10" bioc:stroke="#334155">
-        <di:waypoint x="1335" y="870" />
-        <di:waypoint x="1450" y="870" />
-        <di:waypoint x="1450" y="705" />
+      <bpmndi:BPMNEdge id="Neuen_Eingang_vormerken_zu_Weiter_auswerten_XOR_FLOW_EDGE" bpmnElement="Neuen_Eingang_vormerken_zu_Weiter_auswerten_XOR_FLOW" bioc:stroke="#334155">
+        <di:waypoint x="1405" y="870" />
+        <di:waypoint x="1520" y="870" />
+        <di:waypoint x="1520" y="705" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="N11_di" bpmnElement="N11" bioc:stroke="#334155">
-        <di:waypoint x="1475" y="680" />
-        <di:waypoint x="1575" y="680" />
+      <bpmndi:BPMNEdge id="Weiter_auswerten_XOR_zu_Mieternachricht_mit_LLM_auswerten_FLOW_EDGE" bpmnElement="Weiter_auswerten_XOR_zu_Mieternachricht_mit_LLM_auswerten_FLOW" bioc:stroke="#334155">
+        <di:waypoint x="1545" y="680" />
+        <di:waypoint x="1765" y="680" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="N12_di" bpmnElement="N12" bioc:stroke="#334155">
-        <di:waypoint x="1825" y="680" />
-        <di:waypoint x="1935" y="680" />
+      <bpmndi:BPMNEdge id="Mieternachricht_mit_LLM_zu_Nachrichtenauswertung_pruefen_SERVICE_FLOW_EDGE" bpmnElement="Mieternachricht_mit_LLM_zu_Nachrichtenauswertung_pruefen_SERVICE_FLOW" bioc:stroke="#334155">
+        <di:waypoint x="2015" y="680" />
+        <di:waypoint x="2105" y="680" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="N13_di" bpmnElement="N13" bioc:stroke="#334155">
-        <di:waypoint x="2185" y="680" />
-        <di:waypoint x="2334" y="680" />
+      <bpmndi:BPMNEdge id="Nachrichtenauswertung_pruefen_SERVICE_zu_Mieternachricht_verarbeiten_zusammenfuehren_XOR_FLOW_EDGE" bpmnElement="Nachrichtenauswertung_pruefen_SERVICE_zu_Mieternachricht_verarbeiten_zusammenfuehren_XOR_FLOW" bioc:stroke="#334155">
+        <di:waypoint x="2355" y="680" />
+        <di:waypoint x="2755" y="680" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="N15_di" bpmnElement="N15" bioc:stroke="#334155">
-        <di:waypoint x="1628" y="748" />
-        <di:waypoint x="1628" y="870" />
-        <di:waypoint x="1963" y="870" />
+      <bpmndi:BPMNEdge id="Aktuelle_Auswertung_bereitstellen_zu_Eingang_verarbeitet_Hauptpfad_laeuft_FLOW_EDGE" bpmnElement="Aktuelle_Auswertung_bereitstellen_zu_Eingang_verarbeitet_Hauptpfad_laeuft_FLOW" bioc:stroke="#334155">
+        <di:waypoint x="3374" y="680" />
+        <di:waypoint x="4252" y="680" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="N16_di" bpmnElement="N16" bioc:stroke="#334155">
-        <di:waypoint x="1988" y="748" />
-        <di:waypoint x="1988" y="845" />
+      <bpmndi:BPMNEdge id="Analysefehler_Mieternachricht_mit_zu_Analysefehler_festhalten_zusammenfuehren_XOR_FLOW_EDGE" bpmnElement="Analysefehler_Mieternachricht_mit_zu_Analysefehler_festhalten_zusammenfuehren_XOR_FLOW" bioc:stroke="#334155">
+        <di:waypoint x="1980" y="748" />
+        <di:waypoint x="1980" y="870" />
+        <di:waypoint x="2295" y="870" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_Merge_NFailure_di" bpmnElement="Flow_Merge_NFailure">
-        <di:waypoint x="2013" y="870" />
-        <di:waypoint x="2074" y="870" />
+      <bpmndi:BPMNEdge id="Analysefehler_Nachrichtenauswertung_pruefen_zu_Analysefehler_festhalten_zusammenfuehren_XOR_FLOW_EDGE" bpmnElement="Analysefehler_Nachrichtenauswertung_pruefen_zu_Analysefehler_festhalten_zusammenfuehren_XOR_FLOW" bioc:stroke="#334155">
+        <di:waypoint x="2320" y="748" />
+        <di:waypoint x="2320" y="845" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="N17_di" bpmnElement="N17" bioc:stroke="#334155">
-        <di:waypoint x="2324" y="870" />
-        <di:waypoint x="2359" y="870" />
-        <di:waypoint x="2359" y="705" />
+      <bpmndi:BPMNEdge id="Analysefehler_festhalten_SERVICE_zu_Mieternachricht_verarbeiten_zusammenfuehren_XOR_FLOW_EDGE" bpmnElement="Analysefehler_festhalten_SERVICE_zu_Mieternachricht_verarbeiten_zusammenfuehren_XOR_FLOW" bioc:stroke="#334155">
+        <di:waypoint x="2685" y="870" />
+        <di:waypoint x="2780" y="870" />
+        <di:waypoint x="2780" y="705" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_Merge_NApply_di" bpmnElement="Flow_Merge_NApply">
-        <di:waypoint x="2384" y="680" />
-        <di:waypoint x="2474" y="680" />
+      <bpmndi:BPMNEdge id="Auswertung_veraltet_BOUNDARY_zu_Nachrichtenauswertung_aktualisieren_SERVICE_FLOW_EDGE" bpmnElement="Auswertung_veraltet_BOUNDARY_zu_Nachrichtenauswertung_aktualisieren_SERVICE_FLOW">
+        <di:waypoint x="3320" y="748" />
+        <di:waypoint x="3320" y="870" />
+        <di:waypoint x="3455" y="870" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0t8mepo_di" bpmnElement="Flow_0t8mepo">
-        <di:waypoint x="2524" y="680" />
-        <di:waypoint x="2584" y="680" />
+      <bpmndi:BPMNEdge id="Nachrichtenauswertung_aktualisieren_SERVICE_zu_Noch_anzuwenden_XOR_FLOW_EDGE" bpmnElement="Nachrichtenauswertung_aktualisieren_SERVICE_zu_Noch_anzuwenden_XOR_FLOW">
+        <di:waypoint x="3705" y="870" />
+        <di:waypoint x="3775" y="870" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="N14_di" bpmnElement="N14" bioc:stroke="#334155">
-        <di:waypoint x="2834" y="680" />
-        <di:waypoint x="3331" y="680" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="N_Stale_Current_di" bpmnElement="N_Stale_Current">
-        <di:waypoint x="2637" y="748" />
-        <di:waypoint x="2637" y="870" />
-        <di:waypoint x="2755" y="870" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="N_Current_Route_di" bpmnElement="N_Current_Route">
-        <di:waypoint x="3005" y="870" />
-        <di:waypoint x="3064" y="870" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="N_Current_Apply_di" bpmnElement="N_Current_Apply">
-        <di:waypoint x="3089" y="895" />
-        <di:waypoint x="3089" y="970" />
-        <di:waypoint x="2499" y="970" />
-        <di:waypoint x="2499" y="705" />
+      <bpmndi:BPMNEdge id="Noch_anzuwenden_XOR_Aktuelle_Grundlage_zu_Aktuelle_Auswertung_bereitstellen_zusammenfuehren_FLOW_EDGE" bpmnElement="Noch_anzuwenden_XOR_Aktuelle_Grundlage_zu_Aktuelle_Auswertung_bereitstellen_zusammenfuehren_FLOW">
+        <di:waypoint x="3800" y="895" />
+        <di:waypoint x="3800" y="970" />
+        <di:waypoint x="3039" y="970" />
+        <di:waypoint x="3039" y="705" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="3003" y="973" width="94" height="14" />
+          <dc:Bounds x="3703" y="973" width="94" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="N_Current_End_di" bpmnElement="N_Current_End">
-        <di:waypoint x="3114" y="870" />
-        <di:waypoint x="3331" y="870" />
+      <bpmndi:BPMNEdge id="Noch_anzuwenden_XOR_Ueberholt_bereits_erledigt_zu_Keine_neue_Wirkung_Mieternachricht_FLOW_EDGE" bpmnElement="Noch_anzuwenden_XOR_Ueberholt_bereits_erledigt_zu_Keine_neue_Wirkung_Mieternachricht_FLOW">
+        <di:waypoint x="3825" y="870" />
+        <di:waypoint x="4080" y="870" />
+        <di:waypoint x="4080" y="1055" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="3138" y="873" width="123" height="14" />
+          <dc:Bounds x="3962" y="843" width="135" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Aktuelle_Auswertung_bereitstellen_zu_Aktuelle_Auswertung_bereitstellen_SERVICE_FLOW_EDGE" bpmnElement="Aktuelle_Auswertung_bereitstellen_zu_Aktuelle_Auswertung_bereitstellen_SERVICE_FLOW">
+        <di:waypoint x="3064" y="680" />
+        <di:waypoint x="3124" y="680" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Keine_neue_Wirkung_zusammenfuehren_zu_Keine_neue_Wirkung_FLOW_EDGE" bpmnElement="Keine_neue_Wirkung_zusammenfuehren_zu_Keine_neue_Wirkung_FLOW">
+        <di:waypoint x="4105" y="1080" />
+        <di:waypoint x="4252" y="1080" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Fallkontext_vorbereiten_GROUP_SHAPE" bpmnElement="Fallkontext_vorbereiten_GROUP">
+        <dc:Bounds x="840" y="390" width="820" height="630" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1194" y="399" width="112" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="LLM_Auswertung_und_Fehlerpfad_GROUP_SHAPE" bpmnElement="LLM_Auswertung_und_Fehlerpfad_GROUP">
+        <dc:Bounds x="1720" y="390" width="1150" height="630" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2215" y="399" width="161" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Aktuelles_Ergebnis_bereitstellen_GROUP_SHAPE" bpmnElement="Aktuelles_Ergebnis_bereitstellen_GROUP">
+        <dc:Bounds x="2978" y="390" width="942" height="630" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="3372" y="399" width="154" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Der_Prozess_gibt_nur_eine_NOTE_SHAPE" bpmnElement="Der_Prozess_gibt_nur_eine_NOTE">
+        <dc:Bounds x="3030" y="480" width="525" height="72" />
+      </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>

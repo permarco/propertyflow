@@ -83,10 +83,10 @@
             </section></div>
             <section class="card" aria-labelledby="staff-review-heading" hidden>
                 <details class="edit-card" name="case-edit">
-                    <summary id="staff-review-heading"><span>Status</span><span>Status ändern</span></summary>
-                <form id="staff-review-form" th:action="@{/mitarbeiter/faelle/{id}/fortsetzen(id=${caseId})}"
+                    <summary id="staff-review-heading"><span>Bearbeitung fortsetzen</span></summary>
+                <form id="staff-review-form" th:action="@{/mitarbeiter/faelle/{id}/bearbeitung-fortsetzen(id=${caseId})}"
                       th:attr="data-review-url=@{/mitarbeiter/faelle/{id}/pruefung(id=${caseId})},data-actor=${memoActor}" method="post">
-                    <p>Nach Ihrer Prüfung können Sie die Bearbeitung fortsetzen. Die vorhandenen Prüfhinweise bleiben nachvollziehbar.</p>
+                    <p>Sie bestätigen, dass Sie den aktuellen Fallstand geprüft haben. Die bisherigen Prüfgründe bleiben dokumentiert. Damit wird keine Kosten- oder Auftragsfreigabe erteilt.</p>
                     <label for="staff-decision-reason">Begründung (optional, nur intern)</label>
                     <textarea id="staff-decision-reason" name="reason" maxlength="1000" rows="2"></textarea>
                     <div class="actions">

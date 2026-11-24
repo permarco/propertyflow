@@ -7,4 +7,6 @@ und Folgemigrationen bleiben unverändert. Nach dem freigegebenen Hard Reset gib
 es keine Legacy-Kette und keine reservierten historischen Versionsnummern mehr.
 
 V6–V11 umfassen Konten, Fallzugänge, administrative Befehle, MCP-OAuth sowie
-MCP-Bestätigungen und -Audit. Nächste freie Version ist V12.
+MCP-Bestätigungen und -Audit. V12 übernimmt die aktuellen BPMN-IDs in die
+gespeicherten Mitarbeiterentscheide und Nachrichtenaufträge. Nächste freie
+Version ist V13.

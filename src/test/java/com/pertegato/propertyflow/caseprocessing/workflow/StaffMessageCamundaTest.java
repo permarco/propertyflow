@@ -7,7 +7,8 @@ import com.pertegato.propertyflow.caseprocessing.contract.CaseAccepted;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseCreation;
 import com.pertegato.propertyflow.caseprocessing.contract.CreateCaseCommand;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffTaskDecisions.StaffTask;
-import com.pertegato.propertyflow.caseprocessing.persistence.CaseAnalysisStore;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseDataStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWaitStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore;
@@ -17,13 +18,10 @@ import com.pertegato.propertyflow.caseprocessing.persistence.StaffDecisionStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.StaffMessageStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.StaffReviewStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.TenantReplyStore;
-import com.pertegato.propertyflow.caseprocessing.service.CaseAnalysisService;
-import com.pertegato.propertyflow.caseprocessing.service.CaseUrgencyService;
 import com.pertegato.propertyflow.caseprocessing.service.CaseWorkflowService;
 import com.pertegato.propertyflow.caseprocessing.service.StaffDecisionService;
 import com.pertegato.propertyflow.caseprocessing.service.StaffMessageService;
 import com.pertegato.propertyflow.caseprocessing.service.StaffReviewService;
-import com.pertegato.propertyflow.triage.service.AnalyzeTool;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.search.enums.UserTaskState;
@@ -48,6 +46,20 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.AutomaticClarificationBpmnConstants.JobType.AUTOMATIC_RECOMMENDATION;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.ConversationEvaluationBpmnConstants.JobType.AUTOMATIC_ANALYZE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.AutomaticClarificationBpmnConstants.JobType.REGISTER_AUTOMATIC;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.AutomaticClarificationBpmnConstants.JobType.START_CLARIFICATION;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.PREPARE_INITIAL;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.PREPARE_PROCESS_KEY;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.REGISTER_CASE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.REVIEW_ANALYSIS_FAILURE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.STAFF_CLAIM;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.JobType.STAFF_MESSAGE_PUBLISH;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.STAFF_MESSAGE_COMMAND_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.JobType.STAFF_PROGRESS;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.JobType.STAFF_REGISTER;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.JobType.STAFF_START_REVIEW;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -76,7 +88,6 @@ class StaffMessageCamundaTest {
     @Autowired
     private CaseDataStore caseData;
 
-
     private CamundaClient engine;
     private InitialCaseWorkers initial;
 
@@ -93,12 +104,6 @@ class StaffMessageCamundaTest {
 
     @Autowired
     private StaffReviewStore reviewStore;
-
-    @Autowired
-    private CaseAnalysisStore analyses;
-
-    @Autowired
-    private CaseUrgencyService urgencyService;
 
     private CaseAccepted accepted;
     private String caseId;
@@ -118,10 +123,8 @@ class StaffMessageCamundaTest {
         database.execute("TRUNCATE pf_case CASCADE");
         engine = CamundaClient.newClientBuilder().restAddress(URI.create(System.getenv("PROPERTYFLOW_TEST_CAMUNDA_URL")))
                 .preferRestOverGrpc(true).defaultRequestTimeout(Duration.ofSeconds(5)).build();
-        long definitionKey = engine.newDeployResourceCommand().addResourceFromClasspath("workflow/staff-message-case.bpmn")
-                .addResourceFromClasspath("workflow/analysis-automatic.bpmn").addResourceFromClasspath("workflow/staff-message-staff.bpmn")
-                .send().join().getProcesses().stream()
-                .filter(process -> InitialCaseWorkers.CASE_PROCESS.equals(process.getBpmnProcessId()))
+        long definitionKey = WorkflowTestModels.deploy(engine).getProcesses().stream()
+                .filter(process -> CaseProcessBpmnConstants.PROCESS_ID.equals(process.getBpmnProcessId()))
                 .findFirst().orElseThrow().getProcessDefinitionKey();
         accepted = creation.create(new SubmissionContext.Guest(UUID.randomUUID()),
                 new CreateCaseCommand("review", "Heizung", "Wohnung", "Kalt", "review@example.test"));
@@ -129,13 +132,13 @@ class StaffMessageCamundaTest {
         StartOrder start = workflow.claim(definitionKey, "<default>", Duration.ofMinutes(2)).orElseThrow();
         assertEquals(ProcessStartGateway.StartResult.STARTED, new CamundaProcessStartGateway(engine).ensureStarted(start));
         initial = new InitialCaseWorkers(engine, initialService);
-        ActivatedJob preparing = job(InitialCaseWorkers.PREPARE_KEY);
+        ActivatedJob preparing = job(PREPARE_PROCESS_KEY);
         leader = preparing.getProcessInstanceKey();
         initial.prepareKey(engine, preparing);
-        initial.register(engine, job(InitialCaseWorkers.REGISTER));
-        initial.prepareInitial(engine, job(InitialCaseWorkers.PREPARE_INITIAL));
-        initial.registerAutomatic(engine, job(InitialCaseWorkers.REGISTER_AUTOMATIC));
-        initial.clarification(engine, job(InitialCaseWorkers.CLARIFICATION));
+        initial.register(engine, job(REGISTER_CASE));
+        initial.prepareInitial(engine, job(PREPARE_INITIAL));
+        initial.registerAutomatic(engine, job(REGISTER_AUTOMATIC));
+        initial.clarification(engine, job(START_CLARIFICATION));
         assertEquals("UNDER_CLARIFICATION", status());
         actor = new WebAccountContext(UUID.randomUUID());
         database.update("""
@@ -162,16 +165,16 @@ class StaffMessageCamundaTest {
         gateway().correlate(id, leader, "<default>", true, Long.toString(leader));
         StaffMessageWorkers worker = new StaffMessageWorkers(engine, service);
         for (int index = 0; index < 2; index++) {
-            ActivatedJob job = job(StaffMessageWorkers.PUBLISH);
-            assertEquals("StaffQuestionPublish", job.getElementId());
-            assertEquals(id.toString(), job.getVariablesAsMap().get("staffMessageCommandRef"));
+            ActivatedJob job = job(STAFF_MESSAGE_PUBLISH);
+            assertEquals("Mitarbeiternachricht_speichern_SERVICE", job.getElementId());
+            assertEquals(id.toString(), job.getVariablesAsMap().get(STAFF_MESSAGE_COMMAND_REF));
             assertFalse(job.getVariables().contains("Ihre Verwaltung"));
             worker.publish(engine, job);
         }
         assertEquals(1, count("pf_staff_message"));
         assertEquals(1, count("pf_staff_message_mail_order"));
         assertEquals("UNDER_CLARIFICATION", status());
-        assertEquals(0, engine.newVariableSearchRequest().filter(filter -> filter.scopeKey(leader).name("staffMessageCommandRef"))
+        assertEquals(0, engine.newVariableSearchRequest().filter(filter -> filter.scopeKey(leader).name(STAFF_MESSAGE_COMMAND_REF))
                 .send().join().items().size());
         assertEquals("PUBLISHED", service.send(actor, caseId, "Information 1", "Ihre Verwaltung prüft das Anliegen.", false));
     }
@@ -182,9 +185,9 @@ class StaffMessageCamundaTest {
         long task = tasks().getFirst().getUserTaskKey();
         StaffMessageService service = service();
         assertEquals("PENDING", service.send(actor, caseId, "Rückfrage", "Welcher Termin passt Ihnen?", true));
-        ActivatedJob job = job(StaffMessageWorkers.PUBLISH);
-        assertEquals("SMessagePublish", job.getElementId());
-        assertEquals(StaffReviewWorkers.STAFF_PROCESS, job.getBpmnProcessId());
+        ActivatedJob job = job(STAFF_MESSAGE_PUBLISH);
+        assertEquals("Nachricht_und_Versandauftrag_speichern_SERVICE", job.getElementId());
+        assertEquals(StaffProcessingBpmnConstants.PROCESS_ID, job.getBpmnProcessId());
         new StaffMessageWorkers(engine, service).publish(engine, job);
         assertEquals("STAFF_REVIEW_REQUIRED", status());
         assertEquals(task, tasks().getFirst().getUserTaskKey());
@@ -198,32 +201,32 @@ class StaffMessageCamundaTest {
         review();
         StaffMessageService service = service();
         service.send(actor, caseId, "Alter Auftrag", "Noch nicht veröffentlicht", false);
-        ActivatedJob old = job(StaffMessageWorkers.PUBLISH);
+        ActivatedJob old = job(STAFF_MESSAGE_PUBLISH);
         StaffDecisionService decision = new StaffDecisionService(access, workflow, caseData, reviewStore, decisions, taskGateway(), transactions);
         StaffTask task = decision.current(actor, caseId);
         decision.continueWork(actor, caseId, UUID.randomUUID(), Long.parseLong(task.taskKey()), task.version(), task.reviewToken(), "");
-        new StaffDecisionWorkers(engine, decision).progress(engine, job("propertyflow.staff.progress"));
-        await(() -> !engine.newUserTaskSearchRequest().filter(filter -> filter.elementId("SWork").state(UserTaskState.CREATED))
+        new StaffDecisionWorkers(engine, decision).progress(engine, job(STAFF_PROGRESS));
+        await(() -> !engine.newUserTaskSearchRequest().filter(filter -> filter.elementId("Naechste_Mitarbeiteraktion_abwarten_USERTASK").state(UserTaskState.CREATED))
                 .send().join().items().isEmpty());
         new StaffMessageWorkers(engine, service).publish(engine, old);
         assertEquals("IN_PROGRESS", status());
         assertEquals(0, count("pf_staff_message"));
         service.send(actor, caseId, "Neue Information", "Zwischenstand der Bearbeitung", false);
-        new StaffMessageWorkers(engine, service).publish(engine, job(StaffMessageWorkers.PUBLISH));
+        new StaffMessageWorkers(engine, service).publish(engine, job(STAFF_MESSAGE_PUBLISH));
         assertEquals(1, count("pf_staff_message"));
         assertEquals("IN_PROGRESS", status());
         assertTrue(decision.current(actor, caseId).available());
     }
 
     private void review() throws Exception {
-        TriageWorkers triage = new TriageWorkers(engine, new CaseAnalysisService(workflow, reviewStore, analyses, urgencyService,
-                new AnalyzeTool(text -> "invalid"), transactions));
-        triage.analyze(engine, job(TriageWorkers.INITIAL));
+        AutomaticEvaluationWorkers analysis = InitialAnalysisTestFixture.failedEvaluation(engine, workflow, database, transactions);
+        analysis.analyze(engine, job(AUTOMATIC_ANALYZE));
+        analysis.recommend(engine, job(AUTOMATIC_RECOMMENDATION));
         StaffReviewWorkers reviews = new StaffReviewWorkers(engine, reviewService);
-        reviews.analysisFailure(engine, job("propertyflow.review.analysis-failure"));
-        reviews.claim(engine, job("propertyflow.staff.claim"));
-        reviews.register(engine, job("propertyflow.staff.register"));
-        reviews.startReview(engine, job("propertyflow.staff.start-review"));
+        reviews.analysisFailure(engine, job(REVIEW_ANALYSIS_FAILURE));
+        reviews.claim(engine, job(STAFF_CLAIM));
+        reviews.register(engine, job(STAFF_REGISTER));
+        reviews.startReview(engine, job(STAFF_START_REVIEW));
         await(() -> tasks().size() == 1);
     }
 

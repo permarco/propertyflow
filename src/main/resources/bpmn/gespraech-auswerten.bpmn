@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:color="http://www.omg.org/spec/BPMN/non-normative/color/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Gespraech_auswerten_DEFINITIONS" targetNamespace="https://propertyflow.local/bpmn/draft" exporter="Camunda Modeler" exporterVersion="5.51.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+  <bpmn:process id="Gespraech_auswerten_PROCESS" name="Gespraech auswerten" isExecutable="true">
+    <bpmn:documentation>Gemeinsame, versionsgebundene Auswertung für automatische Abklärung, Mieternachrichten und Mieterantwortprüfung. Der aufrufende Prozess entscheidet über Mitarbeiterprüfung, Nachrichten und Fallabschluss. Nur der aktuelle Auswertungsbezug und sein Zustand gehen zurück.</bpmn:documentation>
+    <bpmn:startEvent id="Auswertung_angefordert_START" name="Auswertung angefordert">
+      <bpmn:outgoing>Auswertung_angefordert_zu_LLM_Auswertung_zusammenfuehren_FLOW</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:exclusiveGateway id="LLM_Auswertung_zusammenfuehren_XOR" gatewayDirection="Converging">
+      <bpmn:incoming>Auswertung_angefordert_zu_LLM_Auswertung_zusammenfuehren_FLOW</bpmn:incoming>
+      <bpmn:incoming>Auswertung_wiederholen_Ja_zu_LLM_Auswertung_zusammenfuehren_FLOW</bpmn:incoming>
+      <bpmn:outgoing>LLM_Auswertung_zusammenfuehren_zu_Gespraech_analysieren_FLOW</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Gespraech_analysieren_SERVICE" name="Gespraech analysieren">
+      <bpmn:documentation>Das LLM analysiert den relevanten Gesprächsstand und liefert die strukturierte Grundlage sowie die Dringlichkeit. Eine manuelle Einstufung hat Vorrang. Bei einem bereits gespeicherten aktuellen Ergebnis oder einem Analysefehler entfällt die Empfehlung. Interne Memos und Ableitungen daraus gehören gemäss KOM-02 nicht zur Datengrundlage.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="propertyflow.automatic.analyze" />
+      </bpmn:extensionElements>
+      <bpmn:categoryValueRef>LLM_Auswertung_CATEGORY_VALUE</bpmn:categoryValueRef>
+      <bpmn:incoming>LLM_Auswertung_zusammenfuehren_zu_Gespraech_analysieren_FLOW</bpmn:incoming>
+      <bpmn:outgoing>Gespraech_analysieren_zu_Vorgehen_empfehlen_XOR_FLOW</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Vorgehen_empfehlen_XOR" name="Vorgehen empfehlen?" gatewayDirection="Diverging">
+      <bpmn:incoming>Gespraech_analysieren_zu_Vorgehen_empfehlen_XOR_FLOW</bpmn:incoming>
+      <bpmn:outgoing>Vorgehen_empfehlen_Ja_zu_Vorgehen_empfehlen_SERVICE_FLOW</bpmn:outgoing>
+      <bpmn:outgoing>Vorgehen_empfehlen_Nein_zu_LLM_Ergebnisse_zusammenfuehren_FLOW</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Vorgehen_empfehlen_SERVICE" name="Vorgehen empfehlen">
+      <bpmn:documentation>Auf Basis der Analyse und freigegebener Fachregeln empfiehlt das LLM das weitere Vorgehen. Für notwendige Katalogrückfragen kann es passende Frage-IDs vorschlagen. Bekannte Angaben und bisheriger Antwortbedarf fliessen ein. Eine Empfehlung erteilt keine Ausführungsfreigabe. Eine veraltete Grundlage führt zur erneuten Gesprächsanalyse.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="propertyflow.automatic.advise" />
+      </bpmn:extensionElements>
+      <bpmn:categoryValueRef>LLM_Auswertung_CATEGORY_VALUE</bpmn:categoryValueRef>
+      <bpmn:incoming>Vorgehen_empfehlen_Ja_zu_Vorgehen_empfehlen_SERVICE_FLOW</bpmn:incoming>
+      <bpmn:outgoing>Vorgehen_empfehlen_zu_Fallabschluss_beurteilen_XOR_FLOW</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Fallabschluss_beurteilen_XOR" name="Fallabschluss beurteilen?" gatewayDirection="Diverging">
+      <bpmn:incoming>Vorgehen_empfehlen_zu_Fallabschluss_beurteilen_XOR_FLOW</bpmn:incoming>
+      <bpmn:outgoing>Fallabschluss_beurteilen_Ja_zu_Fallabschluss_beurteilen_SERVICE_FLOW</bpmn:outgoing>
+      <bpmn:outgoing>Fallabschluss_beurteilen_Nein_zu_LLM_Ergebnisse_zusammenfuehren_FLOW</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Fallabschluss_beurteilen_SERVICE" name="Fallabschluss beurteilen">
+      <bpmn:documentation>Bei einem möglichen Fallabschluss beurteilt das LLM nach FALL-07, ob eine vollständige Behebung belegt oder eine freigegebene Abschlussregel anwendbar ist. Es nennt Belegstellen oder Regelkennung und -version. PropertyFlow prüft die Zulässigkeit später am aktuellen Fallstand. Eine veraltete Grundlage führt zur erneuten Gesprächsanalyse.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="propertyflow.automatic.assess-closure" />
+      </bpmn:extensionElements>
+      <bpmn:categoryValueRef>LLM_Auswertung_CATEGORY_VALUE</bpmn:categoryValueRef>
+      <bpmn:incoming>Fallabschluss_beurteilen_Ja_zu_Fallabschluss_beurteilen_SERVICE_FLOW</bpmn:incoming>
+      <bpmn:outgoing>Fallabschluss_beurteilen_zu_LLM_Ergebnisse_zusammenfuehren_FLOW</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="LLM_Ergebnisse_zusammenfuehren_XOR" gatewayDirection="Converging">
+      <bpmn:incoming>Vorgehen_empfehlen_Nein_zu_LLM_Ergebnisse_zusammenfuehren_FLOW</bpmn:incoming>
+      <bpmn:incoming>Fallabschluss_beurteilen_Nein_zu_LLM_Ergebnisse_zusammenfuehren_FLOW</bpmn:incoming>
+      <bpmn:incoming>Fallabschluss_beurteilen_zu_LLM_Ergebnisse_zusammenfuehren_FLOW</bpmn:incoming>
+      <bpmn:outgoing>LLM_Ergebnisse_zusammenfuehren_zu_Auswertung_wiederholen_XOR_FLOW</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:exclusiveGateway id="Auswertung_wiederholen_XOR" name="Auswertung&#10;wiederholen?" gatewayDirection="Diverging">
+      <bpmn:incoming>LLM_Ergebnisse_zusammenfuehren_zu_Auswertung_wiederholen_XOR_FLOW</bpmn:incoming>
+      <bpmn:outgoing>Auswertung_wiederholen_Ja_zu_LLM_Auswertung_zusammenfuehren_FLOW</bpmn:outgoing>
+      <bpmn:outgoing>Auswertung_wiederholen_Nein_zu_Auswertung_bereitgestellt_FLOW</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="Auswertung_bereitgestellt_END" name="Auswertung bereitgestellt">
+      <bpmn:incoming>Auswertung_wiederholen_Nein_zu_Auswertung_bereitgestellt_FLOW</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Auswertung_angefordert_zu_LLM_Auswertung_zusammenfuehren_FLOW" sourceRef="Auswertung_angefordert_START" targetRef="LLM_Auswertung_zusammenfuehren_XOR" />
+    <bpmn:sequenceFlow id="LLM_Auswertung_zusammenfuehren_zu_Gespraech_analysieren_FLOW" sourceRef="LLM_Auswertung_zusammenfuehren_XOR" targetRef="Gespraech_analysieren_SERVICE" />
+    <bpmn:sequenceFlow id="Gespraech_analysieren_zu_Vorgehen_empfehlen_XOR_FLOW" sourceRef="Gespraech_analysieren_SERVICE" targetRef="Vorgehen_empfehlen_XOR" />
+    <bpmn:sequenceFlow id="Vorgehen_empfehlen_Ja_zu_Vorgehen_empfehlen_SERVICE_FLOW" sourceRef="Vorgehen_empfehlen_XOR" targetRef="Vorgehen_empfehlen_SERVICE" name="Ja">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= needsEvaluationAdvice = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Vorgehen_empfehlen_Nein_zu_LLM_Ergebnisse_zusammenfuehren_FLOW" sourceRef="Vorgehen_empfehlen_XOR" targetRef="LLM_Ergebnisse_zusammenfuehren_XOR" name="Nein">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= needsEvaluationAdvice = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Vorgehen_empfehlen_zu_Fallabschluss_beurteilen_XOR_FLOW" sourceRef="Vorgehen_empfehlen_SERVICE" targetRef="Fallabschluss_beurteilen_XOR" />
+    <bpmn:sequenceFlow id="Fallabschluss_beurteilen_Ja_zu_Fallabschluss_beurteilen_SERVICE_FLOW" sourceRef="Fallabschluss_beurteilen_XOR" targetRef="Fallabschluss_beurteilen_SERVICE" name="Ja">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= needsEvaluationClosure = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Fallabschluss_beurteilen_Nein_zu_LLM_Ergebnisse_zusammenfuehren_FLOW" sourceRef="Fallabschluss_beurteilen_XOR" targetRef="LLM_Ergebnisse_zusammenfuehren_XOR" name="Nein">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= needsEvaluationClosure = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Fallabschluss_beurteilen_zu_LLM_Ergebnisse_zusammenfuehren_FLOW" sourceRef="Fallabschluss_beurteilen_SERVICE" targetRef="LLM_Ergebnisse_zusammenfuehren_XOR" />
+    <bpmn:sequenceFlow id="LLM_Ergebnisse_zusammenfuehren_zu_Auswertung_wiederholen_XOR_FLOW" sourceRef="LLM_Ergebnisse_zusammenfuehren_XOR" targetRef="Auswertung_wiederholen_XOR" />
+    <bpmn:sequenceFlow id="Auswertung_wiederholen_Ja_zu_LLM_Auswertung_zusammenfuehren_FLOW" sourceRef="Auswertung_wiederholen_XOR" targetRef="LLM_Auswertung_zusammenfuehren_XOR" name="Ja, aktuelle Grundlage laden">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= evaluationRestart = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Auswertung_wiederholen_Nein_zu_Auswertung_bereitgestellt_FLOW" sourceRef="Auswertung_wiederholen_XOR" targetRef="Auswertung_bereitgestellt_END" name="Nein">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= evaluationRestart = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:group id="LLM_Auswertung_GROUP" categoryValueRef="LLM_Auswertung_CATEGORY_VALUE" />
+    <bpmn:textAnnotation id="Auswertungsablauf_NOTE">
+      <bpmn:text>PropertyFlow übernimmt eine passende Auswertung, sofern sie bereitsteht. Sonst folgen Gesprächsanalyse, Empfehlung und bei Bedarf die Abschlussbeurteilung.</bpmn:text>
+    </bpmn:textAnnotation>
+  </bpmn:process>
+  <bpmn:category id="LLM_Auswertung_CATEGORY">
+    <bpmn:categoryValue id="LLM_Auswertung_CATEGORY_VALUE" value="LLM-Auswertung" />
+  </bpmn:category>
+  <bpmndi:BPMNDiagram id="Gespraech_auswerten_PROCESS_DIAGRAM">
+    <bpmndi:BPMNPlane id="Gespraech_auswerten_PROCESS_PLANE" bpmnElement="Gespraech_auswerten_PROCESS">
+      <bpmndi:BPMNShape id="Auswertung_angefordert_START_SHAPE" bpmnElement="Auswertung_angefordert_START">
+        <dc:Bounds x="140" y="232" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="111" y="279" width="94" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="LLM_Auswertung_zusammenfuehren_XOR_SHAPE" bpmnElement="LLM_Auswertung_zusammenfuehren_XOR" isMarkerVisible="true">
+        <dc:Bounds x="230" y="225" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gespraech_analysieren_SERVICE_SHAPE" bpmnElement="Gespraech_analysieren_SERVICE" bioc:stroke="#9d174d" bioc:fill="#fce7f3">
+        <dc:Bounds x="350" y="200" width="250" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Vorgehen_empfehlen_XOR_SHAPE" bpmnElement="Vorgehen_empfehlen_XOR" isMarkerVisible="true">
+        <dc:Bounds x="680" y="225" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="619" y="285" width="82" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Vorgehen_empfehlen_SERVICE_SHAPE" bpmnElement="Vorgehen_empfehlen_SERVICE" bioc:stroke="#9d174d" bioc:fill="#fce7f3">
+        <dc:Bounds x="830" y="200" width="250" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Fallabschluss_beurteilen_XOR_SHAPE" bpmnElement="Fallabschluss_beurteilen_XOR" isMarkerVisible="true">
+        <dc:Bounds x="1145" y="225" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1105" y="282" width="130" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Fallabschluss_beurteilen_SERVICE_SHAPE" bpmnElement="Fallabschluss_beurteilen_SERVICE" bioc:stroke="#9d174d" bioc:fill="#fce7f3">
+        <dc:Bounds x="1295" y="200" width="250" height="100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="LLM_Ergebnisse_zusammenfuehren_XOR_SHAPE" bpmnElement="LLM_Ergebnisse_zusammenfuehren_XOR" isMarkerVisible="true">
+        <dc:Bounds x="1600" y="225" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Auswertung_wiederholen_XOR_SHAPE" bpmnElement="Auswertung_wiederholen_XOR" isMarkerVisible="true">
+        <dc:Bounds x="1715" y="225" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1753" y="283" width="78" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Auswertung_bereitgestellt_END_SHAPE" bpmnElement="Auswertung_bereitgestellt_END">
+        <dc:Bounds x="1880" y="232" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1851" y="279" width="97" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="LLM_Auswertung_GROUP_SHAPE" bpmnElement="LLM_Auswertung_GROUP">
+        <dc:Bounds x="320" y="143" width="1510" height="322" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="990" y="151" width="170" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Auswertungsablauf_NOTE_SHAPE" bpmnElement="Auswertungsablauf_NOTE">
+        <dc:Bounds x="134" y="39" width="800" height="70" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Auswertung_angefordert_zu_LLM_Auswertung_zusammenfuehren_FLOW_EDGE" bpmnElement="Auswertung_angefordert_zu_LLM_Auswertung_zusammenfuehren_FLOW">
+        <di:waypoint x="176" y="250" />
+        <di:waypoint x="230" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="LLM_Auswertung_zusammenfuehren_zu_Gespraech_analysieren_FLOW_EDGE" bpmnElement="LLM_Auswertung_zusammenfuehren_zu_Gespraech_analysieren_FLOW">
+        <di:waypoint x="280" y="250" />
+        <di:waypoint x="350" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Gespraech_analysieren_zu_Vorgehen_empfehlen_XOR_FLOW_EDGE" bpmnElement="Gespraech_analysieren_zu_Vorgehen_empfehlen_XOR_FLOW">
+        <di:waypoint x="600" y="250" />
+        <di:waypoint x="680" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Vorgehen_empfehlen_Ja_zu_Vorgehen_empfehlen_SERVICE_FLOW_EDGE" bpmnElement="Vorgehen_empfehlen_Ja_zu_Vorgehen_empfehlen_SERVICE_FLOW">
+        <di:waypoint x="730" y="250" />
+        <di:waypoint x="830" y="250" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="762" y="224" width="45" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Vorgehen_empfehlen_Nein_zu_LLM_Ergebnisse_zusammenfuehren_FLOW_EDGE" bpmnElement="Vorgehen_empfehlen_Nein_zu_LLM_Ergebnisse_zusammenfuehren_FLOW">
+        <di:waypoint x="705" y="275" />
+        <di:waypoint x="705" y="351" />
+        <di:waypoint x="1625" y="351" />
+        <di:waypoint x="1625" y="275" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="740" y="331" width="50" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Vorgehen_empfehlen_zu_Fallabschluss_beurteilen_XOR_FLOW_EDGE" bpmnElement="Vorgehen_empfehlen_zu_Fallabschluss_beurteilen_XOR_FLOW">
+        <di:waypoint x="1080" y="250" />
+        <di:waypoint x="1145" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Fallabschluss_beurteilen_Ja_zu_Fallabschluss_beurteilen_SERVICE_FLOW_EDGE" bpmnElement="Fallabschluss_beurteilen_Ja_zu_Fallabschluss_beurteilen_SERVICE_FLOW">
+        <di:waypoint x="1195" y="250" />
+        <di:waypoint x="1295" y="250" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1227" y="224" width="45" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Fallabschluss_beurteilen_Nein_zu_LLM_Ergebnisse_zusammenfuehren_FLOW_EDGE" bpmnElement="Fallabschluss_beurteilen_Nein_zu_LLM_Ergebnisse_zusammenfuehren_FLOW">
+        <di:waypoint x="1170" y="225" />
+        <di:waypoint x="1170" y="191" />
+        <di:waypoint x="1625" y="191" />
+        <di:waypoint x="1625" y="225" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1192" y="171" width="50" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Fallabschluss_beurteilen_zu_LLM_Ergebnisse_zusammenfuehren_FLOW_EDGE" bpmnElement="Fallabschluss_beurteilen_zu_LLM_Ergebnisse_zusammenfuehren_FLOW">
+        <di:waypoint x="1545" y="250" />
+        <di:waypoint x="1600" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="LLM_Ergebnisse_zusammenfuehren_zu_Auswertung_wiederholen_XOR_FLOW_EDGE" bpmnElement="LLM_Ergebnisse_zusammenfuehren_zu_Auswertung_wiederholen_XOR_FLOW">
+        <di:waypoint x="1650" y="250" />
+        <di:waypoint x="1715" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Auswertung_wiederholen_Ja_zu_LLM_Auswertung_zusammenfuehren_FLOW_EDGE" bpmnElement="Auswertung_wiederholen_Ja_zu_LLM_Auswertung_zusammenfuehren_FLOW">
+        <di:waypoint x="1740" y="275" />
+        <di:waypoint x="1740" y="422" />
+        <di:waypoint x="255" y="422" />
+        <di:waypoint x="255" y="275" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1170" y="402" width="175" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Auswertung_wiederholen_Nein_zu_Auswertung_bereitgestellt_FLOW_EDGE" bpmnElement="Auswertung_wiederholen_Nein_zu_Auswertung_bereitgestellt_FLOW">
+        <di:waypoint x="1765" y="250" />
+        <di:waypoint x="1880" y="250" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1775" y="224" width="50" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

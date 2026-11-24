@@ -10,14 +10,16 @@ import com.pertegato.propertyflow.caseprocessing.contract.CreateCaseCommand;
 import com.pertegato.propertyflow.caseprocessing.contract.FollowUpCommands;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffCaseDataCommands.ClosureApproval;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffTaskDecisions.StaffTask;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.ConversationEvaluationBpmnConstants;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.TenantReplyBpmnConstants;
 import com.pertegato.propertyflow.caseprocessing.delivery.PersonalLinkCodec;
 import com.pertegato.propertyflow.caseprocessing.persistence.AnswerRequirementStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.AutomaticQuestionStore;
-import com.pertegato.propertyflow.caseprocessing.persistence.CaseAnalysisStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseDataStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWaitStore;
-import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore.StartOrder;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore;
+import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore.StartOrder;
 import com.pertegato.propertyflow.caseprocessing.persistence.ClarificationQuestionStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.ConversationEvaluationStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.DirectFollowUpStore;
@@ -32,7 +34,6 @@ import com.pertegato.propertyflow.caseprocessing.persistence.TenantReplyStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.UrgencyStore;
 import com.pertegato.propertyflow.caseprocessing.service.AutomaticClosureRelease;
 import com.pertegato.propertyflow.caseprocessing.service.AutomaticClosureService;
-import com.pertegato.propertyflow.caseprocessing.service.CaseAnalysisService;
 import com.pertegato.propertyflow.caseprocessing.service.CaseClosureService;
 import com.pertegato.propertyflow.caseprocessing.service.CaseDataService;
 import com.pertegato.propertyflow.caseprocessing.service.CaseUrgencyService;
@@ -46,7 +47,6 @@ import com.pertegato.propertyflow.caseprocessing.service.StaffReviewService;
 import com.pertegato.propertyflow.caseprocessing.service.TenantMessageService;
 import com.pertegato.propertyflow.caseprocessing.service.TenantReplyService;
 import com.pertegato.propertyflow.recommendation.service.Recommendation;
-import com.pertegato.propertyflow.triage.service.AnalyzeTool;
 import com.pertegato.propertyflow.triage.service.ConversationAnalysis;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ActivatedJob;
@@ -72,8 +72,51 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.AutomaticClarificationBpmnConstants.JobType.AUTOMATIC_RECOMMENDATION;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.AutomaticClarificationBpmnConstants.JobType.REGISTER_AUTOMATIC;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.AutomaticClarificationBpmnConstants.JobType.START_CLARIFICATION;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.ANSWER_CLEAR;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.ANSWER_CONTINUE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.DIRECT_FOLLOW_UP_APPLY;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.DIRECT_FOLLOW_UP_CONTINUE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.DIRECT_FOLLOW_UP_SIGNAL;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.PREPARE_INITIAL;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.PREPARE_PROCESS_KEY;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.REGISTER_CASE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.REPLY_CLOSURE_CHECK;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.REPLY_CLOSURE_SIGNAL;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.REPLY_PREPARE_REVIEW;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.REPLY_WAKE_REVIEW;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.REVIEW_ANALYSIS_FAILURE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.REVIEW_CHECK;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.STAFF_CLAIM;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.STAFF_CLOSE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.STAFF_RECONCILE_CONTINUATION;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.REPLY_CLOSURE_COMMAND_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.JobType.STAFF_MESSAGE_PUBLISH;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.EVALUATION_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.STAFF_ENTRY_CONTEXT_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.ConversationEvaluationBpmnConstants.JobType.AUTOMATIC_ADVISE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.ConversationEvaluationBpmnConstants.JobType.AUTOMATIC_ANALYZE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.ConversationEvaluationBpmnConstants.JobType.AUTOMATIC_ASSESS_CLOSURE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.FollowUpBpmnConstants.JobType.FOLLOW_UP_CHANGE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.FollowUpBpmnConstants.JobType.FOLLOW_UP_SAVE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.FollowUpBpmnConstants.JobType.FOLLOW_UP_TIMER;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.JobType.FOLLOW_UP_STOP_CONTACT;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.JobType.STAFF_PROGRESS;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.JobType.STAFF_QUESTION_PUBLISH;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.JobType.STAFF_REGISTER;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.JobType.STAFF_START_REVIEW;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.TenantMessageBpmnConstants.JobType.CONVERSATION_APPLY;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.TenantMessageBpmnConstants.JobType.CONVERSATION_CONTEXT;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.TenantMessageBpmnConstants.JobType.CONVERSATION_RECOMMENDATION;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.TenantMessageBpmnConstants.JobType.TENANT_MESSAGE_IDENTIFY;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.TenantReplyBpmnConstants.JobType.REPLY_APPLY_EVALUATION;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.TenantReplyBpmnConstants.JobType.REPLY_REGISTER;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.TenantReplyBpmnConstants.JobType.REPLY_VALIDATE;
 import static com.pertegato.propertyflow.recommendation.ClosureAssessmentFixtures.noClosure;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -122,9 +165,6 @@ class TenantReplyCamundaTest {
     private StaffReviewStore reviewStore;
 
     @Autowired
-    private CaseAnalysisStore analyses;
-
-    @Autowired
     private CaseUrgencyService urgencyService;
 
     private CaseAccepted accepted;
@@ -145,11 +185,8 @@ class TenantReplyCamundaTest {
         database.execute("TRUNCATE pf_case CASCADE");
         engine = CamundaClient.newClientBuilder().restAddress(URI.create(System.getenv("PROPERTYFLOW_TEST_CAMUNDA_URL")))
                 .preferRestOverGrpc(true).defaultRequestTimeout(Duration.ofSeconds(5)).build();
-        long definitionKey = engine.newDeployResourceCommand().addResourceFromClasspath("workflow/reply-case.bpmn")
-                .addResourceFromClasspath("workflow/follow-up.bpmn").addResourceFromClasspath("workflow/reply-processing.bpmn").addResourceFromClasspath("workflow/conversation-processing.bpmn")
-                .addResourceFromClasspath("workflow/analysis-automatic.bpmn").addResourceFromClasspath("workflow/reply-staff.bpmn")
-                .send().join().getProcesses().stream()
-                .filter(process -> InitialCaseWorkers.CASE_PROCESS.equals(process.getBpmnProcessId()))
+        long definitionKey = WorkflowTestModels.deploy(engine).getProcesses().stream()
+                .filter(process -> CaseProcessBpmnConstants.PROCESS_ID.equals(process.getBpmnProcessId()))
                 .findFirst().orElseThrow().getProcessDefinitionKey();
         accepted = creation.create(new SubmissionContext.Guest(UUID.randomUUID()),
                 new CreateCaseCommand("review", "Heizung", "Wohnung", "Kalt", "review@example.test"));
@@ -157,13 +194,13 @@ class TenantReplyCamundaTest {
         StartOrder start = workflow.claim(definitionKey, "<default>", Duration.ofMinutes(2)).orElseThrow();
         assertEquals(ProcessStartGateway.StartResult.STARTED, new CamundaProcessStartGateway(engine).ensureStarted(start));
         initial = new InitialCaseWorkers(engine, initialService);
-        ActivatedJob preparing = job(InitialCaseWorkers.PREPARE_KEY);
+        ActivatedJob preparing = job(PREPARE_PROCESS_KEY);
         leader = preparing.getProcessInstanceKey();
         initial.prepareKey(engine, preparing);
-        initial.register(engine, job(InitialCaseWorkers.REGISTER));
-        initial.prepareInitial(engine, job(InitialCaseWorkers.PREPARE_INITIAL));
-        initial.registerAutomatic(engine, job(InitialCaseWorkers.REGISTER_AUTOMATIC));
-        initial.clarification(engine, job(InitialCaseWorkers.CLARIFICATION));
+        initial.register(engine, job(REGISTER_CASE));
+        initial.prepareInitial(engine, job(PREPARE_INITIAL));
+        initial.registerAutomatic(engine, job(REGISTER_AUTOMATIC));
+        initial.clarification(engine, job(START_CLARIFICATION));
         assertEquals("UNDER_CLARIFICATION", status());
         actor = new WebAccountContext(UUID.randomUUID());
         database.update("""
@@ -203,7 +240,7 @@ class TenantReplyCamundaTest {
             }).toList() : List.of();
             return new ConversationAnalysis.Result("NORMAL", false, answers, null, "test", "v1");
         }, input -> new Recommendation.Result("Verwaltung", "Prüfen", List.of(), List.of(), false, null, "test", "v1"), noClosure(), transactions,
-                new AutomaticClosureRelease());
+                new AutomaticClosureRelease(), replies);
     }
 
     private TenantReplyWorkers replyWorkers() {
@@ -220,17 +257,17 @@ class TenantReplyCamundaTest {
         StaffDecisionService decision = new StaffDecisionService(access, workflow, caseData, reviewStore, decisions, taskGateway(), transactions);
         StaffTask task = decision.current(actor, caseId);
         decision.continueWork(actor, caseId, UUID.randomUUID(), Long.parseLong(task.taskKey()), task.version(), task.reviewToken(), "");
-        new StaffDecisionWorkers(engine, decision).progress(engine, job("propertyflow.staff.progress"));
-        await(() -> tasks().stream().anyMatch(current -> "SWork".equals(current.getElementId())));
+        new StaffDecisionWorkers(engine, decision).progress(engine, job(STAFF_PROGRESS));
+        await(() -> tasks().stream().anyMatch(current -> "Naechste_Mitarbeiteraktion_abwarten_USERTASK".equals(current.getElementId())));
     }
 
     private void question() throws Exception {
         progress();
         assertTrue(service().available(actor, caseId).question());
         assertEquals("PENDING", service().send(actor, caseId, "Frage", "Wann passt Ihnen ein Termin?", true));
-        new StaffMessageWorkers(engine, service()).question(engine, job("propertyflow.staff-question.publish"));
+        new StaffMessageWorkers(engine, service()).question(engine, job(STAFF_QUESTION_PUBLISH));
         assertEquals("PUBLISHED", service().send(actor, caseId, "Frage", "Wann passt Ihnen ein Termin?", true));
-        replyWorkers().register(engine, job(TenantReplyWorkers.REGISTER));
+        replyWorkers().register(engine, job(REPLY_REGISTER));
         assertEquals("WAITING_FOR_TENANT", status());
         assertEquals(1, count("pf_staff_answer_requirement"));
         assertEquals(1, count("pf_reply_entry"));
@@ -242,13 +279,26 @@ class TenantReplyCamundaTest {
                 new CamundaCaseGateway(beans.getBeanProvider(CamundaClient.class), true),
                 new CamundaTenantMessageGateway(beans.getBeanProvider(CamundaClient.class), true), transactions, accountId -> java.util.Optional.empty());
         tenant.send(accepted.personalAccessToken(), UUID.randomUUID(), text);
-        new TenantMessageWorkers(engine, tenant).identify(engine, job(TenantMessageWorkers.IDENTIFY));
+        new TenantMessageWorkers(engine, tenant).identify(engine, job(TENANT_MESSAGE_IDENTIFY));
         if ("WAITING_FOR_FOLLOW_UP".equals(status())) {
             return;
         }
-        ConversationEvaluationWorkers worker = new ConversationEvaluationWorkers(engine, central());
-        worker.evaluate(engine, job(ConversationEvaluationWorkers.EVALUATE));
-        worker.apply(engine, job(ConversationEvaluationWorkers.APPLY));
+        ConversationEvaluationWorkers worker = evaluateTenantMessage();
+        worker.apply(engine, job(CONVERSATION_APPLY));
+    }
+
+    private ConversationEvaluationWorkers evaluateTenantMessage() throws Exception {
+        ConversationEvaluationService service = central();
+        ConversationEvaluationWorkers worker = new ConversationEvaluationWorkers(engine, service);
+        worker.context(engine, job(CONVERSATION_CONTEXT));
+        AutomaticEvaluationWorkers evaluation = new AutomaticEvaluationWorkers(engine, service);
+        evaluation.analyze(engine, job(AUTOMATIC_ANALYZE));
+        evaluation.advise(engine, job(AUTOMATIC_ADVISE));
+        if ("WAITING_FOR_TENANT".equals(status()) || "UNDER_CLARIFICATION".equals(status())) {
+            evaluation.assessClosure(engine, job(AUTOMATIC_ASSESS_CLOSURE));
+        }
+        worker.recommendation(engine, job(CONVERSATION_RECOMMENDATION));
+        return worker;
     }
 
     private void deliver() {
@@ -256,27 +306,43 @@ class TenantReplyCamundaTest {
         new TenantReplyDispatcher(replies, replyService(), engine).dispatch();
     }
 
+    private ActivatedJob applyReplyEvaluation(boolean refresh) throws Exception {
+        ActivatedJob analysis = job(AUTOMATIC_ANALYZE);
+        assertEquals(ConversationEvaluationBpmnConstants.PROCESS_ID, analysis.getBpmnProcessId());
+        AutomaticEvaluationWorkers evaluation = new AutomaticEvaluationWorkers(engine, central());
+        evaluation.analyze(engine, analysis);
+        if (refresh) {
+            evaluation.advise(engine, job(AUTOMATIC_ADVISE));
+            evaluation.assessClosure(engine, job(AUTOMATIC_ASSESS_CLOSURE));
+        }
+        ActivatedJob apply = job(REPLY_APPLY_EVALUATION);
+        assertEquals(TenantReplyBpmnConstants.ServiceTask.APPLY_EVALUATION, apply.getElementId());
+        replyWorkers().applyEvaluation(engine, apply);
+        return apply;
+    }
+
     @Test
     void partialAnswerContinuesWaitingAndCompleteAnswerCreatesExactlyOneNewReview() throws Exception {
         question();
         int statusEvents = count("pf_case_status_event");
+        int evaluationsBeforeAnswer = count("pf_conversation_evaluation");
         answer("Ich muss meinen Kalender prüfen.");
         deliver();
-        replyWorkers().evaluate(engine, job(TenantReplyWorkers.EVALUATE));
-        replyWorkers().validate(engine, job(TenantReplyWorkers.VALIDATE));
-        replyWorkers().register(engine, job(TenantReplyWorkers.REGISTER));
+        applyReplyEvaluation(false);
+        replyWorkers().validate(engine, job(REPLY_VALIDATE));
+        replyWorkers().register(engine, job(REPLY_REGISTER));
         assertEquals("WAITING_FOR_TENANT", status());
         assertEquals(statusEvents, count("pf_case_status_event"));
-        assertEquals(1, count("pf_conversation_evaluation"));
+        assertEquals(evaluationsBeforeAnswer + 1, count("pf_conversation_evaluation"));
         assertEquals("OPEN", database.queryForObject("SELECT state FROM pf_staff_answer_requirement", String.class));
         answered = true;
         answer("Am Montag um 10 Uhr.");
         deliver();
-        replyWorkers().prepareReview(engine, job(TenantReplyWorkers.PREPARE_REVIEW));
+        replyWorkers().prepareReview(engine, job(REPLY_PREPARE_REVIEW));
         StaffReviewWorkers reviews = new StaffReviewWorkers(engine, reviewService);
-        reviews.claim(engine, job("propertyflow.staff.claim"));
-        reviews.register(engine, job("propertyflow.staff.register"));
-        reviews.startReview(engine, job("propertyflow.staff.start-review"));
+        reviews.claim(engine, job(STAFF_CLAIM));
+        reviews.register(engine, job(STAFF_REGISTER));
+        reviews.startReview(engine, job(STAFF_START_REVIEW));
         await(() -> tasks().size() == 1);
         assertEquals("STAFF_REVIEW_REQUIRED", status());
         assertEquals("ANSWERED", database.queryForObject("SELECT state FROM pf_staff_answer_requirement", String.class));
@@ -289,10 +355,10 @@ class TenantReplyCamundaTest {
     void changedCaseRejectsNativeQuestionAndReturnsToReviewWithoutPublishing() throws Exception {
         progress();
         service().send(actor, caseId, "Veraltet", "Noch gültig?", true);
-        ActivatedJob question = job("propertyflow.staff-question.publish");
+        ActivatedJob question = job(STAFF_QUESTION_PUBLISH);
         database.update("UPDATE pf_case SET version = version + 1 WHERE id = ?", caseId);
         new StaffMessageWorkers(engine, service()).question(engine, question);
-        new StaffReviewWorkers(engine, reviewService).startReview(engine, job("propertyflow.staff.start-review"));
+        new StaffReviewWorkers(engine, reviewService).startReview(engine, job(STAFF_START_REVIEW));
         await(() -> tasks().size() == 1);
         assertEquals("STAFF_REVIEW_REQUIRED", status());
         assertEquals(0, count("pf_staff_message"));
@@ -303,16 +369,17 @@ class TenantReplyCamundaTest {
     void evaluationBeforeWaitRegistrationIsDeliveredAfterRegistration() throws Exception {
         progress();
         service().send(actor, caseId, "Früh", "Welcher Termin passt?", true);
-        new StaffMessageWorkers(engine, service()).question(engine, job("propertyflow.staff-question.publish"));
-        ActivatedJob registration = job(TenantReplyWorkers.REGISTER);
+        new StaffMessageWorkers(engine, service()).question(engine, job(STAFF_QUESTION_PUBLISH));
+        ActivatedJob registration = job(REPLY_REGISTER);
         answer("Ich prüfe den Kalender.");
         deliver();
         assertEquals(0, count("pf_reply_call"));
         replyWorkers().register(engine, registration);
         deliver();
-        replyWorkers().evaluate(engine, job(TenantReplyWorkers.EVALUATE));
-        replyWorkers().validate(engine, job(TenantReplyWorkers.VALIDATE));
-        replyWorkers().register(engine, job(TenantReplyWorkers.REGISTER));
+        // Die Registrierung ändert die Fallversion, deshalb wird das vorab gelieferte Ergebnis erneuert.
+        applyReplyEvaluation(true);
+        replyWorkers().validate(engine, job(REPLY_VALIDATE));
+        replyWorkers().register(engine, job(REPLY_REGISTER));
         assertEquals("WAITING_FOR_TENANT", status());
         assertEquals(1, count("pf_reply_decision"));
         assertEquals("WAIT", database.queryForObject("SELECT outcome FROM pf_reply_decision", String.class));
@@ -322,19 +389,20 @@ class TenantReplyCamundaTest {
     @Test
     void newerAnswerInvalidatesContinuationAndUsesSharedCurrentEvaluation() throws Exception {
         question();
+        int evaluationsBeforeAnswers = count("pf_conversation_evaluation");
         answer("Ich schaue nach.");
         deliver();
-        replyWorkers().evaluate(engine, job(TenantReplyWorkers.EVALUATE));
-        ActivatedJob old = job(TenantReplyWorkers.VALIDATE);
+        ActivatedJob first = applyReplyEvaluation(false);
+        ActivatedJob old = job(REPLY_VALIDATE);
         answer("Der Kalender ist noch nicht verfügbar.");
         replyWorkers().validate(engine, old);
         assertEquals(0, count("pf_reply_decision"));
-        ActivatedJob current = job(TenantReplyWorkers.EVALUATE);
-        assertEquals("RCurrentAnalysis", current.getElementId());
-        replyWorkers().evaluate(engine, current);
-        replyWorkers().validate(engine, job(TenantReplyWorkers.VALIDATE));
-        replyWorkers().register(engine, job(TenantReplyWorkers.REGISTER));
-        assertEquals(2, count("pf_conversation_evaluation"));
+        ActivatedJob current = applyReplyEvaluation(false);
+        assertEquals(first.getProcessInstanceKey(), current.getProcessInstanceKey());
+        assertNotEquals(first.getVariablesAsMap().get(EVALUATION_REF), current.getVariablesAsMap().get(EVALUATION_REF));
+        replyWorkers().validate(engine, job(REPLY_VALIDATE));
+        replyWorkers().register(engine, job(REPLY_REGISTER));
+        assertEquals(evaluationsBeforeAnswers + 2, count("pf_conversation_evaluation"));
         assertEquals(1, count("pf_reply_decision"));
         assertEquals("WAITING_FOR_TENANT", status());
     }
@@ -348,18 +416,18 @@ class TenantReplyCamundaTest {
         StaffMessageService service = service();
         assertTrue(service.available(actor, caseId).question());
         service.send(actor, caseId, "Zusatzfrage", "Welche Telefonnummer dürfen wir nutzen?", true);
-        new StaffMessageWorkers(engine, service).publish(engine, job(StaffMessageWorkers.PUBLISH));
+        new StaffMessageWorkers(engine, service).publish(engine, job(STAFF_MESSAGE_PUBLISH));
         assertEquals(child, replies.active(caseId, leader).orElseThrow().child());
         assertEquals(2, count("pf_staff_answer_requirement"));
         assertEquals("WAITING_FOR_TENANT", status());
         answer("Ich prüfe das noch.");
         deliver();
-        replyWorkers().evaluate(engine, job(TenantReplyWorkers.EVALUATE));
+        applyReplyEvaluation(false);
         service.send(actor, caseId, "Alter Nebenauftrag", "Noch nicht veröffentlicht", false);
-        ActivatedJob side = job(StaffMessageWorkers.PUBLISH);
-        replyWorkers().validate(engine, job(TenantReplyWorkers.VALIDATE));
+        ActivatedJob side = job(STAFF_MESSAGE_PUBLISH);
+        replyWorkers().validate(engine, job(REPLY_VALIDATE));
         new StaffMessageWorkers(engine, service).publish(engine, side);
-        replyWorkers().register(engine, job(TenantReplyWorkers.REGISTER));
+        replyWorkers().register(engine, job(REPLY_REGISTER));
         assertEquals(2, count("pf_staff_message"));
         assertEquals("REJECTED", messages.latest(caseId, "Alter Nebenauftrag").orElseThrow().state());
         assertEquals("WAITING_FOR_TENANT", status());
@@ -380,14 +448,14 @@ class TenantReplyCamundaTest {
 
     private void enterDirectWait(CaseDataService data) throws Exception {
         DirectFollowUpWorkers worker = new DirectFollowUpWorkers(engine, data, caseData, directFollowUps, replies, reviewService);
-        worker.apply(engine, job(DirectFollowUpWorkers.APPLY));
+        worker.apply(engine, job(DIRECT_FOLLOW_UP_APPLY));
         assertEquals("APPLIED", caseData.latest(caseId, "direct-follow").orElseThrow().state());
-        worker.signal(engine, job(DirectFollowUpWorkers.SIGNAL));
-        worker.resume(engine, job(DirectFollowUpWorkers.CONTINUE));
+        worker.signal(engine, job(DIRECT_FOLLOW_UP_SIGNAL));
+        worker.resume(engine, job(DIRECT_FOLLOW_UP_CONTINUE));
         StaffReviewWorkers staff = new StaffReviewWorkers(engine, reviewService);
-        staff.claim(engine, job("propertyflow.staff.claim"));
-        staff.register(engine, job("propertyflow.staff.register"));
-        new CaseWaitWorkers(engine, waitService).save(engine, job(CaseWaitWorkers.SAVE));
+        staff.claim(engine, job(STAFF_CLAIM));
+        staff.register(engine, job(STAFF_REGISTER));
+        new CaseWaitWorkers(engine, waitService).save(engine, job(FOLLOW_UP_SAVE));
     }
 
     @Test
@@ -403,11 +471,12 @@ class TenantReplyCamundaTest {
         assertEquals("OPEN", database.queryForObject("SELECT state FROM pf_staff_answer_requirement", String.class));
         assertEquals(mails + 1, count("pf_case_mail_order"));
         assertEquals(1, count("pf_case_wait"));
-        assertEquals("OBSOLETE", replyService().evaluate(caseId, previous.entry(), leader, previous.child(), previous.tenant()).state());
+        assertEquals("OBSOLETE", replyService().applyEvaluation(caseId, previous.entry(), leader, previous.child(), previous.tenant(), null)
+                .state());
         answer("Eine neue Information zur Wiedervorlage.");
         new FollowUpContactDispatcher(new CaseWaitStore(database), engine).dispatch();
-        new CaseWaitWorkers(engine, waitService).stopContact(engine, job(CaseWaitWorkers.STOP));
-        new StaffReviewWorkers(engine, reviewService).startReview(engine, job("propertyflow.staff.start-review"));
+        new CaseWaitWorkers(engine, waitService).stopContact(engine, job(FOLLOW_UP_STOP_CONTACT));
+        new StaffReviewWorkers(engine, reviewService).startReview(engine, job(STAFF_START_REVIEW));
         await(() -> tasks().size() == 1);
         assertEquals("STAFF_REVIEW_REQUIRED", status());
         assertEquals("CONTACT", new CaseWaitStore(database).get(id).orElseThrow().state());
@@ -422,8 +491,8 @@ class TenantReplyCamundaTest {
         // Eine ursprünglich gültige Frist kann während eines Ausfalls verstreichen.
         database.update("UPDATE pf_direct_follow_up SET due_at = CURRENT_TIMESTAMP - INTERVAL '1 second' WHERE id = ?", id);
         enterDirectWait(data);
-        new CaseWaitWorkers(engine, waitService).timer(engine, job(CaseWaitWorkers.TIMER));
-        new StaffReviewWorkers(engine, reviewService).startReview(engine, job("propertyflow.staff.start-review"));
+        new CaseWaitWorkers(engine, waitService).timer(engine, job(FOLLOW_UP_TIMER));
+        new StaffReviewWorkers(engine, reviewService).startReview(engine, job(STAFF_START_REVIEW));
         await(() -> tasks().size() == 1);
         assertEquals("STAFF_REVIEW_REQUIRED", status());
         assertEquals("TIMER", new CaseWaitStore(database).get(id).orElseThrow().state());
@@ -444,15 +513,15 @@ class TenantReplyCamundaTest {
         FollowUpCommands.Current current = commands.current(actor, caseId);
         UUID operation = UUID.randomUUID();
         commands.submit(actor, caseId, operation, current.waitId(), current.version(), true, null, null, "Weiter bearbeiten");
-        new FollowUpCommandWorkers(engine, commands).apply(engine, job(FollowUpCommandWorkers.APPLY));
+        new FollowUpCommandWorkers(engine, commands).apply(engine, job(FOLLOW_UP_CHANGE));
         StaffDecisionService decision = new StaffDecisionService(access, workflow, caseData, reviewStore, decisions, taskGateway(), transactions);
-        new StaffDecisionWorkers(engine, decision).progress(engine, job(StaffDecisionWorkers.PROGRESS));
-        await(() -> tasks().size() == 1 && "SWork".equals(tasks().getFirst().getElementId()));
+        new StaffDecisionWorkers(engine, decision).progress(engine, job(STAFF_PROGRESS));
+        await(() -> tasks().size() == 1 && "Naechste_Mitarbeiteraktion_abwarten_USERTASK".equals(tasks().getFirst().getElementId()));
         assertEquals("IN_PROGRESS", status());
         assertEquals("OPEN", database.queryForObject("SELECT state FROM pf_staff_answer_requirement", String.class));
         service().send(actor, caseId, "after-direct-wait", "Noch eine Frage?", true);
-        new StaffMessageWorkers(engine, service()).question(engine, job("propertyflow.staff-question.publish"));
-        replyWorkers().register(engine, job(TenantReplyWorkers.REGISTER));
+        new StaffMessageWorkers(engine, service()).question(engine, job(STAFF_QUESTION_PUBLISH));
+        replyWorkers().register(engine, job(REPLY_REGISTER));
         assertEquals("WAITING_FOR_TENANT", status());
         assertEquals("WAITING", replies.active(caseId, leader).orElseThrow().state());
         assertEquals(2, count("pf_reply_call"));
@@ -470,22 +539,22 @@ class TenantReplyCamundaTest {
                 """, signal, caseId, UUID.randomUUID(), leader, previous);
         StaffReviewWorkers staff = new StaffReviewWorkers(engine, reviewService);
         for (int index = 0; index < 2; index++) {
-            engine.newModifyProcessInstanceCommand(leader).activateElement("StaffContinuationClaim")
-                    .withVariable("staffEntryContextRef", previous.toString()).send().join();
-            staff.claim(engine, job("propertyflow.staff.claim"));
-            staff.reconcileContinuation(engine, job("propertyflow.staff.reconcile-continuation"));
+            engine.newModifyProcessInstanceCommand(leader).activateElement("Mitarbeiterfortsetzung_uebernehmen_SERVICE")
+                    .withVariable(STAFF_ENTRY_CONTEXT_REF, previous.toString()).send().join();
+            staff.claim(engine, job(STAFF_CLAIM));
+            staff.reconcileContinuation(engine, job(STAFF_RECONCILE_CONTINUATION));
         }
         assertEquals("ACTIVE", engine.newProcessInstanceGetRequest(reply.child()).send().join().getState().name());
         assertEquals(1, count("pf_staff_continuation"));
         assertEquals("PENDING", database.queryForObject("SELECT state FROM pf_case_review_signal WHERE id = ?", String.class, signal));
         assertEquals("WAITING_FOR_TENANT", status());
         new ReviewSignalDispatcher(reviewStore, engine).dispatch();
-        staff.check(engine, job("propertyflow.review.check"));
-        replyWorkers().wakeReview(engine, job(TenantReplyWorkers.WAKE_REVIEW));
-        replyWorkers().prepareReview(engine, job(TenantReplyWorkers.PREPARE_REVIEW));
-        staff.claim(engine, job("propertyflow.staff.claim"));
-        staff.register(engine, job("propertyflow.staff.register"));
-        staff.startReview(engine, job("propertyflow.staff.start-review"));
+        staff.check(engine, job(REVIEW_CHECK));
+        replyWorkers().wakeReview(engine, job(REPLY_WAKE_REVIEW));
+        replyWorkers().prepareReview(engine, job(REPLY_PREPARE_REVIEW));
+        staff.claim(engine, job(STAFF_CLAIM));
+        staff.register(engine, job(STAFF_REGISTER));
+        staff.startReview(engine, job(STAFF_START_REVIEW));
         await(() -> tasks().size() == 1);
         assertEquals("STAFF_REVIEW_REQUIRED", status());
         assertEquals(2, count("pf_staff_continuation"));
@@ -498,22 +567,22 @@ class TenantReplyCamundaTest {
         TenantReplyStore.Call reply = replies.active(caseId, leader).orElseThrow();
         StaffReviewService.ExternalOwner snapshot = reviewService.externalOwner(caseId, leader, previous);
         StaffReviewWorkers staff = new StaffReviewWorkers(engine, reviewService);
-        engine.newModifyProcessInstanceCommand(leader).activateElement("StaffContinuationClaim")
-                .withVariable("staffEntryContextRef", previous.toString()).send().join();
-        staff.claim(engine, job("propertyflow.staff.claim"));
-        ActivatedJob reconciliation = job("propertyflow.staff.reconcile-continuation");
+        engine.newModifyProcessInstanceCommand(leader).activateElement("Mitarbeiterfortsetzung_uebernehmen_SERVICE")
+                .withVariable(STAFF_ENTRY_CONTEXT_REF, previous.toString()).send().join();
+        staff.claim(engine, job(STAFF_CLAIM));
+        ActivatedJob reconciliation = job(STAFF_RECONCILE_CONTINUATION);
         CaseDataService data = caseDataService();
         requestReplyClosure(data);
         ReplyClosureWorkers closing = closureWorker(data);
-        closing.check(engine, job(ReplyClosureWorkers.CHECK));
+        closing.check(engine, job(REPLY_CLOSURE_CHECK));
         assertThrows(IllegalStateException.class, () -> reviewService.claimExternal(caseId, leader, previous, snapshot));
         staff.reconcileContinuation(engine, reconciliation);
-        ActivatedJob retry = job("propertyflow.staff.reconcile-continuation");
+        ActivatedJob retry = job(STAFF_RECONCILE_CONTINUATION);
         assertEquals(reconciliation.getKey(), retry.getKey());
         assertTrue(retry.getRetries() > 0);
         assertEquals("WAITING_FOR_TENANT", status());
         assertEquals("ACTIVE", engine.newProcessInstanceGetRequest(leader).send().join().getState().name());
-        closing.signal(engine, job(ReplyClosureWorkers.SIGNAL));
+        closing.signal(engine, job(REPLY_CLOSURE_SIGNAL));
         closeReservedReply(reply);
         await(() -> "COMPLETED".equals(engine.newProcessInstanceGetRequest(leader).send().join().getState().name()));
         assertEquals("CLOSED", status());
@@ -528,15 +597,15 @@ class TenantReplyCamundaTest {
         CaseDataService data = caseDataService();
         requestReplyClosure(data);
         ReplyClosureWorkers worker = closureWorker(data);
-        worker.check(engine, job(ReplyClosureWorkers.CHECK));
+        worker.check(engine, job(REPLY_CLOSURE_CHECK));
         assertEquals("CLOSING", replies.get(call.id()).state());
         assertEquals("WAITING_FOR_TENANT", status());
         assertEquals("PENDING", data.read(actor, caseId, "reply-close").state());
-        assertEquals("OBSOLETE", replyService().evaluate(caseId, call.entry(), leader, call.child(), call.tenant()).state());
+        assertEquals("OBSOLETE", replyService().applyEvaluation(caseId, call.entry(), leader, call.child(), call.tenant(), null).state());
         UUID message = database.queryForObject("SELECT id FROM pf_staff_message", UUID.class);
         assertThrows(CaseActionException.class, () -> data.clearAnswer(actor, caseId, "too-late", version(), message));
         assertThrows(CaseActionException.class, () -> service().send(actor, caseId, "too-late-question", "Neue Frage?", true));
-        worker.signal(engine, job(ReplyClosureWorkers.SIGNAL));
+        worker.signal(engine, job(REPLY_CLOSURE_SIGNAL));
         closeReservedReply(call);
         await(() -> "COMPLETED".equals(engine.newProcessInstanceGetRequest(leader).send().join().getState().name()));
         assertEquals("CLOSED", status());
@@ -554,7 +623,7 @@ class TenantReplyCamundaTest {
         CaseDataService data = caseDataService();
         requestReplyClosure(data);
         answer("Eine zusätzliche Information.");
-        closureWorker(data).check(engine, job(ReplyClosureWorkers.CHECK));
+        closureWorker(data).check(engine, job(REPLY_CLOSURE_CHECK));
         assertEquals("REJECTED", data.read(actor, caseId, "reply-close").state());
         assertEquals("WAITING", replies.active(caseId, leader).orElseThrow().state());
         assertEquals(0, count("pf_case_closure"));
@@ -567,9 +636,9 @@ class TenantReplyCamundaTest {
         CaseDataService data = caseDataService();
         requestReplyClosure(data);
         ReplyClosureWorkers worker = closureWorker(data);
-        worker.check(engine, job(ReplyClosureWorkers.CHECK));
+        worker.check(engine, job(REPLY_CLOSURE_CHECK));
         answer("Es gibt jetzt auch einen Wasserschaden.");
-        worker.signal(engine, job(ReplyClosureWorkers.SIGNAL));
+        worker.signal(engine, job(REPLY_CLOSURE_SIGNAL));
         closeReservedReply(call);
         finishClosureConflict();
         assertEquals("STAFF_REVIEW_REQUIRED", status());
@@ -579,11 +648,11 @@ class TenantReplyCamundaTest {
         StaffDecisionService decision = new StaffDecisionService(access, workflow, caseData, reviewStore, decisions, taskGateway(), transactions);
         StaffTask task = decision.current(actor, caseId);
         decision.continueWork(actor, caseId, UUID.randomUUID(), Long.parseLong(task.taskKey()), task.version(), task.reviewToken(), "");
-        new StaffDecisionWorkers(engine, decision).progress(engine, job("propertyflow.staff.progress"));
-        await(() -> tasks().stream().anyMatch(current -> "SWork".equals(current.getElementId())));
+        new StaffDecisionWorkers(engine, decision).progress(engine, job(STAFF_PROGRESS));
+        await(() -> tasks().stream().anyMatch(current -> "Naechste_Mitarbeiteraktion_abwarten_USERTASK".equals(current.getElementId())));
         service().send(actor, caseId, "question-after-conflict", "Welcher neue Termin passt?", true);
-        new StaffMessageWorkers(engine, service()).question(engine, job("propertyflow.staff-question.publish"));
-        replyWorkers().register(engine, job(TenantReplyWorkers.REGISTER));
+        new StaffMessageWorkers(engine, service()).question(engine, job(STAFF_QUESTION_PUBLISH));
+        replyWorkers().register(engine, job(REPLY_REGISTER));
         assertEquals("WAITING_FOR_TENANT", status());
         assertEquals(2, count("pf_reply_call"));
         assertEquals("WAITING", replies.active(caseId, leader).orElseThrow().state());
@@ -596,12 +665,12 @@ class TenantReplyCamundaTest {
         CaseDataService data = caseDataService();
         requestReplyClosure(data);
         ReplyClosureWorkers worker = closureWorker(data);
-        worker.check(engine, job(ReplyClosureWorkers.CHECK));
+        worker.check(engine, job(REPLY_CLOSURE_CHECK));
         database.update("""
                 INSERT INTO pf_case_review_signal (id, case_id, source_type, source_ref, reason)
                 VALUES (?, ?, 'TEST', ?, 'HUMAN_DECISION_REQUIRED')
                 """, UUID.randomUUID(), caseId, UUID.randomUUID());
-        worker.signal(engine, job(ReplyClosureWorkers.SIGNAL));
+        worker.signal(engine, job(REPLY_CLOSURE_SIGNAL));
         closeReservedReply(call);
         finishClosureConflict();
         assertEquals(0, count("pf_case_closure"));
@@ -615,9 +684,9 @@ class TenantReplyCamundaTest {
         CaseDataService data = caseDataService();
         requestReplyClosure(data);
         ReplyClosureWorkers worker = closureWorker(data);
-        worker.check(engine, job(ReplyClosureWorkers.CHECK));
+        worker.check(engine, job(REPLY_CLOSURE_CHECK));
         database.update("UPDATE pf_staff_account SET staff_role = FALSE WHERE id = ?", actor.accountId());
-        worker.signal(engine, job(ReplyClosureWorkers.SIGNAL));
+        worker.signal(engine, job(REPLY_CLOSURE_SIGNAL));
         closeReservedReply(call);
         finishClosureConflict();
         assertEquals(0, count("pf_case_closure"));
@@ -631,13 +700,13 @@ class TenantReplyCamundaTest {
         CaseDataService data = caseDataService();
         requestReplyClosure(data);
         ReplyClosureWorkers worker = closureWorker(data);
-        ActivatedJob checking = job(ReplyClosureWorkers.CHECK);
-        UUID id = UUID.fromString(checking.getVariablesAsMap().get("replyClosureCommandRef").toString());
+        ActivatedJob checking = job(REPLY_CLOSURE_CHECK);
+        UUID id = UUID.fromString(checking.getVariablesAsMap().get(REPLY_CLOSURE_COMMAND_REF).toString());
         assertEquals("ACCEPTED", data.replyClosureState(id, leader, "<default>"));
         assertEquals("ACCEPTED", data.replyClosureState(id, leader, "<default>"));
         assertEquals("ACCEPTED", data.rejectReplyClosure(id, leader, "<default>"));
         worker.dispatch();
-        ActivatedJob closing = job(CaseClosureWorkers.CLOSE);
+        ActivatedJob closing = job(STAFF_CLOSE);
         awaitReplyTermination(call);
         assertEquals("CLOSED", clarificationClosures.close(caseId, leader, call.child(), id).state());
         new CaseClosureWorkers(engine, clarificationClosures).close(engine, closing);
@@ -661,7 +730,7 @@ class TenantReplyCamundaTest {
     }
 
     private void closeReservedReply(TenantReplyStore.Call call) throws Exception {
-        ActivatedJob closing = job(CaseClosureWorkers.CLOSE);
+        ActivatedJob closing = job(STAFF_CLOSE);
         awaitReplyTermination(call);
         new CaseClosureWorkers(engine, clarificationClosures).close(engine, closing);
     }
@@ -673,9 +742,9 @@ class TenantReplyCamundaTest {
 
     private void finishClosureConflict() throws Exception {
         StaffReviewWorkers worker = new StaffReviewWorkers(engine, reviewService);
-        worker.claim(engine, job("propertyflow.staff.claim"));
-        worker.register(engine, job("propertyflow.staff.register"));
-        worker.startReview(engine, job("propertyflow.staff.start-review"));
+        worker.claim(engine, job(STAFF_CLAIM));
+        worker.register(engine, job(STAFF_REGISTER));
+        worker.startReview(engine, job(STAFF_START_REVIEW));
         await(() -> tasks().size() == 1);
     }
 
@@ -690,7 +759,7 @@ class TenantReplyCamundaTest {
         CaseDataService data = caseDataService();
         long version = database.queryForObject("SELECT version FROM pf_case WHERE id = ?", Long.class, caseId);
         data.clearAnswer(actor, caseId, operation, version, message);
-        new CaseDataWorkers(engine, data).clearAnswer(engine, job("propertyflow.answer.clear"));
+        new CaseDataWorkers(engine, data).clearAnswer(engine, job(ANSWER_CLEAR));
         assertEquals("APPLIED", data.read(actor, caseId, operation).state());
         assertEquals("APPLIED", data.clearAnswer(actor, caseId, operation, version, message).state());
     }
@@ -698,6 +767,7 @@ class TenantReplyCamundaTest {
     @Test
     void clearingLastAnswerRequirementCreatesOneWorkTaskWithoutModelEvaluation() throws Exception {
         question();
+        int evaluationsBeforeCancellation = count("pf_conversation_evaluation");
         UUID message = messages.find(caseId, "Frage").orElseThrow().id();
         clearAnswer(message, "Aufhebung");
         assertEquals("IN_PROGRESS", status());
@@ -706,12 +776,12 @@ class TenantReplyCamundaTest {
         assertEquals(1, count("pf_answer_cancellation"));
         AnswerCancellationWorkers cancellation = new AnswerCancellationWorkers(new AnswerRequirementStore(database), reviewService, engine);
         cancellation.dispatch();
-        cancellation.continueWork(engine, job("propertyflow.answer.continue"));
+        cancellation.continueWork(engine, job(ANSWER_CONTINUE));
         StaffReviewWorkers reviews = new StaffReviewWorkers(engine, reviewService);
-        reviews.claim(engine, job("propertyflow.staff.claim"));
-        reviews.register(engine, job("propertyflow.staff.register"));
-        await(() -> tasks().stream().anyMatch(task -> "SWork".equals(task.getElementId())));
-        assertEquals(0, count("pf_conversation_evaluation"));
+        reviews.claim(engine, job(STAFF_CLAIM));
+        reviews.register(engine, job(STAFF_REGISTER));
+        await(() -> tasks().stream().anyMatch(task -> "Naechste_Mitarbeiteraktion_abwarten_USERTASK".equals(task.getElementId())));
+        assertEquals(evaluationsBeforeCancellation, count("pf_conversation_evaluation"));
         assertEquals(1, tasks().size());
         cancellation.dispatch();
         assertEquals(1, tasks().size());
@@ -720,11 +790,12 @@ class TenantReplyCamundaTest {
     @Test
     void clearingOneOfTwoRequirementsKeepsWaitingAndPreservesOtherQuestion() throws Exception {
         question();
+        int evaluationsBeforeCancellation = count("pf_conversation_evaluation");
         long child = replies.active(caseId, leader).orElseThrow().child();
         await(() -> !engine.newMessageSubscriptionSearchRequest().filter(filter -> filter.processInstanceKey(child)
                 .messageName(CamundaStaffMessageGateway.REPLY_MESSAGE)).send().join().items().isEmpty());
         service().send(actor, caseId, "Zweite Frage", "Welche Telefonnummer dürfen wir nutzen?", true);
-        new StaffMessageWorkers(engine, service()).publish(engine, job(StaffMessageWorkers.PUBLISH));
+        new StaffMessageWorkers(engine, service()).publish(engine, job(STAFF_MESSAGE_PUBLISH));
         int events = count("pf_case_status_event");
         clearAnswer(messages.find(caseId, "Frage").orElseThrow().id(), "Eine aufheben");
         assertEquals("WAITING_FOR_TENANT", status());
@@ -732,7 +803,7 @@ class TenantReplyCamundaTest {
         assertEquals(child, replies.active(caseId, leader).orElseThrow().child());
         assertEquals(1, database.queryForObject("SELECT count(*) FROM pf_staff_answer_requirement WHERE state = 'OPEN'", Integer.class));
         assertEquals(1, database.queryForObject("SELECT count(*) FROM pf_staff_answer_requirement WHERE state = 'CANCELLED'", Integer.class));
-        assertEquals(0, count("pf_conversation_evaluation"));
+        assertEquals(evaluationsBeforeCancellation, count("pf_conversation_evaluation"));
     }
 
     @Test
@@ -741,7 +812,7 @@ class TenantReplyCamundaTest {
         CaseDataService data = caseDataService();
         data.clearAnswer(actor, caseId, "Rolle entzogen", database.queryForObject("SELECT version FROM pf_case", Long.class),
                 messages.find(caseId, "Frage").orElseThrow().id());
-        ActivatedJob action = job("propertyflow.answer.clear");
+        ActivatedJob action = job(ANSWER_CLEAR);
         database.update("UPDATE pf_staff_account SET staff_role = FALSE WHERE id = ?", actor.accountId());
         new CaseDataWorkers(engine, data).clearAnswer(engine, action);
         assertEquals("WAITING_FOR_TENANT", status());
@@ -753,34 +824,34 @@ class TenantReplyCamundaTest {
     @Test
     void cancellationInvalidatesRunningEvaluationAndCannotBeChangedIntoAnAnswer() throws Exception {
         question();
+        int deliveriesBeforeAnswer = count("pf_evaluation_delivery");
         answered = true;
         StaticListableBeanFactory beans = new StaticListableBeanFactory(Map.of("engine", engine));
         TenantMessageService tenant = new TenantMessageService(tenantMessages, workflow, caseData, links,
                 new CamundaCaseGateway(beans.getBeanProvider(CamundaClient.class), true),
                 new CamundaTenantMessageGateway(beans.getBeanProvider(CamundaClient.class), true), transactions, accountId -> java.util.Optional.empty());
         tenant.send(accepted.personalAccessToken(), UUID.randomUUID(), "Montag um 10 Uhr.");
-        new TenantMessageWorkers(engine, tenant).identify(engine, job(TenantMessageWorkers.IDENTIFY));
-        ConversationEvaluationWorkers worker = new ConversationEvaluationWorkers(engine, central());
-        worker.evaluate(engine, job(ConversationEvaluationWorkers.EVALUATE));
-        ActivatedJob outdated = job(ConversationEvaluationWorkers.APPLY);
+        new TenantMessageWorkers(engine, tenant).identify(engine, job(TENANT_MESSAGE_IDENTIFY));
+        ConversationEvaluationWorkers worker = evaluateTenantMessage();
+        ActivatedJob outdated = job(CONVERSATION_APPLY);
         clearAnswer(messages.find(caseId, "Frage").orElseThrow().id(), "Während Auswertung");
         worker.apply(engine, outdated);
         assertEquals("CANCELLED", database.queryForObject("SELECT state FROM pf_staff_answer_requirement", String.class));
         assertEquals("MANUAL", database.queryForObject("SELECT resolution_type FROM pf_staff_answer_requirement", String.class));
         assertEquals("IN_PROGRESS", status());
-        assertEquals(0, count("pf_evaluation_delivery"));
+        assertEquals(deliveriesBeforeAnswer, count("pf_evaluation_delivery"));
         assertEquals("OBSOLETE", replyService().review(replies.active(caseId, leader).orElseThrow().id()).state());
     }
 
     private void review() throws Exception {
-        TriageWorkers triage = new TriageWorkers(engine, new CaseAnalysisService(workflow, reviewStore, analyses, urgencyService,
-                new AnalyzeTool(text -> "invalid"), transactions));
-        triage.analyze(engine, job(TriageWorkers.INITIAL));
+        AutomaticEvaluationWorkers evaluation = InitialAnalysisTestFixture.failedEvaluation(engine, workflow, database, transactions);
+        evaluation.analyze(engine, job(AUTOMATIC_ANALYZE));
+        evaluation.recommend(engine, job(AUTOMATIC_RECOMMENDATION));
         StaffReviewWorkers reviews = new StaffReviewWorkers(engine, reviewService);
-        reviews.analysisFailure(engine, job("propertyflow.review.analysis-failure"));
-        reviews.claim(engine, job("propertyflow.staff.claim"));
-        reviews.register(engine, job("propertyflow.staff.register"));
-        reviews.startReview(engine, job("propertyflow.staff.start-review"));
+        reviews.analysisFailure(engine, job(REVIEW_ANALYSIS_FAILURE));
+        reviews.claim(engine, job(STAFF_CLAIM));
+        reviews.register(engine, job(STAFF_REGISTER));
+        reviews.startReview(engine, job(STAFF_START_REVIEW));
         await(() -> tasks().size() == 1);
     }
 

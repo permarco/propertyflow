@@ -14,7 +14,11 @@ import com.pertegato.propertyflow.caseprocessing.persistence.ConversationEvaluat
 import com.pertegato.propertyflow.caseprocessing.persistence.StaffChangeStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.StaffReviewStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.TenantMessageStore;
+import com.pertegato.propertyflow.caseprocessing.persistence.TenantReplyStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.UrgencyStore;
+import com.pertegato.propertyflow.caseprocessing.service.ConversationEvaluationService.AutomaticContext;
+import com.pertegato.propertyflow.caseprocessing.service.ConversationEvaluationService.EvaluationStep;
+import com.pertegato.propertyflow.caseprocessing.service.ConversationEvaluationService.StageResult;
 import com.pertegato.propertyflow.recommendation.AutomaticClosureFixtures;
 import com.pertegato.propertyflow.recommendation.service.ClosureAssessment;
 import com.pertegato.propertyflow.recommendation.service.ClosureMessage;
@@ -30,6 +34,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -63,6 +68,8 @@ class AutomaticClosurePostgresTest {
     private ConversationEvaluationStore evaluations;
     @Autowired
     private TenantMessageStore messages;
+    @Autowired
+    private TenantReplyStore replies;
     @Autowired
     private UrgencyStore urgency;
     @Autowired
@@ -111,7 +118,7 @@ class AutomaticClosurePostgresTest {
         central = new ConversationEvaluationService(workflow, messages, evaluations, urgency,
                 input -> new ConversationAnalysis.Result("LOW", false, List.of(), null, "fixture", "v1"),
                 input -> new Recommendation.Result("Verwaltung", "Prüfen", List.of(), List.of(), false, null, "fixture", "v1"),
-                assessment, transactions, release);
+                assessment, transactions, release, replies);
         service = service((context, ground) -> {
             assertFalse(TransactionSynchronizationManager.isActualTransactionActive());
             assertFalse(context.toString().contains("closure@example.test"));
@@ -123,8 +130,8 @@ class AutomaticClosurePostgresTest {
     @Test
     void publishesExactlyOnceAndClosesWithSharedCleanupAndSystemAudit() {
         UUID command = prepare();
-        assertEquals("PUBLISHED", service.publish(command, 200, 400).state());
-        assertEquals("PUBLISHED", service.publish(command, 200, 400).state());
+        assertEquals("PUBLISHED", writeAndCheck(service, command, 200, 400).state());
+        assertEquals("PUBLISHED", writeAndCheck(service, command, 200, 400).state());
         assertEquals("CLOSED", service.close(command, 200, 400).state());
         release.enabled = false;
         assertEquals("CLOSED", service.close(command, 200, 400).state());
@@ -154,7 +161,7 @@ class AutomaticClosurePostgresTest {
         AutomaticClosureService denied = service((context, ground) -> {
             throw new AssertionError("Die Produktionssperre muss vor dem Modellaufruf greifen.");
         }, new AutomaticClosureRelease());
-        assertEquals("REVIEW", denied.publish(command, 200, 400).state());
+        assertEquals("REVIEW", writeAndCheck(denied, command, 200, 400).state());
         assertEquals("REVIEW", denied.finish(command, 200, 400).state());
         assertEquals("REVIEW", denied.finish(command, 200, 400).state());
         assertEquals(1, count("pf_staff_continuation"));
@@ -166,7 +173,7 @@ class AutomaticClosurePostgresTest {
     void changedBasisBeforePublicationDoesNotCreateReviewOrEffects() {
         UUID command = prepare();
         change();
-        assertEquals("STALE", service.publish(command, 200, 400).state());
+        assertEquals("STALE", writeAndCheck(service, command, 200, 400).state());
         assertEquals(0, generated.get());
         assertEquals(0, count("pf_case_review_signal"));
         assertEquals(0, count("pf_staff_message"));
@@ -175,12 +182,12 @@ class AutomaticClosurePostgresTest {
     @Test
     void staleClosureKeepsPublicationAndReusesItAfterReevaluation() {
         UUID command = prepare();
-        service.publish(command, 200, 400);
+        writeAndCheck(service, command, 200, 400);
         change();
         assertEquals("STALE", service.close(command, 200, 400).state());
         UUID next = prepare();
         assertFalse(command.equals(next));
-        assertEquals("PUBLISHED", service.publish(next, 200, 400).state());
+        assertEquals("PUBLISHED", writeAndCheck(service, next, 200, 400).state());
         assertEquals("CLOSED", service.close(next, 200, 400).state());
         assertEquals(1, generated.get());
         assertEquals(1, count("pf_staff_message"));
@@ -191,7 +198,7 @@ class AutomaticClosurePostgresTest {
     @Test
     void gateWithdrawalAfterPublicationKeepsMessageAndBlocksClosure() {
         UUID command = prepare();
-        service.publish(command, 200, 400);
+        writeAndCheck(service, command, 200, 400);
         release.enabled = false;
         assertEquals("STALE", service.close(command, 200, 400).state());
         assertEquals(0, count("pf_case_closure"));
@@ -203,7 +210,7 @@ class AutomaticClosurePostgresTest {
     void invalidContentRoutesToReviewWithoutSavingADraft() {
         UUID command = prepare();
         AutomaticClosureService invalid = service((context, ground) -> new ClosureMessage.Result(null, false, "fixture", "v1", "v1"), release);
-        assertEquals("REVIEW", invalid.publish(command, 200, 400).state());
+        assertEquals("REVIEW", writeAndCheck(invalid, command, 200, 400).state());
         assertEquals("REVIEW", invalid.finish(command, 200, 400).state());
         assertEquals(0, count("pf_closure_publication"));
         assertEquals(0, count("pf_staff_message_mail_order"));
@@ -216,9 +223,9 @@ class AutomaticClosurePostgresTest {
         AutomaticClosureService failing = service((context, ground) -> {
             throw new IllegalStateException("MODEL_TIMEOUT");
         }, release);
-        assertThrows(IllegalStateException.class, () -> failing.publish(command, 200, 400));
+        assertThrows(IllegalStateException.class, () -> writeAndCheck(failing, command, 200, 400));
         assertEquals("PREPARED", commands.get(command).state());
-        assertEquals("PUBLISHED", service.publish(command, 200, 400).state());
+        assertEquals("PUBLISHED", writeAndCheck(service, command, 200, 400).state());
         assertEquals(0, count("pf_case_review_signal"));
         assertEquals(1, count("pf_staff_message_mail_order"));
     }
@@ -240,10 +247,10 @@ class AutomaticClosurePostgresTest {
             return AutomaticClosureFixtures.message();
         }, release);
         try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
-            Future<AutomaticQuestionService.Result> pending = executor.submit(() -> slow.publish(command, 200, 400));
+            Future<AutomaticQuestionService.Result> pending = executor.submit(() -> writeAndCheck(slow, command, 200, 400));
             try {
                 assertTrue(started.await(10, TimeUnit.SECONDS));
-                assertEquals("BUSY", service.publish(command, 200, 400).state());
+                assertEquals("BUSY", writeAndCheck(service, command, 200, 400).state());
                 UUID access = database.queryForObject("SELECT id FROM pf_case_access WHERE case_id = ?", UUID.class, caseId);
                 new TransactionTemplate(transactions).executeWithoutResult(status -> {
                     workflow.lockCase(caseId).orElseThrow();
@@ -261,9 +268,9 @@ class AutomaticClosurePostgresTest {
     @Test
     void oldLeaderAndForeignChildCannotPublishOrConfirm() {
         UUID command = prepare();
-        assertThrows(WorkflowRejectedException.class, () -> service.publish(command, 200, 999));
-        assertThrows(WorkflowRejectedException.class, () -> service.publish(command, 999, 400));
-        service.publish(command, 200, 400);
+        assertThrows(WorkflowRejectedException.class, () -> writeAndCheck(service, command, 200, 999));
+        assertThrows(WorkflowRejectedException.class, () -> writeAndCheck(service, command, 999, 400));
+        writeAndCheck(service, command, 200, 400);
         service.close(command, 200, 400);
         database.update("UPDATE pf_case_process SET process_instance_key = 999 WHERE case_id = ?", caseId);
         assertThrows(WorkflowRejectedException.class, () -> service.finish(command, 200, 400));
@@ -277,7 +284,7 @@ class AutomaticClosurePostgresTest {
             database.update("UPDATE pf_case SET status = 'IN_PROGRESS', version = version + 1 WHERE id = ?", caseId);
             return AutomaticClosureFixtures.message();
         }, release);
-        assertEquals("OBSOLETE", competing.publish(command, 200, 400).state());
+        assertEquals("OBSOLETE", writeAndCheck(competing, command, 200, 400).state());
         assertEquals(0, count("pf_staff_message"));
     }
 
@@ -292,13 +299,13 @@ class AutomaticClosurePostgresTest {
             }
         };
         AutomaticClosureService broken = new AutomaticClosureService(workflow, evaluations, questions, failing, closures, reviews,
-                assessment, (context, ground) -> AutomaticClosureFixtures.message(), release, transactions);
-        assertThrows(IllegalStateException.class, () -> broken.publish(command, 200, 400));
+                assessment, communication((context, ground) -> AutomaticClosureFixtures.message()), release, transactions);
+        assertThrows(IllegalStateException.class, () -> writeAndCheck(broken, command, 200, 400));
         assertEquals(0, count("pf_staff_message"));
         assertEquals(0, count("pf_staff_message_mail_order"));
         assertEquals(0, count("pf_closure_publication"));
         database.update("UPDATE pf_automatic_closure SET started_at = CURRENT_TIMESTAMP - INTERVAL '4 minutes' WHERE id = ?", command);
-        assertEquals("PUBLISHED", service.publish(command, 200, 400).state());
+        assertEquals("PUBLISHED", writeAndCheck(service, command, 200, 400).state());
         assertEquals(1, count("pf_staff_message_mail_order"));
     }
 
@@ -319,14 +326,14 @@ class AutomaticClosurePostgresTest {
             assertFalse(ground.toString().contains("MEMO_SECRET"));
             return AutomaticClosureFixtures.message();
         }, release);
-        assertEquals("PUBLISHED", checked.publish(command, 200, 400).state());
+        assertEquals("PUBLISHED", writeAndCheck(checked, command, 200, 400).state());
     }
 
     @Test
     void independentMandatoryReviewReasonPreventsAnOtherwiseCurrentPublication() {
         UUID command = prepare();
         database.update("UPDATE pf_case SET assigned_unit = NULL WHERE id = ?", caseId);
-        assertEquals("REVIEW", service.publish(command, 200, 400).state());
+        assertEquals("REVIEW", writeAndCheck(service, command, 200, 400).state());
         assertEquals(0, generated.get());
         assertEquals(0, count("pf_staff_message"));
     }
@@ -340,10 +347,10 @@ class AutomaticClosurePostgresTest {
                     expected_version, leading_instance_key, tenant_id)
                 VALUES (?, ?, ?, ?, 'TAKEOVER', '', ?, 200, '<default>')
                 """, staff, staff, caseId, UUID.randomUUID(), workflow.lockCase(caseId).orElseThrow().version());
-        assertEquals("BUSY", service.publish(command, 200, 400).state());
+        assertEquals("BUSY", writeAndCheck(service, command, 200, 400).state());
         assertEquals(0, generated.get());
         database.update("UPDATE pf_case_data_command SET state = 'REJECTED' WHERE id = ?", staff);
-        assertEquals("PUBLISHED", service.publish(command, 200, 400).state());
+        assertEquals("PUBLISHED", writeAndCheck(service, command, 200, 400).state());
         database.update("UPDATE pf_case_data_command SET state = 'PENDING' WHERE id = ?", staff);
         assertEquals("BUSY", service.close(command, 200, 400).state());
         assertEquals(0, count("pf_case_closure"));
@@ -351,18 +358,45 @@ class AutomaticClosurePostgresTest {
     }
 
     private UUID prepare() {
-        ConversationEvaluationService.Result evaluated = central.evaluateAutomatic(caseId, entry.id(), entry.callRef(), 200, 400);
-        central.applyAutomatic(caseId, entry.id(), entry.callRef(), 200, 400, evaluated.evaluationId());
+        AutomaticContext origin = new AutomaticContext(caseId, entry.id(), entry.callRef(), 200, 400);
+        UUID attempt = UUID.randomUUID();
+        StageResult stage = central.evaluateAutomaticStage(origin, EvaluationStep.ANALYZE, attempt, null);
+        while (stage.nextStep() != null) {
+            stage = central.evaluateAutomaticStage(origin, stage.nextStep(), attempt, stage.result().evaluationId());
+        }
+        UUID evaluationId = stage.result().evaluationId();
+        central.applyAutomatic(caseId, entry.id(), entry.callRef(), 200, 400, evaluationId);
         AutomaticQuestionService validator = new AutomaticQuestionService(workflow, evaluations, questions, reviews, service);
         AutomaticQuestionService.Result result = new TransactionTemplate(transactions).execute(status ->
-                validator.validate(caseId, entry.id(), entry.callRef(), 200, 400, evaluated.evaluationId()));
+                validator.validate(caseId, entry.id(), entry.callRef(), 200, 400, evaluationId));
         assertEquals("CLOSE", result.state());
         return result.reference();
     }
 
-    private AutomaticClosureService service(ClosureMessage communication, AutomaticClosureRelease gate) {
+    private AutomaticClosureService service(BiFunction<List<ClosureAssessment.Message>, ClosureAssessment.Result, ClosureMessage.Result> model,
+            AutomaticClosureRelease gate) {
         return new AutomaticClosureService(workflow, evaluations, questions, commands, closures, reviews,
-                assessment, communication, gate, transactions);
+                assessment, communication(model), gate, transactions);
+    }
+
+    private static ClosureMessage communication(BiFunction<List<ClosureAssessment.Message>, ClosureAssessment.Result, ClosureMessage.Result> model) {
+        return new ClosureMessage() {
+            @Override
+            public Draft draft(List<ClosureAssessment.Message> messages, ClosureAssessment.Result assessment) {
+                Result result = model.apply(messages, assessment);
+                return new Draft(result.valid() ? result.text() : null, result.model(), result.promptVersion());
+            }
+
+            @Override
+            public Result validate(List<ClosureAssessment.Message> messages, ClosureAssessment.Result assessment, Draft draft) {
+                return new Result(draft.text(), draft.valid(), draft.model(), draft.promptVersion(), "v1");
+            }
+        };
+    }
+
+    private AutomaticQuestionService.Result writeAndCheck(AutomaticClosureService closure, UUID id, long leader, long child) {
+        AutomaticQuestionService.Result written = closure.writeMessage(id, leader, child);
+        return "DRAFTED".equals(written.state()) ? closure.checkMessage(id, leader, child) : written;
     }
 
     private void change() {

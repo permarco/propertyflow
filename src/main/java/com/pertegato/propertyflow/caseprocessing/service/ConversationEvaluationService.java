@@ -8,6 +8,7 @@ import com.pertegato.propertyflow.caseprocessing.persistence.ConversationEvaluat
 import com.pertegato.propertyflow.caseprocessing.persistence.ConversationEvaluationStore.Outcome;
 import com.pertegato.propertyflow.caseprocessing.persistence.TenantMessageStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.TenantMessageStore.Message;
+import com.pertegato.propertyflow.caseprocessing.persistence.TenantReplyStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.UrgencyStore;
 import com.pertegato.propertyflow.recommendation.service.ClosureAssessment;
 import com.pertegato.propertyflow.recommendation.service.Recommendation;
@@ -31,6 +32,7 @@ public class ConversationEvaluationService {
     private static final Duration ATTEMPT_LEASE = Duration.ofMinutes(4);
     private final CaseWorkflowStore workflow;
     private final TenantMessageStore messages;
+    private final TenantReplyStore replies;
     private final ConversationEvaluationStore evaluations;
     private final UrgencyStore urgency;
     private final ConversationAnalysis analyzer;
@@ -42,9 +44,10 @@ public class ConversationEvaluationService {
 
     public ConversationEvaluationService(CaseWorkflowStore workflow, TenantMessageStore messages, ConversationEvaluationStore evaluations,
             UrgencyStore urgency, ConversationAnalysis analyzer, Recommendation recommendation, ClosureAssessment closureAssessment,
-            PlatformTransactionManager transactions, AutomaticClosureRelease closureRelease) {
+            PlatformTransactionManager transactions, AutomaticClosureRelease closureRelease, TenantReplyStore replies) {
         this.workflow = workflow;
         this.messages = messages;
+        this.replies = replies;
         this.evaluations = evaluations;
         this.urgency = urgency;
         this.analyzer = analyzer;
@@ -53,18 +56,6 @@ public class ConversationEvaluationService {
         this.closureRelease = closureRelease;
         transaction = new TransactionTemplate(transactions);
         transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-    }
-
-    public Result evaluate(String caseId, UUID messageId, long leader, long child, String tenant) {
-        return evaluate(caseId, leader, messageId, () -> verify(caseId, messageId, leader, child, tenant));
-    }
-
-    public Result evaluateAutomatic(String caseId, UUID entryId, UUID callRef, long leader, long child) {
-        return evaluate(caseId, leader, null, () -> verifyAutomatic(caseId, entryId, callRef, leader, child));
-    }
-
-    public Result evaluateReply(String caseId, UUID entry, long leader, long child, String tenant) {
-        return evaluate(caseId, leader, null, () -> verifyReply(caseId, entry, leader, child, tenant));
     }
 
     public Result applyReply(String caseId, UUID entry, long leader, long child, String tenant, UUID evaluation) {
@@ -77,45 +68,141 @@ public class ConversationEvaluationService {
                 && evaluations.replyCurrent(caseId, entry, leader, child, tenant) ? state : null;
     }
 
-    private Result evaluate(String caseId, long leader, UUID messageId, Supplier<CaseState> context) {
-        Work work = transaction.execute(status -> {
-            CaseState state = context.get();
-            if (state == null) {
-                return new Work(null, null, new Result("OBSOLETE", null));
+    private Work beginEvaluation(String caseId, long leader, UUID messageId, CaseState state, UUID attempt, boolean tenantReply) {
+        if (state == null) {
+            return new Work(null, null, new Result("OBSOLETE", null));
+        }
+        boolean reviewPending = tenantReply && replies.reviewPending(caseId, leader);
+        if (!reviewPending && (messageId != null && evaluations.contactPending(messageId)
+                || evaluations.decisionPending(caseId, state.version()))) {
+            return new Work(null, null, new Result("BUSY", null));
+        }
+        long analysisVersion = evaluations.analysisVersion(caseId);
+        Evaluation current = evaluations.current(caseId, leader, state.version(), analysisVersion).orElse(null);
+        if (reviewPending) {
+            if (current != null && "RUNNING".equals(current.state()) && current.attempt().equals(attempt)) {
+                evaluations.supersede(current.id());
             }
-            if (messageId != null && evaluations.contactPending(messageId) || evaluations.decisionPending(caseId, state.version())) {
-                return new Work(null, null, new Result("BUSY", null));
+            return new Work(null, null, new Result("REVIEW", null));
+        }
+        if (current != null && ("READY".equals(current.state()) || "APPLIED".equals(current.state()))) {
+            return new Work(null, null, new Result(current.state(), current.id()));
+        }
+        if (current != null && "RUNNING".equals(current.state())) {
+            if (current.attempt().equals(attempt)) {
+                return new Work(current, evaluations.input(caseId), null);
             }
-            long analysisVersion = evaluations.analysisVersion(caseId);
-            Evaluation current = evaluations.current(caseId, leader, state.version(), analysisVersion).orElse(null);
-            if (current != null && ("READY".equals(current.state()) || "APPLIED".equals(current.state()))) {
-                return new Work(null, null, new Result(current.state(), current.id()));
-            }
-            if (current != null && "RUNNING".equals(current.state()) && current.startedAt().plus(ATTEMPT_LEASE).isAfter(Instant.now())) {
+            if (current.startedAt().plus(ATTEMPT_LEASE).isAfter(Instant.now())) {
                 return new Work(null, null, new Result("BUSY", current.id()));
             }
-            return new Work(evaluations.begin(caseId, leader, state.version(), analysisVersion, state.status()), evaluations.input(caseId), null);
+        }
+        Evaluation evaluation = evaluations.begin(caseId, leader, state.version(), analysisVersion, state.status(), attempt);
+        return new Work(evaluation, evaluations.input(caseId), null);
+    }
+
+    public StageResult evaluateAutomaticStage(AutomaticContext origin, EvaluationStep step, UUID attempt, UUID evaluationId) {
+        StageContext context = new StageContext(origin.caseId(), origin.leader(), null,
+                () -> verifyAutomatic(origin.caseId(), origin.entryId(), origin.callRef(), origin.leader(), origin.child()), false);
+        return evaluateStage(context, step, attempt, evaluationId);
+    }
+
+    public StageResult evaluateMessageStage(MessageContext origin, EvaluationStep step, UUID attempt, UUID evaluationId) {
+        StageContext context = new StageContext(origin.caseId(), origin.leader(), origin.messageId(),
+                () -> verify(origin.caseId(), origin.messageId(), origin.leader(), origin.child(), origin.tenant()), false);
+        return evaluateStage(context, step, attempt, evaluationId);
+    }
+
+    public StageResult evaluateReplyStage(ReplyContext origin, EvaluationStep step, UUID attempt, UUID evaluationId) {
+        StageContext context = new StageContext(origin.caseId(), origin.leader(), null,
+                () -> verifyReply(origin.caseId(), origin.entryId(), origin.leader(), origin.child(), origin.tenant()), true);
+        return evaluateStage(context, step, attempt, evaluationId);
+    }
+
+    private StageResult evaluateStage(StageContext origin, EvaluationStep step, UUID attempt, UUID evaluationId) {
+        Work work = transaction.execute(status -> {
+            CaseState state = origin.lockCase().get();
+            if (step == EvaluationStep.ANALYZE) {
+                return beginEvaluation(origin.caseId(), origin.leader(), origin.messageId(), state, attempt, origin.tenantReply());
+            }
+            Evaluation current = evaluations.get(evaluationId);
+            Result stopped = checkStage(origin, state, current, attempt);
+            return stopped == null ? new Work(current, evaluations.input(origin.caseId()), null) : new Work(null, null, stopped);
         });
         if (work.result() != null) {
-            return work.result();
+            return new StageResult(work.result(), null);
         }
-        ConversationAnalysis.Result analysis = analyzer.analyze(work.input());
-        Recommendation.Result advice = analysis.failure() == null ? recommendation.recommend(json.writeValueAsString(work.input())) : null;
-        ClosureAssessment.Result closure = assessClosure(work, analysis, advice);
-        Outcome outcome = new Outcome(analysis, advice, closure);
-        return transaction.execute(status -> {
-            CaseState state = context.get();
-            Evaluation current = evaluations.get(work.evaluation().id());
-            if (!current.attempt().equals(work.evaluation().attempt()) || !"RUNNING".equals(current.state())) {
-                return new Result("STALE", current.id());
-            }
-            if (state == null || state.version() != current.version() || evaluations.analysisVersion(caseId) != current.analysisVersion()) {
+        EvaluationStep next = nextStep(work.evaluation());
+        require(step.compareTo(next) <= 0);
+        if (step != next) {
+            return pendingStep(work.evaluation().id(), next);
+        }
+
+        Outcome partial = work.evaluation().outcome();
+        Outcome outcome = switch (step) {
+            case ANALYZE -> new Outcome(analyzer.analyze(work.input()), null, null);
+            case ADVISE -> new Outcome(partial.analysis(), recommend(work.input()), null);
+            case ASSESS_CLOSURE -> new Outcome(partial.analysis(), partial.recommendation(), assessClosure(work.input()));
+        };
+        return transaction.execute(status -> saveStage(origin, work.evaluation(), step, outcome));
+    }
+
+    private StageResult saveStage(StageContext origin, Evaluation work, EvaluationStep step, Outcome outcome) {
+        CaseState state = origin.lockCase().get();
+        Evaluation current = evaluations.get(work.id());
+        Result stopped = checkStage(origin, state, current, work.attempt());
+        if (stopped != null) {
+            return new StageResult(stopped, null);
+        }
+        EvaluationStep currentStep = nextStep(current);
+        if (step != currentStep) {
+            return pendingStep(current.id(), currentStep);
+        }
+        if (step == EvaluationStep.ANALYZE && outcome.analysis().failure() == null) {
+            evaluations.checkpoint(current.id(), outcome);
+            return pendingStep(current.id(), EvaluationStep.ADVISE);
+        }
+        if (step == EvaluationStep.ADVISE && closureRequired(current.phase(), outcome.analysis(), outcome.recommendation())) {
+            evaluations.checkpoint(current.id(), outcome);
+            return pendingStep(current.id(), EvaluationStep.ASSESS_CLOSURE);
+        }
+        evaluations.ready(current.id(), outcome);
+        return new StageResult(new Result("READY", current.id()), null);
+    }
+
+    private Result checkStage(StageContext origin, CaseState state, Evaluation current, UUID attempt) {
+        require(current.caseId().equals(origin.caseId()) && current.leader() == origin.leader());
+        if (state == null) {
+            if ("RUNNING".equals(current.state()) && current.attempt().equals(attempt)) {
                 evaluations.supersede(current.id());
-                return new Result(state == null ? "OBSOLETE" : "STALE", current.id());
             }
-            evaluations.ready(current.id(), outcome);
-            return new Result("READY", current.id());
-        });
+            return new Result("OBSOLETE", current.id());
+        }
+        if (!current.attempt().equals(attempt) || "SUPERSEDED".equals(current.state())) {
+            return new Result("STALE", current.id());
+        }
+        if ("APPLIED".equals(current.state())) {
+            return new Result("APPLIED", current.id());
+        }
+        if (state.version() != current.version() || evaluations.analysisVersion(origin.caseId()) != current.analysisVersion()) {
+            evaluations.supersede(current.id());
+            return new Result("STALE", current.id());
+        }
+        if (evaluations.decisionPending(origin.caseId(), state.version())
+                || origin.messageId() != null && evaluations.contactPending(origin.messageId())) {
+            return new Result("BUSY", current.id());
+        }
+        return "READY".equals(current.state()) ? new Result("READY", current.id()) : null;
+    }
+
+    private EvaluationStep nextStep(Evaluation current) {
+        if (current.outcome() == null) {
+            return EvaluationStep.ANALYZE;
+        }
+        return current.outcome().recommendation() == null ? EvaluationStep.ADVISE : EvaluationStep.ASSESS_CLOSURE;
+    }
+
+    private StageResult pendingStep(UUID evaluationId, EvaluationStep next) {
+        return new StageResult(new Result("RUNNING", evaluationId), next);
     }
 
     public Result apply(String caseId, UUID messageId, long leader, long child, String tenant, UUID evaluationId) {
@@ -190,14 +277,18 @@ public class ConversationEvaluationService {
         }));
     }
 
-    private ClosureAssessment.Result assessClosure(Work work, ConversationAnalysis.Result analysis, Recommendation.Result advice) {
-        String phase = work.evaluation().phase();
-        if (!("UNDER_CLARIFICATION".equals(phase) || "WAITING_FOR_TENANT".equals(phase)) || analysis.failure() != null
-                || analysis.humanRequired() || "CRITICAL".equals(analysis.urgency()) || advice == null
-                || advice.failure() != null || advice.humanRequired()) {
-            return null;
-        }
-        return closureAssessment.assess(work.input().messages().stream()
+    private Recommendation.Result recommend(Input input) {
+        return recommendation.recommend(json.writeValueAsString(input));
+    }
+
+    private boolean closureRequired(String phase, ConversationAnalysis.Result analysis, Recommendation.Result advice) {
+        return ("UNDER_CLARIFICATION".equals(phase) || "WAITING_FOR_TENANT".equals(phase)) && analysis.failure() == null
+                && !analysis.humanRequired() && !"CRITICAL".equals(analysis.urgency()) && advice != null
+                && advice.failure() == null && !advice.humanRequired();
+    }
+
+    private ClosureAssessment.Result assessClosure(Input input) {
+        return closureAssessment.assess(input.messages().stream()
                 .map(message -> new ClosureAssessment.Message(message.id(), message.author(), message.text(), message.sequence())).toList());
     }
 
@@ -253,6 +344,27 @@ public class ConversationEvaluationService {
     }
 
     public record Result(String state, UUID evaluationId) {
+    }
+
+    public record AutomaticContext(String caseId, UUID entryId, UUID callRef, long leader, long child) {
+    }
+
+    public record MessageContext(String caseId, UUID messageId, long leader, long child, String tenant) {
+    }
+
+    public record ReplyContext(String caseId, UUID entryId, long leader, long child, String tenant) {
+    }
+
+    public enum EvaluationStep {
+        ANALYZE,
+        ADVISE,
+        ASSESS_CLOSURE
+    }
+
+    public record StageResult(Result result, EvaluationStep nextStep) {
+    }
+
+    private record StageContext(String caseId, long leader, UUID messageId, Supplier<CaseState> lockCase, boolean tenantReply) {
     }
 
     private record Work(Evaluation evaluation, Input input, Result result) {

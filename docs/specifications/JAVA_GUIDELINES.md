@@ -35,6 +35,81 @@ Die Fachspezifikationen und akzeptierten Architekturentscheidungen bleiben massg
 - Stabile Vertragswerte und längere Prompts sinnvoll benennen. Keine globale
   Konstantensammlung und keine mechanische Auslagerung jedes einzelnen Literals.
 
+## Lombok für Konstruktoren und Datenklassen
+
+**Vereinbart am 24.11.2026:** Lombok wird projektweit für geeigneten mechanischen
+Java-Code verwendet. Entscheidend ist die unveränderte Bedeutung der Klasse;
+nicht jede Klasse braucht eine Lombok-Annotation.
+
+### Konstruktoren
+
+- Für Konstruktoren, die ausschliesslich erforderliche Abhängigkeiten zuweisen,
+  `@RequiredArgsConstructor` verwenden. Abhängigkeiten bleiben `private final`.
+  Das gilt insbesondere für Services, Controller, Worker und Persistenzadapter.
+- Lombok übernimmt die Reihenfolge der Felder als Parameterreihenfolge. Bei einer
+  Umstellung MÜSSEN Parametertypen, Reihenfolge und Sichtbarkeit erhalten bleiben.
+  Bereits initialisierte `final`-Felder werden nicht zu Konstruktorparametern.
+- Konstruktoren mit Validierung, Normalisierung, defensiven Kopien, `super(...)`,
+  Ressourcenaufbau oder sonstiger Initialisierungslogik bleiben explizit.
+  Dasselbe gilt für erforderliche Parameterannotationen wie `@Value` oder
+  `@Qualifier`, solange deren Übernahme nicht ausdrücklich abgesichert ist.
+- Beispiel: `ConversationEvaluationService` erzeugt aus dem
+  `PlatformTransactionManager` ein `TransactionTemplate` und setzt
+  `PROPAGATION_REQUIRES_NEW`. Dieser Konstruktor bleibt explizit.
+  `@RequiredArgsConstructor` würde diese Konfiguration nicht ausführen.
+  Die Transaktionsgrenze DARF NICHT zur Einsparung eines Konstruktors verändert werden.
+- `@AllArgsConstructor` nur verwenden, wenn tatsächlich alle Instanzfelder zum
+  vorgesehenen Konstruktorvertrag gehören. Keine internen Zustandsfelder oder
+  Framework-Felder unbeabsichtigt als Parameter veröffentlichen.
+- Für den leeren JPA-Konstruktor `@NoArgsConstructor(access = AccessLevel.PROTECTED)`
+  verwenden. Validierende fachliche Konstruktoren bleiben zusätzlich bestehen.
+  Kein `force = true`, um uninitialisierte Pflichtfelder zu erzwingen.
+- Private Konstruktoren reiner Konstanten- und Hilfsklassen dürfen explizit bleiben.
+
+Beispiel für reine Konstruktorinjektion:
+
+```java
+@Service
+@RequiredArgsConstructor
+public class TenantAccountService {
+
+    private final TenantAccountStore accounts;
+}
+```
+
+### Getter, Setter und unveränderliche Daten
+
+- Einfache Getter mit `@Getter` erzeugen. Feldbezogene Annotationen bevorzugen,
+  wenn nur bestimmte Felder öffentlich lesbar sein sollen. Berechnete Getter
+  und Getter mit besonderen Rückgaberegeln bleiben explizit.
+- `@Setter` nur für ausdrücklich veränderliche Felder verwenden. Bestehende
+  Methoden mit Validierung oder fachlichen Zustandsübergängen bleiben erhalten.
+  Eine Umstellung DARF keine zusätzlichen öffentlichen Schreibzugriffe erzeugen.
+- Bei JPA-Entities kein pauschales `@Data`: Getter, geschützter Leerkonstruktor
+  und gegebenenfalls einzelne Setter werden gezielt gewählt. `equals`, `hashCode`
+  und `toString` gehören nicht automatisch zum gewünschten Datenzugriff.
+- Unveränderliche DTOs und Wertobjekte bleiben vorzugsweise Java-Records.
+  Records benötigen keine Lombok-Konstruktoren, Getter oder Setter; kompakte
+  Record-Konstruktoren mit Validierung bleiben bestehen.
+- `@Data`, `@Value` oder `@ToString` nicht mechanisch ergänzen. Geheimnisse,
+  Zugangstokens und personenbezogene Inhalte dürfen nicht durch neu erzeugte
+  Methoden unbeabsichtigt ausgegeben werden. Identität und Gleichheit einer
+  Klasse werden nicht durch eine Boilerplate-Umstellung neu festgelegt.
+
+### Build und Prüfung
+
+- Die Lombok-Version wird zentral durch das Spring-Boot-Dependency-Management
+  festgelegt. Maven deklariert Lombok als optionale `provided`-Abhängigkeit und
+  explizit als Annotation Processor; letzteres ist ab JDK 23 erforderlich.
+  Lombok wird aus dem ausführbaren Spring-Boot-JAR ausgeschlossen.
+- Nach einer Umstellung kompilieren und die betroffenen vorhandenen Tests
+  ausführen. Besonders Konstruktorinjektion, Persistenz und Serialisierung
+  müssen mit unverändertem Vertrag funktionieren.
+
+Referenzen: [Lombok-Konstruktoren](https://projectlombok.org/features/constructor),
+[Getter und Setter](https://projectlombok.org/features/GetterSetter),
+[Maven-Konfiguration](https://projectlombok.org/setup/maven).
+
 ## Prozess- und Ergebnisprüfung
 
 - Camunda veranlasst Statusänderungen nach der Fallannahme. Worker müssen Wiederholung,

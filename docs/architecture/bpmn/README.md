@@ -1,8 +1,107 @@
 # PropertyFlow-Fallprozess
 
+## Orientierung in den Diagrammen
+
+Im Teilprozess «Aktiven Fall bearbeiten» trennen die Lanes **Aktionsempfang**
+und **Fallführung** zwei Aufgaben des Systems. Oben empfängt der Aktionsrundlauf
+weitere Eingänge. Darunter steuert der Hauptablauf die aktuelle Fallphase.
+Gestrichelte Gruppen fassen zusammengehörige Schritte fachlich zusammen.
+Kurze Textnotizen erklären den Anlass oder das Ergebnis eines Ablaufs.
+
+| Modell | Was die Gliederung sichtbar macht |
+|---|---|
+| [Fallprozess](../../../src/main/resources/bpmn/propertyflow-fallprozess-entwurf.bpmn) | Fallstart und Wiedereröffnung, LLM-Abklärung, Mieterwartephase, Mitarbeiterbearbeitung und Fallabschluss. Der Aktionsrundlauf bündelt vier Wege und zeigt die einzelnen Aktionen in seinen Details. |
+| [Automatische Abklärung](../../../src/main/resources/bpmn/automatische-abklaerung.bpmn) | Gemeinsame Auswertung für Erstlauf und Aktualisierung aufrufen, Ergebnis prüfen und zulässige Folgeaktion ausführen. |
+| [Gespräch auswerten](../../../src/main/resources/bpmn/gespraech-auswerten.bpmn) | Gespräch analysieren, Vorgehen empfehlen und bei fachlicher Eignung den Fallabschluss beurteilen. |
+| [Mieternachricht verarbeiten](../../../src/main/resources/bpmn/mieternachricht-verarbeiten.bpmn) | Fallkontext vorbereiten, gemeinsame Auswertung aufrufen und das aktuelle Ergebnis bereitstellen. |
+| [Mieterantwort prüfen](../../../src/main/resources/bpmn/mieterantwort-pruefen.bpmn) | Auf die Auswertung warten und bestimmen, welche Fortsetzung zulässig ist. |
+| [Mitarbeiterbearbeitung](../../../src/main/resources/bpmn/mitarbeiterbearbeitung.bpmn) | Fallstand übernehmen, prüfen, bearbeiten, auf externe Rückmeldung warten und Wiedervorlage verwalten. Nachrichtenversand ist in der Detailansicht erklärt. |
+| [Wiedervorlage](../../../src/main/resources/bpmn/wiedervorlage.bpmn) | Termin setzen und warten, anschliessend das eingetretene Ereignis verarbeiten. |
+| [Fallbenachrichtigung versenden](../../../src/main/resources/bpmn/fallbenachrichtigung-versenden.bpmn) | Auftrag prüfen, Mailversand beauftragen sowie Erfolg oder Versandproblem erfassen. |
+
+## Aktionsrundlauf und LLM-Auswertung
+
+Im [Hauptmodell](../../../src/main/resources/bpmn/propertyflow-fallprozess-entwurf.bpmn)
+den Teilprozess «Aktiven Fall bearbeiten» und darin den
+Kasten **«Aktionsrundlauf»** öffnen. Die Ansicht
+«03 · Aktionsrundlauf» beginnt links beim gemeinsamen Nachrichteneingang.
+Das Gateway zeigt vier Wege. Jeder wird rechts bei «Aktion verarbeitet»
+wieder mit den anderen zusammengeführt. Der gestrichelte
+Pfeil oben zeigt, wo die nächste Aktion eintritt. Die Nachrichtensubskription
+bleibt während jedes Durchlaufs geöffnet, sodass dringende Mitarbeiteraktionen
+auch bei laufender LLM-Auswertung verarbeitet werden können.
+
+| Weg | Aktionen in der Detailansicht |
+|---|---|
+| Mieternachricht mit LLM verarbeiten | Eingegangene Mieternachricht auswerten |
+| Mitarbeiteraktion ausfuehren | Nachricht senden, Antwortbedarf aufheben, Bearbeitung übernehmen, direkte Wiedervorlage setzen oder Falldaten ergänzen |
+| Neuen Pruefbedarf bearbeiten | Geprüften Bedarf an die zuständige Bearbeitung weitergeben |
+| Fall abschliessen | Abschluss in der Abklärung oder in der Mieterwartephase |
+
+Die neun Aktionswege sind über die jeweiligen Teilprozesse aufklappbar.
+
+Am Kasten «Auf ausgewertete Mieterantwort warten» sind zwei Ausgänge sichtbar:
+«Antwort ausgewertet» und das unterbrechende Randereignis «Wartephase abgeloest».
+Im Modeler den zugeklappten Kasten **«Fortsetzung bestimmen»** öffnen. Dort
+stehen die Entscheidung nach ausgewerteter Antwort sowie die sechs
+Ablösungsgründe und ihre Folgewege. Aus der Detailansicht kommen die vier
+übergeordneten Ergebnisse für die nächste Fallphase: erneut warten,
+Mitarbeiterbearbeitung, Automatik fortsetzen oder Fall abschliessen.
+
+Im Teilprozess «Mieterantwort pruefen» laufen ein neuer Auswertungsstand und die
+Rückwege bei überholter Grundlage vor dem Aufruf «Gespraech auswerten» zusammen.
+«Antwortauswertung uebernehmen» wendet das Ergebnis an. Danach folgt die
+Fortsetzungsprüfung.
+
+In der Mitarbeiterbearbeitung laufen bestätigte Aktionen aus der Mitarbeiterprüfung
+und aus der externen Wartephase über dasselbe Gateway `Bestaetigte_Aktion_XOR`. Dort folgen
+Fortsetzen, Wiedervorlage und Abschliessen je einem gemeinsamen Pfad. Beim
+Fortsetzen kehrt der Prozess nach dem Statuswechsel zu `Naechste_Mitarbeiteraktion_abwarten_USERTASK` zurück und wartet
+dort auf die nächste Mitarbeiteraktion. `Naechste_Aktion_XOR` bildet die dafür
+zulässigen Aktionen weiterhin separat ab.
+
+An «Wiedervorlage verwalten» führen neuer Mieterkontakt und zwingender
+Prüfbedarf für den aktiven Termin über das gemeinsame Randereignis
+`Wiedervorlage_unterbrochen_BOUNDARY` zur Mitarbeiterprüfung. «Nachricht bei
+offener Aufgabe senden» ist als zugeklappter Ereignis-Teilprozess dargestellt.
+Die aktuelle Aufgabe bleibt offen, während die Nachricht verarbeitet wird.
+
+Die automatische Abklärung und neue Mieternachrichten rufen
+[«Gespräch auswerten»](../../../src/main/resources/bpmn/gespraech-auswerten.bpmn)
+auf. Dort sind die drei LLM-Schritte an einer Stelle sichtbar. Ein bereits
+fertiges Ergebnis zum aktuellen Fallstand wird übernommen. Bei
+veränderter Grundlage prüft der Ablauf erneut, ob eine Auswertung nötig ist.
+Danach führen die aufrufenden Prozesse ihre eigene fachliche Prüfung aus.
+
+Am 22.11.2026 bestanden 53 Tests für den Aktionsrundlauf und seine Einbindung.
+Die 25 Laufzeittests liefen mit isoliertem Camunda 8.9.19 und PostgreSQL.
+Sie prüfen alle neun Ziele, getrennte Auftragsreferenzen bei parallelen
+Eingängen, den Abschluss während laufender Verarbeitung und die
+Nachrichtenverträge älterer Modelle.
+
+Der gemeinsame Ausstieg aus der Mieterwartephase bestand anschliessend
+54 Tests, davon 25 in der Engine. Darin sind die sechs Gründe einzeln und
+ein gemeinsames Variablenupdate mit allen sechs Gründen geprüft. Zusätzlich
+bestanden 70 bestehende Laufzeittests zur automatischen Abklärung und
+zur Mieterantwort.
+
+Nach der Kapselung in «Fortsetzung bestimmen» bestanden 55 Tests, davon
+25 mit den Originalmodellen in Camunda und PostgreSQL. Die Laufzeittests
+prüfen auch den erneuten Eintritt nach Teilantwort und die Übergabe der
+Fallreferenzen von der Detailansicht an den führenden Prozess.
+
+Nach der Bündelung des Aktionsrundlaufs auf vier sichtbare Wege bestanden
+63 Tests, davon 33 mit Camunda und PostgreSQL. Dazu gehören die Zuordnung
+aller neun Aktionen, isolierte Auftragsreferenzen, die Ablehnung unbekannter
+Aktionen und der Fallabschluss während offener Nachrichtenverarbeitung.
+
+Nach dem Zusammenfassen der Automatik-Übergabe bestanden 66 Tests, davon 35
+mit Camunda und PostgreSQL. Die Regression prüft die bisherigen
+Fortsetzungswege auch bei gleichzeitig passenden Übergabebedingungen.
+
 ## Aktueller Ressourcenstand · 16.11.2026
 
-Die sieben ausführbaren, verbindlichen BPMN-Dateien liegen jetzt unter
+Die ausführbaren, verbindlichen BPMN-Dateien liegen unter
 [`src/main/resources/bpmn`](../../../src/main/resources/bpmn/README.md).
 Sie werden mit dem Anwendungs-JAR ausgeliefert. Das Dev-Deployment liest diese
 Quellen unverändert; Tests deployen dieselben Klassenpfadressourcen. Unter `docs`
@@ -152,19 +251,23 @@ XOR-Zusammenführungen wurden in sechs Dateien ergänzt; die Wiedervorlage besas
 ihre Zusammenführung bereits. Die bestehenden fachlichen Pfade bleiben erhalten.
 Die Änderungen machen die Fachentwürfe nicht ausführbar.
 
-Alle sieben BPMN-Dateien verwenden dieselbe Task-Farbgebung. Die Farben dienen
+Alle BPMN-Dateien verwenden dieselbe Task-Farbgebung. Die Farben dienen
 der Orientierung; sie ändern keine Prozesslogik und bezeichnen weder Fallstatus
 noch Dringlichkeit oder Berechtigungen. Massgebend bleiben BPMN-Typ und Symbol.
 
 | Farbe | BPMN-Typ | Bedeutung |
 |---|---|---|
-| Blau | Service Task (Zahnrad) | Automatische Verarbeitung durch einen Worker, etwa Prüfung, KI-Auswertung oder Speicherung. |
+| Blau | Service Task (Zahnrad) | Automatische Verarbeitung durch einen Worker, etwa Prüfung oder Speicherung. |
+| Rosa | Service Task (Zahnrad) | Der Worker kann ein LLM aufrufen, etwa für die Erst- oder Neuauswertung oder für eine Abschlussnachricht. |
 | Orange | User Task (Person) | Aufgabe, die ein Mitarbeiter bearbeitet oder entscheidet. |
 | Violett | Call Activity (dicker Rahmen) | Aufruf eines separat modellierten Teilprozesses. |
 | Türkis | Send Task (Briefumschlag) | Versand-/Sendeauftrag gemäss dem jeweiligen Task-Vertrag. |
 
 Auch ein Service Task, der eine Mitarbeiterentscheidung prüft, bleibt blau:
 Die Entscheidung stammt vom Menschen, ihre technische Prüfung erfolgt automatisch.
+Rosa gilt auch für Schritte, die eine vorhandene Auswertung übernehmen und bei
+Bedarf ein LLM für eine neue Auswertung aufrufen. Die Füllung ist `#fce7f3`,
+der Rahmen `#9d174d`.
 Ereignisse, Gateways und eingebettete Teilprozessrahmen behalten ihre bisherige
 Darstellung. Die Farbgebung ist eine PropertyFlow-Konvention, keine BPMN-Vorgabe.
 
@@ -173,7 +276,8 @@ Darstellung. Die Farbgebung ist eine PropertyFlow-Konvention, keine BPMN-Vorgabe
 | Datei | Inhalt / typische Änderung |
 |---|---|
 | [propertyflow-fallprozess-entwurf.bpmn](../../../src/main/resources/bpmn/propertyflow-fallprozess-entwurf.bpmn) | Hauptablauf, durchgängiger Mieternachrichteneingang, gemeinsame Automatik-Unterbrechung und Mitarbeiterabschluss |
-| [automatische-abklaerung.bpmn](../../../src/main/resources/bpmn/automatische-abklaerung.bpmn) | Automatische Analyse, Ausführungsprüfung, Katalogrückfrage, individuelle Antwort und Systemabschluss; aktuelle Rückwege |
+| [automatische-abklaerung.bpmn](../../../src/main/resources/bpmn/automatische-abklaerung.bpmn) | Aufruf der Gesprächsauswertung, Ausführungsprüfung, Katalogrückfrage, individuelle Antwort und Systemabschluss |
+| [gespraech-auswerten.bpmn](../../../src/main/resources/bpmn/gespraech-auswerten.bpmn) | Gemeinsame LLM-Schritte für Gesprächsanalyse, Empfehlung und Abschlussbewertung |
 | [mieterantwort-pruefen.bpmn](../../../src/main/resources/bpmn/mieterantwort-pruefen.bpmn) | Offene Fragen auswerten, Teilantworten, Fortsetzungen nach der Mieterantwort |
 | [mitarbeiterbearbeitung.bpmn](../../../src/main/resources/bpmn/mitarbeiterbearbeitung.bpmn) | Mitarbeiterprüfung, weitere Bearbeitung, Entscheidung und Aufruf der Wiedervorlage |
 | [wiedervorlage.bpmn](../../../src/main/resources/bpmn/wiedervorlage.bpmn) | Termin/Timer, Änderung, Löschung und Mitarbeiterrückfrage während der Wartephase |
@@ -197,14 +301,14 @@ Präzisierung von ADR-002/SS-003 sind noch nicht im Backend implementiert.
 Im Hauptprozess «Aktiven Fall bearbeiten» öffnen. Der Call **«Automatische
 Abklärung»** verweist auf `automatische-abklaerung.bpmn`. An ihm liegen genau
 zwei Randereignisse: **«Bestätigte Ablösung»** (Conditional) und **«Fachlicher
-Analysefehler»** (Error). Die zuvor 32 einzelnen Conditional-Randereignisse an
-acht automatischen Schritten entfallen. Die bestehenden vier Randereignisse
-am Mieterwarte-Call bleiben erhalten; sie betreffen eine andere Wartephase.
+Analysefehler»** (Error). Die nachgelagerte Aufgabe «Aktuelles Automatik-Ergebnis
+übernehmen» hat einen Randweg **«Übergabe abgelöst»**. Er führt zusammen mit der
+bestätigten Ablösung aus dem Call zu «Fortsetzung prüfen». Bei der
+Mieterwartephase ist «Wartephase abgelöst» der gemeinsame Randweg.
 
-Die Mitarbeiteraufträge und der zentrale Nachrichteneingang sind weiterhin
-im Hauptprozess vorhanden, jetzt als zugeklappte Ereignis-Teilprozesse mit eigenen
-Diagrammansichten. Im Modeler über das Navigationssymbol öffnen. Kein zusätzlicher
-öffentlicher Eingang und keine veränderte fachliche Freigabe.
+Die Mitarbeiteraufträge, Mieternachrichten und der neue Prüfbedarf laufen im
+gemeinsamen [Aktionsrundlauf](#aktionsrundlauf-und-llm-auswertung). Die
+neun Aktionen verteilen sich auf vier sichtbare Wege.
 
 Die neue Automatik-Datei zeigt die Analyse und anschliessende Handlung. INITIAL
 setzt wie bisher «In Abklärung». Fortsetzungen QUESTION/CLOSE nach Mieterantwort
@@ -326,8 +430,8 @@ Analysefehler getrennt. Die BPMN-Datei bleibt nicht ausführbar; keine Worker im
 
 Die bestätigte Zeile 5 steht in [FALL-11](../../specifications/fallverwaltung.md#nachricht-timer-und-neuere-terminentscheidung).
 Im Nachrichtenmodell stellt `NWake` den versionsgebundenen Kontakt **vor KI** bereit.
-Im Mitarbeitermodell unterbricht `SContactDuringFollowUp` den betroffenen
-Wiedervorlage-Aufruf; `SStopFollowUp` führt zu `SReviewStatus`.
+Im Mitarbeitermodell unterbricht `SFollowUpInterrupted` den betroffenen
+Wiedervorlage-Aufruf. `SStopFollowUp` führt zu `SReviewStatus`.
 Der Timerweg in `wiedervorlage.bpmn` führt über `WClearTimer`, Rückgabe `REVIEW`
 und `SFollowResult` zur gleichen Prüfung. Die bestehenden Wege bleiben erhalten;
 Beschriftungen, sichtbare Hinweise und Worker-Dokumentation präzisieren jetzt
@@ -456,11 +560,10 @@ und KOM-AK-24 legen die Reihenfolge fest. `RValidate` prüft den aktuellen Stand
 | 5 | Fragen offen, keine weitere Frage nötig | `R10` → `RWait` → `F19` → weiter auf Antworten warten |
 
 Inhaltlich unzulässige Abschlussnachricht, unzuverlässige Grundlage oder notwendige Fragen
-ausserhalb des Katalogs folgen weiterhin den bestehenden Prüfregeln. Ein
-überholtes Ergebnis ist kein Default-Grund für Mitarbeiterprüfung: Das neue
-Randereignis `RAnalysisStale` an `RValidate` führt über `RCurrentAnalysis` zur
-aktuellen zentralen Auswertung und danach erneut zur Antwortprüfung. Es verwendet
-den fachlichen Platzhalter `ANALYSIS_BASIS_STALE`, keinen zweiten externen Empfang.
+ausserhalb des Katalogs folgen weiterhin den bestehenden Prüfregeln. Erkennen
+«Antwortauswertung uebernehmen» oder «Fortsetzung nach Mieterantwort pruefen»,
+dass die Grundlage überholt ist, führt `ANALYSIS_BASIS_STALE` zurück zum Aufruf
+`Gespraech_auswerten_CALL`. Anschliessend wird die Fortsetzung erneut geprüft.
 
 Der Hauptpfad erhält zusätzlich `F_RefreshWait`: Nach dem gemeinsamen Rückweg
 aus Zeile 2 führt «Fragen offen, keine weitere Aktion» von `Route` zurück zu
@@ -842,14 +945,15 @@ keine Backend-Implementierung.
 
 ## Prüfbedarf während Bearbeitung und Wiedervorlage · Entwurf 0.22
 
-In [mitarbeiterbearbeitung.bpmn](../../../src/main/resources/bpmn/mitarbeiterbearbeitung.bpmn) sind zwei
-unterbrechende Randereignisse ergänzt:
+In [mitarbeiterbearbeitung.bpmn](../../../src/main/resources/bpmn/mitarbeiterbearbeitung.bpmn)
+kann neuer zwingender Prüfbedarf zwei laufende Schritte unterbrechen:
 
 - `SWorkReviewNeeded` an «Weiteres Vorgehen umsetzen» führt unmittelbar zu
   `SReviewStatus` und löst die bisherige Bearbeitungsaufgabe ab.
-- `SFollowUpReviewNeeded` an «Wiedervorlage verwalten» beendet den gesamten
-  Wiedervorlage-Call samt Timer. `SStopFollowUp` entfernt anschliessend den
-  betroffenen Termin und verwendet die gemeinsame Prüfzuordnung von Kontakt-
+- `SFollowUpInterrupted` an «Wiedervorlage verwalten» beendet den gesamten
+  Wiedervorlage-Call samt Timer. Das Randereignis reagiert auch auf neuen
+  Mieterkontakt zur aktiven Terminversion. `SStopFollowUp` entfernt anschliessend
+  den betroffenen Termin und verwendet die gemeinsame Prüfzuordnung von Kontakt-
   und Timerweg. Keine normale Rückgabe des abgebrochenen Calls.
 
 Der unabhängige Prüfbedarf-Eingang im Hauptmodell übergibt neue Gründe gezielt

@@ -2,7 +2,7 @@
 param([string]$CamundaUrl = 'http://127.0.0.1:8080')
 $ErrorActionPreference = 'Stop'
 $repository = Split-Path $PSScriptRoot -Parent
-$files = @('propertyflow-fallprozess-entwurf', 'automatische-abklaerung', 'mitarbeiterbearbeitung',
+$files = @('propertyflow-fallprozess-entwurf', 'automatische-abklaerung', 'gespraech-auswerten', 'mitarbeiterbearbeitung',
     'mieterantwort-pruefen', 'mieternachricht-verarbeiten', 'wiedervorlage', 'fallbenachrichtigung-versenden')
 $multipart = [System.Net.Http.MultipartFormDataContent]::new()
 $client = [System.Net.Http.HttpClient]::new()
@@ -31,12 +31,12 @@ try {
     if (-not $response.IsSuccessStatusCode) { throw "BPMN-Deployment fehlgeschlagen: $($response.StatusCode) $body" }
     $deployment = $body | ConvertFrom-Json
     $processes = @($deployment.deployments | ForEach-Object { $_.processDefinition })
-    $caseKey = ($processes | Where-Object processDefinitionId -eq 'PropertyFlow_Case_Draft').processDefinitionKey
-    $mailKey = ($processes | Where-Object processDefinitionId -eq 'PropertyFlow_Mail_Draft').processDefinitionKey
+    $caseKey = ($processes | Where-Object processDefinitionId -eq 'Fall_bearbeiten_PROCESS').processDefinitionKey
+    $mailKey = ($processes | Where-Object processDefinitionId -eq 'Fallbenachrichtigung_versenden_PROCESS').processDefinitionKey
     if (-not $caseKey -or -not $mailKey) { throw 'Die Fall- oder Maildefinition fehlt in der Deployment-Antwort.' }
     @("propertyflow.workflow.definition-key=$caseKey", "propertyflow.case-mail.definition-key=$mailKey") |
         Set-Content (Join-Path $repository '.propertyflow-local/runtime.properties') -Encoding utf8
-    Write-Host "Sieben BPMN-Modelle bereit: Fall $caseKey, Mail $mailKey."
+    Write-Host "$($files.Count) BPMN-Modelle bereit: Fall $caseKey, Mail $mailKey."
 } finally {
     $multipart.Dispose()
     $client.Dispose()

@@ -4,11 +4,13 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
 import tools.jackson.core.StreamReadFeature;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
+@RequiredArgsConstructor
 public final class RecommendationService implements Recommendation {
 
     public static final String PROMPT_VERSION = "recommendation-sources-catalog-v2";
@@ -19,12 +21,6 @@ public final class RecommendationService implements Recommendation {
             .enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION)
             .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
             .build();
-
-    public RecommendationService(KnowledgeSearch knowledge, Model model, String modelName) {
-        this.knowledge = knowledge;
-        this.model = model;
-        this.modelName = modelName;
-    }
 
     @Override
     public Result recommend(String publicContext) {
@@ -97,5 +93,4 @@ public final class RecommendationService implements Recommendation {
     public interface Model {
         String recommend(String input);
     }
-
 }

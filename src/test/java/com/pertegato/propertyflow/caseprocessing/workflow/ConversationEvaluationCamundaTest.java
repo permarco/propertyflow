@@ -4,15 +4,17 @@ import com.pertegato.propertyflow.access.contract.SubmissionContext;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseAccepted;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseCreation;
 import com.pertegato.propertyflow.caseprocessing.contract.CreateCaseCommand;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.TenantMessageBpmnConstants;
 import com.pertegato.propertyflow.caseprocessing.delivery.PersonalLinkCodec;
 import com.pertegato.propertyflow.caseprocessing.delivery.TenantMessageGateway;
-import com.pertegato.propertyflow.caseprocessing.persistence.CaseAnalysisStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseDataStore;
-import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore.StartOrder;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore;
+import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore.StartOrder;
 import com.pertegato.propertyflow.caseprocessing.persistence.ConversationEvaluationStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.StaffReviewStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.TenantMessageStore;
+import com.pertegato.propertyflow.caseprocessing.persistence.TenantReplyStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.UrgencyStore;
 import com.pertegato.propertyflow.caseprocessing.service.AutomaticClosureRelease;
 import com.pertegato.propertyflow.caseprocessing.service.CaseUrgencyService;
@@ -46,6 +48,24 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.AutomaticClarificationBpmnConstants.JobType.AUTOMATIC_RECOMMENDATION;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.AutomaticClarificationBpmnConstants.JobType.REGISTER_AUTOMATIC;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.AutomaticClarificationBpmnConstants.JobType.START_CLARIFICATION;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.PREPARE_INITIAL;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.PREPARE_PROCESS_KEY;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.REGISTER_CASE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.REVIEW_ANALYSIS_FAILURE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.STAFF_CLAIM;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.EVALUATION_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.ConversationEvaluationBpmnConstants.JobType.AUTOMATIC_ADVISE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.ConversationEvaluationBpmnConstants.JobType.AUTOMATIC_ANALYZE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.ConversationEvaluationBpmnConstants.JobType.AUTOMATIC_ASSESS_CLOSURE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.JobType.STAFF_REGISTER;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.JobType.STAFF_START_REVIEW;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.TenantMessageBpmnConstants.JobType.CONVERSATION_APPLY;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.TenantMessageBpmnConstants.JobType.CONVERSATION_CONTEXT;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.TenantMessageBpmnConstants.JobType.CONVERSATION_RECOMMENDATION;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.TenantMessageBpmnConstants.JobType.TENANT_MESSAGE_IDENTIFY;
 import static com.pertegato.propertyflow.recommendation.ClosureAssessmentFixtures.noClosure;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -73,12 +93,14 @@ class ConversationEvaluationCamundaTest {
     @Autowired
     private CaseDataStore caseData;
 
-
     private CamundaClient engine;
     private InitialCaseWorkers initial;
 
     @Autowired
     private TenantMessageStore messages;
+
+    @Autowired
+    private TenantReplyStore replies;
 
     @Autowired
     private PersonalLinkCodec links;
@@ -88,9 +110,6 @@ class ConversationEvaluationCamundaTest {
 
     @Autowired
     private StaffReviewStore reviewStore;
-
-    @Autowired
-    private CaseAnalysisStore analyses;
 
     @Autowired
     private CaseUrgencyService urgencyService;
@@ -113,11 +132,8 @@ class ConversationEvaluationCamundaTest {
         database.execute("TRUNCATE pf_case CASCADE");
         engine = CamundaClient.newClientBuilder().restAddress(URI.create(System.getenv("PROPERTYFLOW_TEST_CAMUNDA_URL")))
                 .preferRestOverGrpc(true).defaultRequestTimeout(Duration.ofSeconds(5)).build();
-        long definitionKey = engine.newDeployResourceCommand().addResourceFromClasspath("workflow/message-case.bpmn")
-                .addResourceFromClasspath("workflow/conversation-automatic.bpmn").addResourceFromClasspath("workflow/closure-staff.bpmn")
-                .addResourceFromClasspath("workflow/conversation-processing.bpmn")
-                .send().join().getProcesses().stream()
-                .filter(process -> InitialCaseWorkers.CASE_PROCESS.equals(process.getBpmnProcessId()))
+        long definitionKey = WorkflowTestModels.deploy(engine).getProcesses().stream()
+                .filter(process -> CaseProcessBpmnConstants.PROCESS_ID.equals(process.getBpmnProcessId()))
                 .findFirst().orElseThrow().getProcessDefinitionKey();
         accepted = creation.create(new SubmissionContext.Guest(UUID.randomUUID()),
                 new CreateCaseCommand("review", "Heizung", "Wohnung", "Kalt", "review@example.test"));
@@ -125,13 +141,13 @@ class ConversationEvaluationCamundaTest {
         StartOrder start = workflow.claim(definitionKey, "<default>", Duration.ofMinutes(2)).orElseThrow();
         assertEquals(ProcessStartGateway.StartResult.STARTED, new CamundaProcessStartGateway(engine).ensureStarted(start));
         initial = new InitialCaseWorkers(engine, initialService);
-        ActivatedJob preparing = job(InitialCaseWorkers.PREPARE_KEY);
+        ActivatedJob preparing = job(PREPARE_PROCESS_KEY);
         leader = preparing.getProcessInstanceKey();
         initial.prepareKey(engine, preparing);
-        initial.register(engine, job(InitialCaseWorkers.REGISTER));
-        initial.prepareInitial(engine, job(InitialCaseWorkers.PREPARE_INITIAL));
-        initial.registerAutomatic(engine, job(InitialCaseWorkers.REGISTER_AUTOMATIC));
-        initial.clarification(engine, job(InitialCaseWorkers.CLARIFICATION));
+        initial.register(engine, job(REGISTER_CASE));
+        initial.prepareInitial(engine, job(PREPARE_INITIAL));
+        initial.registerAutomatic(engine, job(REGISTER_AUTOMATIC));
+        initial.clarification(engine, job(START_CLARIFICATION));
         assertEquals("UNDER_CLARIFICATION", status());
     }
 
@@ -158,15 +174,16 @@ class ConversationEvaluationCamundaTest {
                                 "HIGH", false, List.of(), null, "test", "v1"),
                         input -> new Recommendation.Result(
                                 null, null, List.of(), List.of(), true, "APPROVED_KNOWLEDGE_MISSING", "test", "v1"), noClosure(), transactions,
-                new AutomaticClosureRelease());
+                        new AutomaticClosureRelease(), replies);
         AutomaticEvaluationWorkers worker = new AutomaticEvaluationWorkers(engine, central);
-        worker.evaluate(engine, job(AutomaticEvaluationWorkers.EVALUATE));
-        worker.recommend(engine, job(AutomaticEvaluationWorkers.RECOMMEND));
+        worker.analyze(engine, job(AUTOMATIC_ANALYZE));
+        worker.advise(engine, job(AUTOMATIC_ADVISE));
+        worker.recommend(engine, job(AUTOMATIC_RECOMMENDATION));
         StaffReviewWorkers reviews = new StaffReviewWorkers(engine, reviewService);
-        reviews.analysisFailure(engine, job("propertyflow.review.analysis-failure"));
-        reviews.claim(engine, job("propertyflow.staff.claim"));
-        reviews.register(engine, job("propertyflow.staff.register"));
-        reviews.startReview(engine, job("propertyflow.staff.start-review"));
+        reviews.analysisFailure(engine, job(REVIEW_ANALYSIS_FAILURE));
+        reviews.claim(engine, job(STAFF_CLAIM));
+        reviews.register(engine, job(STAFF_REGISTER));
+        reviews.startReview(engine, job(STAFF_START_REVIEW));
         await(() -> tasks().size() == 1);
         assertEquals("STAFF_REVIEW_REQUIRED", status());
         assertEquals(1, count("pf_conversation_evaluation"));
@@ -177,33 +194,45 @@ class ConversationEvaluationCamundaTest {
 
     @Test
     void staleResultReturnsToSharedCurrentEvaluationAndNeverPublishesOldUrgency() throws Exception {
+        // Die Erstauswertung wartet, während der unabhängige Nachrichteneingang ausgewertet wird.
+        job(AUTOMATIC_ANALYZE);
         TenantMessageService tenant = service(gateway());
         tenant.send(accepted.personalAccessToken(), UUID.randomUUID(), "Seit gestern ist es kalt.");
-        new TenantMessageWorkers(engine, tenant).identify(engine, job(TenantMessageWorkers.IDENTIFY));
+        new TenantMessageWorkers(engine, tenant).identify(engine, job(TENANT_MESSAGE_IDENTIFY));
         ConversationEvaluationService central =
                 new ConversationEvaluationService(workflow, messages, evaluations,
                         urgencies, input -> new ConversationAnalysis.Result(
                                 "HIGH", false, List.of(), null, "test", "v1"),
                         input -> new Recommendation.Result(
                                 "Verwaltung", "Prüfen", List.of(), List.of(), false, null, "test", "v1"), noClosure(), transactions,
-                new AutomaticClosureRelease());
+                        new AutomaticClosureRelease(), replies);
         ConversationEvaluationWorkers worker = new ConversationEvaluationWorkers(engine, central);
-        worker.evaluate(engine, job(ConversationEvaluationWorkers.EVALUATE));
-        ActivatedJob stale = job(ConversationEvaluationWorkers.APPLY);
+        AutomaticEvaluationWorkers evaluation = new AutomaticEvaluationWorkers(engine, central);
+        worker.context(engine, job(CONVERSATION_CONTEXT));
+        evaluateTenantMessage(evaluation, TenantMessageBpmnConstants.CallActivity.EVALUATE_MESSAGE);
+        worker.recommendation(engine, job(CONVERSATION_RECOMMENDATION));
+        ActivatedJob stale = job(CONVERSATION_APPLY);
         database.update("UPDATE pf_case SET version = version + 1 WHERE id = ?", caseId);
         worker.apply(engine, stale);
         assertEquals(0, count("pf_urgency_event"));
-        ActivatedJob current = job(ConversationEvaluationWorkers.EVALUATE);
-        assertEquals("NCurrentEvaluation", current.getElementId());
-        worker.evaluate(engine, current);
-        ActivatedJob apply = job(ConversationEvaluationWorkers.APPLY);
+        evaluateTenantMessage(evaluation, TenantMessageBpmnConstants.CallActivity.REFRESH_EVALUATION);
+        ActivatedJob apply = job(CONVERSATION_APPLY);
         worker.apply(engine, apply);
         await(() -> "COMPLETED".equals(engine.newProcessInstanceGetRequest(apply.getProcessInstanceKey()).send().join().getState().name()));
         assertEquals(1, count("pf_evaluation_delivery"));
         assertEquals(1, count("pf_urgency_event"));
         assertEquals("UNDER_CLARIFICATION", status());
-        assertEquals(0, engine.newVariableSearchRequest().filter(filter -> filter.scopeKey(leader).name("evaluationRef"))
+        assertEquals(0, engine.newVariableSearchRequest().filter(filter -> filter.scopeKey(leader).name(EVALUATION_REF))
                 .send().join().items().size());
+    }
+
+    private void evaluateTenantMessage(AutomaticEvaluationWorkers evaluation, String expectedCall) throws Exception {
+        ActivatedJob analysis = job(AUTOMATIC_ANALYZE);
+        Long call = engine.newProcessInstanceGetRequest(analysis.getProcessInstanceKey()).send().join().getParentElementInstanceKey();
+        assertEquals(expectedCall, engine.newElementInstanceGetRequest(call).send().join().getElementId());
+        evaluation.analyze(engine, analysis);
+        evaluation.advise(engine, job(AUTOMATIC_ADVISE));
+        evaluation.assessClosure(engine, job(AUTOMATIC_ASSESS_CLOSURE));
     }
 
     private TenantMessageGateway gateway() {

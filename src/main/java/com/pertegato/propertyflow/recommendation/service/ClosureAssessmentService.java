@@ -7,6 +7,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
+import lombok.RequiredArgsConstructor;
 import tools.jackson.core.StreamReadFeature;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
@@ -15,6 +16,7 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * Prüft Format, Quellenbezug und vollständige Regelbelege, nicht die semantische Wahrheit des Modells.
  */
+@RequiredArgsConstructor
 public final class ClosureAssessmentService implements ClosureAssessment {
 
     public static final String PROMPT_VERSION = "closure-ground-v7";
@@ -127,12 +129,6 @@ public final class ClosureAssessmentService implements ClosureAssessment {
     private final Model model;
     private final String modelName;
     private final Supplier<List<Rule>> rules;
-
-    public ClosureAssessmentService(Model model, String modelName, Supplier<List<Rule>> rules) {
-        this.model = model;
-        this.modelName = modelName;
-        this.rules = rules;
-    }
 
     public static String systemPromptFor(String request) {
         JsonNode rules = JSON.readTree(request).path("rules");

@@ -4,26 +4,47 @@
 <body>
 <header th:replace="~{tenant/fragments :: header}"></header>
 <main class="narrow">
-    <section class="card">
-        <h1>PropertyFlow im Devbetrieb</h1>
-        <p>Fälle und Bearbeitungszustände werden in PostgreSQL gespeichert. Camunda führt die Prozesse.</p>
-        <ul>
-            <li><a th:href="@{/mieter/fall}">Als Mieter ein Anliegen erfassen</a></li>
-            <li><a th:href="@{/registrieren}">Mieterkonto eröffnen</a> oder <a th:href="@{/mieter/faelle}">Meine Fälle öffnen</a></li>
-            <li><a th:href="@{/mitarbeiter/faelle}">Mitarbeiterbereich öffnen</a></li>
-            <li><a href="http://127.0.0.1:8080/operate" target="_blank" rel="noopener noreferrer">Camunda Operate: Prozessstand</a></li>
-            <li><a href="http://127.0.0.1:8080/tasklist" target="_blank" rel="noopener noreferrer">Camunda Tasklist</a></li>
-            <li><a href="http://127.0.0.1:8025" target="_blank" rel="noopener noreferrer">Mailpit: Einmalcodes und Fallbenachrichtigungen</a></li>
-        </ul>
-        <p>Camunda-Anmeldung: <strong>demo / demo</strong>. Mitarbeiter melden sich mit ihrer eingerichteten
-            E-Mail-Adresse an; der Einmalcode erscheint in Mailpit. Mieter öffnen ihren persönlichen Fall-Link
-            aus der Eingangsbestätigung.</p>
-        <p>Im Mitarbeiterdetail führt «Prozess in Camunda anzeigen» zur aktuell führenden Instanz.
-            Die Unterprozesse sind dort über die aufgeklappten Aktivitäten erreichbar.</p>
-        <p>Die KI ist standardmässig deaktiviert. Die Bearbeitung erfolgt durch Mitarbeitende.
-            Automatische Abschlüsse bleiben gesperrt. Eine individuelle Abschlussmitteilung kann vor dem
-            manuellen Abschluss als externe Nachricht gesendet werden.</p>
-    </section>
+    <h1>PropertyFlow im Devbetrieb</h1>
+    <p class="lead">Wählen Sie Ihren Bereich oder öffnen Sie die Systemwerkzeuge.</p>
+
+    <div class="demo-links">
+        <section class="card" aria-labelledby="tenant-heading">
+            <h2 id="tenant-heading">Mieter</h2>
+            <ul>
+                <li><a th:href="@{/mieter/fall}">Ein Anliegen erfassen</a></li>
+                <li><a th:href="@{/mieter/anmelden}">Als Mieter anmelden</a></li>
+                <li><a th:href="@{/registrieren}">Mieterkonto eröffnen</a></li>
+                <li><a th:href="@{/mieter/faelle}">Meine Fälle öffnen</a></li>
+            </ul>
+            <p>Mieter können ihren Fall auch über den persönlichen Fall-Link aus der Eingangsbestätigung öffnen.</p>
+        </section>
+
+        <section class="card" aria-labelledby="staff-heading">
+            <h2 id="staff-heading">Mitarbeiter</h2>
+            <ul>
+                <li><a th:href="@{/anmelden}">Als Mitarbeiter anmelden</a></li>
+                <li><a th:href="@{/mitarbeiter/faelle}">Mitarbeiterbereich öffnen</a></li>
+            </ul>
+            <p>Mitarbeiter melden sich mit ihrer eingerichteten E-Mail-Adresse an. Den Einmalcode finden Sie in Mailpit.</p>
+            <p>Im Falldetail führt «Prozess in Camunda anzeigen» zur aktuell führenden Instanz.
+                Die Unterprozesse sind dort über die aufgeklappten Aktivitäten erreichbar.</p>
+        </section>
+
+        <section class="card" aria-labelledby="system-heading">
+            <h2 id="system-heading">Systemlinks</h2>
+            <ul>
+                <li><a href="http://127.0.0.1:8080/operate" target="_blank" rel="noopener noreferrer">Camunda Operate: Prozessstand</a></li>
+                <li><a href="http://127.0.0.1:8080/tasklist" target="_blank" rel="noopener noreferrer">Camunda Tasklist</a></li>
+                <li><a href="http://127.0.0.1:8025" target="_blank" rel="noopener noreferrer">Mailpit: Einmalcodes und Fallbenachrichtigungen</a></li>
+                <li><a th:href="@{/actuator/health}" target="_blank" rel="noopener noreferrer">Systemstatus</a></li>
+            </ul>
+            <p>Camunda-Anmeldung: <strong>demo / demo</strong>.</p>
+            <p>Fälle und Bearbeitungszustände werden in PostgreSQL gespeichert. Camunda führt die Prozesse.</p>
+            <p>Die KI ist standardmässig deaktiviert. Die Bearbeitung erfolgt durch Mitarbeitende.
+                Automatische Abschlüsse bleiben gesperrt. Eine individuelle Abschlussmitteilung kann vor dem
+                manuellen Abschluss als externe Nachricht gesendet werden.</p>
+        </section>
+    </div>
 </main>
 </body>
 </html>

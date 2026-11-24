@@ -1,5 +1,6 @@
 package com.pertegato.propertyflow.caseprocessing.workflow;
 
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants;
 import com.pertegato.propertyflow.caseprocessing.persistence.AnswerRequirementStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.AnswerRequirementStore.Delivery;
 import com.pertegato.propertyflow.caseprocessing.service.StaffReviewService;
@@ -12,25 +13,33 @@ import io.camunda.client.api.worker.JobClient;
 import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.ANSWER_CONTINUE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.ANSWER_CANCELLATION_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.CLEARED_ANSWER_CALL_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.CLEARED_AUTOMATIC_CALL_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.CLEARED_REPLY_ENTRY_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.CLEAR_ANSWER_OUTCOME;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.ACTIVE_REPLY_CALL_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.AUTOMATIC_INTERRUPTION_CALL_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.AUTOMATIC_INTERRUPTION_READY;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.CASE_ID;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.STAFF_ENTRY_CONTEXT_REF;
+
 @Component
 @Profile("propertyflow-backend & !frontend-demo")
 @ConditionalOnProperty(name = "propertyflow.workflow.enabled", havingValue = "true")
+@RequiredArgsConstructor
 public class AnswerCancellationWorkers {
 
     private final AnswerRequirementStore store;
     private final StaffReviewService reviews;
     private final CamundaClient engine;
-
-    public AnswerCancellationWorkers(AnswerRequirementStore store, StaffReviewService reviews, CamundaClient engine) {
-        this.store = store;
-        this.reviews = reviews;
-        this.engine = engine;
-    }
 
     @Scheduled(fixedDelayString = "${propertyflow.workflow.poll-delay-ms:5000}",
             initialDelayString = "${propertyflow.workflow.initial-delay-ms:5000}")
@@ -44,15 +53,16 @@ public class AnswerCancellationWorkers {
                 ProcessInstance root = engine.newProcessInstanceGetRequest(delivery.leader())
                         .send()
                         .join();
-                if (!InitialCaseWorkers.CASE_PROCESS.equals(root.getProcessDefinitionId()) || root.getParentProcessInstanceKey() != null
+                if (!CaseProcessBpmnConstants.PROCESS_ID.equals(root.getProcessDefinitionId())
+                        || root.getParentProcessInstanceKey() != null
                         || !delivery.tenant().equals(root.getTenantId()) || !"ACTIVE".equals(root.getState().name())) {
                     continue;
                 }
                 Map<String, Object> variables = delivery.replyCall() == null
-                        ? Map.of("automaticInterruptionReady", true, "automaticInterruptionCallRef", delivery.automaticCall().toString(),
-                                "clearedAutomaticCallRef", delivery.automaticCall().toString(), "answerCancellationRef", delivery.id().toString(),
-                                "clearedReplyEntryRef", store.automaticReplyEntry(delivery).map(UUID::toString).orElse(""))
-                        : Map.of("clearedAnswerCallRef", delivery.replyCall().toString(), "answerCancellationRef", delivery.id().toString());
+                        ? Map.of(AUTOMATIC_INTERRUPTION_READY, true, AUTOMATIC_INTERRUPTION_CALL_REF, delivery.automaticCall().toString(),
+                                CLEARED_AUTOMATIC_CALL_REF, delivery.automaticCall().toString(), ANSWER_CANCELLATION_REF, delivery.id().toString(),
+                                CLEARED_REPLY_ENTRY_REF, store.automaticReplyEntry(delivery).map(UUID::toString).orElse(""))
+                        : Map.of(CLEARED_ANSWER_CALL_REF, delivery.replyCall().toString(), ANSWER_CANCELLATION_REF, delivery.id().toString());
                 engine.newSetVariablesCommand(delivery.leader())
                         .variables(variables)
                         .send()
@@ -64,23 +74,24 @@ public class AnswerCancellationWorkers {
         }
     }
 
-    @JobWorker(type = "propertyflow.answer.continue", autoComplete = false)
+    @JobWorker(type = ANSWER_CONTINUE, autoComplete = false)
     public void continueWork(JobClient client, ActivatedJob job) {
         try {
-            if (!InitialCaseWorkers.CASE_PROCESS.equals(job.getBpmnProcessId()) || !"ClearAnswerContinue".equals(job.getElementId())) {
+            if (!CaseProcessBpmnConstants.PROCESS_ID.equals(job.getBpmnProcessId())
+                    || !CaseProcessBpmnConstants.ServiceTask.CONTINUE_WITHOUT_ANSWER.equals(job.getElementId())) {
                 throw new WorkflowRejectedException("INVALID_CLEAR_ANSWER_ORIGIN");
             }
-            Delivery delivery = store.delivery(UUID.fromString((String) job.getVariablesAsMap().get("answerCancellationRef")));
+            Delivery delivery = store.delivery(UUID.fromString((String) job.getVariablesAsMap().get(ANSWER_CANCELLATION_REF)));
             if (delivery.leader() != job.getProcessInstanceKey() || !delivery.tenant().equals(job.getTenantId())
-                    || !delivery.caseId().equals(job.getVariablesAsMap().get("caseId")) || !store.current(delivery)
+                    || !delivery.caseId().equals(job.getVariablesAsMap().get(CASE_ID)) || !store.current(delivery)
                     || (delivery.replyCall() == null
-                            ? !delivery.automaticCall().toString().equals(job.getVariablesAsMap().get("clearedAutomaticCallRef"))
-                            : !delivery.replyCall().toString().equals(job.getVariablesAsMap().get("activeReplyCallRef")))) {
+                            ? !delivery.automaticCall().toString().equals(job.getVariablesAsMap().get(CLEARED_AUTOMATIC_CALL_REF))
+                            : !delivery.replyCall().toString().equals(job.getVariablesAsMap().get(ACTIVE_REPLY_CALL_REF)))) {
                 throw new WorkflowRejectedException("INVALID_CLEAR_ANSWER_CONTEXT");
             }
             reviews.read(delivery.caseId(), delivery.leader(), delivery.continuation());
             client.newCompleteCommand(job.getKey())
-                    .variables(Map.of("clearAnswerOutcome", "STAFF", "staffEntryContextRef", delivery.continuation().toString()))
+                    .variables(Map.of(CLEAR_ANSWER_OUTCOME, "STAFF", STAFF_ENTRY_CONTEXT_REF, delivery.continuation().toString()))
                     .send()
                     .join();
         } catch (RuntimeException exception) {

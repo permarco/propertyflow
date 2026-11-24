@@ -7,19 +7,17 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 @Repository
 @Profile("propertyflow-backend & !frontend-demo")
+@RequiredArgsConstructor
 public class AutomaticQuestionStore {
 
     private final JdbcTemplate database;
-
-    public AutomaticQuestionStore(JdbcTemplate database) {
-        this.database = database;
-    }
 
     public Optional<Batch> find(UUID entry, UUID evaluation) {
         return rows("automatic_entry_id = ? AND evaluation_id = ?", entry, evaluation).stream().findFirst();

@@ -7,12 +7,13 @@ import com.pertegato.propertyflow.access.contract.StaffAuthenticationErrorCode;
 import com.pertegato.propertyflow.access.contract.StaffAuthenticationException;
 import com.pertegato.propertyflow.access.contract.StaffDirectory;
 import com.pertegato.propertyflow.access.contract.WebAccountContext;
-import com.pertegato.propertyflow.access.persistence.StaffAccountStore;
 import com.pertegato.propertyflow.access.persistence.StaffAccountStore.Account;
+import com.pertegato.propertyflow.access.persistence.StaffAccountStore;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.RecoverableDataAccessException;
@@ -22,13 +23,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Profile("propertyflow-backend & !frontend-demo")
+@RequiredArgsConstructor
 public class StaffAccountService implements StaffAccountAccess, StaffDirectory {
 
     private final StaffAccountStore accounts;
-
-    public StaffAccountService(StaffAccountStore accounts) {
-        this.accounts = accounts;
-    }
 
     @Override
     public StaffAccessDecision checkStaffAccess(WebAccountContext context) {

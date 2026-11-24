@@ -1,5 +1,6 @@
 package com.pertegato.propertyflow.caseprocessing.workflow;
 
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseDataStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseDataStore.Command;
 import com.pertegato.propertyflow.caseprocessing.persistence.DirectFollowUpStore;
@@ -16,19 +17,32 @@ import io.camunda.client.api.worker.JobClient;
 import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.DIRECT_FOLLOW_UP_APPLY;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.DIRECT_FOLLOW_UP_CONTINUE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.DIRECT_FOLLOW_UP_SIGNAL;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.DIRECT_FOLLOW_COMMAND_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.DIRECT_FOLLOW_CONTINUATION_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.DIRECT_FOLLOW_OUTCOME;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.STAFF_FOLLOW_AUTOMATIC_CALL_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.STAFF_FOLLOW_COMMAND_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.STAFF_FOLLOW_REPLY_CALL_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.STAFF_FOLLOW_REPLY_ENTRY_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.AUTOMATIC_INTERRUPTION_CALL_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.AUTOMATIC_INTERRUPTION_READY;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.STAFF_ENTRY_CONTEXT_REF;
+
 @Component
 @Profile("propertyflow-backend & !frontend-demo")
 @ConditionalOnProperty(name = "propertyflow.workflow.enabled", havingValue = "true")
+@RequiredArgsConstructor
 public class DirectFollowUpWorkers {
 
-    public static final String APPLY = "propertyflow.direct-follow-up.apply";
-    public static final String SIGNAL = "propertyflow.direct-follow-up.signal";
-    public static final String CONTINUE = "propertyflow.direct-follow-up.continue";
     private final CamundaClient engine;
     private final CaseDataService service;
     private final CaseDataStore commands;
@@ -36,33 +50,23 @@ public class DirectFollowUpWorkers {
     private final TenantReplyStore replies;
     private final StaffReviewService reviews;
 
-    public DirectFollowUpWorkers(CamundaClient engine, CaseDataService service, CaseDataStore commands,
-            DirectFollowUpStore store, TenantReplyStore replies, StaffReviewService reviews) {
-        this.engine = engine;
-        this.service = service;
-        this.commands = commands;
-        this.store = store;
-        this.replies = replies;
-        this.reviews = reviews;
-    }
-
-    @JobWorker(type = APPLY, autoComplete = false)
+    @JobWorker(type = DIRECT_FOLLOW_UP_APPLY, autoComplete = false)
     public void apply(JobClient client, ActivatedJob job) {
         String result;
         try {
-            Command command = verify(job, "StaffFollowPublish", "directFollowCommandRef");
+            Command command = verify(job, CaseProcessBpmnConstants.ServiceTask.SAVE_DIRECT_FOLLOW_UP, DIRECT_FOLLOW_COMMAND_REF);
             result = service.directFollowUpState(command.id(), job.getProcessInstanceKey(), job.getTenantId());
         } catch (RuntimeException exception) {
             fail(client, job, exception);
             return;
         }
-        client.newCompleteCommand(job.getKey()).variables(Map.of("directFollowOutcome", result)).send().join();
+        client.newCompleteCommand(job.getKey()).variables(Map.of(DIRECT_FOLLOW_OUTCOME, result)).send().join();
     }
 
-    @JobWorker(type = SIGNAL, autoComplete = false)
+    @JobWorker(type = DIRECT_FOLLOW_UP_SIGNAL, autoComplete = false)
     public void signal(JobClient client, ActivatedJob job) {
         try {
-            Command command = verify(job, "StaffFollowSignal", "directFollowCommandRef");
+            Command command = verify(job, CaseProcessBpmnConstants.ServiceTask.NOTIFY_DIRECT_FOLLOW_UP, DIRECT_FOLLOW_COMMAND_REF);
             require("APPLIED".equals(command.state()));
             deliver(command.id());
         } catch (RuntimeException exception) {
@@ -72,11 +76,11 @@ public class DirectFollowUpWorkers {
         client.newCompleteCommand(job.getKey()).send().join();
     }
 
-    @JobWorker(type = CONTINUE, autoComplete = false)
+    @JobWorker(type = DIRECT_FOLLOW_UP_CONTINUE, autoComplete = false)
     public void resume(JobClient client, ActivatedJob job) {
         UUID continuation;
         try {
-            Command command = verify(job, "StaffFollowContinue", "directFollowContinuationRef");
+            Command command = verify(job, CaseProcessBpmnConstants.ServiceTask.CONTINUE_TO_FOLLOW_UP, DIRECT_FOLLOW_CONTINUATION_REF);
             require("APPLIED".equals(command.state()));
             Intent intent = store.get(command.id());
             require(reviews.current(command.caseId(), command.leader()).id().equals(intent.continuation()));
@@ -85,7 +89,7 @@ public class DirectFollowUpWorkers {
             fail(client, job, exception);
             return;
         }
-        client.newCompleteCommand(job.getKey()).variables(Map.of("staffEntryContextRef", continuation.toString())).send().join();
+        client.newCompleteCommand(job.getKey()).variables(Map.of(STAFF_ENTRY_CONTEXT_REF, continuation.toString())).send().join();
     }
 
     @Scheduled(fixedDelayString = "${propertyflow.workflow.poll-delay-ms:5000}",
@@ -112,22 +116,24 @@ public class DirectFollowUpWorkers {
             return;
         }
         ProcessInstance root = engine.newProcessInstanceGetRequest(command.leader()).send().join();
-        require(InitialCaseWorkers.CASE_PROCESS.equals(root.getProcessDefinitionId()) && root.getParentProcessInstanceKey() == null
+        require(CaseProcessBpmnConstants.PROCESS_ID.equals(root.getProcessDefinitionId())
+                && root.getParentProcessInstanceKey() == null
                 && command.tenant().equals(root.getTenantId()));
         if ("ACTIVE".equals(root.getState().name())) {
             String replyCall = intent.reply() == null ? "" : intent.reply().toString();
             String replyEntry = intent.reply() == null ? store.previousReplyEntry(intent.call()) : replies.get(intent.reply()).entry().toString();
-            engine.newSetVariablesCommand(command.leader()).variables(Map.of("automaticInterruptionReady", true,
-                    "automaticInterruptionCallRef", intent.call().toString(), "staffFollowAutomaticCallRef", intent.call().toString(),
-                    "staffFollowReplyCallRef", replyCall,
-                    "staffFollowReplyEntryRef", replyEntry, "staffFollowCommandRef", id.toString())).send().join();
+            engine.newSetVariablesCommand(command.leader()).variables(Map.of(AUTOMATIC_INTERRUPTION_READY, true,
+                    AUTOMATIC_INTERRUPTION_CALL_REF, intent.call().toString(), STAFF_FOLLOW_AUTOMATIC_CALL_REF, intent.call().toString(),
+                    STAFF_FOLLOW_REPLY_CALL_REF, replyCall,
+                    STAFF_FOLLOW_REPLY_ENTRY_REF, replyEntry, STAFF_FOLLOW_COMMAND_REF, id.toString())).send().join();
         }
         store.delivered(id);
     }
 
     private Command verify(ActivatedJob job, String element, String variable) {
         ProcessInstance root = engine.newProcessInstanceGetRequest(job.getProcessInstanceKey()).send().join();
-        require(InitialCaseWorkers.CASE_PROCESS.equals(job.getBpmnProcessId()) && element.equals(job.getElementId())
+        require(CaseProcessBpmnConstants.PROCESS_ID.equals(job.getBpmnProcessId())
+                && element.equals(job.getElementId())
                 && root.getParentProcessInstanceKey() == null && job.getTenantId().equals(root.getTenantId()));
         Command command = commands.get(UUID.fromString((String) job.getVariablesAsMap().get(variable)));
         require("DIRECT_FOLLOW_UP".equals(command.type()) && command.leader() == job.getProcessInstanceKey()

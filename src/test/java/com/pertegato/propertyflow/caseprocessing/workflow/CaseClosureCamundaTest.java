@@ -7,21 +7,18 @@ import com.pertegato.propertyflow.caseprocessing.contract.CaseActionException;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseCreation;
 import com.pertegato.propertyflow.caseprocessing.contract.CreateCaseCommand;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffTaskDecisions.StaffTask;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants;
 import com.pertegato.propertyflow.caseprocessing.delivery.StaffTaskGateway;
-import com.pertegato.propertyflow.caseprocessing.persistence.CaseAnalysisStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseDataStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore.StartOrder;
 import com.pertegato.propertyflow.caseprocessing.persistence.StaffDecisionStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.StaffReviewStore;
-import com.pertegato.propertyflow.caseprocessing.service.CaseAnalysisService;
 import com.pertegato.propertyflow.caseprocessing.service.CaseClosureService;
 import com.pertegato.propertyflow.caseprocessing.service.CaseClosureService.ClosureContext;
-import com.pertegato.propertyflow.caseprocessing.service.CaseUrgencyService;
 import com.pertegato.propertyflow.caseprocessing.service.CaseWorkflowService;
 import com.pertegato.propertyflow.caseprocessing.service.StaffDecisionService;
 import com.pertegato.propertyflow.caseprocessing.service.StaffReviewService;
-import com.pertegato.propertyflow.triage.service.AnalyzeTool;
 import com.pertegato.propertyflow.triage.service.AnalyzeTool.AnalysisModel;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ActivatedJob;
@@ -47,6 +44,20 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.AutomaticClarificationBpmnConstants.JobType.AUTOMATIC_RECOMMENDATION;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.ConversationEvaluationBpmnConstants.JobType.AUTOMATIC_ANALYZE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.AutomaticClarificationBpmnConstants.JobType.REGISTER_AUTOMATIC;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.AutomaticClarificationBpmnConstants.JobType.START_CLARIFICATION;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.PREPARE_INITIAL;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.PREPARE_PROCESS_KEY;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.REGISTER_CASE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.REVIEW_ANALYSIS_FAILURE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.STAFF_CLAIM;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.STAFF_CLOSE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.STAFF_DECISION_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.JobType.STAFF_PROGRESS;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.JobType.STAFF_REGISTER;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.JobType.STAFF_START_REVIEW;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -78,12 +89,6 @@ class CaseClosureCamundaTest {
 
     @Autowired
     private PlatformTransactionManager transactions;
-
-    @Autowired
-    private CaseUrgencyService urgencyService;
-
-    @Autowired
-    private CaseAnalysisStore analyses;
 
     @Autowired
     private StaffAccountAccess access;
@@ -119,10 +124,8 @@ class CaseClosureCamundaTest {
         database.execute("TRUNCATE pf_case CASCADE");
         engine = CamundaClient.newClientBuilder().restAddress(URI.create(System.getenv("PROPERTYFLOW_TEST_CAMUNDA_URL")))
                 .preferRestOverGrpc(true).defaultRequestTimeout(Duration.ofSeconds(5)).build();
-        long definitionKey = engine.newDeployResourceCommand().addResourceFromClasspath("workflow/closure-case.bpmn")
-                .addResourceFromClasspath("workflow/analysis-automatic.bpmn").addResourceFromClasspath("workflow/closure-staff.bpmn")
-                .send().join().getProcesses().stream()
-                .filter(process -> InitialCaseWorkers.CASE_PROCESS.equals(process.getBpmnProcessId()))
+        long definitionKey = WorkflowTestModels.deploy(engine).getProcesses().stream()
+                .filter(process -> CaseProcessBpmnConstants.PROCESS_ID.equals(process.getBpmnProcessId()))
                 .findFirst().orElseThrow().getProcessDefinitionKey();
         caseId = creation.create(new SubmissionContext.Guest(UUID.randomUUID()),
                 new CreateCaseCommand("review", "Heizung", "Wohnung", "Kalt", "review@example.test")).caseId();
@@ -130,19 +133,21 @@ class CaseClosureCamundaTest {
         assertEquals(ProcessStartGateway.StartResult.STARTED, new CamundaProcessStartGateway(engine).ensureStarted(start));
         initial = new InitialCaseWorkers(engine, initialService);
         reviews = new StaffReviewWorkers(engine, reviewService);
-        ActivatedJob preparing = job(InitialCaseWorkers.PREPARE_KEY);
+        ActivatedJob preparing = job(PREPARE_PROCESS_KEY);
         leader = preparing.getProcessInstanceKey();
         initial.prepareKey(engine, preparing);
-        initial.register(engine, job(InitialCaseWorkers.REGISTER));
-        initial.prepareInitial(engine, job(InitialCaseWorkers.PREPARE_INITIAL));
-        initial.registerAutomatic(engine, job(InitialCaseWorkers.REGISTER_AUTOMATIC));
-        initial.clarification(engine, job(InitialCaseWorkers.CLARIFICATION));
+        initial.register(engine, job(REGISTER_CASE));
+        initial.prepareInitial(engine, job(PREPARE_INITIAL));
+        initial.registerAutomatic(engine, job(REGISTER_AUTOMATIC));
+        initial.clarification(engine, job(START_CLARIFICATION));
         assertEquals("UNDER_CLARIFICATION", status());
-        worker(text -> "invalid").analyze(engine, job(TriageWorkers.INITIAL));
-        reviews.analysisFailure(engine, job("propertyflow.review.analysis-failure"));
-        reviews.claim(engine, job("propertyflow.staff.claim"));
-        reviews.register(engine, job("propertyflow.staff.register"));
-        reviews.startReview(engine, job("propertyflow.staff.start-review"));
+        AutomaticEvaluationWorkers analysis = InitialAnalysisTestFixture.failedEvaluation(engine, workflow, database, transactions);
+        analysis.analyze(engine, job(AUTOMATIC_ANALYZE));
+        analysis.recommend(engine, job(AUTOMATIC_RECOMMENDATION));
+        reviews.analysisFailure(engine, job(REVIEW_ANALYSIS_FAILURE));
+        reviews.claim(engine, job(STAFF_CLAIM));
+        reviews.register(engine, job(STAFF_REGISTER));
+        reviews.startReview(engine, job(STAFF_START_REVIEW));
         await(() -> tasks().size() == 1);
         actor = new WebAccountContext(UUID.randomUUID());
         database.update("""
@@ -177,7 +182,7 @@ class CaseClosureCamundaTest {
         assertEquals(0, count("pf_internal_memo"));
         assertEquals("CLOSED", closure.close(caseId, leader,
                 database.queryForObject("SELECT child_instance_key FROM pf_staff_continuation", Long.class),
-                UUID.fromString(close.getVariablesAsMap().get("staffDecisionRef").toString())).state());
+                UUID.fromString(close.getVariablesAsMap().get(STAFF_DECISION_REF).toString())).state());
     }
 
     @Test
@@ -185,8 +190,8 @@ class CaseClosureCamundaTest {
         StaffDecisionService service = service(gateway());
         StaffTask first = service.current(actor, caseId);
         service.continueWork(actor, caseId, UUID.randomUUID(), Long.parseLong(first.taskKey()), first.version(), first.reviewToken());
-        new StaffDecisionWorkers(engine, service).progress(engine, job(StaffDecisionWorkers.PROGRESS));
-        await(() -> tasks().size() == 1 && "SWork".equals(tasks().getFirst().getElementId()));
+        new StaffDecisionWorkers(engine, service).progress(engine, job(STAFF_PROGRESS));
+        await(() -> tasks().size() == 1 && "Naechste_Mitarbeiteraktion_abwarten_USERTASK".equals(tasks().getFirst().getElementId()));
         StaffTask work = service.current(actor, caseId);
         assertTrue(work.canClose());
         assertFalse(work.canContinue());
@@ -205,9 +210,9 @@ class CaseClosureCamundaTest {
         service.closeCase(actor, caseId, UUID.randomUUID(), Long.parseLong(original.taskKey()), original.version(), original.reviewToken());
         database.update("UPDATE pf_case SET version = version + 1 WHERE id = ?", caseId);
         new CaseClosureWorkers(engine, closure).close(engine, closingJob());
-        reviews.claim(engine, job("propertyflow.staff.claim"));
-        reviews.register(engine, job("propertyflow.staff.register"));
-        reviews.startReview(engine, job("propertyflow.staff.start-review"));
+        reviews.claim(engine, job(STAFF_CLAIM));
+        reviews.register(engine, job(STAFF_REGISTER));
+        reviews.startReview(engine, job(STAFF_START_REVIEW));
         await(() -> tasks().size() == 1 && tasks().getFirst().getProcessInstanceKey() != oldChild);
         StaffTask current = service.current(actor, caseId);
         assertTrue(current.canClose());
@@ -226,9 +231,9 @@ class CaseClosureCamundaTest {
     }
 
     private ActivatedJob closingJob() throws Exception {
-        ActivatedJob job = job(CaseClosureWorkers.CLOSE);
+        ActivatedJob job = job(STAFF_CLOSE);
         ClosureContext context = closure.context(caseId, leader,
-                UUID.fromString(job.getVariablesAsMap().get("staffDecisionRef").toString()));
+                UUID.fromString(job.getVariablesAsMap().get(STAFF_DECISION_REF).toString()));
         await(() -> "COMPLETED".equals(engine.newProcessInstanceGetRequest(context.child()).send().join().getState().name())
                 && "COMPLETED".equals(engine.newElementInstanceGetRequest(context.parentElement()).send().join().getState().name()));
         return job;
@@ -241,11 +246,6 @@ class CaseClosureCamundaTest {
 
     private StaffDecisionService service(StaffTaskGateway gateway) {
         return new StaffDecisionService(access, workflow, caseData, reviewStore, decisions, gateway, transactions);
-    }
-
-    private TriageWorkers worker(AnalyzeTool.AnalysisModel model) {
-        return new TriageWorkers(engine, new CaseAnalysisService(
-                workflow, reviewStore, analyses, urgencyService, new AnalyzeTool(model), transactions));
     }
 
     private ActivatedJob job(String type) throws Exception {

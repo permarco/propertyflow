@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -17,12 +18,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
 @Profile("propertyflow-backend & !frontend-demo")
+@RequiredArgsConstructor
 public class AccountAdministrationController {
     private final AccountAdministrationService accounts;
-
-    public AccountAdministrationController(AccountAdministrationService accounts) {
-        this.accounts = accounts;
-    }
 
     @ModelAttribute
     void protect(HttpServletResponse response) {

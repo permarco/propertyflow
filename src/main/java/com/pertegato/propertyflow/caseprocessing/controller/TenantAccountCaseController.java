@@ -14,6 +14,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.util.Map;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Controller;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
 @Profile("propertyflow-backend & !frontend-demo")
+@RequiredArgsConstructor
 public class TenantAccountCaseController {
     private final PersistentCaseService cases;
     private final TenantMessageService messages;
@@ -34,14 +36,6 @@ public class TenantAccountCaseController {
 
     @Value("${propertyflow.mcp.backend.enabled:false}")
     private boolean connectedAppsAvailable;
-
-    public TenantAccountCaseController(PersistentCaseService cases, TenantMessageService messages,
-            TenantAccountAccess accounts, GuestRequestLimits limits) {
-        this.cases = cases;
-        this.messages = messages;
-        this.accounts = accounts;
-        this.limits = limits;
-    }
 
     @ModelAttribute
     void protect(HttpServletResponse response) {

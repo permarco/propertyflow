@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Controller;
@@ -17,13 +18,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 @Controller
 @Profile("propertyflow-backend & !frontend-demo")
+@RequiredArgsConstructor
 public class CaseOperationsController {
 
     private final CaseOperationsService service;
-
-    public CaseOperationsController(CaseOperationsService service) {
-        this.service = service;
-    }
 
     @GetMapping("/mitarbeiter/betrieb")
     String overview(HttpServletRequest request, HttpServletResponse response, Model model) {

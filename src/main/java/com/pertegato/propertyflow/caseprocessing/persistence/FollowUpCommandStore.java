@@ -6,6 +6,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @Profile("propertyflow-backend & !frontend-demo")
+@RequiredArgsConstructor
 public class FollowUpCommandStore {
 
     private static final RowMapper<Command> COMMAND = (row, index) -> new Command(row.getObject("id", UUID.class),
@@ -22,10 +24,6 @@ public class FollowUpCommandStore {
             row.getTimestamp("due_at") == null ? null : row.getTimestamp("due_at").toInstant(), row.getString("state"),
             row.getObject("conflict_continuation_id", UUID.class));
     private final JdbcTemplate database;
-
-    public FollowUpCommandStore(JdbcTemplate database) {
-        this.database = database;
-    }
 
     public Optional<Command> find(String caseId, UUID actor, UUID operation) {
         return database.query("SELECT * FROM pf_follow_up_command WHERE case_id = ? AND actor_id = ? AND operation_id = ?",

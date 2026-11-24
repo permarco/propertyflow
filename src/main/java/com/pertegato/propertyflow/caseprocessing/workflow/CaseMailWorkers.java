@@ -1,5 +1,6 @@
 package com.pertegato.propertyflow.caseprocessing.workflow;
 
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseNotificationBpmnConstants;
 import com.pertegato.propertyflow.caseprocessing.service.CaseMailService;
 import com.pertegato.propertyflow.caseprocessing.service.CaseMailService.MailOutcome;
 import com.pertegato.propertyflow.caseprocessing.service.WorkflowRejectedException;
@@ -11,44 +12,47 @@ import io.camunda.client.api.worker.JobClient;
 import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseNotificationBpmnConstants.ErrorCode.MAIL_CLARIFICATION_REQUIRED;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseNotificationBpmnConstants.JobType.MAIL_PREPARE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseNotificationBpmnConstants.JobType.MAIL_RECORD_PROBLEM;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseNotificationBpmnConstants.JobType.MAIL_SEND;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseNotificationBpmnConstants.Variablen.MAIL_ORDER_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseNotificationBpmnConstants.Variablen.MAIL_ROUTE;
+
 @Component
 @Profile("propertyflow-backend & !frontend-demo")
 @ConditionalOnProperty(name = {"propertyflow.workflow.enabled", "propertyflow.case-mail.enabled"}, havingValue = "true")
+@RequiredArgsConstructor
 public class CaseMailWorkers {
 
-    public static final String PROCESS_ID = "PropertyFlow_Mail_Draft";
-    private static final String REVIEW_ERROR = "MAIL_CLARIFICATION_REQUIRED";
     private final CamundaClient camunda;
     private final CaseMailService service;
 
-    public CaseMailWorkers(CamundaClient camunda, CaseMailService service) {
-        this.camunda = camunda;
-        this.service = service;
-    }
-
-    @JobWorker(type = "propertyflow.mail.prepare", autoComplete = false)
+    @JobWorker(type = MAIL_PREPARE, autoComplete = false)
     public void prepare(JobClient client, ActivatedJob job) {
         try {
-            UUID id = verify(job, "MailLoad");
+            UUID id = verify(job, CaseNotificationBpmnConstants.ServiceTask.PREPARE_MAIL);
             String route = service.prepare(id, job.getProcessInstanceKey(), job.getProcessDefinitionKey(), job.getTenantId());
-            client.newCompleteCommand(job.getKey()).variables(Map.of("mailRoute", route)).send().join();
+            client.newCompleteCommand(job.getKey()).variables(Map.of(MAIL_ROUTE, route)).send().join();
         } catch (RuntimeException exception) {
             fail(client, job, exception);
         }
     }
 
-    @JobWorker(type = "propertyflow.mail.send", autoComplete = false)
+    @JobWorker(type = MAIL_SEND, autoComplete = false)
     public void send(JobClient client, ActivatedJob job) {
         try {
-            UUID id = verify(job, "MailSendChange", "MailSendMessage");
+            UUID id = verify(job, CaseNotificationBpmnConstants.SendTask.SEND_STATUS_MAIL,
+                    CaseNotificationBpmnConstants.SendTask.SEND_ACCEPTANCE_OR_MESSAGE_MAIL);
             MailOutcome outcome = service.send(id, job.getProcessInstanceKey());
             switch (outcome) {
                 case SENT -> client.newCompleteCommand(job.getKey()).send().join();
-                case REVIEW -> client.newThrowErrorCommand(job.getKey()).errorCode(REVIEW_ERROR).send().join();
+                case REVIEW -> client.newThrowErrorCommand(job.getKey()).errorCode(MAIL_CLARIFICATION_REQUIRED).send().join();
                 case RETRY, BUSY -> client.newFailCommand(job.getKey()).retries(Math.max(1, job.getRetries()))
                         .retryBackoff(Duration.ofSeconds(30)).errorMessage("MAIL_RETRY_PENDING").send().join();
             }
@@ -57,10 +61,10 @@ public class CaseMailWorkers {
         }
     }
 
-    @JobWorker(type = "propertyflow.mail.record-problem", autoComplete = false)
+    @JobWorker(type = MAIL_RECORD_PROBLEM, autoComplete = false)
     public void recordProblem(JobClient client, ActivatedJob job) {
         try {
-            UUID id = verify(job, "MailProblem");
+            UUID id = verify(job, CaseNotificationBpmnConstants.ServiceTask.RECORD_MAIL_PROBLEM);
             service.recordProblem(id, job.getProcessInstanceKey());
             client.newCompleteCommand(job.getKey()).send().join();
         } catch (RuntimeException exception) {
@@ -70,8 +74,9 @@ public class CaseMailWorkers {
 
     private UUID verify(ActivatedJob job, String... allowedElements) {
         boolean allowed = java.util.Arrays.asList(allowedElements).contains(job.getElementId());
-        Object reference = job.getVariablesAsMap().get("mailOrderRef");
-        if (!allowed || !PROCESS_ID.equals(job.getBpmnProcessId()) || !(reference instanceof String)) {
+        Object reference = job.getVariablesAsMap().get(MAIL_ORDER_REF);
+        if (!allowed || !CaseNotificationBpmnConstants.PROCESS_ID.equals(job.getBpmnProcessId())
+                || !(reference instanceof String)) {
             throw new WorkflowRejectedException("INVALID_MAIL_JOB_ORIGIN");
         }
         UUID id = UUID.fromString((String) reference);

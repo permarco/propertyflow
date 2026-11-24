@@ -8,25 +8,26 @@ import io.camunda.client.api.search.response.ProcessInstance;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.START_ORDER_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.CASE_ID;
+
 @Component
 @Profile("propertyflow-backend & !frontend-demo")
 @ConditionalOnProperty(name = "propertyflow.workflow.enabled", havingValue = "true")
+@RequiredArgsConstructor
 public class CamundaProcessStartGateway implements ProcessStartGateway {
 
     private final CamundaClient client;
 
-    public CamundaProcessStartGateway(CamundaClient client) {
-        this.client = client;
-    }
-
     @Override
     public StartResult ensureStarted(StartOrder order) {
         return ensureStarted(order.id(), order.definitionKey(), order.tenantId(),
-                Map.of("caseId", order.caseId(), "startOrderRef", order.id().toString()));
+                Map.of(CASE_ID, order.caseId(), START_ORDER_REF, order.id().toString()));
     }
 
     public StartResult ensureStarted(UUID id, long definitionKey, String tenantId, Map<String, Object> variables) {

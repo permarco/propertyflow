@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -45,6 +46,7 @@ import org.springframework.web.util.WebUtils;
 @Controller
 @Profile("propertyflow-backend & !frontend-demo")
 @RequestMapping(StaffWebSession.STAFF_LIST)
+@RequiredArgsConstructor
 public class StaffCaseController {
 
     private static final Logger LOG = LoggerFactory.getLogger(StaffCaseController.class);
@@ -54,11 +56,6 @@ public class StaffCaseController {
 
     private final StaffCaseListing listing;
     private final AccountCaseReading reading;
-
-    public StaffCaseController(StaffCaseListing listing, AccountCaseReading reading) {
-        this.listing = listing;
-        this.reading = reading;
-    }
 
     @ModelAttribute
     void protect(HttpServletResponse response) {

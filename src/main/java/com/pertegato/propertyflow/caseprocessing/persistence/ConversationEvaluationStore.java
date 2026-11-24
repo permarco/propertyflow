@@ -3,15 +3,16 @@ package com.pertegato.propertyflow.caseprocessing.persistence;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseRecommendation;
 import com.pertegato.propertyflow.recommendation.service.ClosureAssessment;
 import com.pertegato.propertyflow.recommendation.service.Recommendation;
-import com.pertegato.propertyflow.triage.service.ConversationAnalysis;
 import com.pertegato.propertyflow.triage.service.ConversationAnalysis.Answer;
 import com.pertegato.propertyflow.triage.service.ConversationAnalysis.Input;
 import com.pertegato.propertyflow.triage.service.ConversationAnalysis.Message;
 import com.pertegato.propertyflow.triage.service.ConversationAnalysis.Question;
+import com.pertegato.propertyflow.triage.service.ConversationAnalysis;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -19,14 +20,11 @@ import tools.jackson.databind.json.JsonMapper;
 
 @Repository
 @Profile("propertyflow-backend & !frontend-demo")
+@RequiredArgsConstructor
 public class ConversationEvaluationStore {
 
     private final JdbcTemplate database;
     private final JsonMapper json = JsonMapper.builder().build();
-
-    public ConversationEvaluationStore(JdbcTemplate database) {
-        this.database = database;
-    }
 
     public boolean replyCurrent(String caseId, UUID entry, long leader, long child, String tenant) {
         return Boolean.TRUE.equals(database.queryForObject("""
@@ -129,15 +127,21 @@ public class ConversationEvaluationStore {
                         row.getString("result_json") == null ? null : json.readValue(row.getString("result_json"), Outcome.class)), args);
     }
 
-    public Evaluation begin(String caseId, long leader, long version, long analysisVersion, String phase) {
+    public Evaluation begin(String caseId, long leader, long version, long analysisVersion, String phase, UUID attempt) {
         UUID id = UUID.randomUUID();
         database.update("""
                 INSERT INTO pf_conversation_evaluation (id, case_id, leading_instance_key, case_version, analysis_version, phase, attempt_id, state)
                 VALUES (?, ?, ?, ?, ?, ?, ?, 'RUNNING')
                 ON CONFLICT (case_id, leading_instance_key, case_version, analysis_version)
                 DO UPDATE SET attempt_id = EXCLUDED.attempt_id, state = 'RUNNING', started_at = CURRENT_TIMESTAMP, result_json = NULL
-                """, id, caseId, leader, version, analysisVersion, phase, UUID.randomUUID());
+                """, id, caseId, leader, version, analysisVersion, phase, attempt);
         return current(caseId, leader, version, analysisVersion).orElseThrow();
+    }
+
+    public void checkpoint(UUID id, Outcome outcome) {
+        database.update("""
+                UPDATE pf_conversation_evaluation SET result_json = ?, started_at = CURRENT_TIMESTAMP WHERE id = ?
+                """, json.writeValueAsString(outcome), id);
     }
 
     public void ready(UUID id, Outcome outcome) {

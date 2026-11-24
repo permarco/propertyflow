@@ -7,6 +7,7 @@ import com.pertegato.propertyflow.caseprocessing.contract.CaseCreation;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseReading;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseStatus;
 import com.pertegato.propertyflow.caseprocessing.contract.CreateCaseCommand;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants;
 import io.camunda.client.CamundaClient;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -33,11 +34,8 @@ class WorkflowRestartCamundaTest {
     void actualSpringWorkersRecoverDurableIntakeAfterUnavailableEngineAndApplicationRestart() throws Exception {
         String engineUrl = System.getenv("PROPERTYFLOW_TEST_CAMUNDA_URL");
         try (CamundaClient engine = CamundaClient.newClientBuilder().restAddress(URI.create(engineUrl)).preferRestOverGrpc(true).build()) {
-            long definitionKey = engine.newDeployResourceCommand()
-                    .addResourceFromClasspath("workflow/initial-case.bpmn")
-                    .addResourceFromClasspath("workflow/initial-automatic.bpmn")
-                    .send().join().getProcesses().stream()
-                    .filter(process -> InitialCaseWorkers.CASE_PROCESS.equals(process.getBpmnProcessId()))
+            long definitionKey = WorkflowTestModels.deploy(engine).getProcesses().stream()
+                    .filter(process -> CaseProcessBpmnConstants.PROCESS_ID.equals(process.getBpmnProcessId()))
                     .findFirst().orElseThrow().getProcessDefinitionKey();
             CaseAccepted accepted;
             try (ConfigurableApplicationContext unavailable = start("http://127.0.0.1:1", definitionKey)) {

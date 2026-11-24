@@ -13,7 +13,7 @@ pwsh -File dev/start.ps1
 
 Der Befehl startet die bestehende PropertyFlow-PostgreSQL-Datenbank, eine getrennte
 Camunda-PostgreSQL-Datenbank, Camunda 8.9.19 mit Operate/Tasklist und Mailpit. Er deployt
-alle sieben kanonischen BPMN-Modelle, baut das Backend, richtet das erste Mitarbeiterkonto
+alle acht kanonischen BPMN-Modelle, baut das Backend, richtet das erste Mitarbeiterkonto
 idempotent ein, startet PropertyFlow im Hintergrund und erzeugt einmalig sieben
 synthetische Beispiele über echte HTTP-Befehle und Camunda-Worker.
 

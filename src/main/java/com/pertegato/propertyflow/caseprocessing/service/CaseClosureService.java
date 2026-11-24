@@ -4,6 +4,7 @@ import com.pertegato.propertyflow.access.contract.StaffAccessDecision;
 import com.pertegato.propertyflow.access.contract.StaffAccountAccess;
 import com.pertegato.propertyflow.access.contract.WebAccountContext;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffDecisionAction;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseClosureStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseDataStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWaitStore;
@@ -21,6 +22,7 @@ import com.pertegato.propertyflow.caseprocessing.persistence.StaffReviewStore.Co
 import com.pertegato.propertyflow.caseprocessing.persistence.TenantReplyStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.TenantReplyStore.Call;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -29,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Profile("propertyflow-backend & !frontend-demo")
 @Transactional(propagation = Propagation.REQUIRES_NEW)
+@RequiredArgsConstructor
 public class CaseClosureService {
 
     private final StaffAccountAccess access;
@@ -41,21 +44,6 @@ public class CaseClosureService {
     private final CaseWaitStore waits;
     private final ReplyClosureStore replyClosures;
     private final TenantReplyStore replies;
-
-    public CaseClosureService(StaffAccountAccess access, CaseWorkflowStore workflow, CaseDataStore caseData,
-            StaffReviewStore reviews, StaffDecisionStore decisions, CaseClosureStore closures,
-            FollowUpCommandStore followUps, CaseWaitStore waits, ReplyClosureStore replyClosures, TenantReplyStore replies) {
-        this.access = access;
-        this.workflow = workflow;
-        this.caseData = caseData;
-        this.reviews = reviews;
-        this.decisions = decisions;
-        this.closures = closures;
-        this.followUps = followUps;
-        this.waits = waits;
-        this.replyClosures = replyClosures;
-        this.replies = replies;
-    }
 
     public ClosureContext context(String caseId, long leader, UUID decisionId) {
         lock(caseId, leader);
@@ -145,9 +133,11 @@ public class CaseClosureService {
         }
         require(reviews.forCall(caseId, continuation.callRef()).filter(current -> current.id().equals(continuation.id())).isPresent(),
                 "SUPERSEDED_CLOSURE_CONTEXT");
-        boolean phaseMatches = "SReview".equals(decision.element()) ? "STAFF_REVIEW_REQUIRED".equals(state.status())
-                : "SExternalWait".equals(decision.element()) ? "WAITING_FOR_EXTERNAL".equals(state.status())
-                        : "SWork".equals(decision.element()) && "IN_PROGRESS".equals(state.status());
+        boolean phaseMatches = StaffProcessingBpmnConstants.UserTask.REVIEW_TASK.equals(decision.element())
+                ? "STAFF_REVIEW_REQUIRED".equals(state.status())
+                : StaffProcessingBpmnConstants.UserTask.EXTERNAL_WAIT_TASK.equals(decision.element())
+                        ? "WAITING_FOR_EXTERNAL".equals(state.status())
+                        : StaffProcessingBpmnConstants.UserTask.WORK_TASK.equals(decision.element()) && "IN_PROGRESS".equals(state.status());
         if (!phaseMatches || state.version() != decision.version()
                 || !decisions.reviewFingerprint(caseId, leader).equals(decision.reviewToken())
                 || access.checkStaffAccess(new WebAccountContext(decision.actor())) != StaffAccessDecision.ALLOWED) {

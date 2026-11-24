@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -29,6 +30,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 @Controller
 @Profile("propertyflow-backend & !frontend-demo")
+@RequiredArgsConstructor
 public class PersonalCaseController {
 
     private static final Logger LOG = LoggerFactory.getLogger(PersonalCaseController.class);
@@ -40,11 +42,6 @@ public class PersonalCaseController {
 
     private final CaseReading reading;
     private final GuestRequestLimits limits;
-
-    public PersonalCaseController(CaseReading reading, GuestRequestLimits limits) {
-        this.reading = reading;
-        this.limits = limits;
-    }
 
     @GetMapping("/mieter/fall/zugang/{token}")
     String read(@PathVariable String token, HttpServletRequest request, HttpServletResponse response, Model model) {

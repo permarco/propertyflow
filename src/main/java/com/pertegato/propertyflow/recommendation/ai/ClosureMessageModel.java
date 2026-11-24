@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatModel.ResponseFormat;
 import org.springframework.ai.openai.OpenAiChatOptions;
@@ -18,6 +19,7 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * Bindet Rollen und technische Ausgabegrenzen an die serverseitige Operation; Inhalte bleiben gesondert zu prüfen.
  */
+@RequiredArgsConstructor
 public final class ClosureMessageModel implements Model {
 
     public static final String SCHEMA_VERSION = "closure-message-schema-v2";
@@ -26,10 +28,6 @@ public final class ClosureMessageModel implements Model {
             .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
             .build();
     private final ChatClient client;
-
-    public ClosureMessageModel(ChatClient client) {
-        this.client = client;
-    }
 
     @Override
     public String recommend(String input) {

@@ -4,19 +4,17 @@ import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore.C
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 @Repository
 @Profile("propertyflow-backend & !frontend-demo")
+@RequiredArgsConstructor
 public class StaffReviewStore {
 
     private final JdbcTemplate database;
-
-    public StaffReviewStore(JdbcTemplate database) {
-        this.database = database;
-    }
 
     public Optional<SignalDelivery> claimSignal() {
         return database.query("""
@@ -80,17 +78,6 @@ public class StaffReviewStore {
     public boolean blocked(UUID callRef) {
         return Boolean.TRUE.equals(database.queryForObject("SELECT effects_blocked FROM pf_automatic_entry WHERE call_ref = ?",
                 Boolean.class, callRef));
-    }
-
-    public UUID analysisFailure(String caseId, long leader, UUID analysisId) {
-        database.update("""
-                INSERT INTO pf_case_review_signal (id, case_id, source_type, source_ref, reason, leading_instance_key)
-                VALUES (?, ?, 'ANALYSIS', ?, 'ANALYSIS_FAILED', ?) ON CONFLICT DO NOTHING
-                """, UUID.randomUUID(), caseId, analysisId, leader);
-        return database.queryForObject("""
-                SELECT id FROM pf_case_review_signal WHERE case_id = ? AND source_type = 'ANALYSIS'
-                    AND source_ref = ? AND reason = 'ANALYSIS_FAILED'
-                """, UUID.class, caseId, analysisId);
     }
 
     public List<String> reasons(String caseId) {

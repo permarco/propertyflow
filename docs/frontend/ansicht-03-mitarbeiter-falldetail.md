@@ -239,6 +239,16 @@ Mitarbeitende dokumentieren fachliche Prüfungen, Abklärungen und ausserhalb vo
 
 ### Bearbeitung fortsetzen
 
+Der aufklappbare Bereich im integrierten Backend heisst «Bearbeitung fortsetzen».
+Er erklärt: «Sie bestätigen, dass Sie den aktuellen Fallstand geprüft haben.
+Die bisherigen Prüfgründe bleiben dokumentiert. Damit wird keine Kosten- oder
+Auftragsfreigabe erteilt.» Es gibt hier keine freie Statusauswahl.
+Das Formular sendet an `POST /mitarbeiter/faelle/{id}/bearbeitung-fortsetzen`.
+
+Auch aus «Wartet auf externe Rückmeldung» kann der Mitarbeiter über die zugehörige
+freigegebene Aufgabe bewusst nach «In Bearbeitung» zurückkehren und dadurch die
+externe Wartephase beenden; siehe FALL-12 und UC-012.
+
 Bei «Mitarbeiterprüfung erforderlich» erscheint «Bearbeitung fortsetzen», sobald der laufende Camunda-Prozess die Mitarbeiteraufgabe freigibt. Nach der Prüfung bestätigt der Mitarbeiter die Aktion, wenn das weitere Vorgehen feststeht und die Verwaltung es umsetzt. PropertyFlow übermittelt die fachliche Entscheidung an Camunda. Camunda veranlasst den Wechsel auf «In Bearbeitung». UI3 zeigt den neuen Status, sobald der zuständige PropertyFlow-Dienst ihn gespeichert hat. Bis dahin zeigt der Kopf den letzten bestätigten Fallstand. [FALL-06](../specifications/fallverwaltung.md#direkter-übergang-in-die-bearbeitung)
 
 Der bestätigte Übergang hält Mitarbeiteridentität, Zeitpunkt, geprüften Fallstand und die berücksichtigten Gründe fest. Neue Erkenntnisse können erneut eine Prüfung auslösen. Bei unklarem Ausgang bleibt die Rückmeldung offen, bis die Aktion geklärt ist. Eingaben und laufende KI-Formulierung bleiben bei einem Konflikt erhalten. Sichtbare Statuswechsel lösen die Benachrichtigung nach BEN-01 aus.

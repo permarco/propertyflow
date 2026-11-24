@@ -8,6 +8,7 @@ import com.pertegato.propertyflow.caseprocessing.contract.CaseCreation;
 import com.pertegato.propertyflow.caseprocessing.contract.CreateCaseCommand;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffDecisionAction;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffTaskDecisions.StaffTask;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.UserTask;
 import com.pertegato.propertyflow.caseprocessing.delivery.StaffTaskGateway;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore.Entry;
@@ -199,9 +200,45 @@ class StaffDecisionPostgresTest {
     }
 
     @Test
+    void canonicalHttpPathConfirmsOnlyTheDisplayedTaskBeforeWorkerAppliesStatus() throws Exception {
+        StaffTask task = service.current(actor, caseId);
+        UUID operation = UUID.randomUUID();
+
+        browser.perform(signed(command(operation, task).param("reason", "Fallstand geprüft")))
+                .andExpect(status().isOk());
+        assertEquals("CONFIRMED", store.find(caseId, actor.accountId(), operation).orElseThrow().state());
+        assertEquals("STAFF_REVIEW_REQUIRED", state());
+        assertEquals(2, count("pf_case_status_event"));
+        assertEquals(2, count("pf_case_mail_order"));
+
+        assertEquals("APPLIED", service.progress(caseId, 200, 600, engine.completed));
+        assertEquals("IN_PROGRESS", state());
+        assertEquals("Fallstand geprüft", store.find(caseId, actor.accountId(), operation).orElseThrow().reason());
+        browser.perform(signed(command(operation, task))).andExpect(status().isBadRequest());
+        assertEquals(1, count("pf_staff_decision"));
+        assertEquals(3, count("pf_case_status_event"));
+        assertEquals(3, count("pf_case_mail_order"));
+    }
+
+    @Test
+    void staleTaskAtCanonicalHttpPathLeavesTheNewTaskAndCaseUntouched() throws Exception {
+        StaffTask displayed = service.current(actor, caseId);
+        engine.task = 701L;
+
+        browser.perform(signed(command(UUID.randomUUID(), displayed))).andExpect(status().isBadRequest());
+
+        assertEquals(701L, engine.task);
+        assertEquals("STAFF_REVIEW_REQUIRED", state());
+        assertEquals(0, count("pf_staff_decision"));
+        assertEquals(2, count("pf_case_status_event"));
+        assertEquals(2, count("pf_case_mail_order"));
+    }
+
+    @Test
     void httpChecksSessionCsrfAndCurrentRoleBeforeCompletingTask() throws Exception {
         StaffTask task = service.current(actor, caseId);
         browser.perform(get("/mitarbeiter/faelle/" + caseId + "/pruefung")).andExpect(status().isUnauthorized());
+        browser.perform(command(UUID.randomUUID(), task)).andExpect(status().isUnauthorized());
         browser.perform(signed(command(UUID.randomUUID(), task).param("csrf", "wrong"))).andExpect(status().isForbidden());
         database.update("UPDATE pf_staff_account SET staff_role = FALSE WHERE id = ?", actor.accountId());
         browser.perform(signed(command(UUID.randomUUID(), task))).andExpect(status().isForbidden());
@@ -210,7 +247,7 @@ class StaffDecisionPostgresTest {
     }
 
     private MockHttpServletRequestBuilder command(UUID operation, StaffTask task) {
-        return post("/mitarbeiter/faelle/" + caseId + "/fortsetzen").param("operationId", operation.toString())
+        return post("/mitarbeiter/faelle/" + caseId + "/bearbeitung-fortsetzen").param("operationId", operation.toString())
                 .param("userTaskKey", task.taskKey()).param("version", Long.toString(task.version()))
                 .param("reviewToken", task.reviewToken()).param("csrf", "csrf-test");
     }
@@ -325,7 +362,7 @@ class StaffDecisionPostgresTest {
         @Override
         public Optional<Long> currentTask(Binding binding) {
             assertEquals(new Binding(200, 600, 550, "<default>", binding.element()), binding);
-            assertTrue("SReview".equals(binding.element()) || "SWork".equals(binding.element()));
+            assertTrue(UserTask.REVIEW_TASK.equals(binding.element()) || UserTask.WORK_TASK.equals(binding.element()));
             return Optional.ofNullable(task);
         }
 

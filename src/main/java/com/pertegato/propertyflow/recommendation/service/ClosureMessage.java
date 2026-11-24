@@ -7,7 +7,19 @@ import java.util.List;
  */
 public interface ClosureMessage {
 
-    Result generate(List<ClosureAssessment.Message> messages, ClosureAssessment.Result assessment);
+    Draft draft(List<ClosureAssessment.Message> messages, ClosureAssessment.Result assessment);
+
+    Result validate(List<ClosureAssessment.Message> messages, ClosureAssessment.Result assessment, Draft draft);
+
+    default Result generate(List<ClosureAssessment.Message> messages, ClosureAssessment.Result assessment) {
+        return validate(messages, assessment, draft(messages, assessment));
+    }
+
+    record Draft(String text, String model, String promptVersion) {
+        public boolean valid() {
+            return text != null && !text.isBlank();
+        }
+    }
 
     record Result(String text, boolean valid, String model, String promptVersion, String validationVersion) {
     }

@@ -13,12 +13,13 @@ import com.pertegato.propertyflow.caseprocessing.contract.StaffCaseQuery;
 import com.pertegato.propertyflow.caseprocessing.delivery.CaseMailSender;
 import com.pertegato.propertyflow.caseprocessing.delivery.CaseProcessGateway;
 import com.pertegato.propertyflow.caseprocessing.delivery.TenantMessageGateway;
-import com.pertegato.propertyflow.caseprocessing.persistence.CaseAnalysisStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore.Entry;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore.StartOrder;
+import com.pertegato.propertyflow.caseprocessing.persistence.ConversationEvaluationStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.MailDeliveryStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.TenantMessageStore;
+import com.pertegato.propertyflow.triage.service.ConversationAnalysis.Message;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
@@ -133,7 +134,7 @@ class TenantMessagePostgresTest {
     }
 
     @Autowired
-    private CaseAnalysisStore analyses;
+    private ConversationEvaluationStore evaluations;
 
     @Autowired
     private MailDeliveryStore mail;
@@ -170,8 +171,9 @@ class TenantMessagePostgresTest {
         assertEquals(1L, database.queryForObject("SELECT analysis_version FROM pf_case", Long.class));
         assertEquals(2L, database.queryForObject("SELECT version FROM pf_case", Long.class));
         assertEquals("UNDER_CLARIFICATION", database.queryForObject("SELECT status FROM pf_case", String.class));
-        assertTrue(analyses.input(accepted.caseId()).text().contains("Neue Ergänzung <script>"));
-        assertEquals(id, analyses.input(accepted.caseId()).messageId());
+        Message input = evaluations.input(accepted.caseId()).messages().getLast();
+        assertEquals("Neue Ergänzung <script>", input.text());
+        assertEquals(id, input.id());
         assertEquals(1, count("pf_message_mail_order"));
         mail.discoverOrders();
         mail.discoverOrders();

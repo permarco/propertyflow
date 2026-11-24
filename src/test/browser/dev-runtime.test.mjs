@@ -135,9 +135,10 @@ test('Devbetrieb ohne KI: Mieterfall, Mitarbeiterdialog und echte Camunda-Ansich
     if (await introduction.isVisible()) await introduction.click();
     await operate.getByTitle('Open Aktiven Fall bearbeiten', { exact: true }).click();
     await operate.getByRole('button', { name: 'Reset diagram zoom', exact: true }).click();
-    await operate.locator('[data-element-id="Staff"]').first().waitFor({ timeout: 30000 });
-    await operate.locator('[data-container-id="Staff"] [data-testid="state-overlay-active"]').waitFor();
-    assert.ok((await operate.locator('body').innerText()).includes('PropertyFlow'));
+    const staffCall = 'Mitarbeiterpruefung_und_Bearbeitung_CALL';
+    await operate.locator(`[data-element-id="${staffCall}"]`).first().waitFor({ timeout: 30000 });
+    await operate.locator(`[data-container-id="${staffCall}"] [data-testid="state-overlay-active"]`).waitFor();
+    assert.ok((await operate.locator('body').innerText()).includes('Fall bearbeiten'));
     await mkdir(reports, { recursive: true });
     await operate.screenshot({ path: `${reports}/camunda-case.png`, fullPage: true });
     await staff.screenshot({ path: `${reports}/staff-case.png`, fullPage: true });

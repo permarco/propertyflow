@@ -4,20 +4,17 @@ import com.pertegato.propertyflow.access.contract.SubmissionContext;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseAccepted;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseCreation;
 import com.pertegato.propertyflow.caseprocessing.contract.CreateCaseCommand;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.TenantMessageBpmnConstants;
 import com.pertegato.propertyflow.caseprocessing.delivery.PersonalLinkCodec;
 import com.pertegato.propertyflow.caseprocessing.delivery.TenantMessageGateway;
-import com.pertegato.propertyflow.caseprocessing.persistence.CaseAnalysisStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseDataStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore.StartOrder;
-import com.pertegato.propertyflow.caseprocessing.persistence.StaffReviewStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.TenantMessageStore;
-import com.pertegato.propertyflow.caseprocessing.service.CaseAnalysisService;
-import com.pertegato.propertyflow.caseprocessing.service.CaseUrgencyService;
 import com.pertegato.propertyflow.caseprocessing.service.CaseWorkflowService;
 import com.pertegato.propertyflow.caseprocessing.service.StaffReviewService;
 import com.pertegato.propertyflow.caseprocessing.service.TenantMessageService;
-import com.pertegato.propertyflow.triage.service.AnalyzeTool;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.search.enums.UserTaskState;
@@ -44,6 +41,20 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.AutomaticClarificationBpmnConstants.JobType.AUTOMATIC_RECOMMENDATION;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.AutomaticClarificationBpmnConstants.JobType.REGISTER_AUTOMATIC;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.AutomaticClarificationBpmnConstants.JobType.START_CLARIFICATION;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.PREPARE_INITIAL;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.PREPARE_PROCESS_KEY;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.REGISTER_CASE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.REVIEW_ANALYSIS_FAILURE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.STAFF_CLAIM;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.CASE_ID;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.TENANT_MESSAGE_ID;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.ConversationEvaluationBpmnConstants.JobType.AUTOMATIC_ANALYZE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.JobType.STAFF_REGISTER;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.JobType.STAFF_START_REVIEW;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.TenantMessageBpmnConstants.JobType.TENANT_MESSAGE_IDENTIFY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -73,7 +84,6 @@ class TenantMessageCamundaTest {
     @Autowired
     private CaseDataStore caseData;
 
-
     private CamundaClient engine;
     private InitialCaseWorkers initial;
 
@@ -85,15 +95,6 @@ class TenantMessageCamundaTest {
 
     @Autowired
     private StaffReviewService reviewService;
-
-    @Autowired
-    private StaffReviewStore reviewStore;
-
-    @Autowired
-    private CaseAnalysisStore analyses;
-
-    @Autowired
-    private CaseUrgencyService urgencyService;
 
     private CaseAccepted accepted;
     private String caseId;
@@ -113,11 +114,8 @@ class TenantMessageCamundaTest {
         database.execute("TRUNCATE pf_case CASCADE");
         engine = CamundaClient.newClientBuilder().restAddress(URI.create(System.getenv("PROPERTYFLOW_TEST_CAMUNDA_URL")))
                 .preferRestOverGrpc(true).defaultRequestTimeout(Duration.ofSeconds(5)).build();
-        long definitionKey = engine.newDeployResourceCommand().addResourceFromClasspath("workflow/message-case.bpmn")
-                .addResourceFromClasspath("workflow/analysis-automatic.bpmn").addResourceFromClasspath("workflow/closure-staff.bpmn")
-                .addResourceFromClasspath("workflow/message-processing.bpmn")
-                .send().join().getProcesses().stream()
-                .filter(process -> InitialCaseWorkers.CASE_PROCESS.equals(process.getBpmnProcessId()))
+        long definitionKey = WorkflowTestModels.deploy(engine).getProcesses().stream()
+                .filter(process -> CaseProcessBpmnConstants.PROCESS_ID.equals(process.getBpmnProcessId()))
                 .findFirst().orElseThrow().getProcessDefinitionKey();
         accepted = creation.create(new SubmissionContext.Guest(UUID.randomUUID()),
                 new CreateCaseCommand("review", "Heizung", "Wohnung", "Kalt", "review@example.test"));
@@ -125,13 +123,13 @@ class TenantMessageCamundaTest {
         StartOrder start = workflow.claim(definitionKey, "<default>", Duration.ofMinutes(2)).orElseThrow();
         assertEquals(ProcessStartGateway.StartResult.STARTED, new CamundaProcessStartGateway(engine).ensureStarted(start));
         initial = new InitialCaseWorkers(engine, initialService);
-        ActivatedJob preparing = job(InitialCaseWorkers.PREPARE_KEY);
+        ActivatedJob preparing = job(PREPARE_PROCESS_KEY);
         leader = preparing.getProcessInstanceKey();
         initial.prepareKey(engine, preparing);
-        initial.register(engine, job(InitialCaseWorkers.REGISTER));
-        initial.prepareInitial(engine, job(InitialCaseWorkers.PREPARE_INITIAL));
-        initial.registerAutomatic(engine, job(InitialCaseWorkers.REGISTER_AUTOMATIC));
-        initial.clarification(engine, job(InitialCaseWorkers.CLARIFICATION));
+        initial.register(engine, job(REGISTER_CASE));
+        initial.prepareInitial(engine, job(PREPARE_INITIAL));
+        initial.registerAutomatic(engine, job(REGISTER_AUTOMATIC));
+        initial.clarification(engine, job(START_CLARIFICATION));
         assertEquals("UNDER_CLARIFICATION", status());
     }
 
@@ -154,10 +152,10 @@ class TenantMessageCamundaTest {
         TenantMessageWorkers worker = new TenantMessageWorkers(engine, service);
         Set<UUID> seen = new HashSet<>();
         for (int index = 0; index < 3; index++) {
-            ActivatedJob input = job(TenantMessageWorkers.IDENTIFY);
-            assertEquals(TenantMessageWorkers.PROCESS, input.getBpmnProcessId());
-            assertEquals(caseId, input.getVariablesAsMap().get("caseId"));
-            UUID messageId = UUID.fromString(input.getVariablesAsMap().get("tenantMessageId").toString());
+            ActivatedJob input = job(TENANT_MESSAGE_IDENTIFY);
+            assertEquals(TenantMessageBpmnConstants.PROCESS_ID, input.getBpmnProcessId());
+            assertEquals(caseId, input.getVariablesAsMap().get(CASE_ID));
+            UUID messageId = UUID.fromString(input.getVariablesAsMap().get(TENANT_MESSAGE_ID).toString());
             seen.add(messageId);
             assertFalse(input.getVariables().contains("Erste Nachricht"));
             assertFalse(input.getVariables().contains(accepted.personalAccessToken()));
@@ -167,9 +165,9 @@ class TenantMessageCamundaTest {
         assertEquals(2, database.queryForObject("SELECT count(*) FROM pf_tenant_message WHERE state = 'RECEIVED'", Integer.class));
         assertTrue(!messages.get(first).child().equals(messages.get(second).child()));
         await(() -> engine.newProcessInstanceSearchRequest().filter(filter -> filter.parentProcessInstanceKey(leader)
-                .processDefinitionId(TenantMessageWorkers.PROCESS)).send().join().items().stream()
+                .processDefinitionId(TenantMessageBpmnConstants.PROCESS_ID)).send().join().items().stream()
                 .filter(instance -> "COMPLETED".equals(instance.getState().name())).count() == 1);
-        assertEquals(0, engine.newVariableSearchRequest().filter(filter -> filter.scopeKey(leader).name("tenantMessageId"))
+        assertEquals(0, engine.newVariableSearchRequest().filter(filter -> filter.scopeKey(leader).name(TENANT_MESSAGE_ID))
                 .send().join().items().size());
         assertEquals("UNDER_CLARIFICATION", status());
     }
@@ -183,10 +181,10 @@ class TenantMessageCamundaTest {
         });
         UUID operation = UUID.randomUUID();
         assertThrows(IllegalStateException.class, () -> losing.send(accepted.personalAccessToken(), operation, "Gespeichert trotz Timeout"));
-        ActivatedJob input = job(TenantMessageWorkers.IDENTIFY);
+        ActivatedJob input = job(TENANT_MESSAGE_IDENTIFY);
         new TenantMessageWorkers(engine, losing).identify(engine, input);
         UUID id = service(real).send(accepted.personalAccessToken(), operation, "Gespeichert trotz Timeout");
-        assertEquals(input.getVariablesAsMap().get("tenantMessageId"), id.toString());
+        assertEquals(input.getVariablesAsMap().get(TENANT_MESSAGE_ID), id.toString());
         assertEquals(1, count("pf_tenant_message"));
         assertEquals(1, count("pf_message_mail_order"));
         assertEquals("RECEIVED", messages.get(id).state());
@@ -195,19 +193,19 @@ class TenantMessageCamundaTest {
 
     @Test
     void tenantMessageDuringReviewPreservesTheSameNativeStaffTask() throws Exception {
-        TriageWorkers triage = new TriageWorkers(engine, new CaseAnalysisService(workflow, reviewStore, analyses, urgencyService,
-                new AnalyzeTool(text -> "invalid"), transactions));
-        triage.analyze(engine, job(TriageWorkers.INITIAL));
+        AutomaticEvaluationWorkers evaluation = InitialAnalysisTestFixture.failedEvaluation(engine, workflow, database, transactions);
+        evaluation.analyze(engine, job(AUTOMATIC_ANALYZE));
+        evaluation.recommend(engine, job(AUTOMATIC_RECOMMENDATION));
         StaffReviewWorkers reviews = new StaffReviewWorkers(engine, reviewService);
-        reviews.analysisFailure(engine, job("propertyflow.review.analysis-failure"));
-        reviews.claim(engine, job("propertyflow.staff.claim"));
-        reviews.register(engine, job("propertyflow.staff.register"));
-        reviews.startReview(engine, job("propertyflow.staff.start-review"));
+        reviews.analysisFailure(engine, job(REVIEW_ANALYSIS_FAILURE));
+        reviews.claim(engine, job(STAFF_CLAIM));
+        reviews.register(engine, job(STAFF_REGISTER));
+        reviews.startReview(engine, job(STAFF_START_REVIEW));
         await(() -> tasks().size() == 1);
         long task = tasks().getFirst().getUserTaskKey();
         TenantMessageService service = service(gateway());
         service.send(accepted.personalAccessToken(), UUID.randomUUID(), "Es funktioniert wieder");
-        new TenantMessageWorkers(engine, service).identify(engine, job(TenantMessageWorkers.IDENTIFY));
+        new TenantMessageWorkers(engine, service).identify(engine, job(TENANT_MESSAGE_IDENTIFY));
         assertEquals("STAFF_REVIEW_REQUIRED", status());
         assertEquals(task, tasks().getFirst().getUserTaskKey());
         assertEquals(1, tasks().size());

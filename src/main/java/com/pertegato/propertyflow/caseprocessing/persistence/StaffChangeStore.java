@@ -3,19 +3,17 @@ package com.pertegato.propertyflow.caseprocessing.persistence;
 import com.pertegato.propertyflow.caseprocessing.contract.InternalChange;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 @Repository
 @Profile("propertyflow-backend & !frontend-demo")
+@RequiredArgsConstructor
 public class StaffChangeStore {
 
     private final JdbcTemplate database;
-
-    public StaffChangeStore(JdbcTemplate database) {
-        this.database = database;
-    }
 
     public List<InternalChange> history(String caseId) {
         return database.query("""

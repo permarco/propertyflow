@@ -5,18 +5,16 @@ import com.pertegato.propertyflow.access.contract.TenantAccountAccess;
 import com.pertegato.propertyflow.access.persistence.TenantAccountStore;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Profile("propertyflow-backend & !frontend-demo")
+@RequiredArgsConstructor
 public class TenantAccountService implements TenantAccountAccess {
     private final TenantAccountStore accounts;
-
-    public TenantAccountService(TenantAccountStore accounts) {
-        this.accounts = accounts;
-    }
 
     @Override
     public Optional<String> verifiedEmail(UUID id) {
