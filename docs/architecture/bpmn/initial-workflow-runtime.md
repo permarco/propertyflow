@@ -503,7 +503,7 @@ docker compose -f dev/compose.workflow-test.yaml up -d
 $env:PROPERTYFLOW_TEST_DATABASE_URL = 'jdbc:postgresql://127.0.0.1:5434/propertyflow_test'
 $env:PROPERTYFLOW_TEST_CAMUNDA_URL = 'http://127.0.0.1:8085'
 $env:PROPERTYFLOW_TEST_SMTP_PORT = '1027'
-.\mvnw.cmd '-Dtest=CaseWorkflowPostgresTest,InitialCaseCamundaTest,WorkflowRestartCamundaTest,CaseMailPostgresTest,CaseMailCamundaTest,StaffReviewPostgresTest,StaffReviewCamundaTest,CaseDataPostgresTest,CaseAnalysisPostgresTest,TriageCamundaTest,StaffDecisionPostgresTest,StaffDecisionCamundaTest,CaseClosureCamundaTest,TenantMessagePostgresTest,TenantMessageCamundaTest' test
+.\mvnw.cmd '-Dtest=CaseWorkflowPostgresTest,InitialCaseCamundaTest,WorkflowRestartCamundaTest,CaseMailPostgresTest,CaseMailCamundaTest,StaffReviewPostgresTest,StaffReviewCamundaTest,CaseDataPostgresTest,TriageCamundaTest,StaffDecisionPostgresTest,StaffDecisionCamundaTest,CaseClosureCamundaTest,TenantMessagePostgresTest,TenantMessageCamundaTest' test
 node --test src/test/browser/stage3/staff-memo.test.mjs src/test/browser/stage3/staff-review.test.mjs src/test/browser/stage3/staff-close.test.mjs src/test/browser/stage3/tenant-messages.test.mjs
 ```
 
