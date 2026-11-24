@@ -47,9 +47,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Übertragene Demo-Verträge gegen echte Controller, Konten und PostgreSQL; ohne Ersatzdatenbank.
+ * Die Webtests laufen unabhängig von der lokalen MCP-Konfiguration.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
-        "spring.config.import=", "propertyflow.workflow.enabled=false", "propertyflow.case-mail.enabled=false"
+        "spring.config.import=",
+        "propertyflow.workflow.enabled=false",
+        "propertyflow.case-mail.enabled=false",
+        "propertyflow.mcp.backend.enabled=false"
 })
 @ActiveProfiles("propertyflow-backend")
 @EnabledIfEnvironmentVariable(named = "PROPERTYFLOW_TEST_DATABASE_URL", matches = ".+")
@@ -249,8 +253,12 @@ class BackendAccessParityPostgresTest {
             }
             String email = staff();
             login(browser, email);
+            assertEquals(200, browser.get("/mitarbeiter/faelle").statusCode());
             try (Browser anonymous = new Browser()) {
-                assertEquals(303, anonymous.get("/mitarbeiter/faelle;jsessionid=" + browser.sessionId()).statusCode());
+                HttpResponse<String> response = anonymous.get("/mitarbeiter/faelle;jsessionid=" + browser.sessionId());
+                assertEquals(303, response.statusCode());
+                assertEquals("/anmelden", response.headers().firstValue("Location").orElseThrow());
+                assertEquals(303, anonymous.get("/mitarbeiter/faelle").statusCode());
             }
             assertTrue(browser.cookies.getCookieStore().getCookies().stream().allMatch(cookie -> cookie.isHttpOnly()));
         }

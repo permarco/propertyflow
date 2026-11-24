@@ -8,8 +8,13 @@ import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore.S
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.ConversationEvaluationStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.TenantMessageStore;
+import com.pertegato.propertyflow.caseprocessing.persistence.TenantReplyStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.UrgencyStore;
+import com.pertegato.propertyflow.caseprocessing.service.ConversationEvaluationService.AutomaticContext;
+import com.pertegato.propertyflow.caseprocessing.service.ConversationEvaluationService.EvaluationStep;
+import com.pertegato.propertyflow.caseprocessing.service.ConversationEvaluationService.MessageContext;
 import com.pertegato.propertyflow.caseprocessing.service.ConversationEvaluationService.Result;
+import com.pertegato.propertyflow.caseprocessing.service.ConversationEvaluationService.StageResult;
 import com.pertegato.propertyflow.recommendation.service.ClosureAssessment;
 import com.pertegato.propertyflow.recommendation.service.Recommendation;
 import com.pertegato.propertyflow.triage.service.ConversationAnalysis.Answer;
@@ -24,6 +29,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -57,6 +63,8 @@ class ConversationEvaluationPostgresTest {
     private CaseWorkflowService initial;
     @Autowired
     private TenantMessageStore messages;
+    @Autowired
+    private TenantReplyStore replies;
     @Autowired
     private ConversationEvaluationStore evaluations;
     @Autowired
@@ -106,7 +114,7 @@ class ConversationEvaluationPostgresTest {
             return success("HIGH");
         }, advice());
         Entry entry = workflow.entryForCase(caseId).orElseThrow();
-        Result automatic = service.evaluateAutomatic(caseId, entry.id(), entry.callRef(), 200, 400);
+        Result automatic = evaluateAutomatic(service, entry);
         Result message = evaluate(service);
         assertEquals(automatic.evaluationId(), message.evaluationId());
         assertEquals("APPLIED", apply(service, message).state());
@@ -116,8 +124,53 @@ class ConversationEvaluationPostgresTest {
         database.update("UPDATE pf_case SET version = version + 1, analysis_version = analysis_version + 1 WHERE id = ?", caseId);
         assertEquals("STALE", service.automaticResult(caseId, entry.id(), entry.callRef(), 200, 400, automatic.evaluationId()));
         database.update("UPDATE pf_automatic_entry SET effects_blocked = TRUE WHERE id = ?", entry.id());
-        assertEquals("OBSOLETE", service.evaluateAutomatic(caseId, entry.id(), entry.callRef(), 200, 400).state());
+        assertEquals("OBSOLETE", evaluateAutomatic(service, entry).state());
         assertEquals(1, calls.get());
+    }
+
+    @Test
+    void initialStagesResumePersistedResultsWithoutRepeatingModelCalls() {
+        AtomicInteger analysisCalls = new AtomicInteger();
+        AtomicInteger adviceCalls = new AtomicInteger();
+        AtomicInteger closureCalls = new AtomicInteger();
+        ConversationAnalysis analyzer = input -> {
+            analysisCalls.incrementAndGet();
+            return success("HIGH");
+        };
+        Recommendation recommender = input -> {
+            adviceCalls.incrementAndGet();
+            return advice().recommend(input);
+        };
+        ClosureAssessment assessor = input -> {
+            closureCalls.incrementAndGet();
+            return noClosure().assess(input);
+        };
+        Entry entry = workflow.entryForCase(caseId).orElseThrow();
+        AutomaticContext origin = new AutomaticContext(caseId, entry.id(), entry.callRef(), 200, 400);
+        UUID attempt = UUID.randomUUID();
+
+        ConversationEvaluationService initial = service(analyzer, recommender, assessor);
+        StageResult started = initial.evaluateAutomaticStage(origin, EvaluationStep.ANALYZE, attempt, null);
+        UUID reference = started.result().evaluationId();
+        assertEquals(EvaluationStep.ADVISE, started.nextStep());
+        assertEquals("BUSY", evaluate(initial).state());
+
+        ConversationEvaluationService resumed = service(analyzer, recommender, assessor);
+        assertEquals(started, resumed.evaluateAutomaticStage(origin, EvaluationStep.ANALYZE, attempt, null));
+        StageResult advised = resumed.evaluateAutomaticStage(origin, EvaluationStep.ADVISE, attempt, reference);
+        assertEquals(EvaluationStep.ASSESS_CLOSURE, advised.nextStep());
+        assertEquals(advised, resumed.evaluateAutomaticStage(origin, EvaluationStep.ADVISE, attempt, reference));
+        StageResult ready = resumed.evaluateAutomaticStage(origin, EvaluationStep.ASSESS_CLOSURE, attempt, reference);
+        assertEquals(new Result("READY", reference), ready.result());
+        assertEquals(ready, resumed.evaluateAutomaticStage(origin, EvaluationStep.ASSESS_CLOSURE, attempt, reference));
+
+        Result applied = resumed.applyAutomatic(caseId, entry.id(), entry.callRef(), 200, 400, reference);
+        assertEquals(new Result("APPLIED", reference), applied);
+        assertEquals(applied, resumed.evaluateAutomaticStage(origin, EvaluationStep.ANALYZE, UUID.randomUUID(), null).result());
+        assertEquals(1, analysisCalls.get());
+        assertEquals(1, adviceCalls.get());
+        assertEquals(1, closureCalls.get());
+        assertEquals(1, count("pf_evaluation_delivery"));
     }
 
     @Test
@@ -239,7 +292,7 @@ class ConversationEvaluationPostgresTest {
         });
         Result first = evaluate(service);
         Entry entry = workflow.entryForCase(caseId).orElseThrow();
-        assertEquals(first.evaluationId(), service.evaluateAutomatic(caseId, entry.id(), entry.callRef(), 200, 400).evaluationId());
+        assertEquals(first.evaluationId(), evaluateAutomatic(service, entry).evaluationId());
         assertEquals(proposal, evaluations.get(first.evaluationId()).outcome().closureAssessment());
         assertEquals("APPLIED", apply(service, first).state());
         assertEquals("APPLIED", apply(service, first).state());
@@ -282,7 +335,7 @@ class ConversationEvaluationPostgresTest {
         Result result = evaluate(service);
         assertEquals("STALE", result.state());
         assertEquals("SUPERSEDED", evaluations.get(result.evaluationId()).state());
-        assertNull(evaluations.get(result.evaluationId()).outcome());
+        assertNull(evaluations.get(result.evaluationId()).outcome().closureAssessment());
         assertEquals(0, count("pf_case_review_signal"));
         assertEquals("OPEN", answerState(question));
     }
@@ -295,7 +348,7 @@ class ConversationEvaluationPostgresTest {
         });
         Result result = evaluate(service);
         assertEquals("OBSOLETE", result.state());
-        assertNull(evaluations.get(result.evaluationId()).outcome());
+        assertNull(evaluations.get(result.evaluationId()).outcome().closureAssessment());
         assertEquals("CLOSED", value("status"));
         assertEquals(0, count("pf_case_review_signal"));
     }
@@ -354,11 +407,27 @@ class ConversationEvaluationPostgresTest {
 
     private ConversationEvaluationService service(ConversationAnalysis analyzer, Recommendation recommendation, ClosureAssessment closure) {
         return new ConversationEvaluationService(workflow, messages, evaluations, urgency, analyzer, recommendation, closure, transactions,
-                new AutomaticClosureRelease());
+                new AutomaticClosureRelease(), replies);
     }
 
     private Result evaluate(ConversationEvaluationService service) {
-        return service.evaluate(caseId, messageId, 200, 500, "<default>");
+        MessageContext origin = new MessageContext(caseId, messageId, 200, 500, "<default>");
+        UUID attempt = UUID.randomUUID();
+        return runStages((step, reference) -> service.evaluateMessageStage(origin, step, attempt, reference));
+    }
+
+    private Result evaluateAutomatic(ConversationEvaluationService service, Entry entry) {
+        AutomaticContext origin = new AutomaticContext(caseId, entry.id(), entry.callRef(), 200, 400);
+        UUID attempt = UUID.randomUUID();
+        return runStages((step, reference) -> service.evaluateAutomaticStage(origin, step, attempt, reference));
+    }
+
+    private Result runStages(BiFunction<EvaluationStep, UUID, StageResult> evaluate) {
+        StageResult stage = evaluate.apply(EvaluationStep.ANALYZE, null);
+        while (stage.nextStep() != null) {
+            stage = evaluate.apply(stage.nextStep(), stage.result().evaluationId());
+        }
+        return stage.result();
     }
 
     private Result apply(ConversationEvaluationService service, Result result) {

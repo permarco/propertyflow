@@ -1,17 +1,17 @@
 package com.pertegato.propertyflow.caseprocessing.service;
 
-import com.pertegato.propertyflow.caseprocessing.persistence.CaseAnalysisStore;
-import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore.CaseState;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore.Entry;
+import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.ClarificationQuestionStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.DirectFollowUpStore;
-import com.pertegato.propertyflow.caseprocessing.persistence.StaffReviewStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.StaffReviewStore.Continuation;
 import com.pertegato.propertyflow.caseprocessing.persistence.StaffReviewStore.Signal;
+import com.pertegato.propertyflow.caseprocessing.persistence.StaffReviewStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.StaffTakeoverStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.TenantReplyStore;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -20,26 +20,15 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Profile("propertyflow-backend & !frontend-demo")
 @Transactional(propagation = Propagation.REQUIRES_NEW)
+@RequiredArgsConstructor
 public class StaffReviewService {
 
     private final CaseWorkflowStore workflow;
     private final StaffReviewStore reviews;
-    private final CaseAnalysisStore analyses;
     private final StaffTakeoverStore takeovers;
     private final ClarificationQuestionStore questions;
     private final DirectFollowUpStore directFollowUps;
     private final TenantReplyStore replies;
-
-    public StaffReviewService(CaseWorkflowStore workflow, StaffReviewStore reviews, CaseAnalysisStore analyses, StaffTakeoverStore takeovers,
-            ClarificationQuestionStore questions, DirectFollowUpStore directFollowUps, TenantReplyStore replies) {
-        this.workflow = workflow;
-        this.reviews = reviews;
-        this.analyses = analyses;
-        this.takeovers = takeovers;
-        this.questions = questions;
-        this.directFollowUps = directFollowUps;
-        this.replies = replies;
-    }
 
     public Continuation analysisFailure(String caseId, long leader, UUID callRef) {
         CaseState state = lock(caseId, leader);
@@ -49,10 +38,8 @@ public class StaffReviewService {
         if (continuation != null && continuation.reviewApplied()) {
             return continuation;
         }
-        UUID signal = reviews.currentConversationFailure(caseId, leader).orElseGet(() -> {
-            UUID analysis = analyses.failure(callRef).orElseThrow(() -> new WorkflowRejectedException("MISSING_ANALYSIS_FAILURE"));
-            return reviews.analysisFailure(caseId, leader, analysis);
-        });
+        UUID signal = reviews.currentConversationFailure(caseId, leader)
+                .orElseThrow(() -> new WorkflowRejectedException("MISSING_ANALYSIS_FAILURE"));
         require(automaticPhase(state), "STALE_ANALYSIS_FAILURE");
         continuation = reviews.prepare(state, leader, callRef);
         reviews.confirm(signal, continuation.id(), callRef);

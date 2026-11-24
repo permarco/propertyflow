@@ -6,8 +6,10 @@ import com.pertegato.propertyflow.caseprocessing.contract.CaseCreation;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseReading;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseStatus;
 import com.pertegato.propertyflow.caseprocessing.contract.CreateCaseCommand;
-import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.ConversationEvaluationBpmnConstants;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore.StartOrder;
+import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore;
 import com.pertegato.propertyflow.caseprocessing.service.CaseWorkflowService;
 import com.pertegato.propertyflow.caseprocessing.workflow.ProcessStartGateway.StartResult;
 import io.camunda.client.CamundaClient;
@@ -40,6 +42,14 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.AutomaticClarificationBpmnConstants.JobType.REGISTER_AUTOMATIC;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.AutomaticClarificationBpmnConstants.JobType.START_CLARIFICATION;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.PREPARE_INITIAL;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.PREPARE_PROCESS_KEY;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.REGISTER_CASE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.START_ORDER_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.CASE_ID;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.ConversationEvaluationBpmnConstants.JobType.AUTOMATIC_ANALYZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -93,12 +103,9 @@ class InitialCaseCamundaTest {
                 .preferRestOverGrpc(true)
                 .defaultRequestTimeout(Duration.ofSeconds(5))
                 .build();
-        DeploymentEvent deployment = camunda.newDeployResourceCommand()
-                .addResourceFromClasspath("workflow/initial-case.bpmn")
-                .addResourceFromClasspath("workflow/initial-automatic.bpmn")
-                .send().join();
+        DeploymentEvent deployment = WorkflowTestModels.deploy(camunda);
         long definitionKey = deployment.getProcesses().stream()
-                .filter(process -> InitialCaseWorkers.CASE_PROCESS.equals(process.getBpmnProcessId()))
+                .filter(process -> CaseProcessBpmnConstants.PROCESS_ID.equals(process.getBpmnProcessId()))
                 .findFirst().orElseThrow().getProcessDefinitionKey();
         workers = new InitialCaseWorkers(camunda, service);
         gateway = new CamundaProcessStartGateway(camunda);
@@ -126,15 +133,15 @@ class InitialCaseCamundaTest {
     @Test
     void realEngineRegistersParentAndChildBeforeInitialStatusCommit() throws Exception {
         startAndPrepare();
-        workers.register(camunda, job(InitialCaseWorkers.REGISTER));
+        workers.register(camunda, job(REGISTER_CASE));
         assertStatus(CaseStatus.RECEIVED);
         assertEquals("CONFIRMED", database.queryForObject("SELECT state FROM pf_process_start_order", String.class));
         finishInitial();
         assertStatus(CaseStatus.UNDER_CLARIFICATION);
         assertEquals(1, count("pf_case_status_event"));
         assertEquals(1, count("pf_case_mail_order"));
-        ActivatedJob next = job("propertyflow-test-unimplemented-triage");
-        assertEquals("Triage", next.getElementId());
+        ActivatedJob next = job(AUTOMATIC_ANALYZE);
+        assertEquals(ConversationEvaluationBpmnConstants.ServiceTask.ANALYZE_CONVERSATION, next.getElementId());
         assertTrue(next.getProcessInstanceKey() != store.leadingInstance(accepted.caseId()).orElseThrow());
     }
 
@@ -144,14 +151,14 @@ class InitialCaseCamundaTest {
         ClientHttpException duplicate = assertThrows(ClientHttpException.class, () -> camunda.newCreateInstanceCommand()
                 .processDefinitionKey(order.definitionKey())
                 .businessId(order.id().toString())
-                .variables(Map.of("caseId", accepted.caseId(), "startOrderRef", order.id().toString()))
+                .variables(Map.of(CASE_ID, accepted.caseId(), START_ORDER_REF, order.id().toString()))
                 .send().join());
         assertEquals(409, duplicate.code());
         assertEquals(StartResult.EXISTING, gateway.ensureStarted(order));
         assertEquals("PENDING", database.queryForObject("SELECT state FROM pf_process_start_order", String.class));
         assertStatus(CaseStatus.RECEIVED);
-        workers.prepareKey(camunda, job(InitialCaseWorkers.PREPARE_KEY));
-        workers.register(camunda, job(InitialCaseWorkers.REGISTER));
+        workers.prepareKey(camunda, job(PREPARE_PROCESS_KEY));
+        workers.register(camunda, job(REGISTER_CASE));
         finishInitial();
         assertStatus(CaseStatus.UNDER_CLARIFICATION);
     }
@@ -172,8 +179,8 @@ class InitialCaseCamundaTest {
         await(() -> camunda.newProcessInstanceSearchRequest()
                 .filter(filter -> filter.businessId(order.id().toString()).processDefinitionKey(order.definitionKey()))
                 .send().join().items().size() == 1);
-        workers.prepareKey(camunda, job(InitialCaseWorkers.PREPARE_KEY));
-        workers.register(camunda, job(InitialCaseWorkers.REGISTER));
+        workers.prepareKey(camunda, job(PREPARE_PROCESS_KEY));
+        workers.register(camunda, job(REGISTER_CASE));
         finishInitial();
         assertEquals(1, count("pf_case_status_event"));
     }
@@ -181,13 +188,13 @@ class InitialCaseCamundaTest {
     @Test
     void registrationCommitSurvivesLostJobCompletion() throws Exception {
         startAndPrepare();
-        ActivatedJob registration = job(InitialCaseWorkers.REGISTER);
+        ActivatedJob registration = job(REGISTER_CASE);
         JobClient disconnected = mock(JobClient.class);
         when(disconnected.newCompleteCommand(registration.getKey())).thenThrow(new ClientException("Injected lost completion"));
         assertThrows(ClientException.class, () -> workers.register(disconnected, registration));
         assertEquals("CONFIRMED", database.queryForObject("SELECT state FROM pf_process_start_order", String.class));
         assertStatus(CaseStatus.RECEIVED);
-        ActivatedJob redelivered = job(InitialCaseWorkers.REGISTER);
+        ActivatedJob redelivered = job(REGISTER_CASE);
         assertEquals(registration.getKey(), redelivered.getKey());
         workers.register(camunda, redelivered);
         finishInitial();
@@ -198,15 +205,15 @@ class InitialCaseCamundaTest {
     @Test
     void statusCommitSurvivesLostJobCompletionWithoutSecondMail() throws Exception {
         startAndPrepare();
-        workers.register(camunda, job(InitialCaseWorkers.REGISTER));
-        workers.prepareInitial(camunda, job(InitialCaseWorkers.PREPARE_INITIAL));
-        workers.registerAutomatic(camunda, job(InitialCaseWorkers.REGISTER_AUTOMATIC));
-        ActivatedJob status = job(InitialCaseWorkers.CLARIFICATION);
+        workers.register(camunda, job(REGISTER_CASE));
+        workers.prepareInitial(camunda, job(PREPARE_INITIAL));
+        workers.registerAutomatic(camunda, job(REGISTER_AUTOMATIC));
+        ActivatedJob status = job(START_CLARIFICATION);
         JobClient disconnected = mock(JobClient.class);
         when(disconnected.newCompleteCommand(status.getKey())).thenThrow(new ClientException("Injected lost completion"));
         assertThrows(ClientException.class, () -> workers.clarification(disconnected, status));
         assertStatus(CaseStatus.UNDER_CLARIFICATION);
-        workers.clarification(camunda, job(InitialCaseWorkers.CLARIFICATION));
+        workers.clarification(camunda, job(START_CLARIFICATION));
         assertEquals(1, count("pf_case_status_event"));
         assertEquals(1, count("pf_case_mail_order"));
     }
@@ -214,8 +221,8 @@ class InitialCaseCamundaTest {
     @Test
     void foreignRootCannotClaimAnExistingStartOrder() throws Exception {
         camunda.newCreateInstanceCommand().processDefinitionKey(order.definitionKey()).businessId(UUID.randomUUID().toString())
-                .variables(Map.of("caseId", accepted.caseId(), "startOrderRef", order.id().toString())).send().join();
-        ActivatedJob invalid = job(InitialCaseWorkers.PREPARE_KEY);
+                .variables(Map.of(CASE_ID, accepted.caseId(), START_ORDER_REF, order.id().toString())).send().join();
+        ActivatedJob invalid = job(PREPARE_PROCESS_KEY);
         workers.prepareKey(camunda, invalid);
         assertEquals(0, count("pf_case_process"));
         assertStatus(CaseStatus.RECEIVED);
@@ -227,13 +234,13 @@ class InitialCaseCamundaTest {
 
     private void startAndPrepare() throws Exception {
         assertEquals(StartResult.STARTED, gateway.ensureStarted(order));
-        workers.prepareKey(camunda, job(InitialCaseWorkers.PREPARE_KEY));
+        workers.prepareKey(camunda, job(PREPARE_PROCESS_KEY));
     }
 
     private void finishInitial() throws Exception {
-        workers.prepareInitial(camunda, job(InitialCaseWorkers.PREPARE_INITIAL));
-        workers.registerAutomatic(camunda, job(InitialCaseWorkers.REGISTER_AUTOMATIC));
-        workers.clarification(camunda, job(InitialCaseWorkers.CLARIFICATION));
+        workers.prepareInitial(camunda, job(PREPARE_INITIAL));
+        workers.registerAutomatic(camunda, job(REGISTER_AUTOMATIC));
+        workers.clarification(camunda, job(START_CLARIFICATION));
     }
 
     private ActivatedJob job(String type) throws Exception {

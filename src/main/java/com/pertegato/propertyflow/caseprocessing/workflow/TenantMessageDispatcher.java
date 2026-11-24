@@ -1,9 +1,10 @@
 package com.pertegato.propertyflow.caseprocessing.workflow;
 
 import com.pertegato.propertyflow.caseprocessing.delivery.TenantMessageGateway;
-import com.pertegato.propertyflow.caseprocessing.persistence.TenantMessageStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.TenantMessageStore.Message;
+import com.pertegato.propertyflow.caseprocessing.persistence.TenantMessageStore;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -14,16 +15,12 @@ import org.springframework.stereotype.Component;
 @Component
 @Profile("propertyflow-backend & !frontend-demo")
 @ConditionalOnProperty(name = "propertyflow.workflow.enabled", havingValue = "true")
+@RequiredArgsConstructor
 public class TenantMessageDispatcher {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TenantMessageDispatcher.class);
     private final TenantMessageStore messages;
     private final TenantMessageGateway gateway;
-
-    public TenantMessageDispatcher(TenantMessageStore messages, TenantMessageGateway gateway) {
-        this.messages = messages;
-        this.gateway = gateway;
-    }
 
     @Scheduled(fixedDelayString = "${propertyflow.workflow.poll-delay-ms:5000}",
             initialDelayString = "${propertyflow.workflow.initial-delay-ms:5000}")

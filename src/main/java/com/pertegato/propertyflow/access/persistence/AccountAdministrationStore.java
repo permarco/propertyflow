@@ -3,6 +3,7 @@ package com.pertegato.propertyflow.access.persistence;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -10,15 +11,12 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @Profile("propertyflow-backend & !frontend-demo")
+@RequiredArgsConstructor
 public class AccountAdministrationStore {
     private static final RowMapper<Entry> ROW = (row, index) -> new Entry(row.getObject("id", UUID.class),
             row.getString("name"), row.getString("email"), row.getBoolean("active"), row.getBoolean("staff_role"),
             row.getBoolean("account_administration"), row.getBoolean("case_access_administration"), row.getLong("version"));
     private final JdbcTemplate database;
-
-    public AccountAdministrationStore(JdbcTemplate database) {
-        this.database = database;
-    }
 
     public void lockAdministration() {
         // Gemeinsame Sperre verhindert den parallelen Entzug der letzten Verwaltungsrechte.

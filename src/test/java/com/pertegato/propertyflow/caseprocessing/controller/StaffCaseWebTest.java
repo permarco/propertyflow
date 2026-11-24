@@ -177,6 +177,11 @@ class StaffCaseWebTest {
                 .andExpect(content().string(containsString(CONTEXT + "/abmelden")))
                 .andExpect(content().string(not(containsString("external.example.test"))))
                 .andExpect(content().string(not(containsString(DETAIL + "/aktion\""))))
+                .andExpect(content().string(containsString("action=\"" + CONTEXT + DETAIL + "/bearbeitung-fortsetzen\"")))
+                .andExpect(content().string(not(containsString(DETAIL + "/fortsetzen\""))))
+                .andExpect(content().string(containsString("<summary id=\"staff-review-heading\"><span>Bearbeitung fortsetzen</span></summary>")))
+                .andExpect(content().string(containsString("Damit wird keine Kosten- oder Auftragsfreigabe erteilt.")))
+                .andExpect(content().string(containsString("Begründung (optional, nur intern)")))
                 .andExpect(content().string(containsString("data-command-base=\"" + CONTEXT + DETAIL + "/aktionen\"")))
                 .andExpect(content().string(containsString("data-actor=\"" + STAFF.accountId() + "\"")));
         verify(reading).readForStaff(STAFF, CASE_ID);

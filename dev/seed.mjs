@@ -147,7 +147,7 @@ for (const [key, title, finalStatus] of pending) {
     }
     if (key !== 'review' && entry.phase === 'review') {
         // Ein bereits wirksamer Übergang wird bei einem erneuten Seed-Aufruf nur bestätigt.
-        if ((await currentStatus(entry)) === 'Mitarbeiterprüfung erforderlich') await decide(entry, 'fortsetzen');
+        if ((await currentStatus(entry)) === 'Mitarbeiterprüfung erforderlich') await decide(entry, 'bearbeitung-fortsetzen');
         await waitStatus(entry, 'In Bearbeitung');
         entry.phase = 'progress';
         await save();

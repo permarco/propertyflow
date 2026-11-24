@@ -9,21 +9,18 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 @Service
 @Profile("propertyflow-backend & !frontend-demo")
+@RequiredArgsConstructor
 public class CaseOperationsService {
 
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm").withZone(ZoneId.of("Europe/Zurich"));
     private final StaffAccountAccess access;
     private final CaseOperationsStore store;
-
-    public CaseOperationsService(StaffAccountAccess access, CaseOperationsStore store) {
-        this.access = access;
-        this.store = store;
-    }
 
     public Overview read(WebAccountContext context) {
         StaffAccessDecision decision = access.checkStaffAccess(context);

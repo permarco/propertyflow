@@ -4,6 +4,7 @@ import com.pertegato.propertyflow.access.contract.StaffAccessDecision;
 import com.pertegato.propertyflow.access.contract.StaffAccountAccess;
 import com.pertegato.propertyflow.access.contract.WebAccountContext;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffDecisionAction;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWaitStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWaitStore.Wait;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore;
@@ -16,6 +17,7 @@ import com.pertegato.propertyflow.caseprocessing.persistence.StaffReviewStore.Co
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -24,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Profile("propertyflow-backend & !frontend-demo")
 @Transactional(propagation = Propagation.REQUIRES_NEW)
+@RequiredArgsConstructor
 public class CaseWaitService {
 
     private final CaseWorkflowStore workflow;
@@ -32,16 +35,6 @@ public class CaseWaitService {
     private final CaseWaitStore waits;
     private final StaffAccountAccess access;
     private final DirectFollowUpStore directFollowUps;
-
-    public CaseWaitService(CaseWorkflowStore workflow, StaffDecisionStore decisions, StaffReviewStore reviews,
-            CaseWaitStore waits, StaffAccountAccess access, DirectFollowUpStore directFollowUps) {
-        this.workflow = workflow;
-        this.decisions = decisions;
-        this.reviews = reviews;
-        this.waits = waits;
-        this.access = access;
-        this.directFollowUps = directFollowUps;
-    }
 
     public Wait enter(String caseId, long leader, long staff, Long child, Long parent, UUID decisionId, boolean followUp) {
         CaseState state = lock(caseId);
@@ -61,8 +54,8 @@ public class CaseWaitService {
             return existing;
         }
         require(!followUp || child != null && child > 0 && parent != null && parent > 0);
-        String expectedPhase = "SReview".equals(decision.element()) ? "STAFF_REVIEW_REQUIRED"
-                : "SExternalWait".equals(decision.element()) ? "WAITING_FOR_EXTERNAL" : "IN_PROGRESS";
+        String expectedPhase = StaffProcessingBpmnConstants.UserTask.REVIEW_TASK.equals(decision.element()) ? "STAFF_REVIEW_REQUIRED"
+                : StaffProcessingBpmnConstants.UserTask.EXTERNAL_WAIT_TASK.equals(decision.element()) ? "WAITING_FOR_EXTERNAL" : "IN_PROGRESS";
         if (!expectedPhase.equals(state.status()) || state.version() != decision.version() || "REJECTED".equals(decision.state())
                 || !decisions.reviewFingerprint(caseId, leader).equals(decision.reviewToken())
                 || access.checkStaffAccess(new WebAccountContext(decision.actor())) != StaffAccessDecision.ALLOWED

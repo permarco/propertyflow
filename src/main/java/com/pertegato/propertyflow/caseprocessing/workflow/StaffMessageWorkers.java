@@ -1,5 +1,9 @@
 package com.pertegato.propertyflow.caseprocessing.workflow;
 
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.FollowUpBpmnConstants;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.TenantReplyBpmnConstants;
 import com.pertegato.propertyflow.caseprocessing.service.StaffMessageService;
 import com.pertegato.propertyflow.caseprocessing.service.WorkflowRejectedException;
 import io.camunda.client.CamundaClient;
@@ -11,60 +15,73 @@ import io.camunda.client.api.worker.JobClient;
 import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.JobType.STAFF_MESSAGE_PUBLISH;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.DECISION_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.OUTCOME;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.STAFF_DECISION_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.STAFF_MESSAGE_COMMAND_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.STAFF_MESSAGE_OUTCOME;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.ErrorCode.STAFF_DECISION_STALE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.JobType.STAFF_QUESTION_PUBLISH;
+
 @Component
 @Profile("propertyflow-backend & !frontend-demo")
 @ConditionalOnProperty(name = "propertyflow.workflow.enabled", havingValue = "true")
+@RequiredArgsConstructor
 public class StaffMessageWorkers {
 
-    public static final String PUBLISH = "propertyflow.staff-message.publish";
     private final CamundaClient engine;
     private final StaffMessageService service;
 
-    public StaffMessageWorkers(CamundaClient engine, StaffMessageService service) {
-        this.engine = engine;
-        this.service = service;
-    }
-
-    @JobWorker(type = PUBLISH, autoComplete = false)
+    @JobWorker(type = STAFF_MESSAGE_PUBLISH, autoComplete = false)
     public void publish(JobClient client, ActivatedJob job) {
         String outcome;
         try {
             ProcessInstance process = engine.newProcessInstanceGetRequest(job.getProcessInstanceKey()).send().join();
             long leader;
-            if (InitialCaseWorkers.CASE_PROCESS.equals(job.getBpmnProcessId()) && "StaffQuestionPublish".equals(job.getElementId())) {
+            if (CaseProcessBpmnConstants.PROCESS_ID.equals(job.getBpmnProcessId())
+                    && CaseProcessBpmnConstants.ServiceTask.SAVE_STAFF_MESSAGE.equals(job.getElementId())) {
                 require(process.getParentProcessInstanceKey() == null);
                 leader = job.getProcessInstanceKey();
-            } else if (TenantReplyWorkers.PROCESS.equals(job.getBpmnProcessId()) && "RStaffMessagePublish".equals(job.getElementId())) {
+            } else if (TenantReplyBpmnConstants.PROCESS_ID.equals(job.getBpmnProcessId())
+                    && TenantReplyBpmnConstants.ServiceTask.PUBLISH_STAFF_MESSAGE.equals(job.getElementId())) {
                 require(process.getParentProcessInstanceKey() != null && process.getParentElementInstanceKey() != null);
                 ElementInstance call = engine.newElementInstanceGetRequest(process.getParentElementInstanceKey()).send().join();
-                require("Reply".equals(call.getElementId()) && InitialCaseWorkers.CASE_PROCESS.equals(call.getProcessDefinitionId())
+                require(CaseProcessBpmnConstants.CallActivity.TENANT_REPLY_CALL.equals(call.getElementId())
+                        && CaseProcessBpmnConstants.PROCESS_ID.equals(call.getProcessDefinitionId())
                         && process.getParentProcessInstanceKey().equals(call.getProcessInstanceKey()) && job.getTenantId().equals(call.getTenantId()));
                 leader = process.getParentProcessInstanceKey();
-            } else if (CaseWaitWorkers.FOLLOW_UP_PROCESS.equals(job.getBpmnProcessId()) && "WPublish".equals(job.getElementId())) {
+            } else if (FollowUpBpmnConstants.PROCESS_ID.equals(job.getBpmnProcessId())
+                    && FollowUpBpmnConstants.ServiceTask.PUBLISH_STAFF_MESSAGE.equals(job.getElementId())) {
                 require(process.getParentProcessInstanceKey() != null && process.getParentElementInstanceKey() != null);
                 ElementInstance call = engine.newElementInstanceGetRequest(process.getParentElementInstanceKey()).send().join();
                 ProcessInstance staff = engine.newProcessInstanceGetRequest(process.getParentProcessInstanceKey()).send().join();
-                require("FollowUp".equals(call.getElementId()) && StaffReviewWorkers.STAFF_PROCESS.equals(call.getProcessDefinitionId())
+                require(StaffProcessingBpmnConstants.CallActivity.FOLLOW_UP_CALL.equals(call.getElementId())
+                        && StaffProcessingBpmnConstants.PROCESS_ID.equals(call.getProcessDefinitionId())
                         && process.getParentProcessInstanceKey().equals(call.getProcessInstanceKey()) && job.getTenantId().equals(call.getTenantId())
                         && staff.getParentProcessInstanceKey() != null && staff.getParentElementInstanceKey() != null
                         && job.getTenantId().equals(staff.getTenantId()));
                 ElementInstance parent = engine.newElementInstanceGetRequest(staff.getParentElementInstanceKey()).send().join();
-                require("Staff".equals(parent.getElementId()) && InitialCaseWorkers.CASE_PROCESS.equals(parent.getProcessDefinitionId())
+                require(CaseProcessBpmnConstants.CallActivity.STAFF_PROCESSING_CALL.equals(parent.getElementId())
+                        && CaseProcessBpmnConstants.PROCESS_ID.equals(parent.getProcessDefinitionId())
                         && staff.getParentProcessInstanceKey().equals(parent.getProcessInstanceKey()) && job.getTenantId().equals(parent.getTenantId()));
                 leader = staff.getParentProcessInstanceKey();
             } else {
-                require(StaffReviewWorkers.STAFF_PROCESS.equals(job.getBpmnProcessId()) && "SMessagePublish".equals(job.getElementId())
+                require(StaffProcessingBpmnConstants.PROCESS_ID.equals(job.getBpmnProcessId())
+                        && StaffProcessingBpmnConstants.ServiceTask.PUBLISH_STAFF_MESSAGE.equals(job.getElementId())
                         && process.getParentProcessInstanceKey() != null && process.getParentElementInstanceKey() != null);
                 ElementInstance call = engine.newElementInstanceGetRequest(process.getParentElementInstanceKey()).send().join();
-                require("Staff".equals(call.getElementId()) && InitialCaseWorkers.CASE_PROCESS.equals(call.getProcessDefinitionId())
+                require(CaseProcessBpmnConstants.CallActivity.STAFF_PROCESSING_CALL.equals(call.getElementId())
+                        && CaseProcessBpmnConstants.PROCESS_ID.equals(call.getProcessDefinitionId())
                         && process.getParentProcessInstanceKey().equals(call.getProcessInstanceKey()) && job.getTenantId().equals(call.getTenantId()));
                 leader = process.getParentProcessInstanceKey();
             }
-            UUID command = UUID.fromString((String) job.getVariablesAsMap().get("staffMessageCommandRef"));
+            UUID command = UUID.fromString((String) job.getVariablesAsMap().get(STAFF_MESSAGE_COMMAND_REF));
             String result = service.publish(command, leader, job.getProcessInstanceKey(), job.getTenantId());
             outcome = "PUBLISHED".equals(result) ? service.interruptsAutomatic(command) ? "QUESTION" : "INFORMATION" : "REJECTED";
         } catch (RuntimeException exception) {
@@ -77,21 +94,23 @@ public class StaffMessageWorkers {
                     .join();
             return;
         }
-        client.newCompleteCommand(job.getKey()).variables(Map.of("staffMessageOutcome", outcome)).send().join();
+        client.newCompleteCommand(job.getKey()).variables(Map.of(STAFF_MESSAGE_OUTCOME, outcome)).send().join();
     }
 
-    @JobWorker(type = "propertyflow.staff-question.publish", autoComplete = false)
+    @JobWorker(type = STAFF_QUESTION_PUBLISH, autoComplete = false)
     public void question(JobClient client, ActivatedJob job) {
         UUID command;
         String result;
         try {
-            require(StaffReviewWorkers.STAFF_PROCESS.equals(job.getBpmnProcessId()) && "SQuestion".equals(job.getElementId()));
+            require(StaffProcessingBpmnConstants.PROCESS_ID.equals(job.getBpmnProcessId())
+                    && StaffProcessingBpmnConstants.ServiceTask.PUBLISH_QUESTION.equals(job.getElementId()));
             ProcessInstance child = engine.newProcessInstanceGetRequest(job.getProcessInstanceKey()).send().join();
             require(child.getParentProcessInstanceKey() != null && child.getParentElementInstanceKey() != null);
             ElementInstance call = engine.newElementInstanceGetRequest(child.getParentElementInstanceKey()).send().join();
-            require("Staff".equals(call.getElementId()) && InitialCaseWorkers.CASE_PROCESS.equals(call.getProcessDefinitionId())
+            require(CaseProcessBpmnConstants.CallActivity.STAFF_PROCESSING_CALL.equals(call.getElementId())
+                    && CaseProcessBpmnConstants.PROCESS_ID.equals(call.getProcessDefinitionId())
                     && child.getParentProcessInstanceKey().equals(call.getProcessInstanceKey()) && job.getTenantId().equals(call.getTenantId()));
-            command = service.questionCommand(UUID.fromString((String) job.getVariablesAsMap().get("staffDecisionRef")));
+            command = service.questionCommand(UUID.fromString((String) job.getVariablesAsMap().get(STAFF_DECISION_REF)));
             result = service.publishQuestion(command, child.getParentProcessInstanceKey(), job.getProcessInstanceKey(), job.getTenantId());
         } catch (RuntimeException exception) {
             boolean rejected = exception instanceof WorkflowRejectedException || exception instanceof IllegalArgumentException;
@@ -100,9 +119,9 @@ public class StaffMessageWorkers {
             return;
         }
         if ("PUBLISHED".equals(result)) {
-            client.newCompleteCommand(job.getKey()).variables(Map.of("outcome", "WAIT_FOR_REPLY", "decisionRef", command.toString())).send().join();
+            client.newCompleteCommand(job.getKey()).variables(Map.of(OUTCOME, "WAIT_FOR_REPLY", DECISION_REF, command.toString())).send().join();
         } else {
-            client.newThrowErrorCommand(job.getKey()).errorCode(StaffDecisionWorkers.STALE_DECISION)
+            client.newThrowErrorCommand(job.getKey()).errorCode(STAFF_DECISION_STALE)
                     .errorMessage("QUESTION_BASIS_CHANGED").send().join();
         }
     }

@@ -6,20 +6,21 @@ import com.pertegato.propertyflow.access.contract.WebAccountContext;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseCreation;
 import com.pertegato.propertyflow.caseprocessing.contract.CreateCaseCommand;
 import com.pertegato.propertyflow.caseprocessing.contract.Urgency;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants;
 import com.pertegato.propertyflow.caseprocessing.persistence.AnswerRequirementStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseDataStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWaitStore;
-import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore.StartOrder;
+import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.DirectFollowUpStore;
-import com.pertegato.propertyflow.caseprocessing.persistence.MailDeliveryStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.MailDeliveryStore.MailStart;
+import com.pertegato.propertyflow.caseprocessing.persistence.MailDeliveryStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.StaffReviewStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.StaffTakeoverStore;
 import com.pertegato.propertyflow.caseprocessing.service.CaseClosureService;
 import com.pertegato.propertyflow.caseprocessing.service.CaseDataService;
-import com.pertegato.propertyflow.caseprocessing.service.CaseMailService;
 import com.pertegato.propertyflow.caseprocessing.service.CaseMailService.MailOutcome;
+import com.pertegato.propertyflow.caseprocessing.service.CaseMailService;
 import com.pertegato.propertyflow.caseprocessing.service.CaseUrgencyService;
 import com.pertegato.propertyflow.caseprocessing.service.CaseWorkflowService;
 import com.pertegato.propertyflow.caseprocessing.service.StaffReviewService;
@@ -47,6 +48,26 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.AutomaticClarificationBpmnConstants.JobType.REGISTER_AUTOMATIC;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.AutomaticClarificationBpmnConstants.JobType.START_CLARIFICATION;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.CASE_DATA_APPLY;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.PREPARE_INITIAL;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.PREPARE_PROCESS_KEY;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.REGISTER_CASE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.REVIEW_CHECK;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.REVIEW_INTERRUPT_AUTOMATIC;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.REVIEW_MERGE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.REVIEW_PREPARE_STAFF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.STAFF_CLAIM;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.STAFF_MERGE_CONTINUATION;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.STAFF_RECONCILE_CONTINUATION;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.CASE_DATA_COMMAND_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.ENTRY_CONTEXT_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.REVIEW_SIGNAL_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.STAFF_ENTRY_CONTEXT_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.ConversationEvaluationBpmnConstants.JobType.AUTOMATIC_ANALYZE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.JobType.STAFF_REGISTER;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.JobType.STAFF_START_REVIEW;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -116,10 +137,8 @@ class StaffReviewCamundaTest {
         database.execute("TRUNCATE pf_case CASCADE");
         engine = CamundaClient.newClientBuilder().restAddress(URI.create(System.getenv("PROPERTYFLOW_TEST_CAMUNDA_URL")))
                 .preferRestOverGrpc(true).defaultRequestTimeout(Duration.ofSeconds(5)).build();
-        long definitionKey = engine.newDeployResourceCommand().addResourceFromClasspath("workflow/review-case.bpmn")
-                .addResourceFromClasspath("workflow/initial-automatic.bpmn").addResourceFromClasspath("workflow/review-staff.bpmn")
-                .send().join().getProcesses().stream()
-                .filter(process -> InitialCaseWorkers.CASE_PROCESS.equals(process.getBpmnProcessId()))
+        long definitionKey = WorkflowTestModels.deploy(engine).getProcesses().stream()
+                .filter(process -> CaseProcessBpmnConstants.PROCESS_ID.equals(process.getBpmnProcessId()))
                 .findFirst().orElseThrow().getProcessDefinitionKey();
         caseId = creation.create(new SubmissionContext.Guest(UUID.randomUUID()),
                 new CreateCaseCommand("review", "Heizung", "Wohnung", "Kalt", "review@example.test")).caseId();
@@ -127,13 +146,13 @@ class StaffReviewCamundaTest {
         assertEquals(ProcessStartGateway.StartResult.STARTED, new CamundaProcessStartGateway(engine).ensureStarted(start));
         initial = new InitialCaseWorkers(engine, initialService);
         reviews = new StaffReviewWorkers(engine, reviewService);
-        ActivatedJob preparing = job(InitialCaseWorkers.PREPARE_KEY);
+        ActivatedJob preparing = job(PREPARE_PROCESS_KEY);
         leader = preparing.getProcessInstanceKey();
         initial.prepareKey(engine, preparing);
-        initial.register(engine, job(InitialCaseWorkers.REGISTER));
-        initial.prepareInitial(engine, job(InitialCaseWorkers.PREPARE_INITIAL));
-        initial.registerAutomatic(engine, job(InitialCaseWorkers.REGISTER_AUTOMATIC));
-        initial.clarification(engine, job(InitialCaseWorkers.CLARIFICATION));
+        initial.register(engine, job(REGISTER_CASE));
+        initial.prepareInitial(engine, job(PREPARE_INITIAL));
+        initial.registerAutomatic(engine, job(REGISTER_AUTOMATIC));
+        initial.clarification(engine, job(START_CLARIFICATION));
         assertEquals("UNDER_CLARIFICATION", status());
     }
 
@@ -151,8 +170,8 @@ class StaffReviewCamundaTest {
     void obsoleteContinuationEndsOnlyItsDuplicatePathAndTransfersTheReasonToTheLiveReview() throws Exception {
         mailProblem();
         new ReviewSignalDispatcher(reviewStore, engine).dispatch();
-        reviews.check(engine, job("propertyflow.review.check"));
-        reviews.interruptAutomatic(engine, job("propertyflow.review.interrupt-automatic"));
+        reviews.check(engine, job(REVIEW_CHECK));
+        reviews.interruptAutomatic(engine, job(REVIEW_INTERRUPT_AUTOMATIC));
         finishReview();
         long task = tasks().getFirst().getUserTaskKey();
         UUID current = database.queryForObject("SELECT id FROM pf_staff_continuation WHERE NOT superseded", UUID.class);
@@ -167,16 +186,16 @@ class StaffReviewCamundaTest {
                 VALUES (?, ?, 'TEST', ?, 'HUMAN_DECISION_REQUIRED', ?, ?, 'CONFIRMED')
                 """, signal, caseId, UUID.randomUUID(), leader, obsolete);
         for (int index = 0; index < 2; index++) {
-            engine.newModifyProcessInstanceCommand(leader).activateElement("StaffContinuationClaim")
-                    .withVariable("staffEntryContextRef", obsolete.toString()).send().join();
-            reviews.claim(engine, job("propertyflow.staff.claim"));
-            reviews.reconcileContinuation(engine, job("propertyflow.staff.reconcile-continuation"));
+            engine.newModifyProcessInstanceCommand(leader).activateElement("Mitarbeiterfortsetzung_uebernehmen_SERVICE")
+                    .withVariable(STAFF_ENTRY_CONTEXT_REF, obsolete.toString()).send().join();
+            reviews.claim(engine, job(STAFF_CLAIM));
+            reviews.reconcileContinuation(engine, job(STAFF_RECONCILE_CONTINUATION));
         }
         assertEquals(current, database.queryForObject("SELECT continuation_id FROM pf_case_review_signal WHERE id = ?", UUID.class, signal));
         assertEquals("PENDING", database.queryForObject("SELECT state FROM pf_case_review_signal WHERE id = ?", String.class, signal));
         new ReviewSignalDispatcher(reviewStore, engine).dispatch();
-        reviews.check(engine, job("propertyflow.review.check"));
-        reviews.merge(engine, job("propertyflow.review.merge"));
+        reviews.check(engine, job(REVIEW_CHECK));
+        reviews.merge(engine, job(REVIEW_MERGE));
         assertEquals(task, tasks().getFirst().getUserTaskKey());
         assertEquals(1, tasks().size());
         assertEquals("ACTIVE", engine.newProcessInstanceGetRequest(leader).send().join().getState().name());
@@ -188,13 +207,13 @@ class StaffReviewCamundaTest {
     void duplicateCurrentContinuationMergesWithoutStartingAnotherStaffCall() throws Exception {
         mailProblem();
         new ReviewSignalDispatcher(reviewStore, engine).dispatch();
-        reviews.check(engine, job("propertyflow.review.check"));
-        reviews.interruptAutomatic(engine, job("propertyflow.review.interrupt-automatic"));
+        reviews.check(engine, job(REVIEW_CHECK));
+        reviews.interruptAutomatic(engine, job(REVIEW_INTERRUPT_AUTOMATIC));
         finishReview();
         long task = tasks().getFirst().getUserTaskKey();
-        engine.newModifyProcessInstanceCommand(leader).activateElement("StaffContinuationClaim").send().join();
-        reviews.claim(engine, job("propertyflow.staff.claim"));
-        reviews.mergeContinuation(engine, job("propertyflow.staff.merge-continuation"));
+        engine.newModifyProcessInstanceCommand(leader).activateElement("Mitarbeiterfortsetzung_uebernehmen_SERVICE").send().join();
+        reviews.claim(engine, job(STAFF_CLAIM));
+        reviews.mergeContinuation(engine, job(STAFF_MERGE_CONTINUATION));
         assertEquals(task, tasks().getFirst().getUserTaskKey());
         assertEquals(1, tasks().size());
         assertEquals("ACTIVE", engine.newProcessInstanceGetRequest(leader).send().join().getState().name());
@@ -205,24 +224,24 @@ class StaffReviewCamundaTest {
     void unconfirmedStaffEntryKeepsTheDuplicateJobPendingUntilTheSuccessorIsReady() throws Exception {
         mailProblem();
         new ReviewSignalDispatcher(reviewStore, engine).dispatch();
-        reviews.check(engine, job("propertyflow.review.check"));
-        reviews.interruptAutomatic(engine, job("propertyflow.review.interrupt-automatic"));
-        reviews.prepareStaff(engine, job("propertyflow.review.prepare-staff"));
-        reviews.claim(engine, job("propertyflow.staff.claim"));
-        reviews.register(engine, job("propertyflow.staff.register"));
-        ActivatedJob startingReview = job("propertyflow.staff.start-review");
-        engine.newModifyProcessInstanceCommand(leader).activateElement("StaffContinuationClaim").send().join();
-        ActivatedJob duplicate = job("propertyflow.staff.claim");
+        reviews.check(engine, job(REVIEW_CHECK));
+        reviews.interruptAutomatic(engine, job(REVIEW_INTERRUPT_AUTOMATIC));
+        reviews.prepareStaff(engine, job(REVIEW_PREPARE_STAFF));
+        reviews.claim(engine, job(STAFF_CLAIM));
+        reviews.register(engine, job(STAFF_REGISTER));
+        ActivatedJob startingReview = job(STAFF_START_REVIEW);
+        engine.newModifyProcessInstanceCommand(leader).activateElement("Mitarbeiterfortsetzung_uebernehmen_SERVICE").send().join();
+        ActivatedJob duplicate = job(STAFF_CLAIM);
         reviews.claim(engine, duplicate);
         assertTrue(tasks().isEmpty());
         assertEquals("UNDER_CLARIFICATION", status());
         assertEquals(1, count("pf_staff_continuation"));
         reviews.startReview(engine, startingReview);
-        ActivatedJob retry = job("propertyflow.staff.claim");
+        ActivatedJob retry = job(STAFF_CLAIM);
         assertEquals(duplicate.getKey(), retry.getKey());
         assertTrue(retry.getRetries() > 0);
         reviews.claim(engine, retry);
-        reviews.mergeContinuation(engine, job("propertyflow.staff.merge-continuation"));
+        reviews.mergeContinuation(engine, job(STAFF_MERGE_CONTINUATION));
         await(() -> tasks().size() == 1);
         assertEquals("STAFF_REVIEW_REQUIRED", status());
         assertEquals(2, count("pf_case_status_event"));
@@ -231,21 +250,21 @@ class StaffReviewCamundaTest {
 
     @Test
     void mailProblemInterruptsEvenAnIncidentAndStartsExactlyOneRealUserTask() throws Exception {
-        ActivatedJob triage = job("propertyflow-test-unimplemented-triage");
+        ActivatedJob triage = job(AUTOMATIC_ANALYZE);
         engine.newFailCommand(triage.getKey()).retries(0).errorMessage("TEST_BLOCKED_ANALYSIS").send().join();
         await(() -> engine.newIncidentSearchRequest().filter(filter -> filter.processInstanceKey(triage.getProcessInstanceKey()))
                 .send().join().items().size() == 1);
         mailProblem();
         new ReviewSignalDispatcher(reviewStore, engine).dispatch();
-        reviews.check(engine, job("propertyflow.review.check"));
+        reviews.check(engine, job(REVIEW_CHECK));
         assertEquals("UNDER_CLARIFICATION", status());
         assertTrue(database.queryForObject("SELECT effects_blocked FROM pf_automatic_entry", Boolean.class));
-        reviews.interruptAutomatic(engine, job("propertyflow.review.interrupt-automatic"));
+        reviews.interruptAutomatic(engine, job(REVIEW_INTERRUPT_AUTOMATIC));
         finishReview();
         await(() -> "TERMINATED".equals(engine.newProcessInstanceGetRequest(triage.getProcessInstanceKey()).send().join().getState().name()));
         List<UserTask> tasks = tasks();
         assertEquals(1, tasks.size());
-        assertEquals("SReview", tasks.getFirst().getElementId());
+        assertEquals("Fall_pruefen_und_Vorgehen_entscheiden_USERTASK", tasks.getFirst().getElementId());
         assertEquals(leader, tasks.getFirst().getRootProcessInstanceKey());
         assertEquals("STAFF_REVIEW_REQUIRED", status());
         assertEquals(2, count("pf_case_mail_order"));
@@ -263,13 +282,13 @@ class StaffReviewCamundaTest {
                 VALUES (?, ?, 'MAIL', ?, 'MAIL_DELIVERY_REQUIRES_REVIEW', ?)
                 """, second, caseId, UUID.randomUUID(), leader);
         new ReviewSignalDispatcher(reviewStore, engine).dispatch();
-        ActivatedJob firstCheck = job("propertyflow.review.check");
-        ActivatedJob secondCheck = job("propertyflow.review.check");
-        assertFalse(firstCheck.getVariablesAsMap().get("reviewSignalRef").equals(secondCheck.getVariablesAsMap().get("reviewSignalRef")));
+        ActivatedJob firstCheck = job(REVIEW_CHECK);
+        ActivatedJob secondCheck = job(REVIEW_CHECK);
+        assertFalse(firstCheck.getVariablesAsMap().get(REVIEW_SIGNAL_REF).equals(secondCheck.getVariablesAsMap().get(REVIEW_SIGNAL_REF)));
         reviews.check(engine, firstCheck);
         reviews.check(engine, secondCheck);
-        ActivatedJob firstOther = job("propertyflow.review.interrupt-automatic");
-        ActivatedJob lateOther = job("propertyflow.review.interrupt-automatic");
+        ActivatedJob firstOther = job(REVIEW_INTERRUPT_AUTOMATIC);
+        ActivatedJob lateOther = job(REVIEW_INTERRUPT_AUTOMATIC);
         reviews.interruptAutomatic(engine, firstOther);
         finishReview();
         long taskKey = tasks().getFirst().getUserTaskKey();
@@ -284,20 +303,20 @@ class StaffReviewCamundaTest {
                 VALUES (?, ?, 'MAIL', ?, 'MAIL_DELIVERY_REQUIRES_REVIEW', ?)
                 """, third, caseId, UUID.randomUUID(), leader);
         new ReviewSignalDispatcher(reviewStore, engine).dispatch();
-        reviews.check(engine, job("propertyflow.review.check"));
-        reviews.merge(engine, job("propertyflow.review.merge"));
+        reviews.check(engine, job(REVIEW_CHECK));
+        reviews.merge(engine, job(REVIEW_MERGE));
         assertEquals(taskKey, tasks().getFirst().getUserTaskKey());
         assertEquals(2, count("pf_case_mail_order"));
     }
 
     private void finishReview() throws Exception {
-        reviews.prepareStaff(engine, job("propertyflow.review.prepare-staff"));
-        reviews.claim(engine, job("propertyflow.staff.claim"));
-        reviews.register(engine, job("propertyflow.staff.register"));
-        ActivatedJob status = job("propertyflow.staff.start-review");
+        reviews.prepareStaff(engine, job(REVIEW_PREPARE_STAFF));
+        reviews.claim(engine, job(STAFF_CLAIM));
+        reviews.register(engine, job(STAFF_REGISTER));
+        ActivatedJob status = job(STAFF_START_REVIEW);
         reviews.startReview(engine, status);
         // Replaying the committed service operation cannot create another event or task.
-        reviewService.startReview(caseId, leader, UUID.fromString((String) status.getVariablesAsMap().get("entryContextRef")),
+        reviewService.startReview(caseId, leader, UUID.fromString((String) status.getVariablesAsMap().get(ENTRY_CONTEXT_REF)),
                 status.getProcessInstanceKey());
         await(() -> tasks().size() == 1);
     }
@@ -306,8 +325,8 @@ class StaffReviewCamundaTest {
     void staffMemoUsesNonInterruptingSideProcessAndPreservesReviewTask() throws Exception {
         mailProblem();
         new ReviewSignalDispatcher(reviewStore, engine).dispatch();
-        reviews.check(engine, job("propertyflow.review.check"));
-        reviews.interruptAutomatic(engine, job("propertyflow.review.interrupt-automatic"));
+        reviews.check(engine, job(REVIEW_CHECK));
+        reviews.interruptAutomatic(engine, job(REVIEW_INTERRUPT_AUTOMATIC));
         finishReview();
         long taskKey = tasks().getFirst().getUserTaskKey();
         UUID actorId = UUID.randomUUID();
@@ -323,10 +342,10 @@ class StaffReviewCamundaTest {
         WebAccountContext actor = new WebAccountContext(actorId);
         assertEquals("PENDING", memos.submit(actor, caseId, operation, 2, "Vertrauliche interne Abklärung").state());
         CaseDataWorkers data = new CaseDataWorkers(engine, memos);
-        ActivatedJob saving = job("propertyflow.case-data.apply");
+        ActivatedJob saving = job(CASE_DATA_APPLY);
         assertFalse(saving.getVariables().contains("Vertrauliche"));
         data.apply(engine, saving);
-        UUID commandId = UUID.fromString((String) saving.getVariablesAsMap().get("caseDataCommandRef"));
+        UUID commandId = UUID.fromString((String) saving.getVariablesAsMap().get(CASE_DATA_COMMAND_REF));
         memos.apply(commandId, leader, "<default>");
         assertEquals("APPLIED", memos.read(actor, caseId, operation).state());
         assertEquals(1, count("pf_internal_memo"));
@@ -349,14 +368,14 @@ class StaffReviewCamundaTest {
         UUID operation = UUID.randomUUID();
         dataService.submitUrgency(new WebAccountContext(actorId), caseId, operation, 1, Urgency.CRITICAL, "Interner Entscheid");
         CaseDataWorkers data = new CaseDataWorkers(engine, dataService);
-        ActivatedJob change = job("propertyflow.case-data.apply");
+        ActivatedJob change = job(CASE_DATA_APPLY);
         assertFalse(change.getVariables().contains("Interner Entscheid"));
         data.apply(engine, change);
         assertEquals("UNDER_CLARIFICATION", status());
         assertEquals("CRITICAL", database.queryForObject("SELECT urgency FROM pf_case", String.class));
         new ReviewSignalDispatcher(reviewStore, engine).dispatch();
-        reviews.check(engine, job("propertyflow.review.check"));
-        reviews.interruptAutomatic(engine, job("propertyflow.review.interrupt-automatic"));
+        reviews.check(engine, job(REVIEW_CHECK));
+        reviews.interruptAutomatic(engine, job(REVIEW_INTERRUPT_AUTOMATIC));
         finishReview();
         assertEquals(1, tasks().size());
         assertEquals("STAFF_REVIEW_REQUIRED", status());

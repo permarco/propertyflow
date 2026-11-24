@@ -7,8 +7,8 @@ import com.pertegato.propertyflow.caseprocessing.contract.CaseCreation;
 import com.pertegato.propertyflow.caseprocessing.contract.CreateCaseCommand;
 import com.pertegato.propertyflow.caseprocessing.contract.FollowUpCommands;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffTaskDecisions.StaffTask;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants;
 import com.pertegato.propertyflow.caseprocessing.delivery.StaffTaskGateway;
-import com.pertegato.propertyflow.caseprocessing.persistence.CaseAnalysisStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseDataStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWaitStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore;
@@ -21,16 +21,13 @@ import com.pertegato.propertyflow.caseprocessing.persistence.StaffMessageStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.StaffReviewStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.TenantMessageStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.TenantReplyStore;
-import com.pertegato.propertyflow.caseprocessing.service.CaseAnalysisService;
 import com.pertegato.propertyflow.caseprocessing.service.CaseClosureService;
-import com.pertegato.propertyflow.caseprocessing.service.CaseUrgencyService;
 import com.pertegato.propertyflow.caseprocessing.service.CaseWaitService;
 import com.pertegato.propertyflow.caseprocessing.service.CaseWorkflowService;
 import com.pertegato.propertyflow.caseprocessing.service.FollowUpCommandService;
 import com.pertegato.propertyflow.caseprocessing.service.StaffDecisionService;
 import com.pertegato.propertyflow.caseprocessing.service.StaffMessageService;
 import com.pertegato.propertyflow.caseprocessing.service.StaffReviewService;
-import com.pertegato.propertyflow.triage.service.AnalyzeTool;
 import com.pertegato.propertyflow.triage.service.AnalyzeTool.AnalysisModel;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ActivatedJob;
@@ -57,6 +54,32 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.AutomaticClarificationBpmnConstants.JobType.AUTOMATIC_RECOMMENDATION;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.ConversationEvaluationBpmnConstants.JobType.AUTOMATIC_ANALYZE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.AutomaticClarificationBpmnConstants.JobType.REGISTER_AUTOMATIC;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.AutomaticClarificationBpmnConstants.JobType.START_CLARIFICATION;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.PREPARE_INITIAL;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.PREPARE_PROCESS_KEY;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.REGISTER_CASE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.REVIEW_ANALYSIS_FAILURE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.REVIEW_CHECK;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.REVIEW_INTERRUPT_AUTOMATIC;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.STAFF_CLAIM;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.STAFF_CLOSE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.JobType.STAFF_MESSAGE_PUBLISH;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.PENDING_REVIEW_FOLLOW_UP_VERSION;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.PHASE_REVIEW_SIGNAL_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.STAFF_DECISION_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.FollowUpBpmnConstants.JobType.FOLLOW_UP_CHANGE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.FollowUpBpmnConstants.JobType.FOLLOW_UP_CLOSE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.FollowUpBpmnConstants.JobType.FOLLOW_UP_SAVE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.FollowUpBpmnConstants.JobType.FOLLOW_UP_TIMER;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.FollowUpBpmnConstants.Variablen.FOLLOW_UP_COMMAND_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.JobType.FOLLOW_UP_STOP_CONTACT;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.JobType.STAFF_PROGRESS;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.JobType.STAFF_REGISTER;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.JobType.STAFF_START_REVIEW;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.JobType.STAFF_WAIT_EXTERNAL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -88,12 +111,6 @@ class CaseWaitCamundaTest {
     private PlatformTransactionManager transactions;
 
     @Autowired
-    private CaseUrgencyService urgencyService;
-
-    @Autowired
-    private CaseAnalysisStore analyses;
-
-    @Autowired
     private StaffAccountAccess access;
 
     @Autowired
@@ -123,11 +140,8 @@ class CaseWaitCamundaTest {
         database.execute("TRUNCATE pf_case CASCADE");
         engine = CamundaClient.newClientBuilder().restAddress(URI.create(System.getenv("PROPERTYFLOW_TEST_CAMUNDA_URL")))
                 .preferRestOverGrpc(true).defaultRequestTimeout(Duration.ofSeconds(5)).build();
-        long definitionKey = engine.newDeployResourceCommand().addResourceFromClasspath("workflow/closure-case.bpmn")
-                .addResourceFromClasspath("workflow/analysis-automatic.bpmn").addResourceFromClasspath("workflow/wait-staff.bpmn")
-                .addResourceFromClasspath("workflow/follow-up.bpmn")
-                .send().join().getProcesses().stream()
-                .filter(process -> InitialCaseWorkers.CASE_PROCESS.equals(process.getBpmnProcessId()))
+        long definitionKey = WorkflowTestModels.deploy(engine).getProcesses().stream()
+                .filter(process -> CaseProcessBpmnConstants.PROCESS_ID.equals(process.getBpmnProcessId()))
                 .findFirst().orElseThrow().getProcessDefinitionKey();
         caseId = creation.create(new SubmissionContext.Guest(UUID.randomUUID()),
                 new CreateCaseCommand("review", "Heizung", "Wohnung", "Kalt", "review@example.test")).caseId();
@@ -135,19 +149,21 @@ class CaseWaitCamundaTest {
         assertEquals(ProcessStartGateway.StartResult.STARTED, new CamundaProcessStartGateway(engine).ensureStarted(start));
         initial = new InitialCaseWorkers(engine, initialService);
         reviews = new StaffReviewWorkers(engine, reviewService);
-        ActivatedJob preparing = job(InitialCaseWorkers.PREPARE_KEY);
+        ActivatedJob preparing = job(PREPARE_PROCESS_KEY);
         leader = preparing.getProcessInstanceKey();
         initial.prepareKey(engine, preparing);
-        initial.register(engine, job(InitialCaseWorkers.REGISTER));
-        initial.prepareInitial(engine, job(InitialCaseWorkers.PREPARE_INITIAL));
-        initial.registerAutomatic(engine, job(InitialCaseWorkers.REGISTER_AUTOMATIC));
-        initial.clarification(engine, job(InitialCaseWorkers.CLARIFICATION));
+        initial.register(engine, job(REGISTER_CASE));
+        initial.prepareInitial(engine, job(PREPARE_INITIAL));
+        initial.registerAutomatic(engine, job(REGISTER_AUTOMATIC));
+        initial.clarification(engine, job(START_CLARIFICATION));
         assertEquals("UNDER_CLARIFICATION", status());
-        worker(text -> "invalid").analyze(engine, job(TriageWorkers.INITIAL));
-        reviews.analysisFailure(engine, job("propertyflow.review.analysis-failure"));
-        reviews.claim(engine, job("propertyflow.staff.claim"));
-        reviews.register(engine, job("propertyflow.staff.register"));
-        reviews.startReview(engine, job("propertyflow.staff.start-review"));
+        AutomaticEvaluationWorkers analysis = InitialAnalysisTestFixture.failedEvaluation(engine, workflow, database, transactions);
+        analysis.analyze(engine, job(AUTOMATIC_ANALYZE));
+        analysis.recommend(engine, job(AUTOMATIC_RECOMMENDATION));
+        reviews.analysisFailure(engine, job(REVIEW_ANALYSIS_FAILURE));
+        reviews.claim(engine, job(STAFF_CLAIM));
+        reviews.register(engine, job(STAFF_REGISTER));
+        reviews.startReview(engine, job(STAFF_START_REVIEW));
         await(() -> tasks().size() == 1);
         actor = new WebAccountContext(UUID.randomUUID());
         database.update("""
@@ -175,15 +191,15 @@ class CaseWaitCamundaTest {
                 new StaticListableBeanFactory(Map.of("engine", engine)).getBeanProvider(CamundaClient.class), true));
         StaffTask task = service.current(actor, caseId);
         service.followUp(actor, caseId, UUID.randomUUID(), Long.parseLong(task.taskKey()), task.version(), task.reviewToken(), "", 3, null);
-        ActivatedJob save = job(CaseWaitWorkers.SAVE);
-        UUID decision = UUID.fromString(save.getVariablesAsMap().get("staffDecisionRef").toString());
+        ActivatedJob save = job(FOLLOW_UP_SAVE);
+        UUID decision = UUID.fromString(save.getVariablesAsMap().get(STAFF_DECISION_REF).toString());
         database.update("UPDATE pf_staff_wait_request SET due_at = CURRENT_TIMESTAMP - INTERVAL '1 second' WHERE decision_id = ?", decision);
         CaseWaitWorkers worker = new CaseWaitWorkers(engine, waitService);
         worker.save(engine, save);
         assertEquals("WAITING_FOR_FOLLOW_UP", status());
-        worker.timer(engine, job(CaseWaitWorkers.TIMER));
-        reviews.startReview(engine, job("propertyflow.staff.start-review"));
-        await(() -> tasks().size() == 1 && "SReview".equals(tasks().getFirst().getElementId()));
+        worker.timer(engine, job(FOLLOW_UP_TIMER));
+        reviews.startReview(engine, job(STAFF_START_REVIEW));
+        await(() -> tasks().size() == 1 && "Fall_pruefen_und_Vorgehen_entscheiden_USERTASK".equals(tasks().getFirst().getElementId()));
         assertEquals("STAFF_REVIEW_REQUIRED", status());
         assertEquals(1, count("pf_wait_resolution"));
         assertEquals(4, count("pf_case_mail_order"));
@@ -208,7 +224,7 @@ class CaseWaitCamundaTest {
         StaffDecisionService decisions = service(taskGateway);
         StaffTask task = decisions.current(actor, caseId);
         decisions.followUp(actor, caseId, UUID.randomUUID(), Long.parseLong(task.taskKey()), task.version(), task.reviewToken(), "", 3, null);
-        new CaseWaitWorkers(engine, waitService).save(engine, job(CaseWaitWorkers.SAVE));
+        new CaseWaitWorkers(engine, waitService).save(engine, job(FOLLOW_UP_SAVE));
         FollowUpCommandService commands =
                 new FollowUpCommandService(access, workflow, caseData, waitStore,
                         this.decisions, followUpChanges, new CamundaFollowUpGateway(
@@ -218,7 +234,7 @@ class CaseWaitCamundaTest {
         UUID operation = UUID.randomUUID();
         commands.submit(actor, caseId, operation, current.waitId(), current.version(), false, 8, null, "Neuer Termin");
         FollowUpCommandWorkers worker = new FollowUpCommandWorkers(engine, commands);
-        worker.apply(engine, job(FollowUpCommandWorkers.APPLY));
+        worker.apply(engine, job(FOLLOW_UP_CHANGE));
         await(() -> commands.current(actor, caseId).available());
         assertEquals("APPLIED", commands.result(actor, caseId, operation));
         FollowUpCommands.Current changed = commands.current(actor, caseId);
@@ -226,9 +242,9 @@ class CaseWaitCamundaTest {
         assertEquals("WAITING_FOR_FOLLOW_UP", status());
         UUID delete = UUID.randomUUID();
         commands.submit(actor, caseId, delete, changed.waitId(), changed.version(), true, null, null, "Weiter bearbeiten");
-        worker.apply(engine, job(FollowUpCommandWorkers.APPLY));
-        new StaffDecisionWorkers(engine, decisions).progress(engine, job(StaffDecisionWorkers.PROGRESS));
-        await(() -> tasks().size() == 1 && "SWork".equals(tasks().getFirst().getElementId()));
+        worker.apply(engine, job(FOLLOW_UP_CHANGE));
+        new StaffDecisionWorkers(engine, decisions).progress(engine, job(STAFF_PROGRESS));
+        await(() -> tasks().size() == 1 && "Naechste_Mitarbeiteraktion_abwarten_USERTASK".equals(tasks().getFirst().getElementId()));
         assertEquals("APPLIED", commands.result(actor, caseId, delete));
         assertEquals("IN_PROGRESS", status());
         assertTrue(waitStore.active(caseId).isEmpty());
@@ -243,7 +259,7 @@ class CaseWaitCamundaTest {
         StaffTask task = decisions.current(actor, caseId);
         decisions.followUp(actor, caseId, UUID.randomUUID(), Long.parseLong(task.taskKey()), task.version(), task.reviewToken(), "", 3, null);
         CaseWaitWorkers worker = new CaseWaitWorkers(engine, waitService);
-        ActivatedJob save = job(CaseWaitWorkers.SAVE);
+        ActivatedJob save = job(FOLLOW_UP_SAVE);
         worker.save(engine, save);
         UUID waitId = database.queryForObject("SELECT id FROM pf_case_wait", UUID.class);
         Timestamp dueAt = database.queryForObject("SELECT follow_up_due_at FROM pf_case", Timestamp.class);
@@ -257,7 +273,7 @@ class CaseWaitCamundaTest {
                         waitStore, this.decisions, new TenantReplyStore(database), new ClarificationQuestionStore(database), transactions);
         assertTrue(communication.available(actor, caseId).question());
         assertEquals("PENDING", communication.send(actor, caseId, "wait-question", "Welcher Raum ist betroffen?", true));
-        new StaffMessageWorkers(engine, communication).publish(engine, job(StaffMessageWorkers.PUBLISH));
+        new StaffMessageWorkers(engine, communication).publish(engine, job(STAFF_MESSAGE_PUBLISH));
         assertEquals("PUBLISHED", communication.result(actor, caseId, "wait-question"));
         assertEquals("WAITING_FOR_FOLLOW_UP", status());
         assertEquals(waitId, database.queryForObject("SELECT id FROM pf_case_wait WHERE state = 'ACTIVE'", UUID.class));
@@ -277,15 +293,15 @@ class CaseWaitCamundaTest {
         StaffTask task = service.current(actor, caseId);
         service.followUp(actor, caseId, UUID.randomUUID(), Long.parseLong(task.taskKey()), task.version(), task.reviewToken(), "", 3, null);
         CaseWaitWorkers worker = new CaseWaitWorkers(engine, waitService);
-        ActivatedJob save = job(CaseWaitWorkers.SAVE);
+        ActivatedJob save = job(FOLLOW_UP_SAVE);
         worker.save(engine, save);
         UUID accessId = database.queryForObject("SELECT id FROM pf_case_access WHERE case_id = ?", UUID.class, caseId);
         messages.save(new TenantMessageStore.Access(accessId, caseId),
                 "contact", "Neue Information", leader, "<default>");
         new FollowUpContactDispatcher(waitStore, engine).dispatch();
-        worker.stopContact(engine, job(CaseWaitWorkers.STOP));
-        reviews.startReview(engine, job("propertyflow.staff.start-review"));
-        await(() -> tasks().size() == 1 && "SReview".equals(tasks().getFirst().getElementId()));
+        worker.stopContact(engine, job(FOLLOW_UP_STOP_CONTACT));
+        reviews.startReview(engine, job(STAFF_START_REVIEW));
+        await(() -> tasks().size() == 1 && "Fall_pruefen_und_Vorgehen_entscheiden_USERTASK".equals(tasks().getFirst().getElementId()));
         assertEquals("STAFF_REVIEW_REQUIRED", status());
         assertEquals("CONTACT", database.queryForObject("SELECT state FROM pf_case_wait", String.class));
         assertEquals(1, count("pf_wait_resolution"));
@@ -298,22 +314,22 @@ class CaseWaitCamundaTest {
                 new StaticListableBeanFactory(Map.of("engine", engine)).getBeanProvider(CamundaClient.class), true));
         StaffTask task = service.current(actor, caseId);
         service.continueWork(actor, caseId, UUID.randomUUID(), Long.parseLong(task.taskKey()), task.version(), task.reviewToken());
-        new StaffDecisionWorkers(engine, service).progress(engine, job(StaffDecisionWorkers.PROGRESS));
-        await(() -> tasks().size() == 1 && "SWork".equals(tasks().getFirst().getElementId()));
+        new StaffDecisionWorkers(engine, service).progress(engine, job(STAFF_PROGRESS));
+        await(() -> tasks().size() == 1 && "Naechste_Mitarbeiteraktion_abwarten_USERTASK".equals(tasks().getFirst().getElementId()));
         StaffTask work = service.current(actor, caseId);
         service.waitExternal(actor, caseId, UUID.randomUUID(), Long.parseLong(work.taskKey()), work.version(), work.reviewToken());
-        new CaseWaitWorkers(engine, waitService).external(engine, job(CaseWaitWorkers.EXTERNAL));
-        await(() -> tasks().size() == 1 && "SExternalWait".equals(tasks().getFirst().getElementId()));
+        new CaseWaitWorkers(engine, waitService).external(engine, job(STAFF_WAIT_EXTERNAL));
+        await(() -> tasks().size() == 1 && "Externe_Rueckmeldung_abwarten_USERTASK".equals(tasks().getFirst().getElementId()));
         long oldTask = tasks().getFirst().getUserTaskKey();
         database.update("""
                 INSERT INTO pf_case_review_signal (id, case_id, source_type, source_ref, reason, leading_instance_key)
                 VALUES (?, ?, 'TEST', ?, 'CRITICAL_URGENCY', ?)
                 """, UUID.randomUUID(), caseId, UUID.randomUUID(), leader);
         new ReviewSignalDispatcher(reviewStore, engine).dispatch();
-        reviews.check(engine, job("propertyflow.review.check"));
-        reviews.interruptAutomatic(engine, job("propertyflow.review.interrupt-automatic"));
-        reviews.startReview(engine, job("propertyflow.staff.start-review"));
-        await(() -> tasks().size() == 1 && "SReview".equals(tasks().getFirst().getElementId()));
+        reviews.check(engine, job(REVIEW_CHECK));
+        reviews.interruptAutomatic(engine, job(REVIEW_INTERRUPT_AUTOMATIC));
+        reviews.startReview(engine, job(STAFF_START_REVIEW));
+        await(() -> tasks().size() == 1 && "Fall_pruefen_und_Vorgehen_entscheiden_USERTASK".equals(tasks().getFirst().getElementId()));
         assertEquals("STAFF_REVIEW_REQUIRED", status());
         assertTrue(oldTask != tasks().getFirst().getUserTaskKey());
         assertEquals("REVIEW", database.queryForObject("SELECT state FROM pf_case_wait", String.class));
@@ -329,14 +345,14 @@ class CaseWaitCamundaTest {
         UUID operation = UUID.randomUUID();
         assertEquals("PENDING", commands.close(actor, caseId, operation, current.waitId(), current.version(), "Erledigung geprüft"));
         assertEquals("PENDING", commands.close(actor, caseId, operation, current.waitId(), current.version(), "Erledigung geprüft"));
-        ActivatedJob preparing = job(FollowUpCommandWorkers.CLOSE);
+        ActivatedJob preparing = job(FOLLOW_UP_CLOSE);
         FollowUpCommandWorkers worker = new FollowUpCommandWorkers(engine, commands);
         worker.close(engine, preparing);
         assertEquals("WAITING_FOR_FOLLOW_UP", status());
         assertEquals("APPLYING", database.queryForObject("SELECT state FROM pf_follow_up_command", String.class));
         assertEquals("ACTIVE", database.queryForObject("SELECT state FROM pf_case_wait", String.class));
         ActivatedJob closing = closingJob();
-        UUID command = UUID.fromString(closing.getVariablesAsMap().get("staffDecisionRef").toString());
+        UUID command = UUID.fromString(closing.getVariablesAsMap().get(STAFF_DECISION_REF).toString());
         long child = closure.context(caseId, leader, command).child();
         new CaseClosureWorkers(engine, closure).close(engine, closing);
         await(() -> "COMPLETED".equals(engine.newProcessInstanceGetRequest(leader).send().join().getState().name()));
@@ -358,7 +374,7 @@ class CaseWaitCamundaTest {
         FollowUpCommandService commands = enterFollowUp();
         FollowUpCommands.Current current = commands.current(actor, caseId);
         commands.close(actor, caseId, UUID.randomUUID(), current.waitId(), current.version(), "");
-        new FollowUpCommandWorkers(engine, commands).close(engine, job(FollowUpCommandWorkers.CLOSE));
+        new FollowUpCommandWorkers(engine, commands).close(engine, job(FOLLOW_UP_CLOSE));
         ActivatedJob closing = closingJob();
         UUID accessId = database.queryForObject("SELECT id FROM pf_case_access WHERE case_id = ?", UUID.class, caseId);
         messages.save(new TenantMessageStore.Access(accessId, caseId), "closure-contact", "Das Problem besteht weiterhin.", leader, "<default>");
@@ -366,14 +382,14 @@ class CaseWaitCamundaTest {
         assertEquals("STAFF_REVIEW_REQUIRED", status());
         assertEquals("REJECTED", database.queryForObject("SELECT state FROM pf_follow_up_command", String.class));
         assertEquals("CANCELLED", database.queryForObject("SELECT state FROM pf_case_wait", String.class));
-        reviews.claim(engine, job("propertyflow.staff.claim"));
-        reviews.register(engine, job("propertyflow.staff.register"));
-        reviews.startReview(engine, job("propertyflow.staff.start-review"));
-        await(() -> tasks().size() == 1 && "SReview".equals(tasks().getFirst().getElementId()));
+        reviews.claim(engine, job(STAFF_CLAIM));
+        reviews.register(engine, job(STAFF_REGISTER));
+        reviews.startReview(engine, job(STAFF_START_REVIEW));
+        await(() -> tasks().size() == 1 && "Fall_pruefen_und_Vorgehen_entscheiden_USERTASK".equals(tasks().getFirst().getElementId()));
         assertEquals(0, count("pf_case_closure"));
         assertEquals(1, database.queryForObject("SELECT count(*) FROM pf_staff_continuation WHERE origin = 'CLOSE_CONFLICT'", Integer.class));
         assertEquals(0, database.queryForObject("SELECT count(*) FROM pf_case WHERE follow_up_due_at IS NOT NULL", Integer.class));
-        UUID command = UUID.fromString(closing.getVariablesAsMap().get("staffDecisionRef").toString());
+        UUID command = UUID.fromString(closing.getVariablesAsMap().get(STAFF_DECISION_REF).toString());
         assertEquals("STALE", closure.close(caseId, leader, closure.context(caseId, leader, command).child(), command).state());
     }
 
@@ -382,7 +398,7 @@ class CaseWaitCamundaTest {
         FollowUpCommandService commands = enterFollowUp();
         FollowUpCommands.Current current = commands.current(actor, caseId);
         commands.close(actor, caseId, UUID.randomUUID(), current.waitId(), current.version(), "");
-        ActivatedJob closing = job(FollowUpCommandWorkers.CLOSE);
+        ActivatedJob closing = job(FOLLOW_UP_CLOSE);
         database.update("UPDATE pf_staff_account SET staff_role = FALSE WHERE id = ?", actor.accountId());
         new FollowUpCommandWorkers(engine, commands).close(engine, closing);
         assertEquals("WAITING_FOR_FOLLOW_UP", status());
@@ -399,8 +415,8 @@ class CaseWaitCamundaTest {
         FollowUpCommandService commands = enterFollowUp();
         FollowUpCommands.Current current = commands.current(actor, caseId);
         commands.close(actor, caseId, UUID.randomUUID(), current.waitId(), current.version(), "");
-        ActivatedJob preparing = job(FollowUpCommandWorkers.CLOSE);
-        UUID command = UUID.fromString(preparing.getVariablesAsMap().get("followUpCommandRef").toString());
+        ActivatedJob preparing = job(FOLLOW_UP_CLOSE);
+        UUID command = UUID.fromString(preparing.getVariablesAsMap().get(FOLLOW_UP_COMMAND_REF).toString());
         CaseWaitStore.Wait waiting = waitStore.get(current.waitId()).orElseThrow();
         assertTrue(commands.prepareClosure(command, leader, preparing.getProcessInstanceKey(), waiting.staff()));
         UUID signal = UUID.randomUUID();
@@ -409,16 +425,16 @@ class CaseWaitCamundaTest {
                 VALUES (?, ?, 'TEST', ?, 'CRITICAL_URGENCY', ?)
                 """, signal, caseId, UUID.randomUUID(), leader);
         new ReviewSignalDispatcher(reviewStore, engine).dispatch();
-        reviews.check(engine, job("propertyflow.review.check"));
+        reviews.check(engine, job(REVIEW_CHECK));
         // Simuliert einen bereits unterwegs befindlichen Marker nach der Annahme des Abschlussauftrags.
         engine.newSetVariablesCommand(waiting.staff())
-                .variables(Map.of("pendingReviewFollowUpVersion", waiting.id().toString(), "phaseReviewSignalRef", signal.toString()))
+                .variables(Map.of(PENDING_REVIEW_FOLLOW_UP_VERSION, waiting.id().toString(), PHASE_REVIEW_SIGNAL_REF, signal.toString()))
                 .local(true)
                 .send()
                 .join();
-        new CaseWaitWorkers(engine, waitService).stopContact(engine, job(CaseWaitWorkers.STOP));
-        reviews.startReview(engine, job("propertyflow.staff.start-review"));
-        await(() -> tasks().size() == 1 && "SReview".equals(tasks().getFirst().getElementId()));
+        new CaseWaitWorkers(engine, waitService).stopContact(engine, job(FOLLOW_UP_STOP_CONTACT));
+        reviews.startReview(engine, job(STAFF_START_REVIEW));
+        await(() -> tasks().size() == 1 && "Fall_pruefen_und_Vorgehen_entscheiden_USERTASK".equals(tasks().getFirst().getElementId()));
         assertEquals("REJECTED", followUpChanges.get(command).state());
         assertTrue(!followUpChanges.pending(caseId));
         assertEquals("STAFF_REVIEW_REQUIRED", status());
@@ -430,14 +446,14 @@ class CaseWaitCamundaTest {
         FollowUpCommandService commands = enterFollowUp();
         FollowUpCommands.Current current = commands.current(actor, caseId);
         commands.close(actor, caseId, UUID.randomUUID(), current.waitId(), current.version(), "");
-        new FollowUpCommandWorkers(engine, commands).close(engine, job(FollowUpCommandWorkers.CLOSE));
+        new FollowUpCommandWorkers(engine, commands).close(engine, job(FOLLOW_UP_CLOSE));
         ActivatedJob closing = closingJob();
         database.update("UPDATE pf_staff_account SET staff_role = FALSE WHERE id = ?", actor.accountId());
         new CaseClosureWorkers(engine, closure).close(engine, closing);
-        reviews.claim(engine, job("propertyflow.staff.claim"));
-        reviews.register(engine, job("propertyflow.staff.register"));
-        reviews.startReview(engine, job("propertyflow.staff.start-review"));
-        await(() -> tasks().size() == 1 && "SReview".equals(tasks().getFirst().getElementId()));
+        reviews.claim(engine, job(STAFF_CLAIM));
+        reviews.register(engine, job(STAFF_REGISTER));
+        reviews.startReview(engine, job(STAFF_START_REVIEW));
+        await(() -> tasks().size() == 1 && "Fall_pruefen_und_Vorgehen_entscheiden_USERTASK".equals(tasks().getFirst().getElementId()));
         assertEquals("STAFF_REVIEW_REQUIRED", status());
         assertEquals(0, count("pf_case_closure"));
         assertEquals("REJECTED", database.queryForObject("SELECT state FROM pf_follow_up_command", String.class));
@@ -448,7 +464,7 @@ class CaseWaitCamundaTest {
                 new StaticListableBeanFactory(Map.of("engine", engine)).getBeanProvider(CamundaClient.class), true));
         StaffTask task = staff.current(actor, caseId);
         staff.followUp(actor, caseId, UUID.randomUUID(), Long.parseLong(task.taskKey()), task.version(), task.reviewToken(), "", 3, null);
-        new CaseWaitWorkers(engine, waitService).save(engine, job(CaseWaitWorkers.SAVE));
+        new CaseWaitWorkers(engine, waitService).save(engine, job(FOLLOW_UP_SAVE));
         FollowUpCommandService commands = new FollowUpCommandService(access, workflow, caseData, waitStore,
                 decisions, followUpChanges, new CamundaFollowUpGateway(
                         new StaticListableBeanFactory(Map.of("engine", engine)).getBeanProvider(CamundaClient.class), true), transactions);
@@ -457,8 +473,8 @@ class CaseWaitCamundaTest {
     }
 
     private ActivatedJob closingJob() throws Exception {
-        ActivatedJob closing = job(CaseClosureWorkers.CLOSE);
-        UUID command = UUID.fromString(closing.getVariablesAsMap().get("staffDecisionRef").toString());
+        ActivatedJob closing = job(STAFF_CLOSE);
+        UUID command = UUID.fromString(closing.getVariablesAsMap().get(STAFF_DECISION_REF).toString());
         CaseClosureService.ClosureContext context = closure.context(caseId, leader, command);
         await(() -> "COMPLETED".equals(engine.newProcessInstanceGetRequest(context.child()).send().join().getState().name())
                 && "COMPLETED".equals(engine.newElementInstanceGetRequest(context.parentElement()).send().join().getState().name()));
@@ -467,11 +483,6 @@ class CaseWaitCamundaTest {
 
     private StaffDecisionService service(StaffTaskGateway gateway) {
         return new StaffDecisionService(access, workflow, caseData, reviewStore, decisions, gateway, transactions);
-    }
-
-    private TriageWorkers worker(AnalyzeTool.AnalysisModel model) {
-        return new TriageWorkers(engine, new CaseAnalysisService(
-                workflow, reviewStore, analyses, urgencyService, new AnalyzeTool(model), transactions));
     }
 
     private ActivatedJob job(String type) throws Exception {

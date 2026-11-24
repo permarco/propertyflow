@@ -6,8 +6,8 @@ import com.pertegato.propertyflow.access.web.StaffWebSession;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseActionException;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseReopening;
 import com.pertegato.propertyflow.caseprocessing.contract.FollowUpCommands;
-import com.pertegato.propertyflow.caseprocessing.contract.StaffCaseDataCommands;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffCaseDataCommands.CaseDataResult;
+import com.pertegato.propertyflow.caseprocessing.contract.StaffCaseDataCommands;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffMessageSubmission;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffTaskDecisions;
 import com.pertegato.propertyflow.caseprocessing.contract.Urgency;
@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,6 +38,7 @@ import org.springframework.web.util.WebUtils;
 @RestController
 @Profile("propertyflow-backend & !frontend-demo")
 @RequestMapping(StaffWebSession.STAFF_LIST + "/{caseId}")
+@RequiredArgsConstructor
 public class StaffCaseDataController {
 
     private final StaffCaseDataCommands commands;
@@ -44,15 +46,6 @@ public class StaffCaseDataController {
     private final StaffMessageSubmission messages;
     private final CaseReopening reopening;
     private final FollowUpCommands followUps;
-
-    public StaffCaseDataController(StaffCaseDataCommands commands, StaffTaskDecisions decisions, StaffMessageSubmission messages,
-            CaseReopening reopening, FollowUpCommands followUps) {
-        this.commands = commands;
-        this.decisions = decisions;
-        this.messages = messages;
-        this.reopening = reopening;
-        this.followUps = followUps;
-    }
 
     @ModelAttribute
     void protect(HttpServletResponse response) {
@@ -238,7 +231,7 @@ public class StaffCaseDataController {
                 "csrf", signedIn.csrf(), "actor", signedIn.context().accountId())), 500);
     }
 
-    @PostMapping("/fortsetzen")
+    @PostMapping("/bearbeitung-fortsetzen")
     ResponseEntity<?> continueWork(@PathVariable String caseId, @RequestParam(defaultValue = "") String operationId,
             @RequestParam(defaultValue = "") String userTaskKey, @RequestParam(defaultValue = "") String version,
             @RequestParam(defaultValue = "") String reviewToken, @RequestParam(defaultValue = "") String reason,

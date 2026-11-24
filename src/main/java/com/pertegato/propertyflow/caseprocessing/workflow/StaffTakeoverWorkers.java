@@ -1,5 +1,6 @@
 package com.pertegato.propertyflow.caseprocessing.workflow;
 
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants;
 import com.pertegato.propertyflow.caseprocessing.persistence.StaffTakeoverStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.StaffTakeoverStore.Delivery;
 import com.pertegato.propertyflow.caseprocessing.service.CaseDataService;
@@ -12,48 +13,51 @@ import io.camunda.client.api.worker.JobClient;
 import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.TAKEOVER_APPLY;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.TAKEOVER_SIGNAL;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.STAFF_TAKEOVER_CALL_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.STAFF_TAKEOVER_COMMAND_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.STAFF_TAKEOVER_OUTCOME;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.STAFF_TAKEOVER_REPLY_ENTRY_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.AUTOMATIC_INTERRUPTION_CALL_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.AUTOMATIC_INTERRUPTION_READY;
+
 @Component
 @Profile("propertyflow-backend & !frontend-demo")
 @ConditionalOnProperty(name = "propertyflow.workflow.enabled", havingValue = "true")
+@RequiredArgsConstructor
 public class StaffTakeoverWorkers {
 
-    public static final String APPLY = "propertyflow.takeover.apply";
-    public static final String SIGNAL = "propertyflow.takeover.signal";
     private final CamundaClient engine;
     private final CaseDataService service;
     private final StaffTakeoverStore store;
 
-    public StaffTakeoverWorkers(CamundaClient engine, CaseDataService service, StaffTakeoverStore store) {
-        this.engine = engine;
-        this.service = service;
-        this.store = store;
-    }
-
-    @JobWorker(type = APPLY, autoComplete = false)
+    @JobWorker(type = TAKEOVER_APPLY, autoComplete = false)
     public void apply(JobClient client, ActivatedJob job) {
         String result;
         try {
-            verify(job, "StaffTakeoverPublish");
+            verify(job, CaseProcessBpmnConstants.ServiceTask.SAVE_STAFF_TAKEOVER);
             result = service.takeoverState(reference(job), job.getProcessInstanceKey(), job.getTenantId());
         } catch (RuntimeException exception) {
             fail(client, job, exception);
             return;
         }
         client.newCompleteCommand(job.getKey())
-                .variables(Map.of("staffTakeoverOutcome", result))
+                .variables(Map.of(STAFF_TAKEOVER_OUTCOME, result))
                 .send()
                 .join();
     }
 
-    @JobWorker(type = SIGNAL, autoComplete = false)
+    @JobWorker(type = TAKEOVER_SIGNAL, autoComplete = false)
     public void signal(JobClient client, ActivatedJob job) {
         try {
-            verify(job, "StaffTakeoverSignal");
+            verify(job, CaseProcessBpmnConstants.ServiceTask.NOTIFY_STAFF_TAKEOVER);
             Delivery delivery = store.delivery(reference(job));
             require(delivery.leader() == job.getProcessInstanceKey() && delivery.tenant().equals(job.getTenantId()));
             deliver(delivery);
@@ -82,12 +86,13 @@ public class StaffTakeoverWorkers {
 
     private void deliver(Delivery delivery) {
         ProcessInstance root = engine.newProcessInstanceGetRequest(delivery.leader()).send().join();
-        require(InitialCaseWorkers.CASE_PROCESS.equals(root.getProcessDefinitionId()) && root.getParentProcessInstanceKey() == null
+        require(CaseProcessBpmnConstants.PROCESS_ID.equals(root.getProcessDefinitionId())
+                && root.getParentProcessInstanceKey() == null
                 && delivery.tenant().equals(root.getTenantId()));
         if ("ACTIVE".equals(root.getState().name())) {
             engine.newSetVariablesCommand(delivery.leader())
-                    .variables(Map.of("automaticInterruptionReady", true, "automaticInterruptionCallRef", delivery.call().toString(),
-                            "staffTakeoverCallRef", delivery.call().toString(), "staffTakeoverReplyEntryRef", delivery.replyEntry()))
+                    .variables(Map.of(AUTOMATIC_INTERRUPTION_READY, true, AUTOMATIC_INTERRUPTION_CALL_REF, delivery.call().toString(),
+                            STAFF_TAKEOVER_CALL_REF, delivery.call().toString(), STAFF_TAKEOVER_REPLY_ENTRY_REF, delivery.replyEntry()))
                     .send()
                     .join();
         }
@@ -96,12 +101,13 @@ public class StaffTakeoverWorkers {
 
     private void verify(ActivatedJob job, String element) {
         ProcessInstance root = engine.newProcessInstanceGetRequest(job.getProcessInstanceKey()).send().join();
-        require(InitialCaseWorkers.CASE_PROCESS.equals(job.getBpmnProcessId()) && element.equals(job.getElementId())
+        require(CaseProcessBpmnConstants.PROCESS_ID.equals(job.getBpmnProcessId())
+                && element.equals(job.getElementId())
                 && root.getParentProcessInstanceKey() == null && job.getTenantId().equals(root.getTenantId()));
     }
 
     private UUID reference(ActivatedJob job) {
-        return UUID.fromString((String) job.getVariablesAsMap().get("staffTakeoverCommandRef"));
+        return UUID.fromString((String) job.getVariablesAsMap().get(STAFF_TAKEOVER_COMMAND_REF));
     }
 
     private void fail(JobClient client, ActivatedJob job, RuntimeException exception) {

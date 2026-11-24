@@ -4,6 +4,7 @@ import com.pertegato.propertyflow.caseprocessing.contract.InternalMemo;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @Profile("propertyflow-backend & !frontend-demo")
+@RequiredArgsConstructor
 public class CaseDataStore {
 
     private static final RowMapper<Command> COMMAND = (row, index) -> new Command(row.getObject("id", UUID.class),
@@ -19,10 +21,6 @@ public class CaseDataStore {
             row.getString("state"), row.getString("result_code"), row.getObject("result_version", Long.class),
             row.getString("action_type"), row.getString("reason"), row.getString("request_fingerprint"), row.getBoolean("correlated"));
     private final JdbcTemplate database;
-
-    public CaseDataStore(JdbcTemplate database) {
-        this.database = database;
-    }
 
     public Optional<Command> find(String caseId, UUID actor, String operationId) {
         return database.query("SELECT * FROM pf_case_data_command WHERE case_id = ? AND operation_id = ? AND operation_reserved",

@@ -1,11 +1,11 @@
 package com.pertegato.propertyflow.caseprocessing.workflow;
 
-import com.pertegato.propertyflow.caseprocessing.persistence.StaffReviewStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.StaffReviewStore.SignalDelivery;
+import com.pertegato.propertyflow.caseprocessing.persistence.StaffReviewStore;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.CorrelateMessageResponse;
-import java.util.Map;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -16,17 +16,12 @@ import org.springframework.stereotype.Component;
 @Component
 @Profile("propertyflow-backend & !frontend-demo")
 @ConditionalOnProperty(name = "propertyflow.workflow.enabled", havingValue = "true")
+@RequiredArgsConstructor
 public class ReviewSignalDispatcher {
 
-    public static final String MESSAGE_NAME = "Fachlicher Prüfbedarf festgestellt";
     private static final Logger LOGGER = LoggerFactory.getLogger(ReviewSignalDispatcher.class);
     private final StaffReviewStore store;
     private final CamundaClient camunda;
-
-    public ReviewSignalDispatcher(StaffReviewStore store, CamundaClient camunda) {
-        this.store = store;
-        this.camunda = camunda;
-    }
 
     @Scheduled(fixedDelayString = "${propertyflow.workflow.poll-delay-ms:5000}",
             initialDelayString = "${propertyflow.workflow.initial-delay-ms:5000}")
@@ -38,9 +33,8 @@ public class ReviewSignalDispatcher {
             }
             SignalDelivery signal = pending.get();
             try {
-                CorrelateMessageResponse response = camunda.newCorrelateMessageCommand().messageName(MESSAGE_NAME)
-                        .correlationKey(Long.toString(signal.leader())).tenantId(signal.tenant())
-                        .variables(Map.of("reviewSignalRef", signal.id().toString())).send().join();
+                CorrelateMessageResponse response = CaseActionMessage.REVIEW_REQUIRED.correlate(
+                        camunda, Long.toString(signal.leader()), signal.tenant(), signal.id());
                 if (!Long.valueOf(signal.leader()).equals(response.getProcessInstanceKey()) || !signal.tenant().equals(response.getTenantId())) {
                     throw new IllegalStateException("WRONG_REVIEW_CORRELATION_TARGET");
                 }

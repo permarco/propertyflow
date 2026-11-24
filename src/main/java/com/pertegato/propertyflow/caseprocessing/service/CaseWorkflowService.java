@@ -1,10 +1,11 @@
 package com.pertegato.propertyflow.caseprocessing.service;
 
-import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore.CaseState;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore.Entry;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore.StartIdentity;
+import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -13,13 +14,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Profile("propertyflow-backend & !frontend-demo")
 @Transactional(propagation = Propagation.REQUIRES_NEW)
+@RequiredArgsConstructor
 public class CaseWorkflowService {
 
     private final CaseWorkflowStore store;
-
-    public CaseWorkflowService(CaseWorkflowStore store) {
-        this.store = store;
-    }
 
     public String verifyStart(String caseId, UUID orderId, long instanceKey, long definitionKey, String tenantId) {
         CaseState state = lock(caseId);

@@ -6,19 +6,17 @@ import com.pertegato.propertyflow.caseprocessing.contract.UrgencySource;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 @Repository
 @Profile("propertyflow-backend & !frontend-demo")
+@RequiredArgsConstructor
 public class UrgencyStore {
 
     private final JdbcTemplate database;
-
-    public UrgencyStore(JdbcTemplate database) {
-        this.database = database;
-    }
 
     public Current current(String caseId) {
         return database.queryForObject("SELECT urgency, urgency_source, status, version FROM pf_case WHERE id = ? FOR UPDATE",
@@ -46,24 +44,6 @@ public class UrgencyStore {
                         (SELECT process_instance_key FROM pf_case_process WHERE case_id = ?)) ON CONFLICT DO NOTHING
                     """, UUID.randomUUID(), caseId, commandId, caseId);
         }
-    }
-
-    public void system(String caseId, UUID analysisId, Urgency next, Current previous) {
-        UUID event = UUID.randomUUID();
-        database.update("UPDATE pf_case SET urgency = ?, urgency_source = 'SYSTEM', version = version + 1 WHERE id = ?", next.name(), caseId);
-        database.update("""
-                INSERT INTO pf_urgency_event (id, case_id, analysis_id, previous_urgency, current_urgency, source, public_change)
-                VALUES (?, ?, ?, ?, ?, 'SYSTEM', TRUE)
-                """, event, caseId, analysisId, previous.urgency() == null ? null : previous.urgency().name(), next.name());
-        database.update("INSERT INTO pf_urgency_mail_order (id, case_id, event_id) VALUES (?, ?, ?)", UUID.randomUUID(), caseId, event);
-    }
-
-    public void criticalAnalysis(String caseId, UUID analysisId) {
-        database.update("""
-                    INSERT INTO pf_case_review_signal (id, case_id, source_type, source_ref, reason, leading_instance_key)
-                    VALUES (?, ?, 'ANALYSIS', ?, 'CRITICAL_URGENCY',
-                        (SELECT process_instance_key FROM pf_case_process WHERE case_id = ?)) ON CONFLICT DO NOTHING
-                    """, UUID.randomUUID(), caseId, analysisId, caseId);
     }
 
     public void conversation(String caseId, UUID evaluationId, Urgency next) {

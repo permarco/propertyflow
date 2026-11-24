@@ -17,6 +17,7 @@ import jakarta.servlet.http.HttpSession;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -34,6 +35,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Controller
 @Profile("propertyflow-backend & !frontend-demo")
 @RequestMapping("/mieter/fall")
+@RequiredArgsConstructor
 public class GuestCaseIntakeController {
 
     private static final Logger LOG = LoggerFactory.getLogger(GuestCaseIntakeController.class);
@@ -53,12 +55,6 @@ public class GuestCaseIntakeController {
     private final CaseSubmission submission;
     private final GuestRequestLimits limits;
     private final TenantAccountAccess accounts;
-
-    public GuestCaseIntakeController(CaseSubmission submission, GuestRequestLimits limits, TenantAccountAccess accounts) {
-        this.accounts = accounts;
-        this.submission = submission;
-        this.limits = limits;
-    }
 
     @ModelAttribute
     void protect(HttpServletResponse response) {

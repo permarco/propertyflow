@@ -1,5 +1,7 @@
 package com.pertegato.propertyflow.caseprocessing.workflow;
 
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.TenantMessageBpmnConstants;
 import com.pertegato.propertyflow.caseprocessing.service.TenantMessageService;
 import com.pertegato.propertyflow.caseprocessing.service.WorkflowRejectedException;
 import io.camunda.client.CamundaClient;
@@ -11,37 +13,41 @@ import io.camunda.client.api.worker.JobClient;
 import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.CASE_ID;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.LEADING_PROCESS_INSTANCE_KEY;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.TENANT_MESSAGE_ID;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.TenantMessageBpmnConstants.JobType.TENANT_MESSAGE_IDENTIFY;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.TenantMessageBpmnConstants.Variablen.CASE_PHASE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.TenantMessageBpmnConstants.Variablen.TENANT_MESSAGE_ACCEPTED;
+
 @Component
 @Profile("propertyflow-backend & !frontend-demo")
 @ConditionalOnProperty(name = "propertyflow.workflow.enabled", havingValue = "true")
+@RequiredArgsConstructor
 public class TenantMessageWorkers {
 
-    public static final String IDENTIFY = "propertyflow.tenant-message.identify";
-    public static final String PROCESS = "PropertyFlow_TenantMessage_Draft";
     private final CamundaClient engine;
     private final TenantMessageService service;
 
-    public TenantMessageWorkers(CamundaClient engine, TenantMessageService service) {
-        this.engine = engine;
-        this.service = service;
-    }
-
-    @JobWorker(type = IDENTIFY, autoComplete = false)
+    @JobWorker(type = TENANT_MESSAGE_IDENTIFY, autoComplete = false)
     public void identify(JobClient client, ActivatedJob job) {
         boolean accepted;
         try {
-            require(PROCESS.equals(job.getBpmnProcessId()) && "NIdentify".equals(job.getElementId()));
+            require(TenantMessageBpmnConstants.PROCESS_ID.equals(job.getBpmnProcessId())
+                    && TenantMessageBpmnConstants.ServiceTask.CHECK_MESSAGE.equals(job.getElementId()));
             ProcessInstance child = engine.newProcessInstanceGetRequest(job.getProcessInstanceKey()).send().join();
             require(child.getParentProcessInstanceKey() != null && child.getParentElementInstanceKey() != null
-                    && Long.toString(child.getParentProcessInstanceKey()).equals(text(job, "leadingProcessInstanceKey")));
+                    && Long.toString(child.getParentProcessInstanceKey()).equals(text(job, LEADING_PROCESS_INSTANCE_KEY)));
             ElementInstance call = engine.newElementInstanceGetRequest(child.getParentElementInstanceKey()).send().join();
-            require("ProcessTenantMessage".equals(call.getElementId()) && InitialCaseWorkers.CASE_PROCESS.equals(call.getProcessDefinitionId())
+            require(CaseProcessBpmnConstants.CallActivity.TENANT_MESSAGE_CALL.equals(call.getElementId())
+                    && CaseProcessBpmnConstants.PROCESS_ID.equals(call.getProcessDefinitionId())
                     && child.getParentProcessInstanceKey().equals(call.getProcessInstanceKey()) && job.getTenantId().equals(call.getTenantId()));
-            accepted = service.receive(text(job, "caseId"), UUID.fromString(text(job, "tenantMessageId")),
+            accepted = service.receive(text(job, CASE_ID), UUID.fromString(text(job, TENANT_MESSAGE_ID)),
                     child.getParentProcessInstanceKey(), job.getProcessInstanceKey(), child.getParentElementInstanceKey(), job.getTenantId());
         } catch (RuntimeException exception) {
             boolean rejected = exception instanceof WorkflowRejectedException || exception instanceof IllegalArgumentException;
@@ -49,8 +55,8 @@ public class TenantMessageWorkers {
                     .errorMessage(rejected ? "TENANT_MESSAGE_CONTRACT_REJECTED" : "TENANT_MESSAGE_TEMPORARILY_UNAVAILABLE").send().join();
             return;
         }
-        client.newCompleteCommand(job.getKey()).variables(Map.of("tenantMessageAccepted", accepted,
-                "casePhase", service.phase(text(job, "caseId"), Long.parseLong(text(job, "leadingProcessInstanceKey"))))).send().join();
+        client.newCompleteCommand(job.getKey()).variables(Map.of(TENANT_MESSAGE_ACCEPTED, accepted,
+                CASE_PHASE, service.phase(text(job, CASE_ID), Long.parseLong(text(job, LEADING_PROCESS_INSTANCE_KEY))))).send().join();
     }
 
     private String text(ActivatedJob job, String name) {

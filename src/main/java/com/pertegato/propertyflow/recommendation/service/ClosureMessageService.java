@@ -119,6 +119,22 @@ public final class ClosureMessageService implements ClosureMessage {
 
     @Override
     public Result generate(List<ClosureAssessment.Message> messages, ClosureAssessment.Result assessment) {
+        Request request = generationRequest(messages, assessment);
+        Draft draft = draft(request);
+        return validate(request, draft);
+    }
+
+    @Override
+    public Draft draft(List<ClosureAssessment.Message> messages, ClosureAssessment.Result assessment) {
+        return draft(generationRequest(messages, assessment));
+    }
+
+    @Override
+    public Result validate(List<ClosureAssessment.Message> messages, ClosureAssessment.Result assessment, Draft draft) {
+        return validate(generationRequest(messages, assessment), draft);
+    }
+
+    private Request generationRequest(List<ClosureAssessment.Message> messages, ClosureAssessment.Result assessment) {
         if (assessment == null || !assessment.proposed() || messages == null || messages.isEmpty() || messages.size() > 500
                 || messages.stream().anyMatch(message -> message == null || message.id() == null || message.author() == null
                     || !Set.of("TENANT", "STAFF", "SYSTEM").contains(message.author()) || message.text() == null
@@ -130,12 +146,20 @@ public final class ClosureMessageService implements ClosureMessage {
                 ? rules.get().stream().filter(candidate -> candidate.id().equals(assessment.ruleId())
                         && candidate.version().equals(assessment.ruleVersion())).findFirst().orElse(null) : null;
         if (assessment.outcome() == ClosureAssessment.Outcome.TENANT_RESPONSIBILITY && rule == null) {
-            return invalid();
+            return null;
         }
         // Freie Modellbegründungen sind keine belegten Fakten und gehören nicht in den Kommunikationskontext.
         Ground ground = new Ground(assessment.outcome(), assessment.proofs());
         RuleFacts facts = rule == null ? null : new RuleFacts(rule.scope(), rule.prerequisites(), rule.exclusions());
-        String context = JSON.writeValueAsString(new Request("GENERATE", messages, ground, facts, null, null));
+        return new Request("GENERATE", messages, ground, facts, null, null);
+    }
+
+    private Draft draft(Request request) {
+        Draft invalid = new Draft(null, modelName, PROMPT_VERSION);
+        if (request == null) {
+            return invalid;
+        }
+        String context = JSON.writeValueAsString(request);
         if (context.length() > 100_000) {
             throw new IllegalArgumentException("CLOSURE_MESSAGE_CONTEXT_TOO_LARGE");
         }
@@ -146,16 +170,25 @@ public final class ClosureMessageService implements ClosureMessage {
             JsonNode root = parse(output);
             text = root.path("text").asString();
             if (root.size() != 2 || !root.path("text").isString() || text.isBlank() || text.length() > 5_000
-                    || !assessment.outcome().name().equals(root.path("ground").asString())
+                    || !request.assessment().outcome().name().equals(root.path("ground").asString())
                     || text.contains("<") || text.contains(">") || text.contains("?")
                     || text.matches("(?si).*(https?://|www\\.|mailto:|[\\p{Cc}&&[^\\r\\n\\t]]).*")) {
-                return invalid();
+                return invalid;
             }
         } catch (RuntimeException exception) {
+            return invalid;
+        }
+        return new Draft(text, modelName, PROMPT_VERSION);
+    }
+
+    private Result validate(Request request, Draft draft) {
+        if (request == null || draft == null || !draft.valid()) {
             return invalid();
         }
+        String text = draft.text();
         String digest = digest(text);
-        String validation = model.apply(JSON.writeValueAsString(new Request("VALIDATE", messages, ground, facts, text, digest)));
+        String validation = model.apply(JSON.writeValueAsString(
+                new Request("VALIDATE", request.messages(), request.assessment(), request.rule(), text, digest)));
         try {
             JsonNode checked = parse(validation);
             if (checked.size() != 3 || !checked.path("explanation").isString() || checked.path("explanation").asString().isBlank()
@@ -167,7 +200,7 @@ public final class ClosureMessageService implements ClosureMessage {
         } catch (RuntimeException exception) {
             return invalid();
         }
-        return new Result(text, true, modelName, PROMPT_VERSION, VALIDATION_VERSION);
+        return new Result(text, true, draft.model(), draft.promptVersion(), VALIDATION_VERSION);
     }
 
     private JsonNode parse(String output) {

@@ -4,19 +4,17 @@ import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore.C
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 @Repository
 @Profile("propertyflow-backend & !frontend-demo")
+@RequiredArgsConstructor
 public class CaseReopenStore {
 
     private final JdbcTemplate database;
-
-    public CaseReopenStore(JdbcTemplate database) {
-        this.database = database;
-    }
 
     public Optional<Order> find(String caseId, UUID actor, UUID operation) {
         return select("case_id = ? AND actor_id = ? AND operation_id = ?", caseId, actor, operation).stream().findFirst();

@@ -409,11 +409,14 @@ formuliert das LLM eine individuelle fallbezogene Nachricht. Feste Antwortvorlag
 und ein gesonderter Schritt zur Vorlagenfreigabe entfallen. Die beiden zulässigen
 Abschlussgründe und menschlichen Entscheidungsgrenzen aus FALL-07/FALL-10 bleiben.
 
-### Ablauf und Prüfung im Worker
+### Ablauf und Prüfung
 
 1. Zulässigen automatischen Abschluss am aktuellen Fallstand feststellen.
-2. Individuelle LLM-Nachricht erzeugen und im selben Worker prüfen. Keine unbelegten
-   Aussagen oder internen Inhalte; Kontextgrenzen aus KOM-02 gelten weiter.
+2. Die Service Tasks «Abschlussnachricht schreiben» und «Abschlussnachricht prüfen»
+   führen je einen eigenen Modellaufruf aus. Der Entwurf bleibt bis zur Prüfung
+   im Arbeitsspeicher. Fehlt er beim Prüfschritt, kehrt der Prozess zum Schreiben
+   zurück. Keine unbelegten Aussagen oder internen Inhalte. Die Kontextgrenzen
+   aus KOM-02 gelten weiter.
    Die Nachricht darf den Abschluss mitteilen. Kein zusätzlicher Prüf- oder
    Freigabedialog beim Mitarbeiter und kein Prozessentwurf im UI-Antwortfeld.
 3. Nachricht mit Systemherkunft extern im Fallverlauf speichern und ihren
@@ -422,9 +425,9 @@ Abschlussgründe und menschlichen Entscheidungsgrenzen aus FALL-07/FALL-10 bleib
 4. Aktuellen Fallstand nochmals prüfen und «Abgeschlossen» speichern.
    Danach keine zusätzliche Abschlussmail oder generische Statusmail für diesen Übergang.
 
-Die LLM-Erzeugung läuft hinter dem Modell-Port. Hohe Modellkonfidenz oder gültiges
-Schema ersetzen keine Inhaltsprüfung durch den Dienst. Kein zweites LLM ist
-vorgeschrieben. Der Dienst prüft zudem Fall-/Prozessbezug, zulässigen Status,
+Die LLM-Aufrufe laufen hinter dem Modell-Port. Hohe Modellkonfidenz oder ein
+gültiges Schema ersetzen keine Inhaltsprüfung durch den Dienst. Der Dienst
+prüft bei beiden Aufgaben Fall-/Prozessbezug, zulässigen Status,
 Abschlussgrund, aktuelle Nachrichten und den Vorrang menschlicher Entscheidungen.
 Mitarbeiterprüfung, Mitarbeiterbearbeitung und Wiedervorlage werden nicht übergangen.
 Bei fehlender gültiger Fachregel ist kein automatischer Abschluss wegen fehlenden
@@ -435,6 +438,9 @@ Verwaltungsbedarfs zulässig; ein eigener freigegebener Erklärungstext ist nich
 Technische LLM-, Speicher- oder Bereitstellungsfehler werden als fehlgeschlagene
 Camunda-Jobs mit konfigurierten Retries behandelt; ausgeschöpfte Versuche führen
 zum Incident. Kein zusätzlicher fachlicher Fehlerpfad allein wegen technischer Fehler.
+Ein verlorener Entwurf kann pro Abschlussauftrag bis zu dreimal neu erzeugt
+werden. Wenn die Wiederherstellung ausgeschöpft ist, meldet der Prüfjob einen
+technischen Incident.
 Eine inhaltlich unzulässige generierte Nachricht wird nicht veröffentlicht und
 führt ohne automatischen Abschluss zur Mitarbeiterprüfung. Eine bestehende
 Prüfung wird ergänzt, nicht dupliziert.

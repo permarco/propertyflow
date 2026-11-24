@@ -1,5 +1,7 @@
 package com.pertegato.propertyflow.caseprocessing.workflow;
 
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.TenantReplyBpmnConstants;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseDataStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseDataStore.Command;
 import com.pertegato.propertyflow.caseprocessing.persistence.ReplyClosureStore;
@@ -17,47 +19,48 @@ import io.camunda.client.api.worker.JobClient;
 import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.REPLY_CLOSURE_CHECK;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.REPLY_CLOSURE_SIGNAL;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.REPLY_CLOSURE_COMMAND_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.REPLY_CLOSURE_OUTCOME;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.STAFF_CLOSE_REPLY_CALL_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.STAFF_CLOSE_REPLY_ENTRY_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.STAFF_REPLY_CLOSURE_DECISION_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.CASE_ID;
+
 @Component
 @Profile("propertyflow-backend & !frontend-demo")
 @ConditionalOnProperty(name = "propertyflow.workflow.enabled", havingValue = "true")
+@RequiredArgsConstructor
 public class ReplyClosureWorkers {
 
-    public static final String CHECK = "propertyflow.reply-closure.check";
-    public static final String SIGNAL = "propertyflow.reply-closure.signal";
     private final CamundaClient engine;
     private final CaseDataService service;
     private final CaseDataStore commands;
     private final ReplyClosureStore closures;
     private final TenantReplyStore replies;
 
-    public ReplyClosureWorkers(CamundaClient engine, CaseDataService service, CaseDataStore commands,
-            ReplyClosureStore closures, TenantReplyStore replies) {
-        this.engine = engine;
-        this.service = service;
-        this.commands = commands;
-        this.closures = closures;
-        this.replies = replies;
-    }
-
-    @JobWorker(type = CHECK, autoComplete = false)
+    @JobWorker(type = REPLY_CLOSURE_CHECK, autoComplete = false)
     public void check(JobClient client, ActivatedJob job) {
         String outcome;
         try {
-            UUID id = verify(job, "StaffCloseReplyCheck");
+            UUID id = verify(job, CaseProcessBpmnConstants.ServiceTask.CHECK_CLOSURE_DURING_REPLY);
             Intent intent = closures.find(id).orElseThrow();
             Call source = replies.get(intent.call());
             ProcessInstance child = engine.newProcessInstanceGetRequest(source.child()).send().join();
             ElementInstance call = engine.newElementInstanceGetRequest(source.parent()).send().join();
             require(source.leader() == job.getProcessInstanceKey() && source.tenant().equals(job.getTenantId())
-                    && TenantReplyWorkers.PROCESS.equals(child.getProcessDefinitionId())
+                    && TenantReplyBpmnConstants.PROCESS_ID.equals(child.getProcessDefinitionId())
                     && Long.valueOf(source.leader()).equals(child.getParentProcessInstanceKey())
                     && Long.valueOf(source.parent()).equals(child.getParentElementInstanceKey())
-                    && source.tenant().equals(child.getTenantId()) && "Reply".equals(call.getElementId())
+                    && source.tenant().equals(child.getTenantId())
+                    && CaseProcessBpmnConstants.CallActivity.TENANT_REPLY_CALL.equals(call.getElementId())
                     && Long.valueOf(source.leader()).equals(call.getProcessInstanceKey()) && source.tenant().equals(call.getTenantId()));
             if (!intent.accepted() && (!"ACTIVE".equals(child.getState().name()) || !"ACTIVE".equals(call.getState().name()))) {
                 outcome = service.rejectReplyClosure(id, source.leader(), source.tenant());
@@ -68,13 +71,13 @@ public class ReplyClosureWorkers {
             fail(client, job, exception);
             return;
         }
-        client.newCompleteCommand(job.getKey()).variables(Map.of("replyClosureOutcome", outcome)).send().join();
+        client.newCompleteCommand(job.getKey()).variables(Map.of(REPLY_CLOSURE_OUTCOME, outcome)).send().join();
     }
 
-    @JobWorker(type = SIGNAL, autoComplete = false)
+    @JobWorker(type = REPLY_CLOSURE_SIGNAL, autoComplete = false)
     public void signal(JobClient client, ActivatedJob job) {
         try {
-            deliver(verify(job, "StaffCloseReplySignal"));
+            deliver(verify(job, CaseProcessBpmnConstants.ServiceTask.NOTIFY_CLOSURE_DURING_REPLY));
         } catch (RuntimeException exception) {
             fail(client, job, exception);
             return;
@@ -108,27 +111,29 @@ public class ReplyClosureWorkers {
             return;
         }
         ProcessInstance root = engine.newProcessInstanceGetRequest(command.leader()).send().join();
-        require(InitialCaseWorkers.CASE_PROCESS.equals(root.getProcessDefinitionId()) && root.getParentProcessInstanceKey() == null
+        require(CaseProcessBpmnConstants.PROCESS_ID.equals(root.getProcessDefinitionId())
+                && root.getParentProcessInstanceKey() == null
                 && command.tenant().equals(root.getTenantId()) && command.leader() == call.leader());
         if (!"ACTIVE".equals(root.getState().name())) {
             throw new IllegalStateException("REPLY_CLOSURE_ROOT_NOT_ACTIVE");
         }
         engine.newSetVariablesCommand(command.leader())
-                .variables(Map.of("staffCloseReplyCallRef", call.id().toString(), "staffCloseReplyEntryRef", call.entry().toString(),
-                        "staffReplyClosureDecisionRef", id.toString()))
+                .variables(Map.of(STAFF_CLOSE_REPLY_CALL_REF, call.id().toString(), STAFF_CLOSE_REPLY_ENTRY_REF, call.entry().toString(),
+                        STAFF_REPLY_CLOSURE_DECISION_REF, id.toString()))
                 .send()
                 .join();
         closures.delivered(id);
     }
 
     private UUID verify(ActivatedJob job, String element) {
-        require(InitialCaseWorkers.CASE_PROCESS.equals(job.getBpmnProcessId()) && element.equals(job.getElementId()));
+        require(CaseProcessBpmnConstants.PROCESS_ID.equals(job.getBpmnProcessId())
+                && element.equals(job.getElementId()));
         ProcessInstance root = engine.newProcessInstanceGetRequest(job.getProcessInstanceKey()).send().join();
         require(root.getParentProcessInstanceKey() == null && job.getTenantId().equals(root.getTenantId()));
-        UUID id = UUID.fromString((String) job.getVariablesAsMap().get("replyClosureCommandRef"));
+        UUID id = UUID.fromString((String) job.getVariablesAsMap().get(REPLY_CLOSURE_COMMAND_REF));
         Command command = commands.get(id);
         require(command.leader() == job.getProcessInstanceKey() && command.tenant().equals(job.getTenantId())
-                && command.caseId().equals(job.getVariablesAsMap().get("caseId")) && "CLOSE_REPLY".equals(command.type()));
+                && command.caseId().equals(job.getVariablesAsMap().get(CASE_ID)) && "CLOSE_REPLY".equals(command.type()));
         return id;
     }
 

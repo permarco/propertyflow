@@ -153,11 +153,11 @@ Im Zielablauf gibt der führende Camunda-Fallprozess die zulässigen Mitarbeiter
 | [UC-004 · Externe Nachricht mit KI formulieren](UC-004-ki-analyse-durchfuehren.md) | Formulierung im Mitarbeiterdetail in der Demo simuliert. Modellanbindung geplant. |
 | [UC-010 · Externe Fallnachricht veröffentlichen](UC-010-externe-fallnachricht-veroeffentlichen.md) | Web in der Demo. Dauerhafte Speicherung und Folgeaufträge geplant. |
 | [UC-011 · Internes Memo erfassen](UC-011-internes-memo-erfassen.md) | Web in der Demo. Dauerhafte Speicherung und persönliche Zuordnung geplant. |
-| [UC-012 · Fall fachlich steuern](UC-012-fall-fachlich-steuern.md) | Zielablauf über Camunda für «Bearbeitung fortsetzen», Dringlichkeit und Zuordnung. Die Demo enthält noch die direkte Statusauswahl. |
+| [UC-012 · Fall fachlich steuern](UC-012-fall-fachlich-steuern.md) | Fortsetzung im integrierten Backend über die konkrete Camunda-Aufgabe; Web-Pfad an OpenAPI angeglichen, weitere Vertragsunterschiede in UC-012 dokumentiert. Die separate Demo enthält noch die direkte Statusauswahl. |
 | [UC-013 · Wiedervorlage verwalten](UC-013-wiedervorlage-verwalten.md) | Termin setzen, ändern und löschen in der Demo. Im Zielablauf beendet eine neue Mieternachricht die laufende Wiedervorlage und löst die sofortige Mitarbeiterprüfung aus. |
 | [UC-014 · Fall abschliessen](UC-014-fall-abschliessen.md) | Manueller Abschluss in der Demo. Die vereinbarten Systemabschlüsse sind geplant. |
 | [UC-015 · Fall wiedereröffnen](UC-015-fall-wiedereroeffnen.md) | Mitarbeiteraktion in der Demo. Technische Fortsetzung des Fallprozesses offen. |
-| [UC-027 · Kritische Fallentscheidung treffen](UC-027-kritische-fallentscheidung-treffen.md) | HTTP-Zielvertrag für die konkrete Mitarbeiterentscheidung und ihren Audit-Nachweis beschrieben. BPMN und Umsetzung geplant. |
+| [UC-027 · Kritische Fallentscheidung treffen](UC-027-kritische-fallentscheidung-treffen.md) | Allgemeine Mitarbeiterprüfung vorhanden. Eigenständige Freigabe, Ablehnung oder Klärung einer konkreten kritischen Handlung mit Audit gemäss HTTP-Zielvertrag noch ausstehend; nicht durch «Bearbeitung fortsetzen» ersetzt. |
 | [UC-028 · Antwortbedarf aufheben](UC-028-antwortbedarf-aufheben.md) | Mitarbeiteraktion in der Demo. Dauerhafte Speicherung und Prozessabstimmung geplant. |
 
 ## Verarbeitung und Benachrichtigungen

@@ -6,11 +6,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import tools.jackson.core.StreamReadFeature;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
+@RequiredArgsConstructor
 public final class ConversationAnalyzer implements ConversationAnalysis {
 
     public static final String PROMPT_VERSION = "conversation-analysis-v1";
@@ -22,11 +24,6 @@ public final class ConversationAnalyzer implements ConversationAnalysis {
             .enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION)
             .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
             .build();
-
-    public ConversationAnalyzer(AnalysisModel model, String modelName) {
-        this.model = model;
-        this.modelName = modelName;
-    }
 
     @Override
     public Result analyze(Input input) {

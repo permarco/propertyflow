@@ -1,5 +1,7 @@
 package com.pertegato.propertyflow.caseprocessing.workflow;
 
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.TenantReplyBpmnConstants;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore.Entry;
 import com.pertegato.propertyflow.caseprocessing.persistence.TenantReplyStore.Call;
 import com.pertegato.propertyflow.caseprocessing.service.AutomaticQuestionRoundService;
@@ -13,53 +15,61 @@ import io.camunda.client.api.worker.JobClient;
 import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.AUTOMATIC_PREPARE_CLOSE_ROUND;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.AUTOMATIC_PREPARE_QUESTION_ROUND;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.AUTOMATIC_ENTRY_CONTEXT_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.REPLY_DECISION_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.REPLY_OUTCOME;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.ACTIVE_REPLY_CALL_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.AUTOMATIC_CALL_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.CASE_ID;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.REPLY_ENTRY_CONTEXT_REF;
+
 @Component
 @Profile("propertyflow-backend & !frontend-demo")
 @ConditionalOnProperty(name = "propertyflow.workflow.enabled", havingValue = "true")
+@RequiredArgsConstructor
 public class AutomaticQuestionRoundWorkers {
 
-    public static final String PREPARE = "propertyflow.automatic.prepare-question-round";
-    public static final String PREPARE_CLOSE = "propertyflow.automatic.prepare-close-round";
     private final CamundaClient engine;
     private final AutomaticQuestionRoundService service;
 
-    public AutomaticQuestionRoundWorkers(CamundaClient engine, AutomaticQuestionRoundService service) {
-        this.engine = engine;
-        this.service = service;
-    }
-
-    @JobWorker(type = PREPARE, autoComplete = false)
+    @JobWorker(type = AUTOMATIC_PREPARE_QUESTION_ROUND, autoComplete = false)
     public void prepare(JobClient client, ActivatedJob job) {
-        prepare(client, job, "QUESTION", "PrepareQuestionAuto");
+        prepare(client, job, "QUESTION", CaseProcessBpmnConstants.ServiceTask.PREPARE_QUESTION_ROUND);
     }
 
-    @JobWorker(type = PREPARE_CLOSE, autoComplete = false)
+    @JobWorker(type = AUTOMATIC_PREPARE_CLOSE_ROUND, autoComplete = false)
     public void prepareClose(JobClient client, ActivatedJob job) {
-        prepare(client, job, "CLOSE", "PrepareCloseAuto");
+        prepare(client, job, "CLOSE", CaseProcessBpmnConstants.ServiceTask.PREPARE_AUTOMATIC_CLOSURE);
     }
 
     private void prepare(JobClient client, ActivatedJob job, String kind, String element) {
         Entry entry;
         try {
-            require(InitialCaseWorkers.CASE_PROCESS.equals(job.getBpmnProcessId()) && element.equals(job.getElementId()));
+            require(CaseProcessBpmnConstants.PROCESS_ID.equals(job.getBpmnProcessId())
+                    && element.equals(job.getElementId()));
             ProcessInstance root = engine.newProcessInstanceGetRequest(job.getProcessInstanceKey()).send().join();
-            require(root.getParentProcessInstanceKey() == null && kind.equals(text(job, "replyOutcome")));
-            UUID decision = UUID.fromString(text(job, "replyDecisionRef"));
-            String caseId = text(job, "caseId");
+            require(root.getParentProcessInstanceKey() == null && kind.equals(text(job, REPLY_OUTCOME)));
+            UUID decision = UUID.fromString(text(job, REPLY_DECISION_REF));
+            String caseId = text(job, CASE_ID);
             Call source = service.source(decision, caseId, job.getProcessInstanceKey(), kind);
-            require(source.id().toString().equals(text(job, "activeReplyCallRef"))
-                    && source.entry().toString().equals(text(job, "replyEntryContextRef")) && source.tenant().equals(job.getTenantId()));
+            require(source.id().toString().equals(text(job, ACTIVE_REPLY_CALL_REF))
+                    && source.entry().toString().equals(text(job, REPLY_ENTRY_CONTEXT_REF)) && source.tenant().equals(job.getTenantId()));
             ProcessInstance reply = engine.newProcessInstanceGetRequest(source.child()).send().join();
             ElementInstance call = engine.newElementInstanceGetRequest(source.parent()).send().join();
-            require(TenantReplyWorkers.PROCESS.equals(reply.getProcessDefinitionId())
+            require(TenantReplyBpmnConstants.PROCESS_ID.equals(reply.getProcessDefinitionId())
                     && Long.valueOf(source.leader()).equals(reply.getParentProcessInstanceKey())
                     && Long.valueOf(source.parent()).equals(reply.getParentElementInstanceKey()) && job.getTenantId().equals(reply.getTenantId())
-                    && "Reply".equals(call.getElementId()) && Long.valueOf(source.leader()).equals(call.getProcessInstanceKey())
-                    && InitialCaseWorkers.CASE_PROCESS.equals(call.getProcessDefinitionId()) && job.getTenantId().equals(call.getTenantId()));
+                    && CaseProcessBpmnConstants.CallActivity.TENANT_REPLY_CALL.equals(call.getElementId())
+                    && Long.valueOf(source.leader()).equals(call.getProcessInstanceKey())
+                    && CaseProcessBpmnConstants.PROCESS_ID.equals(call.getProcessDefinitionId())
+                    && job.getTenantId().equals(call.getTenantId()));
             if (!"COMPLETED".equals(reply.getState().name()) || !"COMPLETED".equals(call.getState().name())) {
                 throw new IllegalStateException("REPLY_COMPLETION_NOT_YET_VISIBLE");
             }
@@ -75,7 +85,7 @@ public class AutomaticQuestionRoundWorkers {
             return;
         }
         client.newCompleteCommand(job.getKey())
-                .variables(Map.of("automaticEntryContextRef", entry.id().toString(), "automaticCallRef", entry.callRef().toString()))
+                .variables(Map.of(AUTOMATIC_ENTRY_CONTEXT_REF, entry.id().toString(), AUTOMATIC_CALL_REF, entry.callRef().toString()))
                 .send()
                 .join();
     }

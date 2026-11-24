@@ -5,19 +5,17 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 @Repository
 @Profile("propertyflow-backend & !frontend-demo")
+@RequiredArgsConstructor
 public class MailDeliveryStore {
 
     private final JdbcTemplate database;
-
-    public MailDeliveryStore(JdbcTemplate database) {
-        this.database = database;
-    }
 
     public boolean messageRequiresAnswer(UUID id) {
         return Boolean.TRUE.equals(database.queryForObject("""

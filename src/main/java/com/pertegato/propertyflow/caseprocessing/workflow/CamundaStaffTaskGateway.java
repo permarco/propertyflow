@@ -2,6 +2,8 @@ package com.pertegato.propertyflow.caseprocessing.workflow;
 
 import com.pertegato.propertyflow.caseprocessing.contract.CaseActionException;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffDecisionAction;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants;
 import com.pertegato.propertyflow.caseprocessing.delivery.StaffTaskGateway;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientHttpException;
@@ -17,6 +19,20 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
+
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.ACTIVE_FOLLOW_UP_VERSION;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.ACTIVE_WORK_TASK_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.DECISION_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.OUTCOME;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.PENDING_REVIEW_FOLLOW_UP_VERSION;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.PENDING_TENANT_CONTACT_FOLLOW_UP_VERSION;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.PENDING_WORK_REVIEW_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.STAFF_DECISION_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.Variablen.ACTIVE_EXTERNAL_WAIT_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.Variablen.EXTERNAL_WAIT_REVIEW_REQUIRED;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.Variablen.FOLLOW_UP_ENTRY_CONTEXT_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.Variablen.REVIEW_WAIT_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.Variablen.STAFF_DECISION;
 
 @Component
 @Profile("propertyflow-backend & !frontend-demo")
@@ -40,16 +56,20 @@ public class CamundaStaffTaskGateway implements StaffTaskGateway {
         ProcessInstance child = client.newProcessInstanceGetRequest(binding.child()).send().join();
         ElementInstance call = client.newElementInstanceGetRequest(binding.parentElement()).send().join();
         if (!"ACTIVE".equals(root.getState().name()) || root.getParentProcessInstanceKey() != null
-                || !InitialCaseWorkers.CASE_PROCESS.equals(root.getProcessDefinitionId()) || !binding.tenant().equals(root.getTenantId())
-                || !"ACTIVE".equals(child.getState().name()) || !StaffReviewWorkers.STAFF_PROCESS.equals(child.getProcessDefinitionId())
+                || !CaseProcessBpmnConstants.PROCESS_ID.equals(root.getProcessDefinitionId())
+                || !binding.tenant().equals(root.getTenantId())
+                || !"ACTIVE".equals(child.getState().name())
+                || !StaffProcessingBpmnConstants.PROCESS_ID.equals(child.getProcessDefinitionId())
                 || !Long.valueOf(binding.leader()).equals(child.getParentProcessInstanceKey())
                 || !Long.valueOf(binding.parentElement()).equals(child.getParentElementInstanceKey())
-                || !binding.tenant().equals(child.getTenantId()) || !"Staff".equals(call.getElementId())
+                || !binding.tenant().equals(child.getTenantId())
+                || !CaseProcessBpmnConstants.CallActivity.STAFF_PROCESSING_CALL.equals(call.getElementId())
                 || !Long.valueOf(binding.leader()).equals(call.getProcessInstanceKey()) || !binding.tenant().equals(call.getTenantId())) {
             return Optional.empty();
         }
+        String element = binding.element();
         List<UserTask> tasks = client.newUserTaskSearchRequest().filter(filter -> filter.processInstanceKey(binding.child())
-                .elementId(binding.element()).state(UserTaskState.CREATED).tenantId(binding.tenant())).send().join().items();
+                .elementId(element).state(UserTaskState.CREATED).tenantId(binding.tenant())).send().join().items();
         return tasks.size() == 1 ? Optional.of(tasks.getFirst().getUserTaskKey()) : Optional.empty();
     }
 
@@ -61,19 +81,20 @@ public class CamundaStaffTaskGateway implements StaffTaskGateway {
         try {
             clients.getObject().newCompleteUserTaskCommand(taskKey)
                     .variables(action == StaffDecisionAction.CLOSE
-                            ? Map.of("staffDecision", action.name(), "staffDecisionRef", decisionId.toString(),
-                                    "outcome", "CLOSE", "decisionRef", decisionId.toString())
+                            ? Map.of(STAFF_DECISION, action.name(), STAFF_DECISION_REF, decisionId.toString(),
+                                    OUTCOME, "CLOSE", DECISION_REF, decisionId.toString())
                             : action == StaffDecisionAction.FOLLOW_UP
-                                    ? Map.of("staffDecision", action.name(), "staffDecisionRef", decisionId.toString(),
-                                            "followUpEntryContextRef", decisionId.toString(), "activeFollowUpVersion", decisionId.toString(),
-                                            "pendingTenantContactFollowUpVersion", "", "pendingReviewFollowUpVersion", "")
+                                    ? Map.of(STAFF_DECISION, action.name(), STAFF_DECISION_REF, decisionId.toString(),
+                                            FOLLOW_UP_ENTRY_CONTEXT_REF, decisionId.toString(), ACTIVE_FOLLOW_UP_VERSION, decisionId.toString(),
+                                            PENDING_TENANT_CONTACT_FOLLOW_UP_VERSION, "", PENDING_REVIEW_FOLLOW_UP_VERSION, "")
                             : action == StaffDecisionAction.CONTINUE
-                                    ? Map.of("staffDecision", action.name(), "staffDecisionRef", decisionId.toString(),
-                                            "activeWorkTaskRef", decisionId.toString(), "pendingWorkReviewRef", "")
+                                    ? Map.of(STAFF_DECISION, action.name(), STAFF_DECISION_REF, decisionId.toString(),
+                                            ACTIVE_WORK_TASK_REF, decisionId.toString(), PENDING_WORK_REVIEW_REF, "")
                             : action == StaffDecisionAction.WAIT_EXTERNAL
-                                    ? Map.of("staffDecision", action.name(), "staffDecisionRef", decisionId.toString(),
-                                            "activeExternalWaitRef", decisionId.toString(), "externalWaitReviewRequired", false, "reviewWaitRef", "")
-                            : Map.of("staffDecision", action.name(), "staffDecisionRef", decisionId.toString())).send().join();
+                                    ? Map.of(STAFF_DECISION, action.name(), STAFF_DECISION_REF, decisionId.toString(),
+                                            ACTIVE_EXTERNAL_WAIT_REF, decisionId.toString(),
+                                            EXTERNAL_WAIT_REVIEW_REQUIRED, false, REVIEW_WAIT_REF, "")
+                            : Map.of(STAFF_DECISION, action.name(), STAFF_DECISION_REF, decisionId.toString())).send().join();
         } catch (RuntimeException exception) {
             Throwable cause = exception;
             while (cause != null) {

@@ -75,22 +75,20 @@ public class TenantReplyService {
         });
     }
 
-    public Result evaluate(String caseId, UUID entry, long leader, long child, String tenant) {
-        String phase = writes.execute(status -> {
+    public Result applyEvaluation(String caseId, UUID entry, long leader, long child, String tenant, UUID evaluationId) {
+        Result result = evaluationId == null ? new Result("STALE", null) : central.applyReply(caseId, entry, leader, child, tenant, evaluationId);
+        if (evaluationId != null && !"BUSY".equals(result.state())) {
+            return result;
+        }
+        // Auch bei einer blockierten Übernahme hat eine inzwischen angeforderte Mitarbeiterprüfung Vorrang.
+        return writes.execute(status -> {
             CaseState state = lock(caseId, leader);
             Call call = verify(caseId, entry, leader, child, tenant);
             if (!"WAITING_FOR_TENANT".equals(state.status()) || !"WAITING".equals(call.state())) {
-                return "OBSOLETE";
+                return new Result("OBSOLETE", null);
             }
-            return replies.reviewPending(caseId, leader) ? "REVIEW" : "CURRENT";
+            return replies.reviewPending(caseId, leader) ? new Result("REVIEW", null) : result;
         });
-        if (!"CURRENT".equals(phase)) {
-            return new Result(phase, null);
-        }
-        // Beide Prozesspfade verwenden denselben Koordinator; hier entsteht kein zweiter Analysezweig.
-        Result result = central.evaluateReply(caseId, entry, leader, child, tenant);
-        return "READY".equals(result.state()) || "APPLIED".equals(result.state())
-                ? central.applyReply(caseId, entry, leader, child, tenant, result.evaluationId()) : result;
     }
 
     public Outcome validate(String caseId, UUID entry, long leader, long child, String tenant, UUID evaluationId) {

@@ -1,16 +1,17 @@
 package com.pertegato.propertyflow.caseprocessing.service;
 
-import com.pertegato.propertyflow.caseprocessing.persistence.AutomaticQuestionStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.AutomaticQuestionStore.Batch;
-import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore;
+import com.pertegato.propertyflow.caseprocessing.persistence.AutomaticQuestionStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore.CaseState;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore.Entry;
-import com.pertegato.propertyflow.caseprocessing.persistence.ConversationEvaluationStore;
+import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.ConversationEvaluationStore.Evaluation;
+import com.pertegato.propertyflow.caseprocessing.persistence.ConversationEvaluationStore;
 import com.pertegato.propertyflow.caseprocessing.persistence.StaffReviewStore;
 import com.pertegato.propertyflow.recommendation.service.QuestionCatalog;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Profile("propertyflow-backend & !frontend-demo")
 @Transactional(propagation = Propagation.REQUIRES_NEW)
+@RequiredArgsConstructor
 public class AutomaticQuestionService {
 
     private final CaseWorkflowStore workflow;
@@ -26,15 +28,6 @@ public class AutomaticQuestionService {
     private final AutomaticQuestionStore questions;
     private final StaffReviewStore reviews;
     private final AutomaticClosureService closures;
-
-    public AutomaticQuestionService(CaseWorkflowStore workflow, ConversationEvaluationStore evaluations,
-            AutomaticQuestionStore questions, StaffReviewStore reviews, AutomaticClosureService closures) {
-        this.workflow = workflow;
-        this.evaluations = evaluations;
-        this.questions = questions;
-        this.reviews = reviews;
-        this.closures = closures;
-    }
 
     public Result validate(String caseId, UUID entryId, UUID call, long leader, long child, UUID evaluationId) {
         CaseState state = lock(caseId, leader);

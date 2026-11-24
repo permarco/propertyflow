@@ -5,6 +5,7 @@ import com.pertegato.propertyflow.caseprocessing.contract.PublicMessage;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @Profile("propertyflow-backend & !frontend-demo")
+@RequiredArgsConstructor
 public class StaffMessageStore {
 
     private static final RowMapper<Command> COMMAND = (row, index) -> new Command(row.getObject("id", UUID.class),
@@ -21,10 +23,6 @@ public class StaffMessageStore {
             row.getString("task_element"), row.getObject("automatic_call_ref", UUID.class), row.getString("body"),
             row.getBoolean("answer_required"), row.getString("state"), row.getBoolean("correlated"), row.getString("result_code"));
     private final JdbcTemplate database;
-
-    public StaffMessageStore(JdbcTemplate database) {
-        this.database = database;
-    }
 
     public void bindReply(UUID command, UUID call) {
         database.update("UPDATE pf_staff_message_command SET reply_call_id = ? WHERE id = ?", call, command);

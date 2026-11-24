@@ -6,19 +6,17 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 @Repository
 @Profile("propertyflow-backend & !frontend-demo")
+@RequiredArgsConstructor
 public class CaseWaitStore {
 
     private final JdbcTemplate database;
-
-    public CaseWaitStore(JdbcTemplate database) {
-        this.database = database;
-    }
 
     public String scopeKey(long child) {
         return database.queryForObject("SELECT id::text FROM pf_case_wait WHERE child_instance_key = ? AND (staff_decision_id IS NOT NULL OR direct_command_id IS NOT NULL)",

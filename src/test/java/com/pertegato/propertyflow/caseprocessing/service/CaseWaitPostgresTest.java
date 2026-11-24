@@ -8,6 +8,7 @@ import com.pertegato.propertyflow.caseprocessing.contract.CaseCreation;
 import com.pertegato.propertyflow.caseprocessing.contract.CreateCaseCommand;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffDecisionAction;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffTaskDecisions.StaffTask;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.UserTask;
 import com.pertegato.propertyflow.caseprocessing.delivery.FollowUpGateway;
 import com.pertegato.propertyflow.caseprocessing.delivery.StaffTaskGateway;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseDataStore;
@@ -352,7 +353,8 @@ class CaseWaitPostgresTest {
         @Override
         public Optional<Long> currentTask(Binding binding) {
             assertEquals(new Binding(200, 600, 550, "<default>", binding.element()), binding);
-            assertTrue("SReview".equals(binding.element()) || "SWork".equals(binding.element()) || "SExternalWait".equals(binding.element()));
+            assertTrue(UserTask.REVIEW_TASK.equals(binding.element()) || UserTask.WORK_TASK.equals(binding.element())
+                    || UserTask.EXTERNAL_WAIT_TASK.equals(binding.element()));
             return Optional.ofNullable(task);
         }
 

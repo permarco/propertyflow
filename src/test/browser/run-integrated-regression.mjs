@@ -17,7 +17,7 @@ const base = 'http://127.0.0.1:8084';
 const camunda = 'http://127.0.0.1:8086';
 const mail = 'http://127.0.0.1:8028';
 const email = 'verwaltung.e2e@example.test';
-const modelNames = ['propertyflow-fallprozess-entwurf', 'automatische-abklaerung', 'mitarbeiterbearbeitung',
+const modelNames = ['propertyflow-fallprozess-entwurf', 'automatische-abklaerung', 'gespraech-auswerten', 'mitarbeiterbearbeitung',
     'mieterantwort-pruefen', 'mieternachricht-verarbeiten', 'wiedervorlage', 'fallbenachrichtigung-versenden'];
 const key = randomBytes(32).toString('base64');
 const common = ['-Xmx768m', '-jar', jar,
@@ -125,8 +125,8 @@ try {
     assert.ok(deployment.ok, `BPMN-Deployment: ${await deployment.clone().text()}`);
     const deployed = (await deployment.json()).deployments.map(entry => entry.processDefinition);
     definitions = {
-        caseKey: deployed.find(entry => entry.processDefinitionId === 'PropertyFlow_Case_Draft')?.processDefinitionKey,
-        mailKey: deployed.find(entry => entry.processDefinitionId === 'PropertyFlow_Mail_Draft')?.processDefinitionKey,
+        caseKey: deployed.find(entry => entry.processDefinitionId === 'Fall_bearbeiten_PROCESS')?.processDefinitionKey,
+        mailKey: deployed.find(entry => entry.processDefinitionId === 'Fallbenachrichtigung_versenden_PROCESS')?.processDefinitionKey,
     };
     assert.ok(definitions.caseKey && definitions.mailKey);
     const bootstrapLog = await open(path.join(report, 'bootstrap.log'), 'w');

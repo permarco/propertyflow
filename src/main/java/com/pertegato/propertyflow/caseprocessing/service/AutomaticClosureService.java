@@ -13,13 +13,19 @@ import com.pertegato.propertyflow.caseprocessing.persistence.StaffReviewStore;
 import com.pertegato.propertyflow.caseprocessing.service.AutomaticQuestionService.Result;
 import com.pertegato.propertyflow.recommendation.service.ClosureAssessment;
 import com.pertegato.propertyflow.recommendation.service.ClosureMessage;
+import com.pertegato.propertyflow.recommendation.service.ClosureMessage.Draft;
 import com.pertegato.propertyflow.recommendation.service.ClosureMessageService;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import org.springframework.context.annotation.Profile;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -31,6 +37,8 @@ import tools.jackson.databind.json.JsonMapper;
 public class AutomaticClosureService {
 
     private static final Duration GENERATION_LEASE = Duration.ofMinutes(3);
+    private static final Duration DRAFT_LIFETIME = Duration.ofMinutes(10);
+    private static final int MAX_DRAFTS = 1_000;
     private static final JsonMapper JSON = JsonMapper.builder().build();
     private final CaseWorkflowStore workflow;
     private final ConversationEvaluationStore evaluations;
@@ -42,6 +50,7 @@ public class AutomaticClosureService {
     private final ClosureMessage communication;
     private final AutomaticClosureRelease release;
     private final TransactionTemplate transaction;
+    private final Map<UUID, TemporaryDraft> drafts = new LinkedHashMap<>();
 
     public AutomaticClosureService(CaseWorkflowStore workflow, ConversationEvaluationStore evaluations, AutomaticQuestionStore questions,
             AutomaticClosureStore commands, CaseClosureStore closures, StaffReviewStore reviews, ClosureAssessment assessment,
@@ -103,64 +112,143 @@ public class AutomaticClosureService {
         return entry;
     }
 
-    public Result publish(UUID id, long leader, long child) {
-        Work work = transaction.execute(status -> {
-            Command command = commands.get(id);
-            CaseState state = context(command, leader, child);
-            command = commands.get(id);
-            if ("PUBLISHED".equals(command.state()) || "CLOSED".equals(command.state())) {
-                return new Work(null, null, new Result(command.state(), id));
-            }
-            Result blocked = check(command, state, false);
-            if (blocked != null) {
-                return new Work(null, null, blocked);
-            }
-            if ("RUNNING".equals(command.state()) && command.started().plus(GENERATION_LEASE).isAfter(Instant.now())) {
-                return new Work(null, null, new Result("BUSY", id));
-            }
-            UUID publication = commands.published(command);
-            if (publication != null) {
-                commands.reuse(id, publication, state.version(), evaluations.analysisVersion(state.id()));
-                return new Work(null, null, new Result("PUBLISHED", id));
-            }
-            return new Work(commands.begin(id), messages(state.id()), null);
-        });
+    public Result writeMessage(UUID id, long leader, long child) {
+        Work work = transaction.execute(status -> acquireMessage(id, leader, child, MessageStep.WRITE));
         if (work.result() != null) {
             return work.result();
         }
-        ClosureMessage.Result message;
+        Draft draft = callModel(work.command(), () -> communication.draft(work.messages(), work.command().ground()));
+        return completeMessage(work.command(), child, command -> {
+            if (draft == null || !draft.valid()) {
+                return invalidMessage(command);
+            }
+            commands.state(id, "PREPARED");
+            rememberDraft(id, draft);
+            return new Result("DRAFTED", id);
+        });
+    }
+
+    public Result checkMessage(UUID id, long leader, long child) {
+        Work work = transaction.execute(status -> acquireMessage(id, leader, child, MessageStep.CHECK));
+        if (work.result() != null) {
+            return work.result();
+        }
+        ClosureMessage.Result message = callModel(work.command(),
+                () -> communication.validate(work.messages(), work.command().ground(), work.draft()));
+        return completeMessage(work.command(), child, command -> publishMessage(command, message));
+    }
+
+    private Work acquireMessage(UUID id, long leader, long child, MessageStep step) {
+        Command command = commands.get(id);
+        CaseState state = context(command, leader, child);
+        command = commands.get(id);
+        if ("PUBLISHED".equals(command.state()) || "CLOSED".equals(command.state())) {
+            forgetDraft(id);
+            return new Work(null, null, null, new Result(command.state(), id));
+        }
+        Result blocked = check(command, state, false);
+        if (blocked != null) {
+            discardBlockedDraft(id, blocked);
+            return new Work(null, null, null, blocked);
+        }
+        if ("RUNNING".equals(command.state()) && command.started().plus(GENERATION_LEASE).isAfter(Instant.now())) {
+            return new Work(null, null, null, new Result("BUSY", id));
+        }
+        UUID publication = commands.published(command);
+        if (publication != null) {
+            commands.reuse(id, publication, state.version(), evaluations.analysisVersion(state.id()));
+            forgetDraft(id);
+            return new Work(null, null, null, new Result("PUBLISHED", id));
+        }
+        Draft draft = findDraft(id);
+        if (step == MessageStep.WRITE && draft != null) {
+            return new Work(null, null, null, new Result("DRAFTED", id));
+        }
+        if (step == MessageStep.CHECK && draft == null) {
+            return new Work(null, null, null, new Result("DRAFT_MISSING", id));
+        }
+        return new Work(commands.begin(id), messages(state.id()), draft, null);
+    }
+
+    private <T> T callModel(Command command, Supplier<T> operation) {
         try {
-            message = communication.generate(work.messages(), work.command().ground());
+            return operation.get();
         } catch (RuntimeException exception) {
             transaction.executeWithoutResult(status -> {
-                Command latest = commands.get(id);
-                workflow.lockCase(latest.caseId()).orElseThrow();
-                latest = commands.get(id);
-                if ("RUNNING".equals(latest.state()) && work.command().attempt().equals(latest.attempt())) {
-                    commands.state(id, "PREPARED");
+                workflow.lockCase(command.caseId()).orElseThrow();
+                Command latest = commands.get(command.id());
+                if ("RUNNING".equals(latest.state()) && command.attempt().equals(latest.attempt())) {
+                    commands.state(command.id(), "PREPARED");
                 }
             });
             throw exception;
         }
+    }
+
+    private Result completeMessage(Command work, long child, Function<Command, Result> complete) {
         return transaction.execute(status -> {
-            Command command = commands.get(id);
-            CaseState state = context(command, leader, child);
-            command = commands.get(id);
-            if (!"RUNNING".equals(command.state()) || !work.command().attempt().equals(command.attempt())) {
-                return new Result("STALE", id);
+            CaseState state = context(work, work.leader(), child);
+            Command command = commands.get(work.id());
+            if (!"RUNNING".equals(command.state()) || !work.attempt().equals(command.attempt())) {
+                return new Result("STALE", work.id());
             }
             Result blocked = check(command, state, false);
             if (blocked != null) {
+                discardBlockedDraft(command.id(), blocked);
                 return blocked;
             }
-            if (message == null || !message.valid() || message.text() == null || message.text().isBlank()) {
-                commands.state(id, "REVIEW");
-                evaluations.signal(evaluations.get(command.evaluation()), "INVALID_CLOSURE_MESSAGE");
-                return new Result("REVIEW", id);
-            }
-            commands.publish(command, message);
-            return new Result("PUBLISHED", id);
+            return complete.apply(command);
         });
+    }
+
+    private Result publishMessage(Command command, ClosureMessage.Result message) {
+        if (message == null || !message.valid() || message.text() == null || message.text().isBlank()) {
+            return invalidMessage(command);
+        }
+        commands.publish(command, message);
+        forgetDraft(command.id());
+        return new Result("PUBLISHED", command.id());
+    }
+
+    private Result invalidMessage(Command command) {
+        commands.state(command.id(), "REVIEW");
+        evaluations.signal(evaluations.get(command.evaluation()), "INVALID_CLOSURE_MESSAGE");
+        forgetDraft(command.id());
+        return new Result("REVIEW", command.id());
+    }
+
+    private void discardBlockedDraft(UUID id, Result blocked) {
+        if (!"BUSY".equals(blocked.state())) {
+            forgetDraft(id);
+        }
+    }
+
+    // Unveröffentlichte Texte bleiben im Arbeitsspeicher. Ein verlorener Entwurf wird neu erstellt.
+    private synchronized void rememberDraft(UUID id, Draft draft) {
+        expireDrafts();
+        if (drafts.size() >= MAX_DRAFTS) {
+            drafts.remove(drafts.keySet().iterator().next());
+        }
+        drafts.put(id, new TemporaryDraft(draft, Instant.now().plus(DRAFT_LIFETIME)));
+    }
+
+    private synchronized Draft findDraft(UUID id) {
+        TemporaryDraft cached = drafts.get(id);
+        if (cached != null && cached.expiresAt().isAfter(Instant.now())) {
+            return cached.draft();
+        }
+        drafts.remove(id);
+        return null;
+    }
+
+    private synchronized void forgetDraft(UUID id) {
+        drafts.remove(id);
+    }
+
+    @Scheduled(fixedDelay = 60_000)
+    synchronized void expireDrafts() {
+        Instant now = Instant.now();
+        drafts.values().removeIf(draft -> !draft.expiresAt().isAfter(now));
     }
 
     public Result close(UUID id, long leader, long child) {
@@ -248,6 +336,14 @@ public class AutomaticClosureService {
     private record Basis(ClosureAssessment.Outcome outcome, String ruleId, String ruleVersion, List<ClosureAssessment.Proof> proofs) {
     }
 
-    private record Work(Command command, List<ClosureAssessment.Message> messages, Result result) {
+    private enum MessageStep {
+        WRITE,
+        CHECK
+    }
+
+    private record TemporaryDraft(Draft draft, Instant expiresAt) {
+    }
+
+    private record Work(Command command, List<ClosureAssessment.Message> messages, Draft draft, Result result) {
     }
 }

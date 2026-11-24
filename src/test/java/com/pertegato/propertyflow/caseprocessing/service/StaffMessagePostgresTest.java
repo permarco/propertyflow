@@ -11,6 +11,7 @@ import com.pertegato.propertyflow.caseprocessing.contract.CreateCaseCommand;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffCaseListing;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffCaseQuery;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffDecisionAction;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.UserTask;
 import com.pertegato.propertyflow.caseprocessing.delivery.CaseProcessGateway;
 import com.pertegato.propertyflow.caseprocessing.delivery.StaffMessageGateway;
 import com.pertegato.propertyflow.caseprocessing.delivery.StaffTaskGateway;
@@ -176,7 +177,7 @@ class StaffMessagePostgresTest {
         availability.onDeliver = id -> service.publish(id, 200, 600, "<default>");
         assertEquals("PUBLISHED", service.send(actor, accepted.caseId(), "external-question", "Weitere Angaben?", true));
         assertEquals("WAITING_FOR_EXTERNAL", database.queryForObject("SELECT status FROM pf_case", String.class));
-        assertEquals("SExternalWait", store.find(accepted.caseId(), "external-question").orElseThrow().element());
+        assertEquals(UserTask.EXTERNAL_WAIT_TASK, store.find(accepted.caseId(), "external-question").orElseThrow().element());
         assertEquals("OPEN", database.queryForObject("SELECT state FROM pf_staff_answer_requirement", String.class));
         assertEquals(700L, availability.task);
     }
@@ -240,7 +241,7 @@ class StaffMessagePostgresTest {
         UUID command = store.find(accepted.caseId(), "Nebenauftrag").orElseThrow().id();
         long version = database.queryForObject("SELECT version FROM pf_case", Long.class);
         decisions.prepare(accepted.caseId(), continuation, actor.accountId(), UUID.randomUUID(), 700, version,
-                decisions.reviewFingerprint(accepted.caseId(), 200), StaffDecisionAction.CONTINUE, "SReview", "");
+                decisions.reviewFingerprint(accepted.caseId(), 200), StaffDecisionAction.CONTINUE, UserTask.REVIEW_TASK, "");
         assertEquals("REJECTED", service.publish(command, 200, 600, "<default>"));
         assertEquals(0, count("pf_staff_message"));
         assertEquals(700L, availability.task);

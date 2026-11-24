@@ -5,9 +5,12 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.util.UUID;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "pf_staff_message")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class StaffMessageEntity {
 
     @Id
@@ -18,7 +21,4 @@ public class StaffMessageEntity {
 
     @Column(name = "body", nullable = false, columnDefinition = "text")
     private String text;
-
-    protected StaffMessageEntity() {
-    }
 }

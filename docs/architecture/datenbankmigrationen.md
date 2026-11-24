@@ -37,14 +37,16 @@ weitere Schemaänderungen kommen als neue Migration hinzu.
 
 ## Weitere Schemaänderungen
 
-Die additiven Migrationen V6-V9 ergänzen den Kontenbetrieb und den MCP-Zugang:
+Die Migrationen V6 bis V12 ergänzen Kontenbetrieb, MCP-Zugang und Prozessverträge:
 
 - V6: Mieterkonten, Mitarbeiterrechte, Konto-Audit und Zuordnung von Kontonachrichten.
 - V7: Kontaktprüfnachweise, ursprüngliche Kontaktadresse und Ersatzlink-Versandaufträge.
 - V8: bestätigte Prüfnachweise, getrenntes Zugriffs-Audit und idempotente Kontobefehle.
 - V9: Freigaben und widerrufbare Tokens für den integrierten Authorization Server.
+- V10 und V11: MCP-Bestätigungen, Audit und Fallaktionen.
+- V12: Gespeicherte Mitarbeiterentscheide und Nachrichtenaufträge auf die aktuellen BPMN-Aufgaben-IDs umstellen.
 
-Die nächste freie Version ist **V10** im Ordner `db/backend-migration/updates/`.
+Die nächste freie Version ist **V13** im Ordner `db/backend-migration/updates/`.
 Versionsnummern bleiben backendweit eindeutig. Angewendete Migrationen werden nicht verändert.
 Hibernate/JPA darf das Schema nicht mit `create` oder `update` verändern.
 
@@ -69,8 +71,8 @@ ist keine fachliche Evaluationsfreigabe.
 
 ## Prüfung und erneuter Testreset
 
-`BackendMigrationPostgresTest` prüft den vollständigen Aufbau von 56 Tabellen,
-die fünf Modulmigrationen und drei Updates, den initialen Einrichtungsdatensatz sowie einen zweiten
+`BackendMigrationPostgresTest` prüft den vollständigen Aufbau von 58 Tabellen,
+die fünf Modulmigrationen und sieben Updates, den initialen Einrichtungsdatensatz sowie einen zweiten
 Start ohne weitere Migrationen. Die PostgreSQL-/Camunda-Regression prüft die
 fachlichen Abläufe auf dem neu aufgebauten Schema.
 

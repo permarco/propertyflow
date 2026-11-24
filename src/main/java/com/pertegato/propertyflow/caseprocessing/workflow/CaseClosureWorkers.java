@@ -1,5 +1,8 @@
 package com.pertegato.propertyflow.caseprocessing.workflow;
 
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants;
+import com.pertegato.propertyflow.caseprocessing.contract.bpmn.TenantReplyBpmnConstants;
 import com.pertegato.propertyflow.caseprocessing.service.CaseClosureService;
 import com.pertegato.propertyflow.caseprocessing.service.CaseClosureService.ClosureContext;
 import com.pertegato.propertyflow.caseprocessing.service.CaseClosureService.ClosureResult;
@@ -13,42 +16,49 @@ import io.camunda.client.api.worker.JobClient;
 import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.ErrorCode.STAFF_CLOSURE_STALE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.JobType.STAFF_CLOSE;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.STAFF_OUTCOME;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.CASE_ID;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.STAFF_DECISION_REF;
+import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.STAFF_ENTRY_CONTEXT_REF;
+
 @Component
 @Profile("propertyflow-backend & !frontend-demo")
 @ConditionalOnProperty(name = "propertyflow.workflow.enabled", havingValue = "true")
+@RequiredArgsConstructor
 public class CaseClosureWorkers {
 
-    public static final String CLOSE = "propertyflow.staff.close";
-    public static final String STALE_CLOSURE = "STAFF_CLOSURE_STALE";
     private final CamundaClient engine;
     private final CaseClosureService service;
 
-    public CaseClosureWorkers(CamundaClient engine, CaseClosureService service) {
-        this.engine = engine;
-        this.service = service;
-    }
-
-    @JobWorker(type = CLOSE, autoComplete = false)
+    @JobWorker(type = STAFF_CLOSE, autoComplete = false)
     public void close(JobClient client, ActivatedJob job) {
         ClosureResult result;
         try {
-            require(InitialCaseWorkers.CASE_PROCESS.equals(job.getBpmnProcessId()) && "Close".equals(job.getElementId())
-                    && "CLOSE".equals(text(job, "staffOutcome")));
-            String caseId = text(job, "caseId");
-            UUID decision = UUID.fromString(text(job, "staffDecisionRef"));
+            require(CaseProcessBpmnConstants.PROCESS_ID.equals(job.getBpmnProcessId())
+                    && CaseProcessBpmnConstants.ServiceTask.SAVE_STAFF_CLOSURE.equals(job.getElementId())
+                    && "CLOSE".equals(text(job, STAFF_OUTCOME)));
+            String caseId = text(job, CASE_ID);
+            UUID decision = UUID.fromString(text(job, STAFF_DECISION_REF));
             ClosureContext context = service.context(caseId, job.getProcessInstanceKey(), decision);
             ProcessInstance root = engine.newProcessInstanceGetRequest(job.getProcessInstanceKey()).send().join();
             ProcessInstance child = engine.newProcessInstanceGetRequest(context.child()).send().join();
             ElementInstance call = engine.newElementInstanceGetRequest(context.parentElement()).send().join();
             require(root.getParentProcessInstanceKey() == null && job.getTenantId().equals(context.tenant())
-                    && (context.reply() ? TenantReplyWorkers.PROCESS : StaffReviewWorkers.STAFF_PROCESS).equals(child.getProcessDefinitionId())
+                    && (context.reply() ? TenantReplyBpmnConstants.PROCESS_ID : StaffProcessingBpmnConstants.PROCESS_ID)
+                        .equals(child.getProcessDefinitionId())
                     && Long.valueOf(job.getProcessInstanceKey()).equals(child.getParentProcessInstanceKey())
                     && Long.valueOf(context.parentElement()).equals(child.getParentElementInstanceKey())
-                    && context.tenant().equals(child.getTenantId()) && (context.reply() ? "Reply" : "Staff").equals(call.getElementId())
+                    && context.tenant().equals(child.getTenantId())
+                    && (context.reply() ? CaseProcessBpmnConstants.CallActivity.TENANT_REPLY_CALL
+                            : CaseProcessBpmnConstants.CallActivity.STAFF_PROCESSING_CALL)
+                        .equals(call.getElementId())
                     && Long.valueOf(job.getProcessInstanceKey()).equals(call.getProcessInstanceKey())
                     && context.tenant().equals(call.getTenantId()));
             String expected = context.reply() ? "TERMINATED" : "COMPLETED";
@@ -63,8 +73,8 @@ public class CaseClosureWorkers {
             return;
         }
         if ("STALE".equals(result.state())) {
-            client.newThrowErrorCommand(job.getKey()).errorCode(STALE_CLOSURE).errorMessage("CONFIRMED_CLOSURE_BASIS_CHANGED")
-                    .variables(Map.of("staffEntryContextRef", result.continuation().toString())).send().join();
+            client.newThrowErrorCommand(job.getKey()).errorCode(STAFF_CLOSURE_STALE).errorMessage("CONFIRMED_CLOSURE_BASIS_CHANGED")
+                    .variables(Map.of(STAFF_ENTRY_CONTEXT_REF, result.continuation().toString())).send().join();
         } else {
             client.newCompleteCommand(job.getKey()).send().join();
         }
