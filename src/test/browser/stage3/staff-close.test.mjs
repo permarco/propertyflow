@@ -4,6 +4,7 @@ import { after, before, test } from 'node:test';
 import { launchBrowser } from '../browser-launcher.mjs';
 
 const script = await readFile('src/main/resources/static/js/staff-close.js', 'utf8');
+const busyScript = await readFile('src/main/resources/static/js/staff-busy.js', 'utf8');
 const origin = 'http://127.0.0.1:39997';
 let browser;
 before(async () => { browser = await launchBrowser(); });
@@ -14,12 +15,13 @@ async function setup(t) {
     t.after(() => context.close());
     const page = await context.newPage();
     page.setDefaultTimeout(5000);
-    const state = { status: 200, posts: [] };
-    await page.route(`${origin}/**`, route => {
+    const state = { status: 200, delay: 0, posts: [] };
+    await page.route(`${origin}/**`, async route => {
         const request = route.request();
         if (request.method() === 'POST') {
             state.posts.push(Object.fromEntries(new URLSearchParams(request.postData())));
-            return route.fulfill({ status: state.status, json: { state: 'CONFIRMED' } });
+            await new Promise(resolve => setTimeout(resolve, state.delay));
+            return route.fulfill({ status: state.status, body: '' });
         }
         if (new URL(request.url()).pathname.endsWith('/pruefung')) {
             return route.fulfill({ json: { actor: 'staff-one', csrf: 'csrf-test', task: {
@@ -33,15 +35,30 @@ async function setup(t) {
                 <button data-close-open disabled>Fall abschliessen</button><button data-close-reload>Neu laden</button>
                 <p role="status"></p><dialog aria-labelledby="question"><h2 id="question">Fall wirklich abschliessen?</h2>
                     <form action="/abschliessen"><button type="button" data-close-cancel>Abbrechen</button>
-                        <button type="submit">Abschliessen</button></form>
+                        <button type="submit" data-busy-label="Wird abgeschlossen …">Abschliessen</button></form>
                 </dialog>
             </section></body></html>` });
     });
     await page.goto(origin);
+    await page.addScriptTag({ content: busyScript });
     await page.addScriptTag({ content: script });
     await page.waitForFunction(() => !document.querySelector('[data-close-open]').disabled);
     return { page, state };
 }
+
+test('slow closure shows that the server is still processing and restores the button afterwards', async t => {
+    const { page, state } = await setup(t);
+    state.delay = 1200;
+    await page.getByRole('button', { name: 'Fall abschliessen', exact: true }).click();
+    await page.getByRole('button', { name: 'Abschliessen', exact: true }).click();
+    await page.getByRole('button', { name: 'Wird abgeschlossen …', exact: true }).waitFor();
+    assert.equal(await page.locator('dialog form').getAttribute('aria-busy'), 'true');
+    assert.equal(await page.getByRole('button', { name: 'Wird abgeschlossen …', exact: true }).isDisabled(), true);
+    await page.waitForFunction(() => document.querySelector('[role="status"]').textContent.includes('Der Fall ist abgeschlossen'));
+    assert.equal(await page.locator('dialog form').getAttribute('aria-busy'), null);
+    assert.equal(await page.locator('dialog [type="submit"]').textContent(), 'Abschliessen');
+    assert.equal(state.posts.length, 1);
+});
 
 test('closure requires the explicit dialog confirmation and does not invent the stored status', async t => {
     const { page, state } = await setup(t);
@@ -53,7 +70,7 @@ test('closure requires the explicit dialog confirmation and does not invent the 
     assert.equal(await page.getByRole('dialog').isVisible(), false);
     await page.getByRole('button', { name: 'Fall abschliessen', exact: true }).click();
     await page.getByRole('button', { name: 'Abschliessen', exact: true }).click();
-    await page.waitForFunction(() => document.querySelector('[role="status"]').textContent.includes('Abschlussentscheidung bestätigt'));
+    await page.waitForFunction(() => document.querySelector('[role="status"]').textContent.includes('Der Fall ist abgeschlossen'));
     assert.equal(state.posts.length, 1);
     assert.equal(state.posts[0].userTaskKey, '700');
     assert.equal('text' in state.posts[0], false);

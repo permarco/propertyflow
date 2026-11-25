@@ -228,7 +228,7 @@
                 <dialog aria-labelledby="staff-reopen-question"><h2 id="staff-reopen-question">Fall wiedereröffnen?</h2>
                     <form method="post" th:action="@{/mitarbeiter/faelle/{id}/wiedereroeffnen(id=${caseId})}">
                         <button type="button" data-reopen-cancel class="secondary">Abbrechen</button>
-                        <button type="submit">Wiedereröffnen</button>
+                        <button type="submit" data-busy-label="Wird wiedereröffnet …">Wiedereröffnen</button>
                     </form>
                 </dialog>
             </section>
@@ -245,7 +245,7 @@
                     <form th:action="@{/mitarbeiter/faelle/{id}/abschliessen(id=${caseId})}" method="post">
                         <div class="actions">
                             <button type="button" data-close-cancel class="secondary">Abbrechen</button>
-                            <button type="submit">Abschliessen</button>
+                            <button type="submit" data-busy-label="Wird abgeschlossen …">Abschliessen</button>
                         </div>
                     </form>
                 </dialog>
@@ -271,11 +271,11 @@
                             <summary>Antwortbedarf aufheben</summary>
                             <p>Für diese Rückfrage keine weitere Antwort mehr verlangen?</p>
                             <form data-clear-answer th:action="@{/mitarbeiter/faelle/{id}/antwortbedarf-aufheben(id=${caseId})}"
-                                  th:attr="data-actor=${memoActor},data-availability-url=@{/mitarbeiter/faelle/{id}/aktionen/verfuegbar(id=${caseId})},data-result-url=@{/mitarbeiter/faelle/{id}/aktionen/(id=${caseId})}"
+                                  th:attr="data-actor=${memoActor},data-availability-url=@{/mitarbeiter/faelle/{id}/aktionen/verfuegbar(id=${caseId})}"
                                   method="post">
                                 <input type="hidden" name="messageId" th:value="${entry.clearAnswerId()}">
                                 <input type="hidden" name="version" th:value="${version}">
-                                <button type="submit">Antwortbedarf aufheben</button>
+                                <button type="submit" data-busy-label="Wird aufgehoben …">Antwortbedarf aufheben</button>
                             </form>
                         </details>
                     </article>
@@ -329,6 +329,7 @@
 <script th:src="@{/js/staff-drafts.js}" defer></script>
 <script th:src="@{/js/staff-case-data.js}" defer></script>
 <script th:src="@{/js/staff-review.js}" defer></script>
+<script th:src="@{/js/staff-busy.js}" defer></script>
 <script th:src="@{/js/staff-close.js}" defer></script>
 <script th:src="@{/js/staff-messages.js}" defer></script>
 <script th:src="@{/js/staff-formulation.js}" defer></script>

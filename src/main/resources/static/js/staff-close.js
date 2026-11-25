@@ -63,18 +63,20 @@
         confirm.disabled = true;
         cancel.disabled = true;
         reload.disabled = true;
+        const done = window.propertyflowBusy(confirm);
         try {
             const response = await fetch(form.action, { method: 'POST', body: new URLSearchParams({
                 operationId: operation, userTaskKey: selected.taskKey, version: selected.version, reviewToken: selected.reviewToken, csrf,
             }) });
             feedback.textContent = response.ok
-                ? 'Abschlussentscheidung bestätigt. Der gespeicherte Fallstand wird aktualisiert.'
-                : response.status === 400
+                ? 'Der Fall ist abgeschlossen.'
+                : [400, 409].includes(response.status)
                     ? 'Der Fall oder die Aufgabe hat sich geändert. Bitte prüfen Sie den aktuellen Stand und bestätigen Sie erneut.'
-                    : 'Der Abschluss konnte nicht bestätigt werden. Die Aktion wird nicht automatisch wiederholt.';
+                    : 'Der Abschluss ist noch nicht bestätigt. Bitte prüfen Sie den Fallstand; die Aktion wird nicht automatisch wiederholt.';
         } catch {
             feedback.textContent = 'Der Abschluss konnte nicht bestätigt werden. Die Aktion wird nicht automatisch wiederholt.';
         } finally {
+            done();
             busy = false;
             confirm.disabled = false;
             cancel.disabled = false;

@@ -127,6 +127,12 @@ public class StaffDecisionService implements StaffTaskDecisions {
         decisions.confirmed(decision.id());
     }
 
+    @Override
+    public String decisionState(WebAccountContext context, String caseId, UUID operationId) {
+        authorize(context);
+        return decisions.find(caseId, context.accountId(), operationId).map(Decision::state).orElse(null);
+    }
+
     public String progress(String caseId, long leader, long child, UUID decisionId) {
         return transaction.execute(status -> {
             CaseState state = lock(caseId);

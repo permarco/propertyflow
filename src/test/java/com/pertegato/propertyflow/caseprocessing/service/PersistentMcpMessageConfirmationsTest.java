@@ -6,6 +6,7 @@ import com.pertegato.propertyflow.access.contract.McpTenantAuthorization;
 import com.pertegato.propertyflow.access.contract.WebAccountContext;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseAccepted;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseActionException;
+import com.pertegato.propertyflow.caseprocessing.contract.CaseReopening;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseStatus;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseStatusView;
 import com.pertegato.propertyflow.caseprocessing.contract.CreateCaseCommand;
@@ -261,7 +262,19 @@ class PersistentMcpMessageConfirmationsTest {
         @Bean
         PersistentMcpMessageConfirmations confirmations(JdbcTemplate database, McpTenantAuthorization authorization,
                 PersistentCaseService cases, TenantMessageService messages, StaffCaseService staffCases, StaffTaskDecisions staffDecisions) {
-            McpCaseActions actions = new McpCaseActions(cases, staffCases, staffDecisions, (actor, caseId, operation, version) -> UUID.randomUUID(),
+            CaseReopening reopening = new CaseReopening() {
+
+                @Override
+                public UUID request(WebAccountContext actor, String caseId, UUID operation, long version) {
+                    return UUID.randomUUID();
+                }
+
+                @Override
+                public String orderState(WebAccountContext actor, String caseId, UUID order) {
+                    return "PENDING";
+                }
+            };
+            McpCaseActions actions = new McpCaseActions(cases, staffCases, staffDecisions, reopening,
                     mock(StaffDecisionStore.class), mock(CaseReopenStore.class));
             return new PersistentMcpMessageConfirmations(database, authorization, cases, staffCases, messages,
                     mock(StaffMessageService.class), mock(StaffMessageStore.class), actions, 90);

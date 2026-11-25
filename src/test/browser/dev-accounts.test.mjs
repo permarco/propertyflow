@@ -103,6 +103,9 @@ test('Dauerhafte Konten, Rechteentzug und geprüfter Adresswechsel im integriert
     await staff.getByLabel('E-Mail-Adresse', { exact: true }).fill(workerEmail);
     await staff.getByRole('button', { name: 'Mitarbeiterkonto anlegen', exact: true }).click();
     await staff.getByText(workerEmail, { exact: true }).waitFor();
+    assert.equal((await staff.request.post(`${base}/mitarbeiter/konten`, {
+        form: { csrf: adminCsrf, name: 'Doppeltes Konto', email: workerEmail },
+    })).status(), 409);
     await signIn(worker, '/anmelden', workerEmail);
     assert.equal((await worker.request.get(`${base}/mitarbeiter/konten`)).status(), 403);
     assert.equal((await worker.request.get(`${base}/mitarbeiter/fallzugaenge`)).status(), 403);

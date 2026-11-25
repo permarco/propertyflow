@@ -3,6 +3,7 @@ package com.pertegato.propertyflow.caseprocessing.service;
 import com.pertegato.propertyflow.access.contract.SubmissionContext;
 import com.pertegato.propertyflow.access.contract.VerificationCodeDelivery;
 import com.pertegato.propertyflow.access.service.AccountAdministrationService;
+import com.pertegato.propertyflow.access.service.AccountConflictException;
 import com.pertegato.propertyflow.access.service.StaffAccountService;
 import com.pertegato.propertyflow.access.service.TenantAccountService;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseAccepted;
@@ -140,9 +141,11 @@ class AccountLifecyclePostgresTest {
     @Test
     void administrativePermissionsAndLastAdministratorAreEnforced() {
         UUID worker = administration.create(administrator, "Mitarbeiter", "worker@example.test");
+        assertThrows(AccountConflictException.class, () -> administration.create(administrator, "Doppelt", "Worker@example.test"));
         assertThrows(ResponseStatusException.class, () -> administration.create(worker, "Unzulässig", "no@example.test"));
         assertThrows(ResponseStatusException.class, () -> administration.requireCaseAccessAdministrator(worker));
-        assertThrows(IllegalArgumentException.class, () -> administration.revoke(administrator, administrator, "self-block", true));
+        assertThrows(AccountConflictException.class, () -> administration.revoke(administrator, administrator, "self-block", true));
+        assertThrows(IllegalArgumentException.class, () -> administration.revoke(administrator, worker, "", true));
         administration.revoke(administrator, worker, "block", true);
         administration.revoke(administrator, worker, "block", true);
         assertThrows(ResponseStatusException.class, () -> administration.revoke(administrator, worker, "block", false));

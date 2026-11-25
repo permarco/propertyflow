@@ -74,6 +74,16 @@ public class CaseReopenService implements CaseReopening {
         });
     }
 
+    @Override
+    public String orderState(WebAccountContext actor, String caseId, UUID order) {
+        authorize(actor);
+        // Nur eigene Aufträge zu diesem Fall sind lesbar; fremde und unbekannte ergeben dieselbe Antwort.
+        return store.get(order)
+                .filter(found -> found.caseId().equals(caseId) && found.actor().equals(actor.accountId()))
+                .map(Order::state)
+                .orElseThrow(() -> new CaseActionException("COMMAND_NOT_FOUND"));
+    }
+
     public Order order(UUID id) {
         return store.get(id).orElseThrow(() -> new WorkflowRejectedException("UNKNOWN_REOPEN_ORDER"));
     }

@@ -21,6 +21,12 @@ public interface StaffTaskDecisions {
 
     void waitExternal(WebAccountContext context, String caseId, UUID operationId, long taskKey, long version, String reviewToken);
 
+    /**
+     * Liefert den gespeicherten Stand der eigenen Entscheidung zu dieser Absende-ID
+     * (PREPARED, CONFIRMED, APPLIED oder REJECTED) oder {@code null}, wenn keine existiert.
+     */
+    String decisionState(WebAccountContext context, String caseId, UUID operationId);
+
     record StaffTask(boolean available, String taskKey, long version, String reviewToken, boolean canContinue, boolean canClose) {
     }
 }

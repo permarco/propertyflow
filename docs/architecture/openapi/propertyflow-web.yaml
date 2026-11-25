@@ -1084,7 +1084,7 @@ paths:
       operationId: mitarbeiterBearbeitungFortsetzen
       tags: [Mitarbeitende]
       summary: Bearbeitung nach Mitarbeiterprüfung fortsetzen
-      x-propertyflow-status: zielvertrag
+      x-propertyflow-status: implementiert
       description: >
         Bei «Mitarbeiterprüfung erforderlich» prüft PropertyFlow die
         Berechtigung für Fall und Aktion, die angezeigte Fallversion und die
@@ -1103,16 +1103,18 @@ paths:
           application/x-www-form-urlencoded:
             schema:
               type: object
-              required: [userTaskKey, version, csrf]
+              required: [operationId, userTaskKey, version, reviewToken, csrf]
               properties:
+                operationId:
+                  $ref: '#/components/schemas/StaffActionOperationId'
                 userTaskKey:
-                  type: string
-                  pattern: '^[0-9]+$'
-                  description: Camunda-Schlüssel der im Formular angezeigten User Task als Dezimalzeichenfolge.
+                  $ref: '#/components/schemas/StaffUserTaskKey'
                 version:
                   type: integer
                   format: int64
                   description: Version des bei der Bestätigung geprüften Fallstands.
+                reviewToken:
+                  $ref: '#/components/schemas/StaffReviewToken'
                 csrf:
                   $ref: '#/components/schemas/StaffCsrf'
                 reason:
@@ -1121,22 +1123,22 @@ paths:
       responses:
         '200':
           description: >
-            Camunda hat den Abschluss dieser User Task mit 204 bestätigt.
-            Die Antwort enthält keinen Körper. Das UI lädt das Falldetail
-            neu. «In Bearbeitung» ist sichtbar, sobald der Worker den neuen
-            Status gespeichert hat.
+            Camunda hat den Abschluss dieser User Task bestätigt. Das UI lädt
+            das Falldetail neu. «In Bearbeitung» ist sichtbar, sobald der
+            Worker den neuen Status gespeichert hat.
           headers:
             Cache-Control:
               $ref: '#/components/headers/NoStore'
             Referrer-Policy:
               $ref: '#/components/headers/NoReferrer'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffDecisionConfirmed'
         '400':
           description: >
-            Die Eingabe ist ungültig, der Fallstand ist veraltet oder die
-            Aktion oder User Task ist für diesen Fall nicht zulässig. Dazu
-            zählen die Camunda-Antworten 404 und 409 beim Task-Abschluss.
-            Das UI lädt den aktuellen Fallstand. Eine neu geöffnete Aufgabe
-            bleibt offen.
+            Die Eingabe ist ungültig oder die Aktion oder User Task ist für
+            diesen Fall nicht zulässig. Eine neu geöffnete Aufgabe bleibt offen.
           headers:
             Cache-Control:
               $ref: '#/components/headers/NoStore'
@@ -1148,6 +1150,8 @@ paths:
           $ref: '#/components/responses/StaffWriteDenied'
         '404':
           $ref: '#/components/responses/FallNichtVerfuegbar'
+        '409':
+          $ref: '#/components/responses/StaffActionConflict'
         '500':
           description: >
             Ein technischer Fehler oder Timeout verhindert die Bestätigung.
@@ -1166,7 +1170,7 @@ paths:
       operationId: mitarbeiterDringlichkeitAendern
       tags: [Mitarbeitende]
       summary: Dringlichkeit eines Falls manuell einstufen
-      x-propertyflow-status: zielvertrag
+      x-propertyflow-status: implementiert
       description: >
         PropertyFlow prüft Berechtigung, Fallversion und ob der laufende
         Fallprozess die Aktion erlaubt. Es ordnet die fachliche Nachricht
@@ -1259,7 +1263,11 @@ paths:
       operationId: mitarbeiterObjektWohnungZuordnen
       tags: [Mitarbeitende]
       summary: Objekt und Wohnung zuordnen
-      x-propertyflow-status: zielvertrag
+      x-propertyflow-status: implementiert
+      x-propertyflow-abweichung: >
+        Umgesetzt ist nur die Freitextzuordnung. Stammdatenreferenzen
+        (`propertyId`, `unitId`) werden mit 400 abgewiesen, bis ein
+        Stammdatensystem angebunden ist.
       description: >
         PropertyFlow prüft Berechtigung, Fallversion und die Freigabe im
         laufenden Fallprozess. Bei einem Stammdatenvorschlag prüft der Dienst
@@ -1377,7 +1385,7 @@ paths:
       operationId: mitarbeiterExterneNachrichtVeroeffentlichen
       tags: [Mitarbeitende]
       summary: Externe Fallnachricht veröffentlichen
-      x-propertyflow-status: zielvertrag
+      x-propertyflow-status: implementiert
       description: >
         Ein berechtigter Mitarbeiter sendet eine Information oder Rückfrage
         zu einem aktiven Fall. PropertyFlow prüft Eingabe, Absende-ID und die
@@ -1490,7 +1498,7 @@ paths:
       operationId: mitarbeiterInternesMemoSpeichern
       tags: [Mitarbeitende]
       summary: Internes Memo speichern
-      x-propertyflow-status: zielvertrag
+      x-propertyflow-status: implementiert
       description: >
         PropertyFlow prüft die Mitarbeiterberechtigung, den Fallzustand, die
         Eingabe und die Absende-ID. Camunda veranlasst die Speicherung im
@@ -1585,30 +1593,161 @@ paths:
           ergibt 409. Parallel wiederholte Aufrufe oder Worker-Ausführungen
           erzeugen höchstens ein Memo. Eindeutig erfolglose Erstversuche
           reservieren die ID nicht.
-  /mitarbeiter/faelle/{id}/wiedervorlage:
+  /mitarbeiter/faelle/{id}/wiedervorlage-setzen:
     parameters:
       - $ref: '#/components/parameters/StaffCaseId'
     post:
-      operationId: mitarbeiterWiedervorlageVerwalten
+      operationId: mitarbeiterWiedervorlageSetzen
       tags: [Mitarbeitende]
-      summary: Wiedervorlage verwalten
-      x-propertyflow-status: zielvertrag
+      summary: Wiedervorlage aus der Mitarbeiterprüfung setzen
+      x-propertyflow-status: implementiert
       description: >
-        PropertyFlow prüft die Mitarbeiterberechtigung, den angezeigten
-        Fallstand, die Eingabe und die Freigabe der Aktion im laufenden
-        Fallprozess. Es übergibt die Aktion synchron an die zugeordnete
-        Camunda-Instanz. Camunda führt den Timer im bestehenden Fallprozess.
-        Setzen und Ändern führen zu «Wartet auf Wiedervorlage». Löschen
-        beendet die Wartezeit und führt zu «In Bearbeitung». Der Worker
-        speichert Termin, Status und internen Änderungsnachweis gemeinsam.
-        Berücksichtigte Prüfgründe bleiben darin nachvollziehbar. Offene
-        Mieterfragen bleiben bestehen (UC-013, FALL-11, SS-003).
-
-        Verarbeitet Camunda während der Wartezeit eine neue Mieternachricht,
-        hebt es die Wiedervorlage auf und veranlasst sofort die
-        Mitarbeiterprüfung. Bei gleichzeitig fälligem Timer wird der Fall
-        einmal zur Prüfung vorgelegt. Überholte Timer und wiederholte
-        Ereignisse dürfen einen später gesetzten Termin nicht verändern.
+        Setzt aus der offenen Mitarbeiteraufgabe eine Wiedervorlage. PropertyFlow
+        prüft Berechtigung, Fallstand, Prüftoken und die adressierte User Task und
+        übergibt die Entscheidung synchron an Camunda. Camunda führt den Timer im
+        bestehenden Fallprozess. Verarbeitet Camunda während der Wartezeit eine
+        neue Mieternachricht, hebt es die Wiedervorlage auf und veranlasst sofort
+        die Mitarbeiterprüfung (UC-013, FALL-11, SS-003).
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [operationId, userTaskKey, version, reviewToken, csrf]
+              properties:
+                operationId:
+                  $ref: '#/components/schemas/StaffActionOperationId'
+                userTaskKey:
+                  $ref: '#/components/schemas/StaffUserTaskKey'
+                version:
+                  type: integer
+                  format: int64
+                  description: Version des bei der Bestätigung geprüften Fallstands.
+                reviewToken:
+                  $ref: '#/components/schemas/StaffReviewToken'
+                days:
+                  type: integer
+                  minimum: 1
+                  description: Positive Anzahl Tage bis zur Wiedervorlage. Alternativ zu `date`.
+                date:
+                  type: string
+                  format: date
+                  description: Gewähltes Kalenderdatum im Format JJJJ-MM-TT. Alternativ zu `days`.
+                reason:
+                  type: string
+                  description: Optionale Begründung für den internen Änderungsnachweis.
+                csrf:
+                  $ref: '#/components/schemas/StaffCsrf'
+      responses:
+        '200':
+          description: Camunda hat die Entscheidung für die adressierte User Task bestätigt. Die Antwort enthält keinen Körper.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Referrer-Policy:
+              $ref: '#/components/headers/NoReferrer'
+        '400':
+          $ref: '#/components/responses/StaffActionInvalid'
+        '401':
+          $ref: '#/components/responses/StaffWriteNeedsLogin'
+        '403':
+          $ref: '#/components/responses/StaffWriteDenied'
+        '404':
+          $ref: '#/components/responses/FallNichtVerfuegbar'
+        '409':
+          $ref: '#/components/responses/StaffActionConflict'
+        '500':
+          $ref: '#/components/responses/StaffActionUnavailable'
+  /mitarbeiter/faelle/{id}/wiedervorlage-aendern:
+    parameters:
+      - $ref: '#/components/parameters/StaffCaseId'
+    post:
+      operationId: mitarbeiterWiedervorlageAendern
+      tags: [Mitarbeitende]
+      summary: Laufende Wiedervorlage ändern
+      x-propertyflow-status: implementiert
+      description: >
+        Ändert den Termin einer laufenden Wiedervorlage. PropertyFlow prüft
+        Berechtigung, Fallstand und die adressierte Wartephase und übergibt den
+        Auftrag synchron an Camunda. Überholte Timer und wiederholte Ereignisse
+        dürfen einen später gesetzten Termin nicht verändern (UC-013).
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StaffFollowUpChange'
+      responses:
+        '200':
+          $ref: '#/components/responses/StaffFollowUpApplied'
+        '202':
+          $ref: '#/components/responses/StaffFollowUpPending'
+        '400':
+          $ref: '#/components/responses/StaffActionInvalid'
+        '401':
+          $ref: '#/components/responses/StaffWriteNeedsLogin'
+        '403':
+          $ref: '#/components/responses/StaffWriteDenied'
+        '404':
+          $ref: '#/components/responses/FallNichtVerfuegbar'
+        '409':
+          $ref: '#/components/responses/StaffActionConflict'
+        '500':
+          $ref: '#/components/responses/StaffActionUnavailable'
+  /mitarbeiter/faelle/{id}/wiedervorlage-loeschen:
+    parameters:
+      - $ref: '#/components/parameters/StaffCaseId'
+    post:
+      operationId: mitarbeiterWiedervorlageLoeschen
+      tags: [Mitarbeitende]
+      summary: Laufende Wiedervorlage löschen
+      x-propertyflow-status: implementiert
+      description: >
+        Beendet eine laufende Wiedervorlage. Der Fall wechselt nach Bestätigung
+        durch den Worker zu «In Bearbeitung». Offene Mieterfragen bleiben
+        bestehen (UC-013). Terminangaben werden nicht ausgewertet.
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StaffFollowUpChange'
+      responses:
+        '200':
+          $ref: '#/components/responses/StaffFollowUpApplied'
+        '202':
+          $ref: '#/components/responses/StaffFollowUpPending'
+        '400':
+          $ref: '#/components/responses/StaffActionInvalid'
+        '401':
+          $ref: '#/components/responses/StaffWriteNeedsLogin'
+        '403':
+          $ref: '#/components/responses/StaffWriteDenied'
+        '404':
+          $ref: '#/components/responses/FallNichtVerfuegbar'
+        '409':
+          $ref: '#/components/responses/StaffActionConflict'
+        '500':
+          $ref: '#/components/responses/StaffActionUnavailable'
+  /mitarbeiter/faelle/{id}/wiedervorlage-abschliessen:
+    parameters:
+      - $ref: '#/components/parameters/StaffCaseId'
+    post:
+      operationId: mitarbeiterWiedervorlageAbschliessen
+      tags: [Mitarbeitende]
+      summary: Fall während einer Wiedervorlage abschliessen
+      x-propertyflow-status: implementiert
+      description: >
+        Schliesst den Fall aus einer laufenden Wiedervorlage ab. Camunda beendet
+        den Timer; ein überholter Timer darf den Fall nicht wiedereröffnen
+        (UC-013, UC-014).
       security:
         - BrowserSession: []
       requestBody:
@@ -1618,67 +1757,28 @@ paths:
             schema:
               type: object
               additionalProperties: false
-              required: [action, version, operation, csrf]
+              required: [operationId, waitId, version, csrf]
               properties:
-                action:
-                  type: string
-                  enum: [set, change, delete]
-                  description: Termin setzen, ändern oder löschen.
-                date:
-                  type: string
-                  format: date
-                  description: Gewähltes Kalenderdatum im Format JJJJ-MM-TT.
-                days:
-                  type: integer
-                  minimum: 1
-                  description: Positive Anzahl Tage bis zur Wiedervorlage.
+                operationId:
+                  $ref: '#/components/schemas/StaffActionOperationId'
+                waitId:
+                  $ref: '#/components/schemas/StaffWaitId'
                 version:
                   type: integer
                   format: int64
                   description: Version des bei der Bestätigung geprüften Fallstands.
-                operation:
-                  $ref: '#/components/schemas/StaffOperation'
-                csrf:
-                  $ref: '#/components/schemas/StaffCsrf'
                 reason:
                   type: string
                   description: Optionale Begründung für den internen Änderungsnachweis.
-              oneOf:
-                - properties:
-                    action:
-                      enum: [set, change]
-                  oneOf:
-                    - required: [date]
-                    - required: [days]
-                - properties:
-                    action:
-                      const: delete
-                  not:
-                    anyOf:
-                      - required: [date]
-                      - required: [days]
+                csrf:
+                  $ref: '#/components/schemas/StaffCsrf'
       responses:
         '200':
-          description: >
-            Camunda hat die Aktion zur Wiedervorlage bestätigt. Der daraus
-            folgende Terminstand, Status und Änderungsnachweis sind dauerhaft
-            gespeichert. Die Antwort enthält keinen Körper. Das UI lädt den
-            gespeicherten Fallstand neu.
-          headers:
-            Cache-Control:
-              $ref: '#/components/headers/NoStore'
-            Referrer-Policy:
-              $ref: '#/components/headers/NoReferrer'
+          $ref: '#/components/responses/StaffFollowUpApplied'
+        '202':
+          $ref: '#/components/responses/StaffFollowUpPending'
         '400':
-          description: >
-            Die Eingabe ist ungültig, etwa weil beim Setzen oder Ändern Datum
-            und Tageszahl zugleich angegeben sind oder ein zulässiger Termin
-            fehlt. Die Eingabe bleibt im Formular.
-          headers:
-            Cache-Control:
-              $ref: '#/components/headers/NoStore'
-            Referrer-Policy:
-              $ref: '#/components/headers/NoReferrer'
+          $ref: '#/components/responses/StaffActionInvalid'
         '401':
           $ref: '#/components/responses/StaffWriteNeedsLogin'
         '403':
@@ -1686,41 +1786,248 @@ paths:
         '404':
           $ref: '#/components/responses/FallNichtVerfuegbar'
         '409':
-          description: >
-            Der Fallstand hat sich geändert, der Fallprozess ist noch nicht
-            zugeordnet oder lässt die Aktion aktuell nicht zu. Das gilt auch
-            beim Setzen mit bereits vorhandenem Termin, beim Ändern oder
-            Löschen ohne aktuellen Termin oder beim Wiederverwenden der
-            Absende-ID mit geänderten Aktionsdaten. Das UI lädt den aktuellen
-            Fallstand. Nachrichteneingabe und KI-Stream bleiben erhalten.
-          headers:
-            Cache-Control:
-              $ref: '#/components/headers/NoStore'
-            Referrer-Policy:
-              $ref: '#/components/headers/NoReferrer'
+          $ref: '#/components/responses/StaffActionConflict'
         '500':
-          description: >
-            Ein technischer Fehler oder Timeout verhindert die Bestätigung.
-            Bei unklarem Ausgang kann die Aktion bereits wirksam sein. Das
-            UI lädt den gespeicherten Fallstand neu und behält Eingabe und
-            Absende-ID. PropertyFlow wiederholt die Aktion nicht automatisch.
+          $ref: '#/components/responses/StaffActionUnavailable'
+  /mitarbeiter/faelle/{id}/externe-rueckmeldung-abwarten:
+    parameters:
+      - $ref: '#/components/parameters/StaffCaseId'
+    post:
+      operationId: mitarbeiterExterneRueckmeldungAbwarten
+      tags: [Mitarbeitende]
+      summary: Auf externe Rückmeldung warten
+      x-propertyflow-status: implementiert
+      description: >
+        Entscheidet aus der offenen Mitarbeiteraufgabe, auf eine externe
+        Rückmeldung zu warten. PropertyFlow übergibt die Entscheidung synchron
+        an Camunda. «Bearbeitung fortsetzen» beendet die externe Wartephase
+        wieder (UC-012).
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [operationId, userTaskKey, version, reviewToken, csrf]
+              properties:
+                operationId:
+                  $ref: '#/components/schemas/StaffActionOperationId'
+                userTaskKey:
+                  $ref: '#/components/schemas/StaffUserTaskKey'
+                version:
+                  type: integer
+                  format: int64
+                  description: Version des bei der Bestätigung geprüften Fallstands.
+                reviewToken:
+                  $ref: '#/components/schemas/StaffReviewToken'
+                csrf:
+                  $ref: '#/components/schemas/StaffCsrf'
+      responses:
+        '200':
+          description: Camunda hat die Entscheidung für die adressierte User Task bestätigt. Die Antwort enthält keinen Körper.
           headers:
             Cache-Control:
               $ref: '#/components/headers/NoStore'
             Referrer-Policy:
               $ref: '#/components/headers/NoReferrer'
-      x-propertyflow-idempotency:
-        key: operation
-        scope: Fall und Aktionen zur Wiedervorlage nach erneuter Zugriffsprüfung.
-        rule: >
-          Eine identische Wiederholung einer bestätigten Aktion erhält erneut
-          200. Aktion, ursprüngliche Terminangabe und Begründung werden bei
-          jeder Wiederholung verglichen. Für eine relative Tagesangabe gilt
-          weiterhin der beim ersten Auftrag ermittelte Termin. Mehrfache
-          Verarbeitung erzeugt höchstens einen wirksamen Timer und einen
-          Änderungsnachweis je Absende-ID. Geänderte Aktionsdaten mit
-          derselben Absende-ID ergeben 409. Die Fallversion wird bei jeder
-          neuen Aktion geprüft.
+        '400':
+          $ref: '#/components/responses/StaffActionInvalid'
+        '401':
+          $ref: '#/components/responses/StaffWriteNeedsLogin'
+        '403':
+          $ref: '#/components/responses/StaffWriteDenied'
+        '404':
+          $ref: '#/components/responses/FallNichtVerfuegbar'
+        '409':
+          $ref: '#/components/responses/StaffActionConflict'
+        '500':
+          $ref: '#/components/responses/StaffActionUnavailable'
+  /mitarbeiter/faelle/{id}/uebernehmen:
+    parameters:
+      - $ref: '#/components/parameters/StaffCaseId'
+    post:
+      operationId: mitarbeiterFallUebernehmen
+      tags: [Mitarbeitende]
+      summary: Fall aus der automatischen Bearbeitung übernehmen
+      x-propertyflow-status: implementiert
+      description: >
+        Übernimmt einen Fall aus der automatischen Abklärung in die
+        Mitarbeiterbearbeitung. PropertyFlow speichert den Auftrag und korreliert
+        ihn synchron mit dem Fallprozess. Ein eigener fachlicher Zielvertrag
+        besteht noch nicht.
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [operationId, version, csrf]
+              properties:
+                operationId:
+                  $ref: '#/components/schemas/StaffOperation'
+                version:
+                  type: integer
+                  format: int64
+                  description: Version des geprüften Fallstands.
+                csrf:
+                  $ref: '#/components/schemas/StaffCsrf'
+      responses:
+        '200':
+          $ref: '#/components/responses/StaffCommandApplied'
+        '202':
+          $ref: '#/components/responses/StaffActionPending'
+        '400':
+          $ref: '#/components/responses/StaffActionInvalid'
+        '401':
+          $ref: '#/components/responses/StaffWriteNeedsLogin'
+        '403':
+          $ref: '#/components/responses/StaffWriteDenied'
+        '404':
+          $ref: '#/components/responses/FallNichtVerfuegbar'
+        '409':
+          $ref: '#/components/responses/StaffActionConflict'
+        '503':
+          $ref: '#/components/responses/StaffActionUnavailable'
+  /mitarbeiter/faelle/{id}/abklaerung-abschliessen:
+    parameters:
+      - $ref: '#/components/parameters/StaffCaseId'
+    post:
+      operationId: mitarbeiterAbklaerungAbschliessen
+      tags: [Mitarbeitende]
+      summary: Fall aus «In Abklärung» abschliessen
+      x-propertyflow-status: implementiert
+      description: >
+        Schliesst einen Fall in der automatischen Abklärung nach Bestätigung
+        durch den Mitarbeiter ab. Die Freigabe ist an das Prüftoken aus
+        `…/abklaerung-abschliessen/verfuegbar` gebunden (UC-014, FALL-07).
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StaffReviewedClosure'
+      responses:
+        '200':
+          $ref: '#/components/responses/StaffCommandApplied'
+        '202':
+          $ref: '#/components/responses/StaffActionPending'
+        '400':
+          $ref: '#/components/responses/StaffActionInvalid'
+        '401':
+          $ref: '#/components/responses/StaffWriteNeedsLogin'
+        '403':
+          $ref: '#/components/responses/StaffWriteDenied'
+        '404':
+          $ref: '#/components/responses/FallNichtVerfuegbar'
+        '409':
+          $ref: '#/components/responses/StaffActionConflict'
+        '503':
+          $ref: '#/components/responses/StaffActionUnavailable'
+  /mitarbeiter/faelle/{id}/mieterwarten-abschliessen:
+    parameters:
+      - $ref: '#/components/parameters/StaffCaseId'
+    post:
+      operationId: mitarbeiterMieterwartenAbschliessen
+      tags: [Mitarbeitende]
+      summary: Fall aus «Wartet auf Mieterantwort» abschliessen
+      x-propertyflow-status: implementiert
+      description: >
+        Schliesst einen Fall, der auf eine Mieterantwort wartet, nach Bestätigung
+        durch den Mitarbeiter ab. Die Freigabe ist an das Prüftoken aus
+        `…/mieterwarten-abschliessen/verfuegbar` gebunden (UC-014, FALL-07).
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StaffReviewedClosure'
+      responses:
+        '200':
+          $ref: '#/components/responses/StaffCommandApplied'
+        '202':
+          $ref: '#/components/responses/StaffActionPending'
+        '400':
+          $ref: '#/components/responses/StaffActionInvalid'
+        '401':
+          $ref: '#/components/responses/StaffWriteNeedsLogin'
+        '403':
+          $ref: '#/components/responses/StaffWriteDenied'
+        '404':
+          $ref: '#/components/responses/FallNichtVerfuegbar'
+        '409':
+          $ref: '#/components/responses/StaffActionConflict'
+        '503':
+          $ref: '#/components/responses/StaffActionUnavailable'
+  /mitarbeiter/faelle/{id}/direkte-wiedervorlage:
+    parameters:
+      - $ref: '#/components/parameters/StaffCaseId'
+    post:
+      operationId: mitarbeiterDirekteWiedervorlage
+      tags: [Mitarbeitende]
+      summary: Wiedervorlage ohne offene Prüfaufgabe setzen
+      x-propertyflow-status: implementiert
+      description: >
+        Setzt eine Wiedervorlage, wenn keine Mitarbeiteraufgabe offen ist. Die
+        Freigabe ist an das Prüftoken aus `…/direkte-wiedervorlage/verfuegbar`
+        gebunden (UC-013).
+      security:
+        - BrowserSession: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [operationId, version, reviewToken, csrf]
+              properties:
+                operationId:
+                  $ref: '#/components/schemas/StaffOperation'
+                version:
+                  type: integer
+                  format: int64
+                  description: Version des geprüften Fallstands.
+                reviewToken:
+                  $ref: '#/components/schemas/StaffReviewToken'
+                days:
+                  type: integer
+                  minimum: 1
+                  description: Positive Anzahl Tage bis zur Wiedervorlage. Alternativ zu `date`.
+                date:
+                  type: string
+                  format: date
+                  description: Gewähltes Kalenderdatum im Format JJJJ-MM-TT. Alternativ zu `days`.
+                reason:
+                  type: string
+                  description: Optionale Begründung für den internen Änderungsnachweis.
+                csrf:
+                  $ref: '#/components/schemas/StaffCsrf'
+      responses:
+        '200':
+          $ref: '#/components/responses/StaffCommandApplied'
+        '202':
+          $ref: '#/components/responses/StaffActionPending'
+        '400':
+          $ref: '#/components/responses/StaffActionInvalid'
+        '401':
+          $ref: '#/components/responses/StaffWriteNeedsLogin'
+        '403':
+          $ref: '#/components/responses/StaffWriteDenied'
+        '404':
+          $ref: '#/components/responses/FallNichtVerfuegbar'
+        '409':
+          $ref: '#/components/responses/StaffActionConflict'
+        '503':
+          $ref: '#/components/responses/StaffActionUnavailable'
   /mitarbeiter/faelle/{id}/abschliessen:
     parameters:
       - $ref: '#/components/parameters/StaffCaseId'
@@ -1728,7 +2035,7 @@ paths:
       operationId: mitarbeiterFallAbschliessen
       tags: [Mitarbeitende]
       summary: Fall abschliessen
-      x-propertyflow-status: zielvertrag
+      x-propertyflow-status: implementiert
       description: >
         Das UI sendet den Auftrag nach ausdrücklicher Bestätigung im
         Abschlussdialog. PropertyFlow prüft die Mitarbeiterberechtigung, die
@@ -1759,24 +2066,28 @@ paths:
             schema:
               type: object
               additionalProperties: false
-              required: [version, operation, csrf]
+              required: [operationId, userTaskKey, version, reviewToken, csrf]
               properties:
+                operationId:
+                  $ref: '#/components/schemas/StaffActionOperationId'
+                userTaskKey:
+                  $ref: '#/components/schemas/StaffUserTaskKey'
                 version:
                   type: integer
                   format: int64
                   description: Version des im Abschlussdialog geprüften Fallstands.
-                operation:
-                  $ref: '#/components/schemas/StaffOperation'
+                reviewToken:
+                  $ref: '#/components/schemas/StaffReviewToken'
                 csrf:
                   $ref: '#/components/schemas/StaffCsrf'
       responses:
         '200':
           description: >
-            Camunda hat den Abschluss veranlasst. PropertyFlow hat den
-            Status «Abgeschlossen» und den zugehörigen Abschlussnachweis
-            dauerhaft gespeichert. Die Antwort enthält keinen Körper.
-            Das UI lädt den gespeicherten Fallstand neu. Der E-Mail-Versand
-            folgt der Speicherung. Die HTTP-Antwort wartet nicht auf den Versand.
+            Camunda hat die Abschlussentscheidung bestätigt, und der Worker hat
+            den Status «Abgeschlossen» mit dem Abschlussnachweis dauerhaft
+            gespeichert. PropertyFlow wartet darauf höchstens 2 Sekunden. Die
+            Antwort enthält keinen Körper. Der E-Mail-Versand folgt der
+            Speicherung; die HTTP-Antwort wartet nicht auf den Versand.
           headers:
             Cache-Control:
               $ref: '#/components/headers/NoStore'
@@ -1819,7 +2130,7 @@ paths:
             Referrer-Policy:
               $ref: '#/components/headers/NoReferrer'
       x-propertyflow-idempotency:
-        key: operation
+        key: operationId
         scope: Fall und Mitarbeiterabschluss nach erneuter Zugriffsprüfung.
         rule: >
           Eine identische Wiederholung eines gespeicherten Abschlusses
@@ -1836,7 +2147,7 @@ paths:
       operationId: mitarbeiterFallWiedereroeffnen
       tags: [Mitarbeitende]
       summary: Fall wiedereröffnen
-      x-propertyflow-status: zielvertrag
+      x-propertyflow-status: implementiert
       description: >
         Das UI sendet den Auftrag nach ausdrücklicher Bestätigung im
         Wiedereröffnungsdialog. PropertyFlow prüft die Mitarbeiterberechtigung,
@@ -1863,24 +2174,24 @@ paths:
             schema:
               type: object
               additionalProperties: false
-              required: [version, operation, csrf]
+              required: [operationId, version, csrf]
               properties:
+                operationId:
+                  $ref: '#/components/schemas/StaffActionOperationId'
                 version:
                   type: integer
                   format: int64
                   description: Version des im Wiedereröffnungsdialog geprüften Fallstands.
-                operation:
-                  $ref: '#/components/schemas/StaffOperation'
                 csrf:
                   $ref: '#/components/schemas/StaffCsrf'
       responses:
         '200':
           description: >
-            Camunda hat die Wiedereröffnung veranlasst. PropertyFlow hat den
-            neuen Status und den Nachweis der Wiedereröffnung dauerhaft
-            gespeichert. Case-ID und bisherige Historie bleiben erhalten.
-            Die Antwort enthält keinen Körper. Das UI lädt den gespeicherten
-            Fallstand neu.
+            Die neue führende Prozessinstanz hat den aktiven Status und den
+            Nachweis der Wiedereröffnung dauerhaft gespeichert. PropertyFlow
+            speichert dafür zuerst einen Wiedereröffnungsauftrag und wartet auf
+            dessen Anwendung höchstens 15 Sekunden. Case-ID und bisherige
+            Historie bleiben erhalten. Die Antwort enthält keinen Körper.
           headers:
             Cache-Control:
               $ref: '#/components/headers/NoStore'
@@ -1922,31 +2233,25 @@ paths:
             Referrer-Policy:
               $ref: '#/components/headers/NoReferrer'
       x-propertyflow-idempotency:
-        key: operation
+        key: operationId
         scope: Fall und Wiedereröffnung nach erneuter Zugriffsprüfung.
         rule: >
-          Eine identische Wiederholung einer gespeicherten Wiedereröffnung
-          bestätigt dasselbe Ereignis mit 200. Auch nach einem erneuten
+          Eine identische Wiederholung verwendet denselben Auftrag und bestätigt
+          die gespeicherte Wiedereröffnung erneut mit 200. Dieselbe Absende-ID
+          mit anderer Fallversion ergibt 400. Auch nach einem erneuten
           Abschluss löst sie keinen weiteren Statuswechsel aus. Wiederholte
           Aufrufe und Worker-Ausführungen erzeugen höchstens einen Nachweis
           der Wiedereröffnung. Dieselbe Absende-ID mit anderer Fallversion
           ergibt 409. Eine neue Wiedereröffnung erfordert einen abgeschlossenen
           Fall und den aktuellen Fallstand.
-  /mitarbeiter/faelle/{id}/nachrichten/{messageId}/antwortbedarf-aufheben:
+  /mitarbeiter/faelle/{id}/antwortbedarf-aufheben:
     parameters:
       - $ref: '#/components/parameters/StaffCaseId'
-      - in: path
-        name: messageId
-        required: true
-        description: ID der ausgewählten veröffentlichten Rückfrage im adressierten Fall.
-        schema:
-          type: string
-          minLength: 1
     post:
       operationId: mitarbeiterAntwortbedarfAufheben
       tags: [Mitarbeitende]
       summary: Antwortbedarf aufheben
-      x-propertyflow-status: zielvertrag
+      x-propertyflow-status: implementiert
       description: >
         PropertyFlow prüft die Mitarbeiterberechtigung, die Fallversion, den
         aktiven Fall und den offenen Antwortbedarf der ausgewählten externen
@@ -1973,14 +2278,18 @@ paths:
             schema:
               type: object
               additionalProperties: false
-              required: [version, operation, csrf]
+              required: [operationId, version, messageId, csrf]
               properties:
+                operationId:
+                  $ref: '#/components/schemas/StaffOperation'
                 version:
                   type: integer
                   format: int64
                   description: Version des beim Aufheben geprüften Fallstands.
-                operation:
-                  $ref: '#/components/schemas/StaffOperation'
+                messageId:
+                  type: string
+                  format: uuid
+                  description: ID der ausgewählten veröffentlichten Rückfrage im adressierten Fall.
                 csrf:
                   $ref: '#/components/schemas/StaffCsrf'
       responses:
@@ -1988,14 +2297,18 @@ paths:
           description: >
             Die von Camunda veranlasste Aufhebung für die ausgewählte
             Rückfrage und ein allfälliger Statuswechsel sind dauerhaft
-            gespeichert. Die Antwort enthält keinen Körper. Das UI lädt
-            den gespeicherten Fallstand neu und behält die Nachrichteneingabe,
-            ihre Auswahl und den laufenden KI-Stream.
+            gespeichert. PropertyFlow wartet darauf höchstens 2 Sekunden.
+            Das UI lädt den gespeicherten Fallstand neu und behält die
+            Nachrichteneingabe, ihre Auswahl und den laufenden KI-Stream.
           headers:
             Cache-Control:
               $ref: '#/components/headers/NoStore'
             Referrer-Policy:
               $ref: '#/components/headers/NoReferrer'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffCommandResult'
         '400':
           description: Formulardaten fehlen oder sind ungültig, etwa die Fallversion.
           headers:
@@ -2041,7 +2354,7 @@ paths:
             Referrer-Policy:
               $ref: '#/components/headers/NoReferrer'
       x-propertyflow-idempotency:
-        key: operation
+        key: operationId
         scope: Fall und manuelle Aufhebung des Antwortbedarfs nach erneuter Zugriffsprüfung.
         rule: >
           Eine identische Wiederholung einer gespeicherten Aufhebung bestätigt
@@ -2255,7 +2568,7 @@ paths:
       operationId: mitarbeiterKontoAnlegen
       tags: [Mitarbeitende]
       summary: Mitarbeiterkonto anlegen
-      x-propertyflow-status: zielvertrag
+      x-propertyflow-status: implementiert
       x-propertyflow-required-permission: Mitarbeiterkonten verwalten
       description: >
         PropertyFlow prüft bei jedem Aufruf die aktive Mitarbeitersitzung,
@@ -2363,7 +2676,7 @@ paths:
       operationId: mitarbeiterZugriffEntziehen
       tags: [Mitarbeitende]
       summary: Mitarbeiterzugriff entziehen
-      x-propertyflow-status: zielvertrag
+      x-propertyflow-status: implementiert
       x-propertyflow-required-permission: Mitarbeiterkonten verwalten
       description: >
         PropertyFlow prüft die aktive Mitarbeitersitzung, das aktuelle
@@ -2606,7 +2919,7 @@ paths:
       operationId: mitarbeiterFallLinkErsetzen
       tags: [Mitarbeitende]
       summary: Persönlichen Fall-Link ersetzen
-      x-propertyflow-status: zielvertrag
+      x-propertyflow-status: implementiert
       x-propertyflow-required-permission: Fallzugänge verwalten
       description: >
         Die geschützte Fallzugangsverwaltung ersetzt einen verlorenen oder
@@ -2687,7 +3000,7 @@ paths:
       operationId: mitarbeiterFallKontaktadresseAendern
       tags: [Mitarbeitende]
       summary: Fall-Kontaktadresse ändern
-      x-propertyflow-status: zielvertrag
+      x-propertyflow-status: implementiert
       x-propertyflow-required-permission: Fallzugänge verwalten
       description: >
         Die geschützte Fallzugangsverwaltung korrigiert die Kontaktadresse
@@ -2769,6 +3082,96 @@ paths:
           einen weiteren Token noch einen weiteren Versandauftrag.
 components:
   schemas:
+    StaffActionOperationId:
+      type: string
+      format: uuid
+      description: Vom Browser erzeugte Absende-ID der Mitarbeiteraktion.
+    StaffUserTaskKey:
+      type: string
+      pattern: '^[0-9]+$'
+      description: Camunda-Schlüssel der im Formular angezeigten User Task als Dezimalzeichenfolge.
+    StaffReviewToken:
+      type: string
+      minLength: 1
+      description: >
+        Serverseitig ausgestelltes Prüftoken des angezeigten Prüfstands. Es bindet
+        die Entscheidung an den geprüften Fall- und Aufgabenstand.
+    StaffWaitId:
+      type: string
+      format: uuid
+      description: ID der laufenden Wiedervorlage aus `…/wiedervorlage/verfuegbar`.
+    StaffFollowUpChange:
+      type: object
+      additionalProperties: false
+      required: [operationId, waitId, version, csrf]
+      properties:
+        operationId:
+          $ref: '#/components/schemas/StaffActionOperationId'
+        waitId:
+          $ref: '#/components/schemas/StaffWaitId'
+        version:
+          type: integer
+          format: int64
+          description: Version des bei der Bestätigung geprüften Fallstands.
+        days:
+          type: integer
+          minimum: 1
+          description: Positive Anzahl Tage bis zur Wiedervorlage. Alternativ zu `date`.
+        date:
+          type: string
+          format: date
+          description: Gewähltes Kalenderdatum im Format JJJJ-MM-TT. Alternativ zu `days`.
+        reason:
+          type: string
+          description: Optionale Begründung für den internen Änderungsnachweis.
+        csrf:
+          $ref: '#/components/schemas/StaffCsrf'
+    StaffReviewedClosure:
+      type: object
+      additionalProperties: false
+      required: [operationId, version, reviewToken, csrf]
+      properties:
+        operationId:
+          $ref: '#/components/schemas/StaffOperation'
+        version:
+          type: integer
+          format: int64
+          description: Version des geprüften Fallstands.
+        reviewToken:
+          $ref: '#/components/schemas/StaffReviewToken'
+        csrf:
+          $ref: '#/components/schemas/StaffCsrf'
+    StaffDecisionConfirmed:
+      type: object
+      required: [state]
+      properties:
+        state:
+          type: string
+          const: CONFIRMED
+    StaffCommandResult:
+      type: object
+      description: Gespeicherter Stand eines Mitarbeiterauftrags.
+      required: [operationId, state]
+      properties:
+        operationId:
+          type: string
+        state:
+          type: string
+          enum: [PENDING, APPLIED, REJECTED]
+        code:
+          type: [string, 'null']
+          description: Fehlercode bei einem abgewiesenen Auftrag.
+        version:
+          type: [integer, 'null']
+          format: int64
+          description: Fallversion nach Anwendung des Auftrags.
+    StaffActionError:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+          description: Technischer Fehlercode, etwa `INVALID_INPUT`, `CASE_CHANGED` oder `TEMPORARILY_UNAVAILABLE`.
     FallzugangVersion:
       type: integer
       format: int64
@@ -2865,6 +3268,100 @@ components:
       schema:
         const: no-referrer
   responses:
+    StaffCommandApplied:
+      description: Der Auftrag ist angewendet und dauerhaft gespeichert.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+        Referrer-Policy:
+          $ref: '#/components/headers/NoReferrer'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StaffCommandResult'
+    StaffActionPending:
+      description: >
+        Der Auftrag ist gespeichert und mit dem Fallprozess korreliert, aber noch
+        nicht vom Worker angewendet. Das UI fragt den Auftragsstand ab.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+        Referrer-Policy:
+          $ref: '#/components/headers/NoReferrer'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StaffCommandResult'
+    StaffFollowUpApplied:
+      description: Der Auftrag zur Wiedervorlage ist angewendet und dauerhaft gespeichert.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+        Referrer-Policy:
+          $ref: '#/components/headers/NoReferrer'
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [state]
+            properties:
+              state:
+                type: string
+                const: APPLIED
+    StaffFollowUpPending:
+      description: Der Auftrag zur Wiedervorlage ist gespeichert, aber noch nicht angewendet.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+        Referrer-Policy:
+          $ref: '#/components/headers/NoReferrer'
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [state]
+            properties:
+              state:
+                type: string
+    StaffActionInvalid:
+      description: Die Eingabe ist ungültig, enthält zusätzliche Felder oder die Entscheidung ist nicht zulässig.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+        Referrer-Policy:
+          $ref: '#/components/headers/NoReferrer'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StaffActionError'
+    StaffActionConflict:
+      description: >
+        Der Fallstand ist veraltet, der Fall ist nicht aktiv oder dieselbe
+        Absende-ID wurde mit anderen Daten verwendet. Das UI lädt den aktuellen
+        Fallstand.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+        Referrer-Policy:
+          $ref: '#/components/headers/NoReferrer'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StaffActionError'
+    StaffActionUnavailable:
+      description: >
+        Ein technischer Fehler oder Timeout verhindert die Bestätigung. Bei
+        unklarem Ausgang kann die Aktion bereits wirksam sein. PropertyFlow
+        wiederholt sie nicht automatisch; dieselbe Absende-ID bleibt gültig.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+        Referrer-Policy:
+          $ref: '#/components/headers/NoReferrer'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StaffActionError'
     FallzugangUngueltigeEingabe:
       description: Ein Formularfeld fehlt oder ist ungültig, oder das Formular enthält zusätzliche Felder.
       headers:

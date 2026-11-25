@@ -67,7 +67,7 @@ public class AccountAdministrationService implements AccountAdministration {
         }
         UUID target = UUID.randomUUID();
         if (!accounts.create(target, name.strip(), EmailAddress.normalize(email), false, false)) {
-            throw new IllegalArgumentException("Für diese Adresse besteht bereits ein Mitarbeiterkonto.");
+            throw new AccountConflictException("Für diese Adresse besteht bereits ein Mitarbeiterkonto.");
         }
         accounts.audit(actor, target, "CREATE", "staff=true, accounts=false, caseAccess=false");
         return target;
@@ -90,7 +90,7 @@ public class AccountAdministrationService implements AccountAdministration {
             return;
         }
         if (entry.activeStaff() && entry.accountAdministration() && accounts.administrators() <= 1) {
-            throw new IllegalArgumentException("Das letzte aktive Verwaltungskonto muss erhalten bleiben.");
+            throw new AccountConflictException("Das letzte aktive Verwaltungskonto muss erhalten bleiben.");
         }
         if (entry.staffRole() || block && entry.active()) {
             accounts.revoke(target, block);
