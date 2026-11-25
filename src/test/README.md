@@ -207,7 +207,8 @@ Die drei Browserjobs in [`.github/workflows/tests.yml`](../../.github/workflows/
 In CI laufen Oberflächen- und Kontentests parallel je Browser. In der
 Kontengruppe bleiben Prüfung, Backendneustart und tatsächlicher Sitzungsablauf
 zusammen. Ein separater Chromium-Job misst die Performance mit Lighthouse.
-Jeder Job baut seinen eigenen Teststack auf und hat ein Limit von acht Minuten.
+Jeder Job baut seinen eigenen Teststack auf. Die UI-Jobs haben inklusive
+JavaScript-Fehlerprüfungen zehn Minuten Zeit, die übrigen acht Minuten.
 Die Testinstanz fragt ausstehende Workflow-Aufträge häufiger ab.
 
 Lokal startet der Runner standardmässig alle funktionalen Prüfungen. Mit
