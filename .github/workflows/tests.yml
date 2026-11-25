@@ -92,7 +92,7 @@ jobs:
         with:
           node-version: '22'
       - name: Java regression and application JAR
-        run: sh ./mvnw -B -ntp '-Dtest=*,!FallstandMcpHttpTest' verify
+        run: sh ./mvnw -B -ntp verify
       - name: JavaScript regression
         if: ${{ !cancelled() }}
         run: |

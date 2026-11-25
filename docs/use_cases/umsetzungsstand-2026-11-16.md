@@ -1,11 +1,11 @@
 # Use-Case-Umsetzung im integrierten Backend
 
-Stand: 16.11.2026. Diese Übersicht ersetzt die historischen Implementierungsangaben
+Stand: 25.11.2026; ursprüngliche Fassung vom 16.11.2026. Diese Übersicht ersetzt die historischen Implementierungsangaben
 in der ursprünglichen Use-Case-Liste. Die fachlichen Anforderungen der einzelnen
 Use Cases bleiben verbindlich. «Umgesetzt» bedeutet nicht automatisch vollständig
 produktiv abgenommen. Die Modellevaluation ist zurückgestellt.
-MCP-Anforderungen und MCP-Fehler sind auf ausdrücklichen Benutzerwunsch aus diesem
-Arbeitslauf ausgeklammert und werden separat bearbeitet.
+MCP wurde seit der ursprünglichen Fassung im regulären Backend ergänzt. Die
+zugehörigen automatisierten Nachweise ersetzen keine Abnahme im ChatGPT-Workspace.
 
 ## Zuordnung von Oberfläche, Java, Speicherung und Prozess
 
@@ -26,26 +26,28 @@ Arbeitslauf ausgeklammert und werden separat bearbeitet.
 | 013 | Wiedervorlage | `FollowUpCommandService`, Warte- und Befehlstabellen | Timer-/Nachrichtenpfade implementiert; Integrationstests, Devbeispiel |
 | 014 | Abschliessen | `CaseClosureService`; manueller Abschluss und separate individuelle Nachricht | Manuell nutzbar; automatischer Abschluss technisch vorhanden, fest gesperrt |
 | 015 | Wiedereröffnen | `CaseReopenService`, persistenter Wiedereröffnungsauftrag | Neue führende Instanz; Integrationstest und Devbeispiel |
-| 016 | Dringlichkeit bewerten | Analyseadapter und `CaseAnalysisService`; fallbezogene Ergebnisse gespeichert | Worker vorhanden; Dev ohne KI führt zur Mitarbeiterprüfung; keine neue Modellevaluation |
+| 016 | Dringlichkeit bewerten | Analyseadapter und `ConversationEvaluationService`; fallbezogene Ergebnisse gespeichert | Worker vorhanden; Dev ohne KI führt zur Mitarbeiterprüfung; keine neue Modellevaluation |
 | 017 | Antwort auswerten | `ConversationEvaluationService`, `TenantReplyService`; Auswertungen und Antwortbedarf gespeichert | Technische PostgreSQL-/Camunda-Prüfungen; keine Aussage über vollständige Modellqualität |
 | 018 | Empfehlung/RAG | `RecommendationService`, freigegebene Dateiquellen; Ergebnisse beim Fall gespeichert | Technisch angebunden; fachlich freigegebener produktiver Wissensbestand und Gesamtabnahme offen |
 | 019 | Benachrichtigen | `CaseMailService`, persistente Aufträge und Zustellzustände; SMTP an Mailpit | Eigener Mailprozess; zusätzliche administrative Ersatzlink-Outbox ohne Camunda; nicht jede Fehlerphase neu geprüft |
 | 020 | E-Mail-Eingang | Nicht implementiert | Sichere Eingangskanal-Spezifikation und Umsetzung offen; Mailpit ist kein implementierter Eingangskanal |
 | 021 | KI-Rückfrage | Freigegebener Fragenkatalog und automatische Fragerunden implementiert | Freie interaktive Vorschläge nicht vollständig umgesetzt; technische Katalogtests vorhanden |
 | 022 | Mieter anmelden | Neu: `/mieter/anmelden`, dauerhaftes Konto, E-Mail-Einmalcode | Neuanmeldung nach Neustart; keine dauerhaften Sitzungscookies als Identitätsersatz |
-| 023 | MCP delegieren | Demo vorhanden; produktive OAuth-/Delegationspersistenz nicht implementiert | Keine MCP-Gesamtabnahme; bleibt offen |
+| 023 | MCP delegieren | OAuth mit PKCE, persistenten Delegationen, Scopes und Widerruf; Backend-Werkzeuge und browsergebundene Schreibbestätigung implementiert | `McpOAuthFlowTest`, `BackendMcpConfigurationTest` und persistente MCP-Diensttests; vollständiger ChatGPT-Workspace-Nachweis und Betriebsfreigabe offen |
 | 024 | Fall-Link ersetzen | Neu: separate Fallzugangsverwaltung, serverseitige Prüfung, `CaseAccessAdministrationService` | Atomarer Ersatz, Audit, Outbox, Wiederholungsschutz; unabhängig von Camunda |
 | 025 | Kontaktadresse ändern | Neu: bestätigte Zieladresse, gleichzeitiger Linkersatz, ursprüngliche Adresse erhalten | Kontozugriff wechselt ab nächster Anfrage; Browser-/DB-Prüfung |
 | 026 | Abmelden | Gemeinsamer Logout für Mitarbeiter- und Mietersitzung | CSRF-Prüfung, Sitzung invalidieren; Browserprüfung |
-| 027 | Kritisch entscheiden | Menschliche Prüfgründe und prozessgebundene Mitarbeiterentscheidungen vorhanden | Vollständige Abdeckung des eigenständigen Zielvertrags für alle kritischen Handlungen noch nicht nachgewiesen |
+| 027 | Kritisch entscheiden | Menschliche Prüfgründe und prozessgebundene Mitarbeiterentscheidungen vorhanden | Eigenständiger Freigeben-/Ablehnen-/Klärungsablauf noch nicht vollständig umgesetzt; Bearbeitung fortsetzen erteilt keine Kosten- oder Auftragsfreigabe |
 | 028 | Antwortbedarf aufheben | Mitarbeiteraktion mit persistentem Auftrag und Prozessprüfung | Technische Umsetzung vorhanden; nicht separat im neuen Kontenbrowserlauf geprüft |
-| 029 | Mitarbeiterzugriff entziehen | Neu: Kontosperre/Rollenentzug, persönliches Audit, Absende-ID und letzter-Administrator-Schutz | Bereits offene Websitzung verliert Rechte; Parallelität geprüft. MCP bleibt separat offen |
+| 029 | Mitarbeiterzugriff entziehen | Neu: Kontosperre/Rollenentzug, persönliches Audit, Absende-ID und letzter-Administrator-Schutz | Bereits offene Websitzung verliert Rechte; Parallelität geprüft. `McpOAuthFlowTest` prüft den Entzug von Mitarbeiter-Scopes; Workspace-Abnahme separat |
 
 ## Datenbankstand
 
-54 Anwendungstabellen nach V1–V8, zusätzlich Flyways Schematabelle:
-fünf unveränderte Modulinitialskripte sowie additive Migrationen für Konten,
-Fallzugangsprüfung und administrative Befehle. `intake`, `triage` und
+Fünf Modulinitialskripte V1–V5 und additive Migrationen V6–V12:
+Konten, Fallzugangsprüfung, administrative Befehle, MCP-OAuth, MCP-Bestätigung
+und Audit sowie die aktuellen BPMN-Aufgabenkennungen. Bereits angewendete
+Migrationen werden nicht geändert; die nächste freie Version steht im
+[Migrationsverzeichnis](../../src/main/resources/db/backend-migration/updates/README.md). `intake`, `triage` und
 `recommendation` benötigen weiterhin keine eigenen Fachtabellen. Fallbezogene
 Ergebnisse gehören zu `caseprocessing`, Konten zu `access`.
 
@@ -60,12 +62,12 @@ Ergebnisse gehören zu `caseprocessing`, Konten zu `access`.
 
 Die lesende Betriebsübersicht `/mitarbeiter/betrieb` zeigt auffällige persistente
 Aufträge. Autorisierung, Projektion und Datenbankfehler sind geprüft. Sie ersetzt
-keine auditierte Klärung oder erneute Ausführung. Alle sieben ausführbaren BPMN
+keine auditierte Klärung oder erneute Ausführung. Alle acht ausführbaren BPMN
 liegen nun unter `src/main/resources/bpmn` und werden mit dem JAR ausgeliefert.
 Ein eigener GitHub-Job prüft den integrierten Betrieb mit PostgreSQL, Camunda und
 Mailpit; lokale Nachweise und Grenzen stehen im oben verlinkten Prüfbericht und
 in [Betrieb, BPMN und CI](../architecture/betriebsuebersicht-und-ci-2026-11-16.md).
 
-Weiter offen: produktiver MCP/OAuth-Zugang, E-Mail-Eingang, auditierte Klärung/Wiederaufnahme ungewisser Aufträge und
+Weiter offen: MCP-Gesamtabnahme im ChatGPT-Workspace und Betriebsfreigabe, E-Mail-Eingang, auditierte Klärung/Wiederaufnahme ungewisser Aufträge und
 vollständige Ausfall-/Parallelitätsmatrix aller KI- und Prozessphasen.
 Der automatische Abschluss bleibt bis zur bestandenen Evaluation und Freigabe gesperrt.

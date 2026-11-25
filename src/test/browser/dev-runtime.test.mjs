@@ -93,7 +93,7 @@ test('Devbetrieb ohne KI: Mieterfall, Mitarbeiterdialog und echte Camunda-Ansich
     assert.equal((await tenant.request.post(formulationUrl, {
         form: { csrf: formulationAccess.csrf, attemptId: crypto.randomUUID(), text: 'Kein Mitarbeiterzugriff' },
     })).status(), 401);
-    await staff.locator('#staff-message-form input[name=answer]').check();
+    await staff.getByRole('switch', { name: 'Mieterantwort erforderlich', exact: true }).check();
     await staff.locator('#staff-message-form').getByRole('button', { name: 'Nachricht senden' }).click();
     await staff.locator('#history').getByText(staffMessage, { exact: true }).waitFor({ timeout: 30000 });
     await tenant.reload();

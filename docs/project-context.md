@@ -1,7 +1,11 @@
 # PropertyFlow – Projekt-Kontext
 
-**Version:** 0.1  
-**Status:** Block 1 – Konzeption  
+**Version:** 0.3
+
+**Stand:** 25.11.2026
+
+**Status:** Integriertes Backend; technische Regression und fachliche Gesamtabnahme getrennt
+
 **Struktur:** kompakt und an arc42 orientiert
 
 ## Zweck
@@ -18,6 +22,20 @@ künstlich als leere Abschnitte angelegt.
 KI-Werkzeuge sollen dieses Dokument vor repo-weiten oder architektonisch
 relevanten Änderungen als Einstiegskontext verwenden. Dieses Dokument ersetzt
 die Detaildokumentation nicht.
+
+## Aktueller Umsetzungsstand
+
+Das reguläre Profil `propertyflow-backend` verwendet PostgreSQL, Flyway und
+externes Camunda. Acht ausführbare BPMN-Modelle liegen unter
+`src/main/resources/bpmn`; Workflowtests verwenden dieselben Dateien.
+MCP-OAuth, delegierte Werkzeuge und die Bestätigung wichtiger Schreibaktionen
+sind im Backend vorhanden. Der vollständige Nachweis im ChatGPT-Workspace,
+die fachlichen Freigaben und die Betriebsabnahme bleiben offen.
+`frontend-demo` ist eine isolierte Testgrundlage für den früheren MCP-Leseprototyp.
+
+[Umsetzungsmatrix](use_cases/umsetzungsstand-2026-11-16.md) ·
+[MCP-Vertrag](specifications/mcp-werkzeuge.md) ·
+[Testanleitung](../src/test/README.md)
 
 ## 1. Ziele und Scope
 
@@ -74,7 +92,7 @@ eindeutig festgelegt sind.
 - Architekturentscheidungen werden über ADRs dokumentiert.
 - Datenbankschemaänderungen werden mit Flyway versioniert.
 - Bereits angewendete Flyway-Migrationen werden nicht nachträglich verändert.
-- Backend-Initialskripte sind nach Modulen aufgeteilt. Nach dem freigegebenen Hard Reset ohne Sicherung ist die Legacy-Kette entfernt; additive Updates V6–V8 sind vorhanden, neue Änderungen beginnen mit V9. Siehe [Datenbankmigrationen](architecture/datenbankmigrationen.md).
+- Backend-Initialskripte sind nach Modulen aufgeteilt. Nach dem freigegebenen Hard Reset ohne Sicherung ist die Legacy-Kette entfernt; additive Updates V6–V12 sind vorhanden. Neue Migrationen erhalten die nächste freie Versionsnummer; massgeblich ist das versionierte Migrationsverzeichnis. Siehe [Datenbankmigrationen](architecture/datenbankmigrationen.md).
 - Kleine, fokussierte Änderungen und automatisierte Tests werden bevorzugt.
 
 ## 3. Kontext und Systemgrenzen
@@ -130,6 +148,7 @@ Details:
 
 Die fachlichen Backend-Module sind:
 
+- `access` für Konten, Anmeldung, Berechtigungen und MCP-Delegation
 - `intake`
 - `triage`
 - `recommendation`
@@ -307,7 +326,7 @@ prüft Prozessfreigabe, aktuellen Fallstand und offene Prüfgründe und übernim
 den Katalogtext mit Antwortbedarf. Freie LLM-Zusätze werden nicht automatisch
 veröffentlicht. Mitarbeiterbearbeitung und Wiedervorlage bleiben geschützt;
 doppelte oder veraltete Ergebnisse allein erzeugen keinen neuen Prüfbedarf.
-Die Regeln sind bestätigt, die technische Umsetzung steht aus.
+Die Katalogrückfragen und Fragerunden sind technisch integriert; die fachliche Gesamtabnahme bleibt separat.
 
 Für automatische Antworten vor Fallabschluss gilt
 [KOM-06](specifications/fallkommunikation.md#kom-06-automatische-antworten-vor-fallabschluss):
@@ -342,8 +361,8 @@ sind dort vereinbart. Mitarbeitende dürfen den Abschluss bestätigen; das
 System darf bei eindeutig bestätigter Behebung ohne weiteren Hilfebedarf oder
 eindeutig fehlendem Verwaltungsbedarf nach hinterlegter Fachregel abschliessen,
 sofern keine Mitarbeiterprüfung läuft und keine menschliche Entscheidung aussteht.
-Konkrete Prozessübergänge und die technische Umsetzung der Abschlussregeln
-bleiben zu konkretisieren. Use-Cases und Screens verweisen auf diese Quelle.
+Die Prozessübergänge und Abschlussprüfungen sind technisch integriert. Der
+automatische Abschluss bleibt bis zur bestandenen Evaluation und fachlichen Freigabe gesperrt. Use-Cases und Screens verweisen auf diese Quelle.
 
 Die optionale Wiedervorlage nach FALL-11 wird in UI3 in Tagen oder als Datum
 gesetzt und am Fall gespeichert. UI2 zeigt das Datum als zusätzliche, in

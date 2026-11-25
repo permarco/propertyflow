@@ -1,6 +1,6 @@
 # PropertyFlow · Block 3 «Services»
 
-Arbeitsfassung für das Abgabe-PDF. Die verlinkten Projektdateien enthalten die
+Arbeitsfassung für das Abgabe-PDF, abgeglichen am 25.11.2026. Die verlinkten Projektdateien enthalten die
 verbindlichen Entscheidungen, Verträge und Nachweise.
 
 [Git-Repository · PropertyFlow](https://github.com/permarco/propertyflow)
@@ -75,172 +75,74 @@ Camunda-Korrelation. Bei einem technischen Fehler oder Timeout liefert
 PropertyFlow `500`. Der Text und die Absende-ID bleiben im Formular. Ein
 bereits gespeicherter Eintrag bleibt im Verlauf. [UC-009](../use_cases/UC-009-mieteranliegen-ergaenzen.md)
 
-Die Frontend-Demo belegt den direkten Fallzugriff, die Weiterleitung,
-Eingabevalidierung und Wiederholung im Arbeitsspeicher. Die Camunda-Korrelation
-und der Ausfalltest mit PostgreSQL stehen aus.
-[Web-Tests](../architecture/frontend-demo-ablosung-2026-11-16.md) ·
-[Grenzfalltests](../architecture/frontend-demo-ablosung-2026-11-16.md)
+Das reguläre Backend setzt die Fallannahme und den persönlichen Fallzugriff mit
+PostgreSQL um. `GuestCasePostgresTest`, `GuestCaseRestartPostgresTest` und
+`TenantMessagePostgresTest` prüfen Speicherung, Wiederholung, Zugriff und
+Neustart. Die Workflowtests verwenden die acht echten Anwendungsmodelle.
+Der separat definierte Zehn-Minuten-Störfall mit genau 20 Einreichungen bleibt
+ein eigener Abnahmenachweis; andere Integrationstests ersetzen ihn nicht.
 
-Die OpenAPI beschreibt alle 20 expliziten Browseroperationen der vorhandenen
-Web-Controller. Dazu gehören das Erfassungsformular, der Mieterkontozugriff,
-Anmeldung, Registrierung und Abmeldung sowie die Fallübersicht, das Falldetail
-und die vorhandenen Demo-Schreibaktionen für Mitarbeitende.
-[SS-001](../architecture/schnittstellenentwurf-block-3.md#2-zentraler-http-endpunkt)
+Die OpenAPI-Datei ist weiterhin der **Zielvertrag**. Eine implementierte
+Fachfunktion bedeutet nicht, dass sämtliche Pfade, Eingaben und Antworten
+bereits deckungsgleich sind. Für «Bearbeitung fortsetzen» ist der Pfad
+`POST /mitarbeiter/faelle/{id}/bearbeitung-fortsetzen` vereinheitlicht.
+Der Backendvertrag verlangt zusätzlich `operationId` und `reviewToken` und
+liefert bei Erfolg `{"state":"CONFIRMED"}`. Diese Abweichungen sind in
+[UC-012](../use_cases/UC-012-fall-fachlich-steuern.md) dokumentiert.
 
-Für «Bearbeitung fortsetzen» definiert die OpenAPI zusätzlich den Zielvertrag
-`POST /mitarbeiter/faelle/{id}/bearbeitung-fortsetzen`. PropertyFlow prüft
-Fallversion und `userTaskKey` und wartet synchron auf Camundas Bestätigung
-für diese Aufgabe. Danach antwortet PropertyFlow mit `200`. Eine veraltete
-Aufgabe ergibt `400`. Ein technischer Fehler oder Timeout ergibt `500`.
-Das UI lädt den gespeicherten Fallstand neu. Die Camunda-Anbindung und der
-Prüffall mit zwei Browser-Tabs stehen aus.
-[UC-012](../use_cases/UC-012-fall-fachlich-steuern.md) ·
-[SS-003](../architecture/schnittstellenentwurf-block-3.md#ss-003--camunda-integrationsvertrag)
+| Fachfunktion | Implementierung und automatisierte Prüfung | Grenze |
+| --- | --- | --- |
+| Bearbeitung fortsetzen | `StaffDecisionService`, `StaffDecisionPostgresTest`, `StaffDecisionCamundaTest` und Browserprüfung `staff-review.test.mjs` | Aktuelle Aufgabe, Fallversion und Prüfgrundlage erforderlich; keine Kosten- oder Auftragsfreigabe |
+| Dringlichkeit, Objekt/Wohnung und internes Memo | `CaseDataService`, `StaffCaseDataController`, `CaseDataPostgresTest` | Manuelle Einstufung, Wiederholung, Versionskonflikt und interner Sichtbarkeitsschutz werden geprüft; keine produktive Stammdatenanbindung |
+| Externe Nachricht und Rückfrage | `StaffMessageService`, `StaffMessagePostgresTest`, `StaffMessageCamundaTest` | Veröffentlichung und nachgelagerter Mailversand sind getrennte Ergebnisse |
+| Wiedervorlage | `FollowUpCommandService`, `CaseWaitCamundaTest` | Timerwechsel, Aufhebung und Mieterkontakt werden an der echten Engine geprüft; noch keine vollständige Matrix aller Parallelitätsfälle |
+| Abschluss und Wiedereröffnung | `CaseClosureCamundaTest`, `CaseReopenCamundaTest` | Wiedereröffnung startet eine neue führende Instanz; automatischer Abschluss bleibt fachlich gesperrt |
+| Antwortbedarf aufheben | `AnswerCancellationWorkers` und zugehörige Prozess-/Dienstprüfungen | Konkrete Rückfrage und aktuelle Prozessfreigabe erforderlich |
+| KI-Formulierung | Integrierte SSE-Formulierung und Browserfehlerprüfungen | Abbruch und Fehlerbehandlung sind technische Nachweise; keine Freigabe der Modellqualität |
+| Kontoanlage und Rechteentzug | `AccountAdministrationService`, `AccountLifecyclePostgresTest`, `BackendAccessParityPostgresTest`, `McpOAuthFlowTest` | Verwaltungsrecht und Schutz des letzten Administrators; Workspace-Abnahme separat |
+| Fall-Link ersetzen und Kontaktadresse ändern | `CaseAccessAdministrationService`, persistente Prüfung, Audit und Ersatzlink-Outbox | Atomarer Linkersatz; ausserhalb von Camunda. Identitätsprüfverfahren vor produktivem Einsatz abnehmen |
+| Kritische Entscheidung gemäss UC-027 | Prüfgründe und prozessgebundene Mitarbeiterentscheidung vorhanden | Der eigenständige Freigeben-/Ablehnen-/Klärungsablauf ist noch nicht vollständig umgesetzt |
 
-`POST /mitarbeiter/faelle/{id}/dringlichkeit-aendern` definiert den Zielvertrag
-für die vier Stufen der manuellen Einstufung. `200` folgt auf die bestätigte
-Camunda-Korrelation. Bei veraltetem Fallstand oder unzulässiger Aktion folgt
-`400`, bei technischem Fehler oder Timeout `500`. Die Absende-ID verhindert
-doppelte Einstufungen und Benachrichtigungen. Der Nachweis der konkurrierenden
-Änderungen und des manuellen Vorrangs steht aus.
-[DRING-06](../specifications/dringlichkeitsbewertung.md#dring-06-manuelle-anpassung)
-
-`POST /mitarbeiter/faelle/{id}/objekt-wohnung-zuordnen` nimmt einen Freitext
-oder ein Paar von Stammdatenreferenzen entgegen. PropertyFlow prüft Fallstand
-und bei Stammdaten die Zugehörigkeit der Wohnung zum Objekt. `200` bestätigt
-die synchrone Korrelation mit Camunda, `400` meldet ungültige oder veraltete
-Eingaben, `500` einen technischen Fehler oder Timeout. Die bestätigte
-Zuordnung wird getrennt von der ursprünglichen Mieterangabe gespeichert.
-Umsetzung und fachlicher Prüfbeleg stehen aus.
-[FALL-04](../specifications/fallverwaltung.md#fall-04-ursprungsdaten-und-zuordnung)
-
-`POST /mitarbeiter/faelle/{id}/externe-nachricht-veroeffentlichen` nimmt eine
-Information oder eine Rückfrage entgegen. Camunda veranlasst die Veröffentlichung.
-`200` setzt die dauerhaft gespeicherte und im Mieterfallverlauf abrufbare
-Nachricht voraus. Der E-Mail-Versand folgt danach. Ein Test mit verzögerter
-Speicherung und ausgefallenem Maildienst soll beide Grenzen nachweisen.
-Wiederholungen mit derselben Absende-ID erzeugen weder eine zweite Nachricht
-noch einen zusätzlichen Benachrichtigungsauftrag. Die Umsetzung steht aus.
-[UC-010](../use_cases/UC-010-externe-fallnachricht-veroeffentlichen.md)
-
-`POST /mitarbeiter/faelle/{id}/internes-memo-speichern` bestätigt mit `200`,
-sobald der von Camunda veranlasste Eintrag dauerhaft im internen Fallverlauf
-gespeichert ist. Das Memo ist nur für berechtigte Mitarbeitende abrufbar und
-löst keine E-Mail aus. Ein Integrationstest soll Mieterzugriff, Mailauftrag
-und identische Wiederholung prüfen. Die Umsetzung steht aus.
-[UC-011](../use_cases/UC-011-internes-memo-erfassen.md)
-
-`POST /mitarbeiter/faelle/{id}/wiedervorlage` bündelt Setzen, Ändern und
-Löschen. Beim Setzen oder Ändern übermittelt das Formular entweder ein Datum
-oder eine Tageszahl. Camunda führt den Timer im Fallprozess. `200` folgt auf
-die bestätigte Aktion und die dauerhafte Speicherung von Terminstand und
-Status. Eine neue Mieternachricht hebt eine laufende Wiedervorlage auf und
-löst sofort die Mitarbeiterprüfung aus. Die Integration und der Prüffall
-mit gleichzeitig fälligem Timer stehen aus.
-[UC-013](../use_cases/UC-013-wiedervorlage-verwalten.md)
-
-`POST /mitarbeiter/faelle/{id}/abschliessen` übergibt den bestätigten
-Mitarbeiterentscheid an den Fallprozess. Camunda veranlasst den Abschluss
-und beendet eine offene Wiedervorlage. `200` folgt erst nach dauerhafter
-Speicherung von «Abgeschlossen» und Abschlussnachweis. Der Mitarbeiterabschluss
-erzeugt keine automatische Nachricht oder E-Mail. Ein Integrationstest soll
-dauerhafte Speicherung, beendeten Timer und das Ausbleiben von Nachrichten-/
-Mailaufträgen auch bei Wiederholung nachweisen. Die Umsetzung steht aus.
-[UC-014](../use_cases/UC-014-fall-abschliessen.md)
-
-`POST /mitarbeiter/faelle/{id}/wiedereroeffnen` erfasst die bestätigte
-Mitarbeiteraktion für einen abgeschlossenen Fall. Camunda veranlasst den
-aktiven Status. `200` folgt nach dauerhafter Speicherung des neuen Status
-und des Nachweises der Wiedereröffnung. Case-ID und Historie bleiben erhalten.
-Ein Integrationstest soll auch prüfen, dass alte Timer und verspätete Worker-
-Ergebnisse den wiedereröffneten Fall nicht verändern. Die Umsetzung und die
-Fortsetzung bei bereits beendeter Camunda-Instanz stehen aus.
-[UC-015](../use_cases/UC-015-fall-wiedereroeffnen.md)
-
-`POST /mitarbeiter/faelle/{id}/nachrichten/{messageId}/antwortbedarf-aufheben`
-adressiert genau eine Rückfrage. Camunda veranlasst die Aufhebung. `200`
-folgt auf die dauerhafte Speicherung der Aufhebung und eines allfälligen
-Statuswechsels. «In Bearbeitung» folgt nur ohne weitere offene Rückfragen,
-laufende Wiedervorlage und vorrangigen Mitarbeiterprüfbedarf. Der geplante
-Integrationstest prüft zwei offene Rückfragen, die Statusbedingungen und
-die identische Wiederholung. Die Umsetzung steht aus.
-[UC-028](../use_cases/UC-028-antwortbedarf-aufheben.md)
-
-`POST /mitarbeiter/faelle/{id}/ki-formulierung` liefert den Vorschlag in
-Textstücken als Server-Sent Events. Ein eigenes Abschlussereignis bestätigt
-die vollständige Ausgabe. Über `POST /mitarbeiter/faelle/{id}/ki-formulierung/{attemptId}/abbrechen`
-kann der Browser den Versuch schon vor dem ersten Textstück abbrechen. Der
-Vorschlag bleibt ungespeichert. Ein geplanter Integrationstest prüft Abbruch
-beim Warten und während der Ausgabe, verspätete Textstücke und den Ausschluss
-interner Memos vom Modellkontext. Die Umsetzung steht aus.
-[UC-004](../use_cases/UC-004-ki-analyse-durchfuehren.md)
-
-`POST /mitarbeiter/konten` erlaubt die Kontoanlage mit dem Zusatzrecht
-«Mitarbeiterkonten verwalten». `200` folgt nach der dauerhaften Speicherung
-des Kontos mit Mitarbeiterrolle und Audit. `403` sperrt direkte Aufrufe ohne
-das Zusatzrecht. Eine belegte E-Mail-Adresse ergibt `409`. Das erste
-Verwaltungskonto wird einmalig per Serverbefehl eingerichtet. Die Umsetzung
-und die Berechtigungs- und Wiederholungsprüfungen stehen aus.
-[UC-007](../use_cases/UC-007-mitarbeiterkonto-anlegen.md)
-
-`POST /mitarbeiter/konten/{userId}/zugriff-entziehen` erlaubt der berechtigten
-Kontoverwaltung, ein Konto zu sperren oder seine Mitarbeiterrolle zu
-entziehen. Ab dem nächsten Aufruf greifen die gespeicherten Rechte auch bei
-bestehender Web-Sitzung oder MCP-Delegation. Änderung und Audit werden gemeinsam
-gespeichert. Das letzte aktive Verwaltungskonto ist vor Entzug geschützt.
-Die Umsetzung und die Prüfungen beider Kanäle stehen aus.
-[UC-029](../use_cases/UC-029-mitarbeiterzugriff-entziehen.md)
-
-`POST /mitarbeiter/faelle/{id}/kritische-entscheidung` bindet den Entscheid
-eines berechtigten Mitarbeiters an die konkrete Handlung, den geprüften
-Fallstand und den `userTaskKey`. `200` setzt den von Camunda bestätigten
-Aufgabenabschluss und den dauerhaft gespeicherten Entscheid mit Audit voraus.
-Ein geplanter Integrationstest prüft, dass die Freigabe für Handlung A keinen
-Zugriff auf Handlung B gewährt. BPMN-Modell und Umsetzung stehen aus.
-[UC-027](../use_cases/UC-027-kritische-fallentscheidung-treffen.md)
-
-Die administrativen POST-Endpunkte `link-ersetzen` und
-`kontaktadresse-aendern` verlangen das Zusatzrecht «Fallzugänge verwalten»
-und einen serverseitig hinterlegten Prüfnachweis. Der Linkersatz sperrt den
-alten Link im selben Commit. Bei einer geprüften Adresskorrektur desselben
-Mieters ändert sich auch die Zuordnung zum verifizierten Konto im Web und
-über MCP. `204` bestätigt die Speicherung. Die E-Mail folgt nachgelagert.
-Beide Aktionen sind bei Camunda-Ausfall möglich. Identitätsprüfverfahren,
-Rechtevergabe, Oberfläche und Integrationstests stehen noch aus.
-[UC-024](../use_cases/UC-024-fall-link-widerrufen-oder-ersetzen.md) ·
-[UC-025](../use_cases/UC-025-fall-kontaktadresse-aendern.md)
+Die [Umsetzungsmatrix](../use_cases/umsetzungsstand-2026-11-16.md) ordnet alle
+Use Cases zu. Die [Testanleitung](../../src/test/README.md) beschreibt die
+getrennten Java-, PostgreSQL-/Camunda- und Browserläufe. Die vollständige
+OpenAPI-Parität und die fachliche Gesamtabnahme bleiben eigene Arbeitspakete.
 
 ## 3. MCP-Werkzeug
 
-Die [Spezifikation der MCP-Werkzeuge](../specifications/mcp-werkzeuge.md)
-beschreibt den vereinbarten Zielumfang für Mieter und Bewirtschaftung im
-regulären Backend. Der folgende Absatz dokumentiert den bisherigen Stand der Demo.
+Der MCP-Zugang ist im regulären Backend implementiert. OAuth-Delegationen,
+Bestätigungsvorgänge und Audit werden persistent gespeichert. Mieter- und
+Mitarbeiterwerkzeuge verwenden dieselben Fachfunktionen und Berechtigungen
+wie die Webanwendung. Den Umfang und die Protokollverträge führt die
+[Spezifikation der MCP-Werkzeuge](../specifications/mcp-werkzeuge.md).
 
-Das MCP-Werkzeug `fallstand_abrufen` ist in der lokalen Frontend-Demo verfügbar.
-Für eigene Fälle liefert es Case-ID, Bearbeitungsstatus und wirksame Dringlichkeit.
-Der HTTP-Integrationstest prüft, dass ein fremder und ein unbekannter Fall
-dieselbe neutrale Antwort ergeben. Die lokale Lesefreigabe verwendet ein
-befristetes und widerrufbares Bearer-Token. Produktive OAuth-Delegation und
-dauerhafte Datenhaltung stehen aus.
-[SS-004](../architecture/schnittstellenentwurf-block-3.md#ss-004--mcp-werkzeug-fallstand-abrufen) ·
-[Demo-Anleitung](../../dev/README.md#mcp-werkzeug-lokal-ausprobieren) ·
-[HTTP-Integrationstest](../../src/test/java/com/pertegato/propertyflow/caseprocessing/mcp/FallstandMcpHttpTest.java)
+`BackendMcpConfigurationTest` prüft die Backend-Routen und Toolverträge mit
+MockMvc; `McpOAuthFlowTest` prüft OAuth, PKCE, Zustimmung, Widerruf und
+Rollenentzug. Persistente MCP-Diensttests ergänzen Fallberechtigung und
+Schreibbestätigung. Der frühere `FallstandMcpHttpTest` verwendet dagegen
+bewusst das isolierte Profil `frontend-demo` und prüft dessen Leseprototyp
+über echtes HTTP. Er ist kein vollständiger Backend-OAuth-End-to-End-Test.
+
+Der vollständige Nachweis mit dem ChatGPT-Workspace sowie die fachliche und
+betriebliche Freigabe stehen weiterhin aus. Eine erfolgreiche lokale
+Toolprüfung allein belegt diese Freigaben nicht.
 
 ## 4. Sicherheitskonzept für Agent und Werkzeug
 
-Das [Sicherheitskonzept für den geplanten MCP-Zugang](../specifications/mcp-werkzeuge.md#sicherheitskonzept-für-agent-und-werkzeug)
-definiert die verbindlichen Regeln und die Prüffälle für das reguläre Backend.
-Der folgende Absatz beschreibt den bisherigen Stand der Demo.
+Der Dienst prüft delegierte Rechte, aktuelle Kontorolle, Fallberechtigung und
+Aktionsbedingungen bei jedem Aufruf. Wichtige MCP-Schreibaktionen werden auf
+einer PropertyFlow-Seite bestätigt; die Bestätigung ist an Konto, Delegation,
+Ziel und Inhalt gebunden. Tokens und Einmalcodes gehören weder ins Audit noch
+in den Modellkontext. Automatisierte Prüfungen decken unter anderem Widerruf,
+Rollenentzug, fremde Fälle und manipulierte Bestätigungen ab.
 
-Der PropertyFlow-Dienst prüft selbst die Eingabe, das delegierte Leserecht und
-die Fallberechtigung. Er protokolliert Erfolg und Ablehnung ohne Zugangstokens
-oder Fallinhalte. Kritische Schreibaktionen erfordern eine menschliche Freigabe.
-Der erste Abruf ist lesend. Für die lokale Demo sind Freigabe, Eingabeprüfung,
-Fallberechtigung und Widerruf über HTTP geprüft. Die produktive OAuth-Prüfung
-und der Nachweis einer kritischen Schreibaktion stehen aus.
+Die Bestätigung eines MCP-Vorgangs ersetzt nicht die gesonderte fachliche
+Freigabe kritischer Handlungen nach UC-027. Dessen vollständiger Zielablauf
+bleibt offen.
+
+[Sicherheitskonzept](../specifications/mcp-werkzeuge.md#sicherheitskonzept-für-agent-und-werkzeug) ·
 [Zugriffsmodell](../architecture/adr/ADR-005-zugriffsmodell.md) ·
-[Entscheid zur serverseitigen Bestätigung](../architecture/adr/ADR-006-mcp-mieterwerkzeuge-und-nachrichtenfreigabe.md) ·
-[Freigaberegeln](../specifications/fallverwaltung.md#fall-10-automatisierung-und-menschliche-freigabe)
+[Serverseitige Bestätigung](../architecture/adr/ADR-006-mcp-mieterwerkzeuge-und-nachrichtenfreigabe.md)
 
 ## 5. Kommunikationsentscheid
 
@@ -248,14 +150,19 @@ Die Fallannahme bestätigt den Commit von Fall und Startauftrag. Camunda startet
 danach asynchron und orchestriert die Erstbewertung. Der vollständige
 TRANSFER-Entscheid enthält Preis, Zehn-Minuten-Störfall, Prüffälle und den
 Vergleich von Choreografie und Orchestrierung. Für das PDF den Entscheid
-unverändert übernehmen. Die Umsetzung und der ausgeführte Ausfalltest stehen aus.
+unverändert übernehmen. Fallannahme, persistenter Startauftrag und asynchrone
+Übergabe sind implementiert. Der exakt definierte Zehn-Minuten-Ausfalltest
+bleibt als gesonderter Abgabenachweis offen.
 [Architekturentscheid](../architecture/schnittstellenentwurf-block-3.md#4-architekturentscheid-für-artefakt-5)
 
 ## 6. Erste KI-Integration
 
-Der Triage-Prototyp bewertet die Dringlichkeit über den Port `AnalysisModel`.
-Der Java-Vertrag und ein lokaler Ollama-Versuch sind dokumentiert. Die Einbindung
-in den Camunda-Fallprozess und ihr Nachweis stehen aus.
+Die Analyse ist in den Camunda-Fallprozess integriert.
+`ConversationEvaluationService` führt Analyse, Empfehlung und Abschlussprüfung
+über Fachverträge aus; die Workflowtests verwenden kontrollierte Modellantworten.
+Der Java-Vertrag und ein früherer lokaler Ollama-Versuch sind dokumentiert.
+Technische Regression belegt keine ausreichende Modellqualität: Der automatische
+Abschluss bleibt bis zur bestandenen Evaluation und Freigabe gesperrt.
 [KI-Servicevertrag und Versuch](../ai-usage/ki-service-vertrag.md)
 
 ## 7. Repo-weite Änderung und Diff-Review
@@ -270,9 +177,10 @@ einem Diff oder Test belegen. Das Review-Dokument steht aus.
 
 ## 8. Projekt-Kontext v0.3
 
-Service-Verträge und Leitplanken für Agenten im Projekt-Kontext nachführen,
-insbesondere Berechtigungen und Freigaben. Die veröffentlichte Fassung im
-Repository steht derzeit auf v0.1.
+Der Projekt-Kontext ist auf Dokumentversion v0.3 und den integrierten
+Backendstand vom 25.11.2026 abgeglichen. Er beschreibt Modulgrenzen,
+Berechtigungen, MCP-Bestätigung und die weiterhin offenen fachlichen Freigaben.
+Die Dokumentversion ist keine Produktionsfreigabe und kein Anwendungsversionstag.
 [Projekt-Kontext](../project-context.md)
 
 ## Abgabe

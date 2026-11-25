@@ -11,10 +11,39 @@ node --test src/test/js/*.test.mjs
 ```
 
 Diese Tests benötigen weder Mailpit noch Camunda oder einen externen LLM.
-Der Live-Ollama-Test ist opt-in. Für den aktuellen Arbeitsumfang bleibt der MCP-HTTP-Test ausgeklammert (`-Dtest=*,!FallstandMcpHttpTest`). Java-Testergebnisse: `target/surefire-reports/`.
+Live-Ollama- und Modellevaluationen sind opt-in. Der MCP-HTTP-Test gehört wieder
+zur vollständigen Regression und zum Linux-CI-Build. Java-Testergebnisse:
+`target/surefire-reports/`. Die PostgreSQL-/Camunda-Tests benötigen zusätzlich
+die unten beschriebene isolierte Infrastruktur; ohne deren Umgebungsvariablen
+werden sie übersprungen.
 Maven löst den Pfad der verwendeten `mockito-core`-JAR auf und übergibt sie als
 Java-Agent an Surefire. Ein lokaler absoluter Pfad und dynamisches Self-Attach
 sind dadurch nicht nötig.
+
+## MCP-HTTP und lokale Netzwerkdiagnose
+
+`FallstandMcpHttpTest` prüft den früheren Leseprototyp im isolierten Profil
+`frontend-demo` mit echtem HTTP. Backend-OAuth und Backend-Werkzeuge werden
+zusätzlich durch `McpOAuthFlowTest`, `BackendMcpConfigurationTest` und die
+persistenten MCP-Diensttests geprüft. Das ist keine vollständige
+ChatGPT-Workspace-Abnahme.
+
+Am 25.11.2026 wurde im lokalen Windows-Ausführungskontext eine Veränderung
+von Antworten auf `/mcp` nachgewiesen: Ein separater minimaler Socketserver
+sendete `Content-Length: 0`, beim Client kam stattdessen eine unvollständige
+`Transfer-Encoding: chunked`-Antwort an. Bei `/` blieb dieselbe Antwort
+unverändert. Die verursachende Zwischenkomponente ist nicht identifiziert.
+Die unveränderten zwei MCP-HTTP-Tests bestanden im isolierten Linux-/Java-23-Lauf.
+
+Bei `chunked transfer encoding, state: READING_LENGTH` deshalb zuerst mit
+unverändertem Code in einer unabhängigen Linux-Umgebung gegenprüfen:
+
+```sh
+sh ./mvnw -B -ntp -Dtest=FallstandMcpHttpTest test
+```
+
+Keine Berechtigungsprüfung abschwächen und den Test nicht dauerhaft aus CI
+entfernen. [Regression und Nachweisgrenzen vom 25.11.2026](../../docs/evaluation/regression-2026-11-25.md).
 
 ## Workflowtests mit den Anwendungsmodellen
 
@@ -137,12 +166,12 @@ npm ci --prefix target/frontend-tools
 node target/frontend-tools/node_modules/playwright/cli.js install chromium firefox webkit
 ```
 
-Unter Linux zusätzlich die Playwright-Systemabhängigkeiten installieren (`install --with-deps`). Bei Übernahme der Ablösung in ein vorhandenes Arbeitsverzeichnis zuerst einmal `mvnw clean verify` mit `-Dtest=*,!FallstandMcpHttpTest` ausführen und anschliessend die Browserwerkzeuge erneut installieren. So verbleiben keine bereits gelöschten Demo-Klassen oder Ressourcen im alten `target/`-Verzeichnis.
+Unter Linux zusätzlich die Playwright-Systemabhängigkeiten installieren (`install --with-deps`). Bei Übernahme der Ablösung in ein vorhandenes Arbeitsverzeichnis zuerst einmal `mvnw clean verify` ausführen und anschliessend die Browserwerkzeuge erneut installieren. So verbleiben keine bereits gelöschten Demo-Klassen oder Ressourcen im alten `target/`-Verzeichnis.
 
 ## Isolierte integrierte Browserprüfung für CI
 
 ```powershell
-.\mvnw.cmd '-Dtest=*,!FallstandMcpHttpTest' verify
+.\mvnw.cmd verify
 $env:PROPERTYFLOW_TEST_BROWSER = 'chromium' # alternativ firefox, webkit oder msedge
 node src/test/browser/run-integrated-regression.mjs
 node --test --test-concurrency=1 src/test/browser/stage3/*.test.mjs
