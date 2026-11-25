@@ -154,6 +154,9 @@ jobs:
           npm ci --prefix target/frontend-tools
           node target/frontend-tools/node_modules/playwright/cli.js install --with-deps ${{ matrix.browser }}
       - name: Real application, account flows and restart
+        env:
+          # Lighthouse startet Chrome separat mit der Sandbox des Ubuntu-Runners.
+          CHROME_PATH: ${{ matrix.browser == 'chromium' && '/opt/google/chrome/chrome' || '' }}
         run: node src/test/browser/run-integrated-regression.mjs
       - name: Backend JavaScript failure windows
         if: ${{ !cancelled() }}
