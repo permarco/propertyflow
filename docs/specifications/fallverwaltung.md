@@ -1078,7 +1078,7 @@ Das System darf Daten erfassen, analysieren und Vorschläge vorbereiten. Es darf
 
 Unabhängig von den vorstehenden FALL-10-Gründen schützt [FALL-06](#vorrang-einer-laufenden-mitarbeiterprüfung) jeden Fall im Status «Mitarbeiterprüfung erforderlich». Die Herkunft des Prüfbedarfs gibt dem System kein Recht, diesen Status selbstständig zu verlassen.
 
-Eine Freigabe bezieht sich auf die konkret geprüfte Handlung. Sie ist keine pauschale Erlaubnis für weitere Kosten, weitere Aufträge oder einen späteren Fallabschluss. Entscheid, handelnder Mitarbeiter, Zeitpunkt, Bezug zur Handlung und fachlicher Grund bleiben intern nachvollziehbar. Die konkrete Bedienung wird in [Screen 03](../frontend/ansicht-03-mitarbeiter-falldetail.md) ausgearbeitet.
+Eine Entscheidung bezieht sich auf den konkret geprüften Fallstand. Sie ist keine pauschale Erlaubnis für weitere Kosten, weitere Aufträge oder einen späteren Fallabschluss. Entscheid, handelnder Mitarbeiter, Zeitpunkt, geprüfte Aufgabe und fachlicher Grund bleiben intern nachvollziehbar. **Entschieden am 25.11.2026:** Der Mitarbeiter trifft die Entscheidung in der Mitarbeiterprüfung über «Bearbeitung fortsetzen» und hält sein Vorgehen als Begründung oder internes Memo fest. Ein eigenständiger Freigabeablauf und ein Vier-Augen-Prinzip sind nicht vorgesehen. [UC-027](../use_cases/UC-027-kritische-fallentscheidung-treffen.md)
 
 **Dringlichkeit und Prüfbedarf bleiben getrennt:** Eine starke Beschwerde führt nicht allein wegen ihres Tons zur Stufe «Kritisch». Umgekehrt beseitigt eine manuell niedrig gesetzte Dringlichkeit keinen anderweitig bestehenden menschlichen Prüfbedarf. Der Schutz manueller Einstufungen nach DRING-06 bleibt bestehen; das System darf sie auch in diesen Fällen nicht überschreiben.
 

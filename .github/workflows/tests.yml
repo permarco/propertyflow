@@ -33,7 +33,7 @@ jobs:
             tests: WorkflowRestartCamundaTest
           - group: staff-actions
             camunda: true
-            tests: StaffReviewCamundaTest,StaffDecisionCamundaTest,CaseClosureCamundaTest,StaffMessageCamundaTest,CaseWaitCamundaTest
+            tests: StaffReviewCamundaTest,StaffDecisionCamundaTest,CriticalReviewCamundaTest,CaseClosureCamundaTest,StaffMessageCamundaTest,CaseWaitCamundaTest
           - group: tenant-messages
             camunda: true
             tests: TenantMessageCamundaTest,TenantReplyCamundaTest,ConversationEvaluationCamundaTest

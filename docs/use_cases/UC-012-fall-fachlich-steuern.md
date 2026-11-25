@@ -63,9 +63,10 @@ Für fachliche Nachrichten verwendet PropertyFlow den `processInstanceKey` als `
 
 Das integrierte Mitarbeiterdetail bezeichnet den Bereich als «Bearbeitung fortsetzen»;
 es bietet dort keine freie Statusauswahl. Die Bestätigung berücksichtigt die geprüften
-Gründe, erledigt sie aber nicht pauschal und erteilt keine Kosten-, Auftrags- oder
-automatische Abschlussfreigabe. Konkrete kritische Entscheidungen bleiben von
-[UC-027](UC-027-kritische-fallentscheidung-treffen.md) zu unterscheiden.
+Gründe, erledigt sie aber nicht pauschal und erteilt keine pauschale Kosten-, Auftrags-
+oder automatische Abschlussfreigabe. Bei einem kritischen Prüfgrund nach FALL-10 ist
+diese Fortsetzung mit Begründung die menschliche Entscheidung gemäss
+[UC-027](UC-027-kritische-fallentscheidung-treffen.md).
 
 Der Web-Pfad entspricht dem [OpenAPI-Zielvertrag](../architecture/openapi/propertyflow-web.yaml).
 Die Implementierung verlangt zusätzlich eine `operationId` zur Verhinderung eines

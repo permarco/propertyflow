@@ -1,0 +1,20 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="PropertyFlow - Dev mit MCP (Claude Code)" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <envs>
+      <env name="PROPERTYFLOW_MCP_ENABLED" value="true" />
+      <env name="PROPERTYFLOW_MCP_ISSUER" value="http://127.0.0.1:8081" />
+      <env name="PROPERTYFLOW_MCP_CLIENT_ID" value="propertyflow-claude-code" />
+      <env name="PROPERTYFLOW_MCP_REDIRECT_URI" value="http://localhost:8787/callback" />
+      <env name="PROPERTYFLOW_MCP_CLIENT_NAME" value="Claude Code" />
+      <env name="PROPERTYFLOW_MCP_ROLE" value="tenant" />
+    </envs>
+    <module name="propertyflow" />
+    <option name="PROGRAM_PARAMETERS" value="--spring.profiles.active=propertyflow-backend,propertyflow-dev --propertyflow.workflow.enabled=true --propertyflow.case-mail.enabled=true --server.address=127.0.0.1 --server.port=8081" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.pertegato.propertyflow.PropertyflowApplication" />
+    <option name="VM_PARAMETERS" value="-Djdk.net.unixdomain.tmpdir=&quot;$PROJECT_DIR$/target&quot;" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

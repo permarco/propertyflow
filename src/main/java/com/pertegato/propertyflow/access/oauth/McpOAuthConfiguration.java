@@ -1,6 +1,5 @@
 package com.pertegato.propertyflow.access.oauth;
 
-import com.pertegato.propertyflow.access.contract.McpScope;
 import com.pertegato.propertyflow.access.contract.StaffAccessDecision;
 import com.pertegato.propertyflow.access.contract.StaffAccountAccess;
 import com.pertegato.propertyflow.access.contract.TenantAccountAccess;
@@ -62,17 +61,15 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @EnableWebSecurity
 class McpOAuthConfiguration {
 
-    static final String CLIENT_NAME = "ChatGPT";
-
     @Bean
     RegisteredClientRepository mcpRegisteredClients(McpOAuthSettings settings) {
         RegisteredClient client = RegisteredClient.withId(settings.clientId())
                 .clientId(settings.clientId())
-                .clientName(CLIENT_NAME)
+                .clientName(settings.clientName())
                 .clientAuthenticationMethod(ClientAuthenticationMethod.NONE)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .redirectUri(settings.redirectUri().toASCIIString())
-                .scopes(scopes -> scopes.addAll(McpScope.valuesForMetadata()))
+                .scopes(scopes -> scopes.addAll(settings.scopes()))
                 .clientSettings(ClientSettings.builder().requireProofKey(true).requireAuthorizationConsent(true).build())
                 .tokenSettings(TokenSettings.builder()
                         .accessTokenFormat(OAuth2TokenFormat.REFERENCE)
@@ -110,7 +107,7 @@ class McpOAuthConfiguration {
                                     methods.clear();
                                     methods.add(ClientAuthenticationMethod.NONE.getValue());
                                 })
-                                .scopes(scopes -> scopes.addAll(McpScope.valuesForMetadata()))))
+                                .scopes(scopes -> scopes.addAll(settings.scopes()))))
                         .tokenGenerator(tokens))
                 .securityContext(context -> context.securityContextRepository(new NullSecurityContextRepository()))
                 .requestCache(cache -> cache.disable())

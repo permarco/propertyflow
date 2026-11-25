@@ -181,7 +181,7 @@ P7 kann parallel zu P4/P5 laufen, sobald P2/P3 und der gemeinsame Lesedienst sta
 | E1 | Neue Mieternachrichten, Neubewertung und einzelne Rückfragen, UC-009/017/028 | Teilantwort erledigt nur passende Frage; Nachricht während anderer Arbeit bleibt verarbeitbar; keine zweite führende Instanz |
 | E2 | Externe Veröffentlichung, interne Memos und Zuordnung, UC-010/011/012 | Erfolg erst an vertraglich definierter Speichergrenze; Memo weder mieteröffentlich noch im Kommunikations-LLM-Kontext |
 | E3 | Wiedervorlage, UC-013 | Mieternachricht hebt Timer auf und löst sofort Prüfung aus; gleichzeitig fälliger/alter Timer erzeugt keine zweite Änderung |
-| E4 | Kritische Entscheidungen und Abschluss, UC-027/014 | Freigabe gilt nur für konkrete Aktion/Fallstand; Abschluss sperrt Schreiben und beendet offene Wartezustände |
+| E4 | Kritische Entscheidungen und Abschluss, UC-027/014 | Kritische Prüfgründe entscheidet der Mitarbeiter über «Bearbeitung fortsetzen» (Entscheid vom 25.11.2026); Abschluss sperrt Schreiben und beendet offene Wartezustände |
 | E5 | Wiedereröffnung, UC-015 | Gleiche Case-ID, neue Bearbeitungsphase; alte Timer/Worker dürfen sie nicht verändern; Fortsetzung beendeter Prozessinstanz zuvor entscheiden |
 | E6 | Empfehlung, RAG und zulässige Systemaktionen, UC-018/021 | Quellen-/Berechtigungsprüfung, fehlende Evidenz, menschliche Freigabegrenzen; Retrieval-Evaluation für Block 4 |
 | E7 | KI-Formulierung, UC-004 | Streaming/Abbruch auch vor erstem Text, keine automatische Veröffentlichung, keine internen Memos im Kontext |

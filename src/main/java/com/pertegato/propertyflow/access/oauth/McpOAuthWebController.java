@@ -1,6 +1,5 @@
 package com.pertegato.propertyflow.access.oauth;
 
-import com.pertegato.propertyflow.access.contract.McpScope;
 import com.pertegato.propertyflow.access.contract.StaffAccessDecision;
 import com.pertegato.propertyflow.access.contract.StaffAccountAccess;
 import com.pertegato.propertyflow.access.contract.TenantAccountAccess;
@@ -51,7 +50,7 @@ class McpOAuthWebController {
     @GetMapping(value = "/.well-known/oauth-protected-resource/mcp", produces = MediaType.APPLICATION_JSON_VALUE)
     Map<String, Object> metadata() {
         return Map.of("resource", settings.resourceUri(), "authorization_servers", List.of(settings.issuer()),
-                "scopes_supported", McpScope.valuesForMetadata(), "bearer_methods_supported", List.of("header"));
+                "scopes_supported", settings.scopes(), "bearer_methods_supported", List.of("header"));
     }
 
     @GetMapping(CONNECTIONS)
@@ -74,6 +73,7 @@ class McpOAuthWebController {
     private String showConnections(UUID account, boolean staff, HttpServletRequest request, Model model) {
         model.addAttribute("permissions", delegations.connected(account, staff));
         model.addAttribute("staff", staff);
+        model.addAttribute("clientName", settings.clientName());
         model.addAttribute("revokePath", (staff ? STAFF_CONNECTIONS : CONNECTIONS) + "/widerrufen");
         model.addAttribute("csrf", request.getSession(false).getAttribute(StaffWebSession.CSRF));
         return "tenant/connected-apps";
