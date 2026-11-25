@@ -10,9 +10,11 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -24,6 +26,7 @@ import org.springframework.web.util.WebUtils;
 
 @Controller
 @Profile("propertyflow-backend")
+@RequiredArgsConstructor
 class TenantLoginController {
 
     private static final Logger LOG = LoggerFactory.getLogger(TenantLoginController.class);
@@ -35,16 +38,14 @@ class TenantLoginController {
     private static final String TECHNICAL_ERROR = "Die Anmeldung ist vorübergehend nicht verfügbar. Bitte versuchen Sie es später erneut.";
 
     private final TenantOtpService authentication;
-
-    TenantLoginController(TenantOtpService authentication) {
-        this.authentication = authentication;
-    }
+    private final Environment environment;
 
     @ModelAttribute
     void protect(HttpServletRequest request, HttpServletResponse response, Model model) {
         BrowserResponses.protect(response);
         boolean registration = request.getRequestURI().startsWith(request.getContextPath() + "/registrieren");
         model.addAttribute("registration", registration);
+        model.addAttribute("developmentMode", environment.matchesProfiles("propertyflow-dev"));
         model.addAttribute("tenantLoginUrl", "/mieter/anmelden");
         model.addAttribute("loginBase", registration ? "/registrieren" : "/mieter/anmelden");
     }
