@@ -105,6 +105,59 @@ jobs:
         if: ${{ always() && matrix.camunda }}
         run: docker compose -f dev/compose.workflow-test.yaml down
 
+  # Abnahmenachweis J2: zehn Minuten Camunda-Ausfall. Läuft wegen seiner Dauer nur auf main und auf Anforderung.
+  camunda-outage:
+    name: Ten-minute Camunda outage
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: propertyflow_test
+          POSTGRES_USER: propertyflow_test
+          POSTGRES_PASSWORD: propertyflow_test
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd "pg_isready -U propertyflow_test -d propertyflow_test"
+          --health-interval 2s --health-timeout 3s --health-retries 20
+    env:
+      PROPERTYFLOW_TEST_DATABASE_URL: jdbc:postgresql://127.0.0.1:5434/propertyflow_test
+      PROPERTYFLOW_TEST_CAMUNDA_URL: http://127.0.0.1:8085
+      PROPERTYFLOW_TEST_OUTAGE_MINUTES: '10'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '23'
+          cache: maven
+      - name: Start isolated Camunda
+        run: |
+          docker compose -f dev/compose.workflow-test.yaml up -d camunda
+          for attempt in $(seq 1 90); do
+            if curl --fail --silent http://127.0.0.1:8085/v2/topology > /dev/null; then exit 0; fi
+            echo "Waiting for Camunda ($attempt/90)"
+            sleep 2
+          done
+          docker compose -f dev/compose.workflow-test.yaml logs
+          exit 1
+      - name: Intake during ten-minute Camunda outage
+        run: sh ./mvnw -B -ntp -Dtest=CamundaOutageIntakeTest test
+      - uses: actions/upload-artifact@v7
+        if: ${{ always() }}
+        with:
+          name: camunda-outage-report
+          path: target/surefire-reports/
+          retention-days: 30
+      - name: Stop isolated engine
+        if: ${{ always() }}
+        run: docker compose -f dev/compose.workflow-test.yaml down
+
   build:
     name: Java and JavaScript
     runs-on: ubuntu-24.04

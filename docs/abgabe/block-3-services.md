@@ -79,8 +79,9 @@ Das reguläre Backend setzt die Fallannahme und den persönlichen Fallzugriff mi
 PostgreSQL um. `GuestCasePostgresTest`, `GuestCaseRestartPostgresTest` und
 `TenantMessagePostgresTest` prüfen Speicherung, Wiederholung, Zugriff und
 Neustart. Die Workflowtests verwenden die acht echten Anwendungsmodelle.
-Der separat definierte Zehn-Minuten-Störfall mit genau 20 Einreichungen bleibt
-ein eigener Abnahmenachweis; andere Integrationstests ersetzen ihn nicht.
+Der Zehn-Minuten-Störfall mit genau 20 Einreichungen ist als eigener Test
+`CamundaOutageIntakeTest` umgesetzt (siehe Abschnitt 5); andere
+Integrationstests ersetzen ihn nicht.
 
 Die OpenAPI-Datei beschreibt alle umgesetzten Mitarbeiteraktionen mit ihren
 tatsächlichen Pfaden, Feldern (etwa `operationId`, `userTaskKey`, `reviewToken`)
@@ -152,8 +153,24 @@ danach asynchron und orchestriert die Erstbewertung. Der vollständige
 TRANSFER-Entscheid enthält Preis, Zehn-Minuten-Störfall, Prüffälle und den
 Vergleich von Choreografie und Orchestrierung. Für das PDF den Entscheid
 unverändert übernehmen. Fallannahme, persistenter Startauftrag und asynchrone
-Übergabe sind implementiert. Der exakt definierte Zehn-Minuten-Ausfalltest
-bleibt als gesonderter Abgabenachweis offen.
+Übergabe sind implementiert.
+
+Der Zehn-Minuten-Störfall (Abnahmetest J2) ist als
+[CamundaOutageIntakeTest](../../src/test/java/com/pertegato/propertyflow/caseprocessing/workflow/CamundaOutageIntakeTest.java)
+umgesetzt und läuft im eigenen CI-Job «Ten-minute Camunda outage» auf `main`
+und auf Anforderung. Der Test prüft in drei Phasen:
+
+1. **Ausfall:** Camunda ist unerreichbar, das KI-Modell abgeschaltet. Zehn Gäste
+   und zehn verifizierte Mieter reichen über zehn Minuten verteilt ein; alle 20
+   erhalten `303`. Eine identische Wiederholung zählt einmal. Der Starter hat
+   jeden Auftrag nachweislich vergeblich versucht.
+2. **Neustart während des Ausfalls:** Je Einreichung besteht genau ein Fall mit
+   genau einem offenen Startauftrag. Gast-Links sind lesbar; Mieter melden sich
+   neu an und sehen ihren Fall.
+3. **Wiederanlauf:** Der Rückstau wird abgebaut; jeder Fall erhält genau eine
+   führende Prozessinstanz. Die gemessene Aufholzeit steht im Testbericht.
+
+Der Ausführungsnachweis aus dem CI-Lauf ist für das PDF noch beizulegen.
 [Architekturentscheid](../architecture/schnittstellenentwurf-block-3.md#4-architekturentscheid-für-artefakt-5)
 
 ## 6. Erste KI-Integration
