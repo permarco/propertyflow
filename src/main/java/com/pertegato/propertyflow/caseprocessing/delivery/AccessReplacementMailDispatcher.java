@@ -13,7 +13,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 @ConditionalOnProperty(name = "propertyflow.case-mail.enabled", havingValue = "true")
 public class AccessReplacementMailDispatcher {
     private final CaseAccessAdministrationStore orders;

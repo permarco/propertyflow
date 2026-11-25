@@ -37,7 +37,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 @Service
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 public class TenantOtpService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TenantOtpService.class);

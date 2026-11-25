@@ -47,7 +47,7 @@ import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.Conversati
 import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.ConversationEvaluationBpmnConstants.Variablen.NEEDS_EVALUATION_CLOSURE;
 
 @Component
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 @ConditionalOnProperty(name = "propertyflow.workflow.enabled", havingValue = "true")
 @RequiredArgsConstructor
 public class AutomaticEvaluationWorkers {

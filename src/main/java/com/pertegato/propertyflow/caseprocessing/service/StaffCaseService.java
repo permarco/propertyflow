@@ -61,7 +61,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @Service
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 class StaffCaseService implements StaffCaseListing, AccountCaseReading {
 
     private static final int PAGE_SIZE = 50;

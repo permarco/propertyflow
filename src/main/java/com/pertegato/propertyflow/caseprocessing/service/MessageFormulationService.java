@@ -22,7 +22,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
 @Service
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 public class MessageFormulationService {
 
     public static final int MAX_TEXT_LENGTH = 5000;

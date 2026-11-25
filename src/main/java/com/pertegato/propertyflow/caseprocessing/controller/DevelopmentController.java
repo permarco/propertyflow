@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.PathVariable;
  */
 @Controller
 @ControllerAdvice(assignableTypes = StaffCaseController.class)
-@Profile("propertyflow-backend & propertyflow-dev & !frontend-demo")
+@Profile("propertyflow-backend & propertyflow-dev")
 class DevelopmentController {
 
     private final StaffAccountAccess accounts;

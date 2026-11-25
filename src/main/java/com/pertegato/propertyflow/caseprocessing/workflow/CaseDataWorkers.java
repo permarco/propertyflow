@@ -21,7 +21,7 @@ import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProces
 import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProcessBpmnConstants.Variablen.CLEAR_ANSWER_COMMAND_REF;
 
 @Component
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 @ConditionalOnProperty(name = "propertyflow.workflow.enabled", havingValue = "true")
 @RequiredArgsConstructor
 public class CaseDataWorkers {

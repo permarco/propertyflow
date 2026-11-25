@@ -39,7 +39,7 @@ import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProce
 import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.JobType.STAFF_WAIT_EXTERNAL;
 
 @Component
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 @ConditionalOnProperty(name = "propertyflow.workflow.enabled", havingValue = "true")
 @RequiredArgsConstructor
 public class CaseWaitWorkers {

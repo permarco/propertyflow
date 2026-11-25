@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.util.WebUtils;
 
 @Controller
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 class RegularStaffLoginController {
 
     private static final Logger LOG = LoggerFactory.getLogger(RegularStaffLoginController.class);

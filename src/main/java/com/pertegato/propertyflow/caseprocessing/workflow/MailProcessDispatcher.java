@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseNotificationBpmnConstants.Variablen.MAIL_ORDER_REF;
 
 @Component
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 @ConditionalOnProperty(name = {"propertyflow.workflow.enabled", "propertyflow.case-mail.enabled"}, havingValue = "true")
 public class MailProcessDispatcher {
 

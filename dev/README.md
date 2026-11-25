@@ -258,7 +258,9 @@ Für diese technische Umsetzung wurde kein realer Modellanbieter aktiviert.
 Die manuelle Demo läuft im integrierten Backend mit PostgreSQL, Camunda und Mailpit.
 Für die Pipeline steht zusätzlich `node src/test/browser/run-integrated-regression.mjs`
 bereit; Voraussetzungen und getrennte Ports stehen in [der Testanleitung](../src/test/README.md#isolierte-integrierte-browserprüfung-für-ci).
-`frontend-demo` bleibt nur als isolierte Abhängigkeit des früheren MCP-Leseprototyps erhalten. Sämtliche UI-Regressionen verwenden das integrierte Backend; siehe [Übertragungsmatrix](../docs/architecture/frontend-demo-ablosung-2026-11-16.md).
+Die UI-Regressionen und der MCP-HTTP-Test verwenden das integrierte Backend.
+Die [Übertragungsmatrix](../docs/architecture/frontend-demo-ablosung-2026-11-16.md)
+dokumentiert die Ablösung des früheren Demo-Profils.
 
 Camunda-Adressen werden als `camunda.client.rest-address` beziehungsweise
 `camunda.client.grpc-address` konfiguriert. Die Backendprofile übernehmen dafür

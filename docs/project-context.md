@@ -31,7 +31,8 @@ externes Camunda. Acht ausführbare BPMN-Modelle liegen unter
 MCP-OAuth, delegierte Werkzeuge und die Bestätigung wichtiger Schreibaktionen
 sind im Backend vorhanden. Der vollständige Nachweis im ChatGPT-Workspace,
 die fachlichen Freigaben und die Betriebsabnahme bleiben offen.
-`frontend-demo` ist eine isolierte Testgrundlage für den früheren MCP-Leseprototyp.
+Der MCP-HTTP-Test prüft den regulären OAuth-Ablauf in einem isolierten
+PostgreSQL-Schema. Das frühere Profil `frontend-demo` ist abgelöst.
 
 [Umsetzungsmatrix](use_cases/umsetzungsstand-2026-11-16.md) ·
 [MCP-Vertrag](specifications/mcp-werkzeuge.md) ·

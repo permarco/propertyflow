@@ -46,7 +46,7 @@ import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @Service
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 public class PersistentCaseService implements CaseCreation, CaseReading {
 
     private final TenantAccountAccess tenantAccounts;

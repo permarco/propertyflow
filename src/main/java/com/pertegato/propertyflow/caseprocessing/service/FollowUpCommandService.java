@@ -26,7 +26,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.json.JsonMapper;
 
 @Service
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 public class FollowUpCommandService implements FollowUpCommands {
 
     private final StaffAccountAccess access;

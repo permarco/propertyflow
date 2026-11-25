@@ -35,7 +35,7 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @Service
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 public class StaffMessageService implements StaffMessageSubmission {
 
     private final StaffAccountAccess access;

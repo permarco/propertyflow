@@ -32,7 +32,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.json.JsonMapper;
 
 @Service
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 public class CaseDataService implements StaffCaseDataCommands {
 
     private static final int MAX_MEMO_LENGTH = 5000;

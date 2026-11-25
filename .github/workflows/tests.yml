@@ -14,9 +14,35 @@ concurrency:
 
 jobs:
   workflow:
-    name: PostgreSQL and Camunda integration
+    name: PostgreSQL and Camunda integration / ${{ matrix.group }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: postgres
+            camunda: false
+            tests: >-
+              GuestCasePostgresTest,GuestCaseRestartPostgresTest,StaffAccountPostgresTest,AccountLifecyclePostgresTest,CaseOperationsPostgresTest,CaseWorkflowPostgresTest,CaseMailPostgresTest,CaseMailTransportTest,StaffReviewPostgresTest,CaseDataPostgresTest,StaffDecisionPostgresTest,TenantMessagePostgresTest,StaffMessagePostgresTest,ConversationEvaluationPostgresTest,CaseWaitPostgresTest,CaseReopenPostgresTest,AutomaticClosurePostgresTest,BackendMigrationPostgresTest,BackendAccessParityPostgresTest
+          - group: case-intake
+            camunda: true
+            tests: InitialCaseCamundaTest,CaseMailCamundaTest,TriageCamundaTest,CaseReopenCamundaTest
+          - group: workflow-restart
+            camunda: true
+            tests: WorkflowRestartCamundaTest
+          - group: staff-actions
+            camunda: true
+            tests: StaffReviewCamundaTest,StaffDecisionCamundaTest,CaseClosureCamundaTest,StaffMessageCamundaTest,CaseWaitCamundaTest
+          - group: tenant-messages
+            camunda: true
+            tests: TenantMessageCamundaTest,TenantReplyCamundaTest,ConversationEvaluationCamundaTest
+          - group: automatic-questions
+            camunda: true
+            tests: AutomaticQuestionCamundaTest
+          - group: bpmn-models
+            camunda: true
+            tests: CanonicalModelsCamundaTest
     services:
       postgres:
         image: postgres:16
@@ -31,7 +57,7 @@ jobs:
           --health-interval 2s --health-timeout 3s --health-retries 20
     env:
       PROPERTYFLOW_TEST_DATABASE_URL: jdbc:postgresql://127.0.0.1:5434/propertyflow_test
-      PROPERTYFLOW_TEST_CAMUNDA_URL: http://127.0.0.1:8085
+      PROPERTYFLOW_TEST_CAMUNDA_URL: ${{ matrix.camunda && 'http://127.0.0.1:8085' || '' }}
       PROPERTYFLOW_TEST_SMTP_PORT: '1027'
       PROPERTYFLOW_TEST_MAILPIT_URL: http://127.0.0.1:8027
     steps:
@@ -43,7 +69,12 @@ jobs:
           distribution: temurin
           java-version: '23'
           cache: maven
+      - name: Backend MCP over HTTP and OAuth
+        if: ${{ !matrix.camunda }}
+        run: sh ./mvnw -B -ntp -Dtest=FallstandMcpHttpTest test
       - name: Start isolated Camunda
+        if: ${{ matrix.camunda }}
+        timeout-minutes: 1
         run: |
           docker compose -f dev/compose.workflow-test.yaml up -d
           for attempt in $(seq 1 90); do
@@ -54,25 +85,24 @@ jobs:
           docker compose -f dev/compose.workflow-test.yaml logs
           exit 1
       - name: Durable intake and workflow failure tests
-        run: >-
-          sh ./mvnw -B -ntp
-          -Dtest=GuestCasePostgresTest,GuestCaseRestartPostgresTest,StaffAccountPostgresTest,AccountLifecyclePostgresTest,CaseOperationsPostgresTest,CaseWorkflowPostgresTest,InitialCaseCamundaTest,WorkflowRestartCamundaTest,CaseMailPostgresTest,CaseMailCamundaTest,CaseMailTransportTest,StaffReviewPostgresTest,StaffReviewCamundaTest,CaseDataPostgresTest,TriageCamundaTest,StaffDecisionPostgresTest,StaffDecisionCamundaTest,CaseClosureCamundaTest,TenantMessagePostgresTest,TenantMessageCamundaTest,StaffMessagePostgresTest,StaffMessageCamundaTest,ConversationEvaluationPostgresTest,ConversationEvaluationCamundaTest,CaseWaitPostgresTest,CaseWaitCamundaTest,CaseReopenPostgresTest,CaseReopenCamundaTest,TenantReplyCamundaTest,AutomaticQuestionCamundaTest,AutomaticClosurePostgresTest,CanonicalModelsCamundaTest,BackendMigrationPostgresTest,BackendAccessParityPostgresTest
-          test
+        env:
+          INTEGRATION_TESTS: ${{ matrix.tests }}
+        run: sh ./mvnw -B -ntp "-Dtest=$INTEGRATION_TESTS" test
       - name: Preserve engine log
-        if: ${{ always() }}
+        if: ${{ always() && matrix.camunda }}
         run: |
           mkdir -p target
           docker compose -f dev/compose.workflow-test.yaml logs > target/workflow-engine.log
       - uses: actions/upload-artifact@v7
         if: ${{ always() }}
         with:
-          name: workflow-integration-reports
+          name: workflow-integration-reports-${{ matrix.group }}
           path: |
             target/surefire-reports/
             target/workflow-engine.log
           retention-days: 7
       - name: Stop isolated engine
-        if: ${{ always() }}
+        if: ${{ always() && matrix.camunda }}
         run: docker compose -f dev/compose.workflow-test.yaml down
 
   build:
@@ -152,6 +182,9 @@ jobs:
           npm ci --prefix target/frontend-tools
           node target/frontend-tools/node_modules/playwright/cli.js install --with-deps ${{ matrix.browser }}
       - name: Real application, account flows and restart
+        env:
+          # Lighthouse startet Chrome separat mit der Sandbox des Ubuntu-Runners.
+          CHROME_PATH: ${{ matrix.browser == 'chromium' && '/opt/google/chrome/chrome' || '' }}
         run: node src/test/browser/run-integrated-regression.mjs
       - name: Backend JavaScript failure windows
         if: ${{ !cancelled() }}

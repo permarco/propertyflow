@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.STAFF_MESSAGE_COMMAND_REF;
 
 @Component
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 public class CamundaStaffMessageGateway implements StaffMessageGateway {
 
     public static final String STAFF_MESSAGE = "Mitarbeiternachricht als Nebenaktion senden";

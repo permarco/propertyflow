@@ -120,9 +120,9 @@ wie die Webanwendung. Den Umfang und die Protokollverträge führt die
 `BackendMcpConfigurationTest` prüft die Backend-Routen und Toolverträge mit
 MockMvc; `McpOAuthFlowTest` prüft OAuth, PKCE, Zustimmung, Widerruf und
 Rollenentzug. Persistente MCP-Diensttests ergänzen Fallberechtigung und
-Schreibbestätigung. Der frühere `FallstandMcpHttpTest` verwendet dagegen
-bewusst das isolierte Profil `frontend-demo` und prüft dessen Leseprototyp
-über echtes HTTP. Er ist kein vollständiger Backend-OAuth-End-to-End-Test.
+Schreibbestätigung. `FallstandMcpHttpTest` startet das reguläre Backend
+mit isoliertem PostgreSQL-Schema und prüft Anmeldung, OAuth-Freigabe,
+Fallstandabruf und Widerruf über echtes HTTP.
 
 Der vollständige Nachweis mit dem ChatGPT-Workspace sowie die fachliche und
 betriebliche Freigabe stehen weiterhin aus. Eine erfolgreiche lokale

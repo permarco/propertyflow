@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
  * Keeps restoration of personal links at the delivery boundary. Callers must check access validity before restoration.
  */
 @Component
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 public final class PersonalLinkCodec {
 
     private static final int TOKEN_BYTES = 32;

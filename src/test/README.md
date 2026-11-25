@@ -11,8 +11,7 @@ node --test src/test/js/*.test.mjs
 ```
 
 Diese Tests benötigen weder Mailpit noch Camunda oder einen externen LLM.
-Live-Ollama- und Modellevaluationen sind opt-in. Der MCP-HTTP-Test gehört wieder
-zur vollständigen Regression und zum Linux-CI-Build. Java-Testergebnisse:
+Live-Ollama- und Modellevaluationen sind opt-in. Java-Testergebnisse:
 `target/surefire-reports/`. Die PostgreSQL-/Camunda-Tests benötigen zusätzlich
 die unten beschriebene isolierte Infrastruktur; ohne deren Umgebungsvariablen
 werden sie übersprungen.
@@ -22,23 +21,26 @@ sind dadurch nicht nötig.
 
 ## MCP-HTTP und lokale Netzwerkdiagnose
 
-`FallstandMcpHttpTest` prüft den früheren Leseprototyp im isolierten Profil
-`frontend-demo` mit echtem HTTP. Backend-OAuth und Backend-Werkzeuge werden
-zusätzlich durch `McpOAuthFlowTest`, `BackendMcpConfigurationTest` und die
-persistenten MCP-Diensttests geprüft. Das ist keine vollständige
-ChatGPT-Workspace-Abnahme.
+`FallstandMcpHttpTest` startet das Profil `propertyflow-backend` auf einem
+zufälligen lokalen Port. Er prüft Anmeldung per Einmalcode, OAuth mit PKCE,
+Fallstandabruf mit delegiertem Zugriff und Widerruf über echtes HTTP. Er
+migriert ein eigenes Schema in `propertyflow_test` und entfernt es anschliessend.
+In CI läuft der Test im PostgreSQL-Integrationsjob. `McpOAuthFlowTest`,
+`BackendMcpConfigurationTest` und die persistenten Diensttests ergänzen die
+Prüfungen. Die ChatGPT-Workspace-Abnahme ist separat.
 
 Am 25.11.2026 wurde im lokalen Windows-Ausführungskontext eine Veränderung
 von Antworten auf `/mcp` nachgewiesen: Ein separater minimaler Socketserver
 sendete `Content-Length: 0`, beim Client kam stattdessen eine unvollständige
 `Transfer-Encoding: chunked`-Antwort an. Bei `/` blieb dieselbe Antwort
 unverändert. Die verursachende Zwischenkomponente ist nicht identifiziert.
-Die unveränderten zwei MCP-HTTP-Tests bestanden im isolierten Linux-/Java-23-Lauf.
+Die beiden damaligen Demo-HTTP-Tests bestanden im isolierten Linux-/Java-23-Lauf.
 
 Bei `chunked transfer encoding, state: READING_LENGTH` deshalb zuerst mit
 unverändertem Code in einer unabhängigen Linux-Umgebung gegenprüfen:
 
 ```sh
+export PROPERTYFLOW_TEST_DATABASE_URL=jdbc:postgresql://127.0.0.1:5434/propertyflow_test
 sh ./mvnw -B -ntp -Dtest=FallstandMcpHttpTest test
 ```
 
@@ -61,6 +63,10 @@ Bindungsprüfungen prüfen ihre Erwartungen direkt an den Originaldateien.
 Die Engine-Tests benötigen eine **isolierte** PostgreSQL-Datenbank namens
 `propertyflow_test` und Camunda. Die Tests leeren die Falltabellen. Parallele
 Testläufe müssen eigene Datenbanken und Engines verwenden.
+
+GitHub Actions führt die Integrationstests in parallelen Gruppen mit jeweils
+eigener Datenbank aus. Jede Camunda-Gruppe startet ihre eigene Engine. Das
+Limit pro Integrationsjob beträgt fünf Minuten, einschliesslich Einrichtung.
 
 ```powershell
 docker compose -f dev/compose.backend-test.yaml up -d --wait

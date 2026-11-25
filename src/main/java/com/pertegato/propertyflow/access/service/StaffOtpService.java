@@ -39,7 +39,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 @Service
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 public class StaffOtpService implements StaffAuthentication {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StaffOtpService.class);

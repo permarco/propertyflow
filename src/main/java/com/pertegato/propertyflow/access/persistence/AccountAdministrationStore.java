@@ -10,7 +10,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 @Repository
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 @RequiredArgsConstructor
 public class AccountAdministrationStore {
     private static final RowMapper<Entry> ROW = (row, index) -> new Entry(row.getObject("id", UUID.class),

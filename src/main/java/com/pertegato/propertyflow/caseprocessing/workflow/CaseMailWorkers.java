@@ -25,7 +25,7 @@ import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseNotifi
 import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseNotificationBpmnConstants.Variablen.MAIL_ROUTE;
 
 @Component
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 @ConditionalOnProperty(name = {"propertyflow.workflow.enabled", "propertyflow.case-mail.enabled"}, havingValue = "true")
 @RequiredArgsConstructor
 public class CaseMailWorkers {
