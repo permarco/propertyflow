@@ -43,6 +43,8 @@ jobs:
           distribution: temurin
           java-version: '23'
           cache: maven
+      - name: Backend MCP over HTTP and OAuth
+        run: sh ./mvnw -B -ntp -Dtest=FallstandMcpHttpTest test
       - name: Start isolated Camunda
         run: |
           docker compose -f dev/compose.workflow-test.yaml up -d
