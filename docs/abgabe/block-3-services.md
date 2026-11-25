@@ -194,7 +194,11 @@ Die gemeinsame E-Mail-Prüfung für Fallanlage und Kontozugriff aus Commit
 `1f315c4` ist der Kandidat für das Review. Den Projekt-Kontext als Rahmen des KI-Vorschlags dokumentieren
 und jede betroffene Datei mit «übernommen», «korrigiert» oder «verworfen»
 bewerten. Je Stelle den KI-Beitrag, die eigene Entscheidung und deren Grund mit
-einem Diff oder Test belegen. Das Review-Dokument steht aus.
+einem Diff oder Test belegen. Das
+[Review-Dokument](../ai-usage/diff-review-1f315c4.md) enthält Rahmen,
+Ausgangslage, Befunde, die Bewertung je Datei und das Ergebnis. Ein zweites
+[Review zum BPMN-Umbau](../ai-usage/diff-review-bpmn-cleanup.md) zeigt eine
+Änderung, die der Entwickler mit eigenen Vorgaben gesteuert hat.
 [Regressionstests zum Fallzugriff](../architecture/frontend-demo-ablosung-2026-11-16.md) ·
 [Projekt-Kontext](../project-context.md)
 
