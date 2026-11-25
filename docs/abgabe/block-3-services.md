@@ -170,7 +170,12 @@ und auf Anforderung. Der Test prüft in drei Phasen:
 3. **Wiederanlauf:** Der Rückstau wird abgebaut; jeder Fall erhält genau eine
    führende Prozessinstanz. Die gemessene Aufholzeit steht im Testbericht.
 
-Der Ausführungsnachweis aus dem CI-Lauf ist für das PDF noch beizulegen.
+**Ausführungsnachweis vom 25.11.2026.** Der Test bestand auf `main` (Commit
+`1046eba`). Während der zehn Minuten erhielten alle 20 Einreichungen HTTP
+`303`. Die Prüfungen nach dem Backendneustart bestanden, und nach Camundas
+Wiederanlauf war der Rückstau nach 291 Sekunden abgebaut.
+[CI-Job und Testbericht](https://github.com/permarco/propertyflow/actions/runs/45567675163/job/139046359734)
+
 [Architekturentscheid](../architecture/schnittstellenentwurf-block-3.md#4-architekturentscheid-für-artefakt-5)
 
 ## 6. Erste KI-Integration
