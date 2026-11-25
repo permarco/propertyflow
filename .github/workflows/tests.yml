@@ -27,7 +27,10 @@ jobs:
               GuestCasePostgresTest,GuestCaseRestartPostgresTest,StaffAccountPostgresTest,AccountLifecyclePostgresTest,CaseOperationsPostgresTest,CaseWorkflowPostgresTest,CaseMailPostgresTest,CaseMailTransportTest,StaffReviewPostgresTest,CaseDataPostgresTest,StaffDecisionPostgresTest,TenantMessagePostgresTest,StaffMessagePostgresTest,ConversationEvaluationPostgresTest,CaseWaitPostgresTest,CaseReopenPostgresTest,AutomaticClosurePostgresTest,BackendMigrationPostgresTest,BackendAccessParityPostgresTest
           - group: case-intake
             camunda: true
-            tests: InitialCaseCamundaTest,WorkflowRestartCamundaTest,CaseMailCamundaTest,TriageCamundaTest,CaseReopenCamundaTest
+            tests: InitialCaseCamundaTest,CaseMailCamundaTest,TriageCamundaTest,CaseReopenCamundaTest
+          - group: workflow-restart
+            camunda: true
+            tests: WorkflowRestartCamundaTest
           - group: staff-actions
             camunda: true
             tests: StaffReviewCamundaTest,StaffDecisionCamundaTest,CaseClosureCamundaTest,StaffMessageCamundaTest,CaseWaitCamundaTest
