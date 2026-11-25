@@ -192,10 +192,18 @@ class BackendAccessParityPostgresTest {
     }
 
     @Test
-    void tenantRegistrationIsPersistentOwnsOnlyVerifiedCasesAndCannotBecomeStaff() throws Exception {
+    void tenantCanRegisterWithoutCasesAndSubmitFirstCaseWithVerifiedAddress() throws Exception {
         String email = "tenant-" + UUID.randomUUID() + "@example.test";
         try (Browser tenant = new Browser()) {
-            String csrf = csrf(tenant.get("/registrieren"));
+            HttpResponse<String> anonymous = tenant.get("/mieter/faelle");
+            assertEquals(303, anonymous.statusCode());
+            String loginPath = anonymous.headers().firstValue("Location").orElseThrow();
+            assertEquals("/mieter/anmelden", loginPath);
+            assertTrue(tenant.get(loginPath).body().contains("href=\"/registrieren\">Mieterkonto eröffnen"));
+            int casesBeforeRegistration = count("pf_case");
+            HttpResponse<String> registration = tenant.get("/registrieren");
+            assertTrue(registration.body().contains("Ihr erstes Anliegen aus dem Konto melden"));
+            String csrf = csrf(registration);
             assertEquals(200, tenant.post("/registrieren/code", Map.of("csrf", csrf, "email", email)).statusCode());
             assertEquals(0, database.queryForObject("SELECT count(*) FROM pf_tenant_account WHERE email = ?", Integer.class, email));
             String code = mailbox.await(email);
@@ -204,7 +212,12 @@ class BackendAccessParityPostgresTest {
             assertEquals(303, verified.statusCode());
             assertProtectedSessionCookie(verified);
             assertEquals(1, database.queryForObject("SELECT count(*) FROM pf_tenant_account WHERE email = ?", Integer.class, email));
-            assertEquals(200, tenant.get("/mieter/faelle").statusCode());
+            assertEquals(casesBeforeRegistration, count("pf_case"));
+            assertEquals("/mieter/faelle", verified.headers().firstValue("Location").orElseThrow());
+            HttpResponse<String> emptyOverview = tenant.get("/mieter/faelle");
+            assertEquals(200, emptyOverview.statusCode());
+            assertTrue(emptyOverview.body().contains("noch keine Fälle vorhanden"));
+            assertTrue(emptyOverview.body().contains("href=\"/mieter/fall\">Neues Anliegen melden"));
             assertEquals(303, tenant.get("/mitarbeiter/faelle").statusCode());
             Map<String, String> fields = intake(csrf(tenant.get("/mieter/fall")), UUID.randomUUID().toString());
             fields.put("accountSubmission", "true");
@@ -216,6 +229,7 @@ class BackendAccessParityPostgresTest {
             String caseId = location.substring(location.lastIndexOf('/') + 1);
             assertEquals(email, database.queryForObject("SELECT contact_email FROM pf_case WHERE id = ?", String.class, caseId));
             assertEquals(200, tenant.get(location).statusCode());
+            assertTrue(tenant.get("/mieter/faelle").body().contains("href=\"" + location + "\""));
             try (Browser stranger = new Browser()) {
                 assertEquals(404, stranger.get(location).statusCode());
             }
