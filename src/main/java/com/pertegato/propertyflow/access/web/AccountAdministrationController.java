@@ -1,6 +1,7 @@
 package com.pertegato.propertyflow.access.web;
 
 import com.pertegato.propertyflow.access.service.AccountAdministrationService;
+import com.pertegato.propertyflow.access.service.AccountConflictException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Map;
@@ -46,6 +47,10 @@ public class AccountAdministrationController {
             }
             accounts.create(actor, name, email);
             return list(request, model);
+        } catch (AccountConflictException exception) {
+            response.setStatus(409);
+            model.addAttribute("error", exception.getMessage());
+            return list(request, model);
         } catch (IllegalArgumentException exception) {
             response.setStatus(400);
             model.addAttribute("error", exception.getMessage());
@@ -69,8 +74,12 @@ public class AccountAdministrationController {
                 return "access/revoked";
             }
             return list(request, model);
-        } catch (IllegalArgumentException exception) {
+        } catch (AccountConflictException exception) {
             response.setStatus(409);
+            model.addAttribute("error", exception.getMessage());
+            return list(request, model);
+        } catch (IllegalArgumentException exception) {
+            response.setStatus(400);
             model.addAttribute("error", exception.getMessage());
             return list(request, model);
         }

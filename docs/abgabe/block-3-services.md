@@ -82,13 +82,14 @@ Neustart. Die Workflowtests verwenden die acht echten Anwendungsmodelle.
 Der separat definierte Zehn-Minuten-Störfall mit genau 20 Einreichungen bleibt
 ein eigener Abnahmenachweis; andere Integrationstests ersetzen ihn nicht.
 
-Die OpenAPI-Datei ist weiterhin der **Zielvertrag**. Eine implementierte
-Fachfunktion bedeutet nicht, dass sämtliche Pfade, Eingaben und Antworten
-bereits deckungsgleich sind. Für «Bearbeitung fortsetzen» ist der Pfad
-`POST /mitarbeiter/faelle/{id}/bearbeitung-fortsetzen` vereinheitlicht.
-Der Backendvertrag verlangt zusätzlich `operationId` und `reviewToken` und
-liefert bei Erfolg `{"state":"CONFIRMED"}`. Diese Abweichungen sind in
-[UC-012](../use_cases/UC-012-fall-fachlich-steuern.md) dokumentiert.
+Die OpenAPI-Datei beschreibt alle umgesetzten Mitarbeiteraktionen mit ihren
+tatsächlichen Pfaden, Feldern (etwa `operationId`, `userTaskKey`, `reviewToken`)
+und Antworten; sie sind als `implementiert` gekennzeichnet. Offen sind nur
+`kritische-entscheidung` (UC-027, nicht umgesetzt) und die Stammdatenreferenzen
+bei `objekt-wohnung-zuordnen`, die als `x-propertyflow-abweichung` vermerkt sind.
+Abschluss, Wiedereröffnung und Aufhebung des Antwortbedarfs melden Erfolg erst,
+wenn der Worker den neuen Fallstand gespeichert hat; während der Wartezeit zeigt
+das UI eine Verarbeitungsanzeige.
 
 | Fachfunktion | Implementierung und automatisierte Prüfung | Grenze |
 | --- | --- | --- |
@@ -96,17 +97,17 @@ liefert bei Erfolg `{"state":"CONFIRMED"}`. Diese Abweichungen sind in
 | Dringlichkeit, Objekt/Wohnung und internes Memo | `CaseDataService`, `StaffCaseDataController`, `CaseDataPostgresTest` | Manuelle Einstufung, Wiederholung, Versionskonflikt und interner Sichtbarkeitsschutz werden geprüft; keine produktive Stammdatenanbindung |
 | Externe Nachricht und Rückfrage | `StaffMessageService`, `StaffMessagePostgresTest`, `StaffMessageCamundaTest` | Veröffentlichung und nachgelagerter Mailversand sind getrennte Ergebnisse |
 | Wiedervorlage | `FollowUpCommandService`, `CaseWaitCamundaTest` | Timerwechsel, Aufhebung und Mieterkontakt werden an der echten Engine geprüft; noch keine vollständige Matrix aller Parallelitätsfälle |
-| Abschluss und Wiedereröffnung | `CaseClosureCamundaTest`, `CaseReopenCamundaTest` | Wiedereröffnung startet eine neue führende Instanz; automatischer Abschluss bleibt fachlich gesperrt |
-| Antwortbedarf aufheben | `AnswerCancellationWorkers` und zugehörige Prozess-/Dienstprüfungen | Konkrete Rückfrage und aktuelle Prozessfreigabe erforderlich |
+| Abschluss und Wiedereröffnung | `CaseClosureCamundaTest`, `CaseReopenCamundaTest`, `StaffCaseDataWaitTest` | `200` erst nach gespeichertem Status; Wartezeit höchstens 2 s (Abschluss) bzw. 15 s (Wiedereröffnung), sonst `500` mit unklarem Ausgang. Wiedereröffnung startet eine neue führende Instanz; automatischer Abschluss bleibt fachlich gesperrt |
+| Antwortbedarf aufheben | `AnswerCancellationWorkers`, `StaffCaseDataWaitTest` und zugehörige Prozess-/Dienstprüfungen | Konkrete Rückfrage und aktuelle Prozessfreigabe erforderlich; `200` erst nach gespeicherter Aufhebung |
 | KI-Formulierung | Integrierte SSE-Formulierung und Browserfehlerprüfungen | Abbruch und Fehlerbehandlung sind technische Nachweise; keine Freigabe der Modellqualität |
-| Kontoanlage und Rechteentzug | `AccountAdministrationService`, `AccountLifecyclePostgresTest`, `BackendAccessParityPostgresTest`, `McpOAuthFlowTest` | Verwaltungsrecht und Schutz des letzten Administrators; Workspace-Abnahme separat |
+| Kontoanlage und Rechteentzug | `AccountAdministrationService`, `AccountLifecyclePostgresTest`, `BackendAccessParityPostgresTest`, `McpOAuthFlowTest` | Verwaltungsrecht und Schutz des letzten Administrators; belegte Adresse und letzter Administrator ergeben `409`, ungültige Eingaben `400`. Workspace-Abnahme separat |
 | Fall-Link ersetzen und Kontaktadresse ändern | `CaseAccessAdministrationService`, persistente Prüfung, Audit und Ersatzlink-Outbox | Atomarer Linkersatz; ausserhalb von Camunda. Identitätsprüfverfahren vor produktivem Einsatz abnehmen |
 | Kritische Entscheidung gemäss UC-027 | Prüfgründe und prozessgebundene Mitarbeiterentscheidung vorhanden | Der eigenständige Freigeben-/Ablehnen-/Klärungsablauf ist noch nicht vollständig umgesetzt |
 
 Die [Umsetzungsmatrix](../use_cases/umsetzungsstand-2026-11-16.md) ordnet alle
 Use Cases zu. Die [Testanleitung](../../src/test/README.md) beschreibt die
-getrennten Java-, PostgreSQL-/Camunda- und Browserläufe. Die vollständige
-OpenAPI-Parität und die fachliche Gesamtabnahme bleiben eigene Arbeitspakete.
+getrennten Java-, PostgreSQL-/Camunda- und Browserläufe. Die fachliche
+Gesamtabnahme bleibt ein eigenes Arbeitspaket.
 
 ## 3. MCP-Werkzeug
 

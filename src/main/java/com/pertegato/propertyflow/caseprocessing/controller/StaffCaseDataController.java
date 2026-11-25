@@ -16,6 +16,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.Map;
@@ -23,6 +24,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
@@ -40,6 +43,12 @@ import org.springframework.web.util.WebUtils;
 @RequestMapping(StaffWebSession.STAFF_LIST + "/{caseId}")
 @RequiredArgsConstructor
 public class StaffCaseDataController {
+
+    // Abschluss und Antwortbedarf werden vom Worker in der Regel sofort gespeichert.
+    private static final Duration STORAGE_WAIT = Duration.ofSeconds(2);
+    // Die Wiedereröffnung startet eine neue Prozessinstanz; der Auftrag wird erst beim nächsten Abholintervall (5 s) übernommen.
+    private static final Duration REOPEN_WAIT = Duration.ofSeconds(15);
+    private static final long POLL_INTERVAL_MILLIS = 100;
 
     private final StaffCaseDataCommands commands;
     private final StaffTaskDecisions decisions;
@@ -154,8 +163,11 @@ public class StaffCaseDataController {
                 return failure(400, "INVALID_INPUT");
             }
             CaseDataResult result = commands.clearAnswer(signedIn.context(), caseId, operationId, Long.parseLong(version), UUID.fromString(messageId));
-            return ResponseEntity.status("PENDING".equals(result.state()) ? 202 : 200).body(result);
-        });
+            CaseDataResult stored = awaitStored(() -> commands.read(signedIn.context(), caseId, operationId), result,
+                    current -> "PENDING".equals(current.state()), STORAGE_WAIT);
+            requireApplied(stored);
+            return ResponseEntity.ok(stored);
+        }, 500);
     }
 
     @GetMapping({"/memos/auftraege/{operationId}", "/aktionen/{operationId}"})
@@ -248,9 +260,18 @@ public class StaffCaseDataController {
             @RequestParam(defaultValue = "") String userTaskKey, @RequestParam(defaultValue = "") String version,
             @RequestParam(defaultValue = "") String reviewToken, @RequestParam(defaultValue = "") String csrf, HttpServletRequest request) {
         return invoke(request, csrf, signedIn -> {
-            decisions.closeCase(signedIn.context(), caseId, UUID.fromString(operationId), Long.parseLong(userTaskKey),
-                    Long.parseLong(version), reviewToken);
-            return ResponseEntity.ok(Map.of("state", "CONFIRMED"));
+            UUID operation = UUID.fromString(operationId);
+            decisions.closeCase(signedIn.context(), caseId, operation, Long.parseLong(userTaskKey), Long.parseLong(version), reviewToken);
+            // Erfolg erst melden, wenn der Worker «Abgeschlossen» samt Abschlussnachweis gespeichert hat (UC-014).
+            String state = awaitStored(() -> decisions.decisionState(signedIn.context(), caseId, operation), "CONFIRMED",
+                    current -> !"APPLIED".equals(current) && !"REJECTED".equals(current), STORAGE_WAIT);
+            if ("REJECTED".equals(state)) {
+                throw new CaseActionException("CASE_CHANGED");
+            }
+            if (!"APPLIED".equals(state)) {
+                throw new CaseActionException("WORKFLOW_UNAVAILABLE");
+            }
+            return ResponseEntity.ok().build();
         }, 500);
     }
 
@@ -308,7 +329,16 @@ public class StaffCaseDataController {
         return invoke(request, fields.getOrDefault("csrf", ""), signedIn -> {
             UUID order = reopening.request(signedIn.context(), caseId, UUID.fromString(fields.getOrDefault("operationId", "")),
                     Long.parseLong(fields.getOrDefault("version", "")));
-            return ResponseEntity.accepted().body(Map.of("order", order.toString(), "state", "ACCEPTED"));
+            // Erfolg erst melden, wenn die neue Prozessinstanz den aktiven Status gespeichert hat (UC-015).
+            String state = awaitStored(() -> reopening.orderState(signedIn.context(), caseId, order), "PENDING",
+                    "PENDING"::equals, REOPEN_WAIT);
+            if ("REJECTED".equals(state)) {
+                throw new CaseActionException("CASE_CHANGED");
+            }
+            if (!"APPLIED".equals(state)) {
+                throw new CaseActionException("WORKFLOW_UNAVAILABLE");
+            }
+            return ResponseEntity.ok().build();
         }, 500);
     }
 
@@ -378,6 +408,25 @@ public class StaffCaseDataController {
             return ResponseEntity.badRequest().body(response.getBody());
         }
         return response;
+    }
+
+    /**
+     * Fragt einen gespeicherten Auftragsstand ab, bis er nicht mehr ausstehend ist oder die Wartezeit abläuft.
+     * Liefert den zuletzt gelesenen Stand; der Aufrufer entscheidet über Erfolg oder Fehler.
+     */
+    private <T> T awaitStored(Supplier<T> read, T first, Predicate<T> pending, Duration timeout) {
+        long deadline = System.nanoTime() + timeout.toNanos();
+        T current = first;
+        while (pending.test(current) && System.nanoTime() < deadline) {
+            try {
+                Thread.sleep(POLL_INTERVAL_MILLIS);
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                throw new CaseActionException("WORKFLOW_UNAVAILABLE");
+            }
+            current = read.get();
+        }
+        return current;
     }
 
     private void requireFields(Map<String, String> fields, Set<String> allowed) {

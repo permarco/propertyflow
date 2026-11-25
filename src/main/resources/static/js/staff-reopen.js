@@ -41,14 +41,18 @@
         if (busy || !snapshot) return;
         busy = true;
         submit.disabled = true;
+        const done = window.propertyflowBusy(submit);
         try {
             const response = await fetch(form.action, { method: 'POST', body: new URLSearchParams(snapshot) });
             feedback.textContent = response.ok
-                ? 'Wiedereröffnung angefordert. Bis zur bestätigten Übernahme bleibt der Fall abgeschlossen.'
-                : 'Wiedereröffnung nicht bestätigt. Bitte prüfen Sie den aktuellen Fallstand.';
+                ? 'Der Fall ist wiedereröffnet.'
+                : [400, 409].includes(response.status)
+                    ? 'Wiedereröffnung nicht möglich. Bitte prüfen Sie den aktuellen Fallstand.'
+                    : 'Die Bestätigung ist unklar. Bitte prüfen Sie den Fallstand; der Auftrag wird nicht automatisch wiederholt.';
         } catch {
             feedback.textContent = 'Die Bestätigung ist unklar. Bitte prüfen Sie den Fallstand; der Auftrag wird nicht automatisch wiederholt.';
         } finally {
+            done();
             snapshot = undefined;
             busy = false;
             dialog.close();

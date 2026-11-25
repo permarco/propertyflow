@@ -4,6 +4,7 @@ import { after, before, test } from 'node:test';
 import { launchBrowser } from '../browser-launcher.mjs';
 
 const script = await readFile('src/main/resources/static/js/staff-answer-requirements.js', 'utf8');
+const busyScript = await readFile('src/main/resources/static/js/staff-busy.js', 'utf8');
 const origin = 'http://127.0.0.1:39997';
 let browser;
 before(async () => { browser = await launchBrowser(); });
@@ -31,6 +32,7 @@ async function setup(t) {
                 <textarea aria-label="Entwurf">Nicht gesendeter Text</textarea>` });
     });
     await page.goto(origin);
+    await page.addScriptTag({ content: busyScript });
     await page.addScriptTag({ content: script });
     return { page, state };
 }

@@ -7,6 +7,7 @@ const scripts = {
     wait: await readFile('src/main/resources/static/js/staff-waits.js', 'utf8'),
     change: await readFile('src/main/resources/static/js/staff-follow-up.js', 'utf8'),
     reopen: await readFile('src/main/resources/static/js/staff-reopen.js', 'utf8'),
+    busy: await readFile('src/main/resources/static/js/staff-busy.js', 'utf8'),
 };
 const origin = 'http://127.0.0.1:39998';
 let browser;
@@ -56,6 +57,7 @@ async function setup(t, mode) {
             ${body}</body></html>` });
     });
     await page.goto(origin);
+    await page.addScriptTag({ content: scripts.busy });
     await page.addScriptTag({ content: scripts[mode] });
     if (mode !== 'reopen') await page.waitForFunction(() => !document.querySelector('[type="submit"]').disabled);
     return { page, state };
@@ -93,9 +95,9 @@ test('reopening requires confirmation and cancelling sends no command', async t 
     await page.getByRole('button', { name: 'Abbrechen', exact: true }).click();
     assert.equal(state.posts.length, 0);
     await page.getByRole('button', { name: 'Fall wiedereröffnen', exact: true }).click();
-    state.status = 202;
+    state.status = 200;
     await page.getByRole('button', { name: 'Wiedereröffnen', exact: true }).click();
-    await page.waitForFunction(() => document.querySelector('[role="status"]').textContent.includes('angefordert'));
+    await page.waitForFunction(() => document.querySelector('[role="status"]').textContent.includes('wiedereröffnet'));
     assert.equal(state.posts.length, 1);
     assert.equal(state.posts[0].fields.version, '2');
     assert.equal(await page.locator('#case-status').textContent(), 'Abgeschlossen');
@@ -106,7 +108,7 @@ test('unknown reopening response never retries or exposes a free status choice',
     await page.getByRole('button', { name: 'Fall wiedereröffnen', exact: true }).click();
     state.status = 500;
     await page.getByRole('button', { name: 'Wiedereröffnen', exact: true }).click();
-    await page.waitForFunction(() => document.querySelector('[role="status"]').textContent.includes('nicht bestätigt'));
+    await page.waitForFunction(() => document.querySelector('[role="status"]').textContent.includes('unklar'));
     assert.equal(state.posts.length, 1);
     assert.equal('status' in state.posts[0].fields, false);
     assert.equal(state.posts[0].fields.csrf, 'csrf-test');
