@@ -157,7 +157,7 @@ Im Zielablauf gibt der führende Camunda-Fallprozess die zulässigen Mitarbeiter
 | [UC-013 · Wiedervorlage verwalten](UC-013-wiedervorlage-verwalten.md) | Termin setzen, ändern und löschen in der Demo. Im Zielablauf beendet eine neue Mieternachricht die laufende Wiedervorlage und löst die sofortige Mitarbeiterprüfung aus. |
 | [UC-014 · Fall abschliessen](UC-014-fall-abschliessen.md) | Manueller Abschluss in der Demo. Die vereinbarten Systemabschlüsse sind geplant. |
 | [UC-015 · Fall wiedereröffnen](UC-015-fall-wiedereroeffnen.md) | Mitarbeiteraktion in der Demo. Technische Fortsetzung des Fallprozesses offen. |
-| [UC-027 · Kritische Fallentscheidung treffen](UC-027-kritische-fallentscheidung-treffen.md) | Allgemeine Mitarbeiterprüfung vorhanden. Eigenständige Freigabe, Ablehnung oder Klärung einer konkreten kritischen Handlung mit Audit gemäss HTTP-Zielvertrag noch ausstehend; nicht durch «Bearbeitung fortsetzen» ersetzt. |
+| [UC-027 · Kritische Fallentscheidung treffen](UC-027-kritische-fallentscheidung-treffen.md) | Umgesetzt über Mitarbeiterprüfung und «Bearbeitung fortsetzen» mit Begründung. Kein eigenständiger Freigabeablauf (Entscheid vom 25.11.2026). |
 | [UC-028 · Antwortbedarf aufheben](UC-028-antwortbedarf-aufheben.md) | Mitarbeiteraktion in der Demo. Dauerhafte Speicherung und Prozessabstimmung geplant. |
 
 ## Verarbeitung und Benachrichtigungen
