@@ -64,6 +64,10 @@ Die Engine-Tests benötigen eine **isolierte** PostgreSQL-Datenbank namens
 `propertyflow_test` und Camunda. Die Tests leeren die Falltabellen. Parallele
 Testläufe müssen eigene Datenbanken und Engines verwenden.
 
+GitHub Actions führt die Integrationstests in parallelen Gruppen mit jeweils
+eigener Datenbank aus. Jede Camunda-Gruppe startet ihre eigene Engine. Das
+Limit pro Integrationsjob beträgt fünf Minuten, einschliesslich Einrichtung.
+
 ```powershell
 docker compose -f dev/compose.backend-test.yaml up -d --wait
 docker compose -f dev/compose.workflow-test.yaml up -d --wait
