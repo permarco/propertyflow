@@ -124,10 +124,10 @@ class StaffDecisionCamundaTest {
                 new CreateCaseCommand("review", "Heizung", "Wohnung", "Kalt", "review@example.test")).caseId();
         StartOrder start = workflow.claim(definitionKey, "<default>", Duration.ofMinutes(2)).orElseThrow();
         assertEquals(ProcessStartGateway.StartResult.STARTED, new CamundaProcessStartGateway(engine).ensureStarted(start));
+        leader = WorkflowTestJobs.rootInstanceKey(engine, start);
         initial = new InitialCaseWorkers(engine, initialService);
         reviews = new StaffReviewWorkers(engine, reviewService);
         ActivatedJob preparing = job(PREPARE_PROCESS_KEY);
-        leader = preparing.getProcessInstanceKey();
         initial.prepareKey(engine, preparing);
         initial.register(engine, job(REGISTER_CASE));
         initial.prepareInitial(engine, job(PREPARE_INITIAL));
@@ -236,24 +236,16 @@ class StaffDecisionCamundaTest {
     }
 
     private ActivatedJob job(String type) throws Exception {
-        for (int attempt = 0; attempt < 200; attempt++) {
-            List<ActivatedJob> jobs = engine.newActivateJobsCommand().jobType(type).maxJobsToActivate(1)
-                    .timeout(Duration.ofMinutes(2)).send().join().getJobs();
-            if (!jobs.isEmpty()) {
-                ActivatedJob job = jobs.getFirst();
-                await(() -> {
-                    try {
-                        engine.newProcessInstanceGetRequest(job.getProcessInstanceKey()).send().join();
-                        return true;
-                    } catch (RuntimeException exception) {
-                        return false;
-                    }
-                });
-                return job;
+        ActivatedJob job = WorkflowTestJobs.activateForRoot(engine, type, leader);
+        await(() -> {
+            try {
+                engine.newProcessInstanceGetRequest(job.getProcessInstanceKey()).send().join();
+                return true;
+            } catch (RuntimeException exception) {
+                return false;
             }
-            Thread.sleep(100);
-        }
-        throw new AssertionError("Missing review job: " + type);
+        });
+        return job;
     }
 
     private void await(BooleanSupplier condition) throws Exception {
