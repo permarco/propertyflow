@@ -3,7 +3,7 @@ import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { base, createCase } from './integrated-helpers.mjs';
+import { base, createCase, login } from './integrated-helpers.mjs';
 
 const require = createRequire(path.resolve('target/frontend-tools/package.json'));
 const { chromium } = require('playwright');
@@ -19,9 +19,16 @@ try {
     let sessionCookie;
     let c;
     try {
-        const state = JSON.parse(await readFile(process.env.PROPERTYFLOW_E2E_STAFF_STATE, 'utf8'));
         const context = await browser.newContext();
-        c = await createCase(await context.newPage());
+        const page = await context.newPage();
+        c = await createCase(page);
+        let state;
+        if (process.env.PROPERTYFLOW_E2E_STAFF_STATE) {
+            state = JSON.parse(await readFile(process.env.PROPERTYFLOW_E2E_STAFF_STATE, 'utf8'));
+        } else {
+            await login(page, process.env.PROPERTYFLOW_E2E_STAFF_EMAIL);
+            state = await context.storageState();
+        }
         sessionCookie = state.cookies.find(cookie => cookie.name === 'JSESSIONID' && cookie.domain === new URL(base).hostname);
         assert.ok(sessionCookie, 'Staff login must issue a session cookie for the backend host');
     } finally {

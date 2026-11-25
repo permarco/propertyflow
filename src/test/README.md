@@ -191,7 +191,21 @@ Die Ports 8084, 8086, 26506, 5440, 8028 und 1028 müssen frei sein. Belegte Port
 
 Die drei Browserjobs in [`.github/workflows/tests.yml`](../../.github/workflows/tests.yml) verwenden diesen identischen Ablauf. Zusätzlich laufen Java-/JavaScript-Regression und PostgreSQL-/Camunda-Vertragstests. Derselbe Einstieg kann in GitLab mit Java, Node, Docker Compose und Playwright genutzt werden, beispielsweise auf einem isolierten Linux-Shell-Runner mit lokal erreichbaren Docker-Portfreigaben. Parallele Matrixjobs benötigen getrennte Runnerumgebungen. Remote-CI wird erst durch einen tatsächlichen Push/Lauf nachgewiesen.
 
-Diagnosen: `target/integrated-e2e/*.log`, `*.json`, `*.png`; Axe-Bericht unter `target/frontend-quality/integrated-a11y.json`. Die temporäre Sitzungsdatei unter `target/integrated-e2e/run-*/` wird nicht als CI-Artefakt veröffentlicht. Für die optionale Lighthouse-Prüfung vor dem Start `PROPERTYFLOW_PERFORMANCE=true` setzen; sie nutzt echte Fall-URLs und den Playwright-Chromium-Pfad. Der Chromium-Pipelinejob führt diese Prüfung automatisch aus. Unvollständige Messungen gelten als Fehler; pro Seite muss der Median aus drei gültigen Desktop-Messungen mindestens 90 Punkte erreichen.
+In CI laufen Oberflächen- und Kontentests parallel je Browser. In der
+Kontengruppe bleiben Prüfung, Backendneustart und tatsächlicher Sitzungsablauf
+zusammen. Ein separater Chromium-Job misst die Performance mit Lighthouse.
+Jeder Job baut seinen eigenen Teststack auf und hat ein Limit von acht Minuten.
+Die Testinstanz fragt ausstehende Workflow-Aufträge häufiger ab.
+
+Lokal startet der Runner standardmässig alle funktionalen Prüfungen. Mit
+`PROPERTYFLOW_BROWSER_SUITE=ui`, `accounts` oder `performance` lässt sich eine
+Gruppe einzeln ausführen. Mit `PROPERTYFLOW_PERFORMANCE=true` läuft Lighthouse
+auch im vollständigen lokalen Durchlauf. Lighthouse verwendet echte Fall-URLs.
+Pro Seite zählt der Median aus drei gültigen Desktop-Messungen. Er muss
+mindestens 90 Punkte erreichen.
+
+Diagnosen stehen unter `target/integrated-e2e/` und `target/frontend-quality/`.
+Die temporäre Sitzungsdatei unter `target/integrated-e2e/run-*/` bleibt lokal.
 
 ## Anmeldung, CSRF und SMTP
 

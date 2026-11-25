@@ -146,17 +146,21 @@ jobs:
           retention-days: 7
 
   integrated-browsers:
-    name: Integrated backend / ${{ matrix.browser }}
+    name: Integrated backend / ${{ matrix.browser }} / ${{ matrix.suite }}
     needs: build
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 8
     strategy:
       fail-fast: false
       matrix:
         browser: [chromium, firefox, webkit]
+        suite: [ui, accounts]
+        include:
+          - browser: chromium
+            suite: performance
     env:
       PROPERTYFLOW_TEST_BROWSER: ${{ matrix.browser }}
-      PROPERTYFLOW_PERFORMANCE: ${{ matrix.browser == 'chromium' && 'true' || 'false' }}
+      PROPERTYFLOW_BROWSER_SUITE: ${{ matrix.suite }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -180,14 +184,16 @@ jobs:
           cp src/test/browser/tools-package.json target/frontend-tools/package.json
           cp src/test/browser/tools-package-lock.json target/frontend-tools/package-lock.json
           npm ci --prefix target/frontend-tools
-          node target/frontend-tools/node_modules/playwright/cli.js install --with-deps ${{ matrix.browser }}
-      - name: Real application, account flows and restart
+          if [ "$PROPERTYFLOW_BROWSER_SUITE" != performance ]; then
+            node target/frontend-tools/node_modules/playwright/cli.js install --with-deps "$PROPERTYFLOW_TEST_BROWSER"
+          fi
+      - name: Run integrated browser suite
         env:
           # Lighthouse startet Chrome separat mit der Sandbox des Ubuntu-Runners.
-          CHROME_PATH: ${{ matrix.browser == 'chromium' && '/opt/google/chrome/chrome' || '' }}
+          CHROME_PATH: ${{ matrix.suite == 'performance' && '/opt/google/chrome/chrome' || '' }}
         run: node src/test/browser/run-integrated-regression.mjs
       - name: Backend JavaScript failure windows
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && matrix.suite == 'ui' }}
         run: |
           mkdir -p target/frontend-quality
           node --test --test-concurrency=1 src/test/browser/stage3/*.test.mjs | tee target/frontend-quality/backend-failure-windows.tap
@@ -195,7 +201,7 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@v7
         with:
-          name: integrated-backend-browser-reports-${{ matrix.browser }}
+          name: integrated-backend-browser-reports-${{ matrix.browser }}-${{ matrix.suite }}
           path: |
             target/frontend-quality/
             target/integrated-e2e/*.log

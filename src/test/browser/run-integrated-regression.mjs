@@ -11,6 +11,8 @@ const repository = process.cwd();
 const report = path.resolve('target/integrated-e2e');
 const working = path.join(report, `run-${Date.now()}`);
 const jar = path.resolve('target/propertyflow-0.0.1-SNAPSHOT.jar');
+const suite = process.env.PROPERTYFLOW_BROWSER_SUITE ?? 'all';
+assert.ok(['all', 'ui', 'accounts', 'performance'].includes(suite), `Unbekannte Browser-Testgruppe: ${suite}`);
 const project = `propertyflow-e2e-${process.pid}`;
 const compose = ['compose', '-p', project, '-f', 'dev/compose.integration.yaml'];
 const base = 'http://127.0.0.1:8084';
@@ -30,7 +32,7 @@ const common = ['-Xmx768m', '-jar', jar,
 const browserEnv = { ...process.env, PROPERTYFLOW_DEV_SMOKE: 'true', PROPERTYFLOW_E2E_URL: base,
     PROPERTYFLOW_E2E_CAMUNDA_URL: camunda, PROPERTYFLOW_E2E_MAIL_URL: mail,
     PROPERTYFLOW_E2E_STAFF_EMAIL: email, PROPERTYFLOW_E2E_REPORTS: report,
-    PROPERTYFLOW_E2E_STAFF_STATE: path.join(working, 'staff-state.json') };
+    PROPERTYFLOW_E2E_STAFF_STATE: suite === 'performance' ? '' : path.join(working, 'staff-state.json') };
 let application;
 let log;
 let definitions;
@@ -76,6 +78,9 @@ async function startApplication(sessionTimeout = '30m') {
         '--camunda.client.grpc-address=http://127.0.0.1:26506',
         `--propertyflow.camunda.web-base-url=${camunda}`, '--camunda.client.auth.method=none',
         '--propertyflow.workflow.enabled=true', '--propertyflow.case-mail.enabled=true',
+        // Kürzere Abfrageintervalle für den isolierten Teststack mit echten Workern und BPMN.
+        '--propertyflow.workflow.initial-delay-ms=500', '--propertyflow.workflow.poll-delay-ms=500',
+        '--camunda.client.worker.defaults.poll-interval=250ms',
         `--propertyflow.workflow.definition-key=${definitions.caseKey}`, `--propertyflow.case-mail.definition-key=${definitions.mailKey}`,
     ], { cwd: working, stdio: ['ignore', log.fd, log.fd], windowsHide: true });
     application.on('error', error => console.error(error.message));
@@ -139,29 +144,34 @@ try {
     } finally { await bootstrapLog.close(); }
     await startApplication();
     const runtimeStarted = Date.now();
-    await run(process.execPath, ['--test', 'src/test/browser/dev-runtime.test.mjs'], { env: browserEnv });
-    await run(process.execPath, ['--test', '--test-concurrency=1', 'src/test/browser/intake-validation.test.mjs',
-        'src/test/browser/integrated-ui.test.mjs', 'src/test/browser/list-pagination.test.mjs'], { env: browserEnv });
-    if (process.env.PROPERTYFLOW_PERFORMANCE === 'true') {
+    if (suite === 'all' || suite === 'ui') {
+        await run(process.execPath, ['--test', 'src/test/browser/dev-runtime.test.mjs'], { env: browserEnv });
+        await run(process.execPath, ['--test', '--test-concurrency=1', 'src/test/browser/intake-validation.test.mjs',
+            'src/test/browser/integrated-ui.test.mjs', 'src/test/browser/list-pagination.test.mjs'], { env: browserEnv });
+    }
+    if (suite === 'performance' || (suite === 'all' && process.env.PROPERTYFLOW_PERFORMANCE === 'true')) {
         await run(process.execPath, ['src/test/browser/frontend-performance.mjs'], { env: browserEnv });
     }
-    // Der reguläre Einmalcode-Missbrauchsschutz bleibt auch in CI unverändert aktiv.
-    let remaining = Math.max(0, 90000 - (Date.now() - runtimeStarted));
-    while (remaining > 0) {
-        console.log('Warte auf das reguläre Anmeldecode-Intervall.');
-        await delay(Math.min(remaining, 30000));
-        remaining = Math.max(0, 90000 - (Date.now() - runtimeStarted));
+    if (suite === 'all') {
+        // Im gemeinsamen lokalen Lauf hat der UI-Test bereits einen Einmalcode angefordert.
+        const remaining = 90000 - (Date.now() - runtimeStarted);
+        if (remaining > 0) {
+            console.log('Warte auf das reguläre Anmeldecode-Intervall.');
+            await delay(remaining);
+        }
     }
-    await run(process.execPath, ['--test', 'src/test/browser/dev-accounts.test.mjs'], { env: browserEnv });
-    await stopApplication();
-    await startApplication();
-    await run(process.execPath, ['--test', 'src/test/browser/dev-accounts.test.mjs'], {
-        env: { ...browserEnv, PROPERTYFLOW_DEV_SMOKE: 'false', PROPERTYFLOW_DEV_ACCOUNT_RESTART: 'true' },
-    });
-    await stopApplication();
-    await startApplication('1m');
-    await run(process.execPath, ['--test', 'src/test/browser/integrated-session-expiry.test.mjs'], { env: browserEnv });
-    console.log('Integrierte Browserprüfung und Kontenprüfung nach Backendneustart bestanden.');
+    if (suite === 'all' || suite === 'accounts') {
+        await run(process.execPath, ['--test', 'src/test/browser/dev-accounts.test.mjs'], { env: browserEnv });
+        await stopApplication();
+        await startApplication();
+        await run(process.execPath, ['--test', 'src/test/browser/dev-accounts.test.mjs'], {
+            env: { ...browserEnv, PROPERTYFLOW_DEV_SMOKE: 'false', PROPERTYFLOW_DEV_ACCOUNT_RESTART: 'true' },
+        });
+        await stopApplication();
+        await startApplication('1m');
+        await run(process.execPath, ['--test', 'src/test/browser/integrated-session-expiry.test.mjs'], { env: browserEnv });
+    }
+    console.log(`Integrierte Browserprüfung bestanden (${suite}).`);
 } catch (error) {
     if (application?.pid) {
         const dump = await open(path.join(report, 'threads.log'), 'w');
