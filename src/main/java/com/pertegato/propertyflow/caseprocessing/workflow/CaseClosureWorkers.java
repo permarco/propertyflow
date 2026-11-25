@@ -29,7 +29,7 @@ import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmn
 import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.STAFF_ENTRY_CONTEXT_REF;
 
 @Component
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 @ConditionalOnProperty(name = "propertyflow.workflow.enabled", havingValue = "true")
 @RequiredArgsConstructor
 public class CaseClosureWorkers {

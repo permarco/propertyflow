@@ -35,7 +35,7 @@ import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProce
 import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.Variablen.STAFF_DECISION;
 
 @Component
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 public class CamundaStaffTaskGateway implements StaffTaskGateway {
 
     private final ObjectProvider<CamundaClient> clients;

@@ -8,7 +8,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 public class SmtpVerificationCodeDelivery implements VerificationCodeDelivery {
     private final JavaMailSender sender;
     private final String from;

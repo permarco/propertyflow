@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.server.ResponseStatusException;
 
 @Controller
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 @RequiredArgsConstructor
 public class CaseAccessAdministrationController {
     private final CaseAccessAdministrationService service;

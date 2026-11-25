@@ -15,7 +15,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 public class SmtpCaseMailSender implements CaseMailSender {
 
     private static final String SUBJECT = "PropertyFlow: Information zu Ihrem Anliegen";

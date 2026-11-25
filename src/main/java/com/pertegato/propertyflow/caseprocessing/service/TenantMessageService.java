@@ -29,7 +29,7 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @Service
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 public class TenantMessageService implements TenantMessageSubmission {
 
     private final TenantAccountAccess accounts;

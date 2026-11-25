@@ -18,7 +18,7 @@ import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmn
 import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.TenantReplyBpmnConstants.Variablen.TENANT_EVALUATION_VERSION;
 
 @Component
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 @ConditionalOnProperty(name = "propertyflow.workflow.enabled", havingValue = "true")
 @RequiredArgsConstructor
 public class TenantReplyDispatcher {

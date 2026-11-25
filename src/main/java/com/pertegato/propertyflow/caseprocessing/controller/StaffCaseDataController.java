@@ -39,7 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.WebUtils;
 
 @RestController
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 @RequestMapping(StaffWebSession.STAFF_LIST + "/{caseId}")
 @RequiredArgsConstructor
 public class StaffCaseDataController {

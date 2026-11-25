@@ -14,7 +14,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 @ConditionalOnProperty(name = "propertyflow.workflow.enabled", havingValue = "true")
 @RequiredArgsConstructor
 public class ReviewSignalDispatcher {

@@ -36,7 +36,7 @@ import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.FollowUpBp
 import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.FollowUpBpmnConstants.Variablen.FOLLOW_UP_DUE_AT;
 
 @Component
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 @ConditionalOnProperty(name = "propertyflow.workflow.enabled", havingValue = "true")
 @RequiredArgsConstructor
 public class FollowUpCommandWorkers {

@@ -12,7 +12,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 @Repository
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 @RequiredArgsConstructor
 public class TenantMessageStore {
 

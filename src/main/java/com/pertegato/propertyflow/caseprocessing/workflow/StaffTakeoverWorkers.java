@@ -29,7 +29,7 @@ import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmn
 import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.AUTOMATIC_INTERRUPTION_READY;
 
 @Component
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 @ConditionalOnProperty(name = "propertyflow.workflow.enabled", havingValue = "true")
 @RequiredArgsConstructor
 public class StaffTakeoverWorkers {

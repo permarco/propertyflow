@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 @ControllerAdvice(assignableTypes = RegularStaffLoginController.class)
-@Profile("propertyflow-backend & propertyflow-dev & !frontend-demo")
+@Profile("propertyflow-backend & propertyflow-dev")
 @RequiredArgsConstructor
 public class DevelopmentLoginAdvice {
     private final AccountAdministrationService accounts;

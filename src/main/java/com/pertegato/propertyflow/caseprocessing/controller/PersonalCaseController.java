@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 @Controller
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 @RequiredArgsConstructor
 public class PersonalCaseController {
 

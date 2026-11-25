@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
 import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.FollowUpBpmnConstants.Variablen.FOLLOW_UP_COMMAND_REF;
 
 @Component
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 public class CamundaFollowUpGateway implements FollowUpGateway {
 
     public static final String CHANGE = "Wiedervorlage ändern";

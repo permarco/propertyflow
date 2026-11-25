@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 public class CamundaTenantMessageGateway implements TenantMessageGateway {
 
     private final ObjectProvider<CamundaClient> clients;

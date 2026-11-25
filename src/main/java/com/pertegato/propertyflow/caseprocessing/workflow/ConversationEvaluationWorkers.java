@@ -31,7 +31,7 @@ import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.TenantMess
 import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.TenantMessageBpmnConstants.JobType.CONVERSATION_RECOMMENDATION;
 
 @Component
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 @ConditionalOnProperty(name = "propertyflow.workflow.enabled", havingValue = "true")
 @RequiredArgsConstructor
 public class ConversationEvaluationWorkers {

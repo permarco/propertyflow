@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
  * Eine Konfiguration oder ein positiver Modellvorschlag darf diese Sperre nicht aufheben.
  */
 @Component
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 public class AutomaticClosureRelease {
 
     public boolean approved(ClosureAssessment.Result assessment) {

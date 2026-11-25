@@ -26,7 +26,7 @@ import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.TenantMess
 import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.TenantMessageBpmnConstants.Variablen.TENANT_MESSAGE_ACCEPTED;
 
 @Component
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 @ConditionalOnProperty(name = "propertyflow.workflow.enabled", havingValue = "true")
 @RequiredArgsConstructor
 public class TenantMessageWorkers {

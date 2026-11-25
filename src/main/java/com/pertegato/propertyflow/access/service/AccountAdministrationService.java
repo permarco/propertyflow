@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 @RequiredArgsConstructor
 public class AccountAdministrationService implements AccountAdministration {
     private final AccountAdministrationStore accounts;

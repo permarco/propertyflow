@@ -61,7 +61,7 @@ import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProce
 import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.StaffProcessingBpmnConstants.Variablen.STAFF_ENTRY_KIND;
 
 @Component
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 @ConditionalOnProperty(name = "propertyflow.workflow.enabled", havingValue = "true")
 @RequiredArgsConstructor
 public class StaffReviewWorkers {

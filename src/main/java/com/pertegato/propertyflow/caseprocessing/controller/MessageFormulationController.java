@@ -30,7 +30,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.web.util.WebUtils;
 
 @Controller
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 @RequestMapping("/mitarbeiter/faelle/{caseId}/ki-formulierung")
 @RequiredArgsConstructor
 public class MessageFormulationController {

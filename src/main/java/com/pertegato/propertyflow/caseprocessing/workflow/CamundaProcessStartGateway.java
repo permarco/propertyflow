@@ -17,7 +17,7 @@ import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CaseProces
 import static com.pertegato.propertyflow.caseprocessing.contract.bpmn.CommonBpmnConstants.Variablen.CASE_ID;
 
 @Component
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 @ConditionalOnProperty(name = "propertyflow.workflow.enabled", havingValue = "true")
 @RequiredArgsConstructor
 public class CamundaProcessStartGateway implements ProcessStartGateway {

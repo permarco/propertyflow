@@ -10,7 +10,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("propertyflow-backend & staff-bootstrap & !frontend-demo")
+@Profile("propertyflow-backend & staff-bootstrap")
 class StaffBootstrapCommand implements ApplicationRunner {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StaffBootstrapCommand.class);

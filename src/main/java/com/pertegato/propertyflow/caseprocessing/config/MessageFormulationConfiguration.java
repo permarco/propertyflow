@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Profile;
 import reactor.core.publisher.Flux;
 
 @Configuration(proxyBeanMethods = false)
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 public class MessageFormulationConfiguration {
 
     private static final String SYSTEM_PROMPT = """

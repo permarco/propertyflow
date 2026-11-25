@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 public class CamundaCaseGateway implements CaseProcessGateway {
 
     private final ObjectProvider<CamundaClient> clients;

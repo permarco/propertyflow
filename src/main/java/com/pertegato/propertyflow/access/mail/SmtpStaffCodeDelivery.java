@@ -14,7 +14,7 @@ import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
 @Component
-@Profile({"frontend-demo", "propertyflow-backend"})
+@Profile("propertyflow-backend")
 class SmtpStaffCodeDelivery implements StaffCodeDelivery {
     private static final String SUBJECT = "Ihr Einmalcode für PropertyFlow";
     private static final String ENCODING = StandardCharsets.UTF_8.name();

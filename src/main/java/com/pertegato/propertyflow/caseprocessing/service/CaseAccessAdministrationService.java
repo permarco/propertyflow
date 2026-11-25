@@ -26,7 +26,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 public class CaseAccessAdministrationService {
     private final AccountAdministration accounts;
     private final CaseAccessAdministrationStore store;

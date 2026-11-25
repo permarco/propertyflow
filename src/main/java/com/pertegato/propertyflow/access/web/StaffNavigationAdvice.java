@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 @ControllerAdvice(basePackages = "com.pertegato.propertyflow.caseprocessing.controller")
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 public class StaffNavigationAdvice {
     private final AccountAdministrationService accounts;
     private final boolean connectedAppsAvailable;

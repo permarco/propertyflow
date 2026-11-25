@@ -19,7 +19,7 @@ import org.springframework.stereotype.Repository;
 import tools.jackson.databind.json.JsonMapper;
 
 @Repository
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 @RequiredArgsConstructor
 public class ConversationEvaluationStore {
 

@@ -33,7 +33,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @Controller
-@Profile("propertyflow-backend & !frontend-demo")
+@Profile("propertyflow-backend")
 @RequestMapping("/mieter/fall")
 @RequiredArgsConstructor
 public class GuestCaseIntakeController {
