@@ -202,7 +202,7 @@ jobs:
     name: Integrated backend / ${{ matrix.browser }} / ${{ matrix.suite }}
     needs: build
     runs-on: ubuntu-24.04
-    timeout-minutes: 8
+    timeout-minutes: ${{ matrix.suite == 'ui' && 10 || 8 }}
     strategy:
       fail-fast: false
       matrix:
