@@ -1,8 +1,5 @@
 package com.pertegato.propertyflow.access.contract;
 
-import java.util.Arrays;
-import java.util.List;
-
 public enum McpScope {
     TENANT_CASES("tenant:cases:read", false, "Eigene Fälle lesen"),
     TENANT_MESSAGES("tenant:messages:write", false, "Ergänzungen vorbereiten"),
@@ -31,9 +28,5 @@ public enum McpScope {
 
     public String label() {
         return label;
-    }
-
-    public static List<String> valuesForMetadata() {
-        return Arrays.stream(values()).map(McpScope::value).toList();
     }
 }

@@ -135,11 +135,29 @@ Mailpit verwendet den dokumentierten [dauerhaften SQLite-Speicher](https://mailp
 
 ## IDE und getrennte Testumgebung
 
-Einmal `dev/start.ps1` ausführen, danach `dev/stop.ps1 -ApplicationOnly`.
-In IntelliJ **PropertyFlow - Dev (PostgreSQL + Camunda)** starten.
-Die Infrastruktur läuft weiter. Bei Änderungen der BPMN-Quellen vorher
-`dev/start.ps1 -InfrastructureOnly` ausführen. Die lokale Kontoeinrichtung muss
-bereits erfolgt sein. Der normale Skriptstart bleibt der vollständige Ein-Befehl-Start.
+In IntelliJ lässt sich alles über die geteilten Startkonfigurationen in `.run/`
+starten und stoppen:
+
+| Startkonfiguration | Wirkung |
+|---|---|
+| **PropertyFlow - Dev (PostgreSQL + Camunda)** | Startet zuerst die Infrastruktur, dann das Backend auf Port 8081 |
+| **PropertyFlow - Dev mit MCP (Claude Code)** | Wie oben, zusätzlich mit MCP-Zugang für Claude Code |
+| **PropertyFlow - Infrastruktur starten** | `dev/start.ps1 -InfrastructureOnly`: PostgreSQL, Camunda, Mailpit und BPMN-Deployment |
+| **PropertyFlow - Infrastruktur stoppen** | `dev/stop.ps1`: stoppt alle Devcontainer, Daten bleiben erhalten |
+
+Die beiden Backend-Konfigurationen führen «Infrastruktur starten» vor jedem Start
+aus. Laufende Container bleiben dabei unverändert, und unveränderte BPMN-Modelle
+behalten ihre Definition. Das Backend wird mit dem roten Stopp-Knopf beendet,
+die Container danach mit «Infrastruktur stoppen». Die Shell-Konfigurationen
+erwarten PowerShell 7 unter `C:\Program Files\PowerShell\7\pwsh.exe`; bei
+anderem Installationsort den Interpreter in der Konfiguration anpassen.
+
+Die IDE liest die Zugangsdaten aus `.propertyflow-local/` im Projektordner. In
+einem zweiten Checkout oder Worktree derselben Volumes vorher diese Dateien aus
+dem ursprünglichen Checkout übernehmen; sonst erzeugt der Start neue Passwörter,
+die nicht zu den bestehenden Datenbanken passen. Die lokale Kontoeinrichtung muss
+bereits erfolgt sein, einmalig über `dev/start.ps1`. Läuft noch ein Skriptstart,
+belegt er Port 8081; vorher `dev/stop.ps1 -ApplicationOnly` ausführen.
 
 Die Browserregression startet ihren eigenen integrierten Teststack auf Port 8084.
 Die frühere Frontend-Demo-Startkonfiguration wurde nach der Testübertragung entfernt.
@@ -204,7 +222,9 @@ bleibt auch im Devprofil aktiv.
 ## MCP-Fallstand mit OAuth
 
 Für den ersten Test ein verifiziertes Mieterkonto und synthetische Fälle
-verwenden. Der MCP-Zugang wird je Start eingeschaltet. Die Redirect-URI muss
+verwenden. Der MCP-Zugang wird je Start eingeschaltet. Einträge
+`propertyflow.mcp.*` in `.propertyflow-local/backend.properties` haben Vorrang
+vor Umgebungsvariablen und Startkonfigurationen; dort keine MCP-Werte ablegen. Die Redirect-URI muss
 exakt zum vorregistrierten OAuth-Client passen. Für einen lokalen Client auf
 demselben Rechner kann ein Loopback-Callback verwendet werden.
 
@@ -222,6 +242,52 @@ und `http://127.0.0.1:8081/mcp` hinzufügen. Er muss Authorization Code mit
 PKCE (`S256`) für öffentliche Clients unterstützen. Der Browser führt zur
 Mieteranmeldung und anschliessend zur Freigabe. Unter «Meine Fälle» steht
 «Verbundene Apps» für den Widerruf bereit.
+
+### Claude Code als lokaler MCP-Client
+
+Claude Code läuft auf demselben Rechner und braucht keinen Tunnel. Es meldet
+als Callback fest `http://localhost:<Port>/callback`. PropertyFlow nimmt
+`localhost` nur an, wenn genau diese URI konfiguriert ist; ein anderer Port,
+Pfad oder die Schreibweise `127.0.0.1` wird abgewiesen.
+
+In IntelliJ **PropertyFlow - Dev mit MCP (Claude Code)** starten. Die
+Konfiguration setzt die folgenden Werte bereits. Ohne IDE:
+
+```powershell
+pwsh -File dev/stop.ps1 -ApplicationOnly
+$env:PROPERTYFLOW_MCP_ENABLED = 'true'
+$env:PROPERTYFLOW_MCP_ISSUER = 'http://127.0.0.1:8081'
+$env:PROPERTYFLOW_MCP_CLIENT_ID = 'propertyflow-claude-code'
+$env:PROPERTYFLOW_MCP_REDIRECT_URI = 'http://localhost:8787/callback'
+$env:PROPERTYFLOW_MCP_CLIENT_NAME = 'Claude Code'
+$env:PROPERTYFLOW_MCP_ROLE = 'tenant'
+pwsh -File dev/start.ps1
+```
+
+```powershell
+claude mcp add --transport http --client-id propertyflow-claude-code --callback-port 8787 propertyflow http://127.0.0.1:8081/mcp
+```
+
+In Claude Code mit `/mcp` den Server `propertyflow` anmelden. Der Browser führt
+zur Mieteranmeldung und zur Freigabe der Mieterscopes. Claude Code fordert alle in
+den Metadaten angebotenen Scopes zugleich an; `PROPERTYFLOW_MCP_ROLE=tenant`
+beschränkt das Angebot auf die Mieterscopes, sonst endet die Anmeldung mit
+`invalid_scope`. Für einen Mitarbeiterzugang `staff` setzen.
+
+Die Claude-Desktop-App öffnet eine Anmeldeseite über HTTP nicht; die Anmeldung
+deshalb in Claude Code im Terminal durchführen. Prüft eine Sicherheitssoftware
+die MCP-Verbindungen von KI-Programmen, kann sie die Antworten verändern
+(«InvalidHTTPResponse»). Mit `curl` ausserhalb von Claude lässt sich prüfen,
+ob PropertyFlow korrekt antwortet.
+
+**Sicherheitsabwägung:** Die OAuth-Richtlinie für native Apps
+([RFC 8252, Abschnitt 8.3](https://datatracker.ietf.org/doc/html/rfc8252#section-8.3))
+empfiehlt `127.0.0.1` statt `localhost`, weil `localhost` theoretisch umgeleitet
+werden kann. Zulässig ist `localhost` dennoch. Weil nur die eine konfigurierte
+Adresse gilt und PKCE weiterhin Pflicht ist, bleibt das Risiko für die lokale
+Entwicklung klein. Der Issuer bleibt auf HTTPS oder `127.0.0.1` beschränkt.
+
+### ChatGPT
 
 Für ChatGPT die erreichbare HTTPS-Adresse oder den sicheren MCP-Tunnel
 verwenden und die Client-ID und exakte Redirect-URI aus der Einrichtung

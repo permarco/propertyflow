@@ -1,7 +1,8 @@
 # PropertyFlow - MCP-Werkzeuge
 
-**Status:** Die Werkzeuge sind im Backend implementiert. Der vollständige
-Nachweis im ChatGPT-Workspace ist offen.
+**Status:** Die Werkzeuge sind im Backend implementiert. Der Nachweis mit
+einem echten MCP-Client ist am 25.11.2026 mit Claude Code erbracht; ChatGPT
+bleibt möglich, braucht aber eine öffentliche HTTPS-Adresse.
 
 Diese Spezifikation definiert die MCP-Werkzeuge für Mieter und Bewirtschaftung
 im regulären PropertyFlow-Backend mit PostgreSQL. Web und MCP verwenden dieselben
@@ -225,10 +226,10 @@ Felder für das JSON-Schema. Mit `?` markierte Eingaben sind optional.
 | --- | --- | --- |
 | `eigene_faelle_auflisten` | `state?`, `cursor?` | `items` mit `caseId`, `title`, `status` sowie optional `nextCursor` |
 | `fallstand_abrufen` | `caseId` | `caseId`, `status`, `urgency` |
-| `fall_kommentar_senden` | `caseId`, `text` | Bestätigungsanforderung. Bei bestätigtem Versand eine Quittung mit `caseId` und `messageId`. |
+| `fall_kommentar_senden` | `caseId`, `text` | Bestätigungsanforderung. Nach Bestätigung eine Quittung mit `caseId` und `outcome` (`sent` oder `submitted`) sowie `messageId`, sobald die Nachricht gespeichert ist. |
 | `mitarbeiter_faelle_auflisten` | `state?`, `status?`, `urgency?`, `cursor?` | `items` mit `caseId`, `title`, `status`, `urgency`, `lastTenantContactAt` sowie optional `nextCursor` |
 | `mitarbeiter_fall_abrufen` | `caseId`, `messageCursor?` | `caseId`, `title`, `status`, `urgency` und `messages` mit `sentAt`, `authorRole`, `text`, `answerRequired` sowie optional `nextMessageCursor` |
-| `mitarbeiter_fallnachricht_veroeffentlichen` | `caseId`, `text`, `kind` | Bestätigungsanforderung. Bei bestätigter Veröffentlichung eine Quittung mit `caseId` und `messageId`. |
+| `mitarbeiter_fallnachricht_veroeffentlichen` | `caseId`, `text`, `kind` | Bestätigungsanforderung. Nach Bestätigung eine Quittung mit `caseId` und `outcome` (`sent` oder `submitted`) sowie `messageId`, sobald der Befehl gespeichert ist. |
 
 - `state` ist `active`, `closed` oder `all`, standardmässig `active`. Status und
   Dringlichkeit folgen den bestehenden Fachwerten. Ohne Einstufung lautet die
@@ -270,8 +271,10 @@ gültiger Berechtigung das bereits belegte Ergebnis an.
 
 Ist eine Mieternachricht nachweislich gespeichert und die Camunda-Verarbeitung
 noch nicht bestätigt, zeigt die Oberfläche «Deine Nachricht wurde gespeichert.
-Die Verarbeitung läuft noch. Du musst sie nicht erneut senden.» ChatGPT löst
-in diesem Zustand keinen weiteren Versand aus. Sobald PropertyFlow die
+Die Verarbeitung läuft noch. Du musst sie nicht erneut senden.» Der MCP-Aufruf
+liefert dabei denselben Text und eine strukturierte Quittung mit
+`outcome: submitted`, damit Clients das deklarierte Ausgabeschema erhalten.
+ChatGPT löst in diesem Zustand keinen weiteren Versand aus. Sobald PropertyFlow die
 Verarbeitung bestätigt und die Oberfläche den aktualisierten Status erhält,
 wechselt die Anzeige zu «Nachricht gesendet».
 
@@ -313,7 +316,19 @@ konkreten Aktion findet auf der PropertyFlow-Seite statt. Der Nutzer kann
 den Ablauf ohne lokal installierten MCP-Client und ohne manuelles Kopieren
 von Zugriffstokens abschliessen.
 
-**Erster Zielclient ist ChatGPT im Browser.** PropertyFlow wird als eigenes
+**Entschieden am 25.11.2026:** Der Nachweis mit einem echten MCP-Client
+erfolgt mit Claude Code. Es ruft den MCP-Server vom eigenen Rechner aus auf und
+braucht deshalb weder Tunnel noch öffentliche Adresse. ChatGPT ruft Werkzeuge
+dagegen über die Server von OpenAI auf, auch aus der Desktop-App. Einrichtung
+und Sicherheitsabwägung zur Callback-Adresse siehe
+[Dev-Anleitung](../../dev/README.md#claude-code-als-lokaler-mcp-client).
+
+Ein Client, der alle angebotenen Scopes gleichzeitig anfordert, erhält über
+`propertyflow.mcp.oauth.role` (`tenant` oder `staff`) nur die Scopes einer
+Rolle angeboten. Ohne Angabe bleiben alle Scopes angeboten. Ergebnis des Laufs
+siehe [Abgabe Block 3, Abschnitt 3](../abgabe/block-3-services.md#3-mcp-werkzeug).
+
+**Ursprünglich geplanter Zielclient war ChatGPT im Browser.** PropertyFlow wird als eigenes
 MCP-Plugin angebunden. ChatGPT erreicht den MCP-Endpunkt des regulären Backends
 über HTTPS oder einen unterstützten sicheren Tunnel. Der erste Nachweis nutzt
 synthetische Fälle und getrennte Testkonten für Mieter und Bewirtschaftung.

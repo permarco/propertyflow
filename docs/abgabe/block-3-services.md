@@ -126,9 +126,47 @@ Schreibbestätigung. `FallstandMcpHttpTest` startet das reguläre Backend
 mit isoliertem PostgreSQL-Schema und prüft Anmeldung, OAuth-Freigabe,
 Fallstandabruf und Widerruf über echtes HTTP.
 
-Der vollständige Nachweis mit dem ChatGPT-Workspace sowie die fachliche und
-betriebliche Freigabe stehen weiterhin aus. Eine erfolgreiche lokale
-Toolprüfung allein belegt diese Freigaben nicht.
+**Nachweis mit einem echten MCP-Client vom 25.11.2026.** Claude Code erreicht
+den lokalen Server ohne Tunnel. Ein Testmieter meldete sich über OAuth mit PKCE
+an und gab die Mieterscopes frei. Danach rief Claude im Chat die Werkzeuge auf:
+
+| Prüfung | Aufruf | Ergebnis |
+| --- | --- | --- |
+| Eigene Fälle | `eigene_faelle_auflisten` | Die zwei Fälle des Testmieters, keine fremden |
+| Eigener Fall | `falldetails_abrufen` mit eigener Case-ID | Titel, Beschreibung, Status und Dringlichkeit |
+| Fremder Fall | `falldetails_abrufen` mit Case-ID eines anderen Mieters | «Der Fallzugriff ist nicht verfügbar.» |
+| Unbekannter Fall | `falldetails_abrufen` mit erfundener ID | «Der Fallzugriff ist nicht verfügbar.» |
+| Widerruf | Widerruf unter «Verbundene Apps», danach `meldung_erstellen` | Abgewiesen; Claude verlangt eine neue Anmeldung |
+
+Fremder und unbekannter Fall erhalten dieselbe Antwort; ein Client erfährt
+nicht, ob eine fremde Case-ID existiert. Der Fall mit fremder Case-ID war ein
+bestehender Fall eines anderen Mieters.
+
+![Claude listet im Chat die eigenen Fälle über das PropertyFlow-Werkzeug](bilder/mcp-chat-faelle-auflisten.png)
+
+![Claude liest Details und Verlauf eines eigenen Falls](bilder/mcp-chat-falldetails-verlauf.png)
+
+![«Verbundene Apps» zeigt Claude Code mit den freigegebenen Mieterrechten](bilder/mcp-verbundene-apps.png)
+
+![Nach dem Widerruf weist PropertyFlow den Aufruf ab](bilder/mcp-chat-nach-widerruf.png)
+
+Für den Lauf wurden zwei Konfigurationsmöglichkeiten ergänzt:
+
+- Claude Code meldet als Callback fest `http://localhost:<Port>/callback`.
+  PropertyFlow nimmt `localhost` nur an, wenn genau diese URI konfiguriert ist
+  (`McpOAuthLocalhostRedirectTest`).
+- Claude Code fordert alle in den Metadaten angebotenen Scopes gleichzeitig an.
+  Eine Mischung aus Mieter- und Mitarbeiterscopes weist PropertyFlow ab.
+  `PROPERTYFLOW_MCP_ROLE=tenant` begrenzt Angebot und Freigabe deshalb auf die
+  Mieterscopes (`McpOAuthSettingsTest`).
+
+Zwei Beobachtungen aus dem Lauf betreffen nicht PropertyFlow: Die
+Claude-Desktop-App öffnet eine Anmeldeseite über HTTP nicht, die Anmeldung
+erfolgte deshalb in Claude Code im Terminal. Eine lokale Sicherheitssoftware
+veränderte die MCP-Antworten an KI-Programme; mit `curl` ausserhalb von Claude
+antwortete PropertyFlow korrekt. Für einen dauerhaften lokalen Betrieb wäre
+HTTPS nötig. Die fachliche und betriebliche Freigabe bleiben vom Nachweis
+getrennt.
 
 ## 4. Sicherheitskonzept für Agent und Werkzeug
 
@@ -152,9 +190,8 @@ Mitarbeiter in der Mitarbeiterprüfung im Web.
 Die Fallannahme bestätigt den Commit von Fall und Startauftrag. Camunda startet
 danach asynchron und orchestriert die Erstbewertung. Der vollständige
 TRANSFER-Entscheid enthält Preis, Zehn-Minuten-Störfall, Prüffälle und den
-Vergleich von Choreografie und Orchestrierung. Für das PDF den Entscheid
-unverändert übernehmen. Fallannahme, persistenter Startauftrag und asynchrone
-Übergabe sind implementiert.
+Vergleich von Choreografie und Orchestrierung. Fallannahme, persistenter
+Startauftrag und asynchrone Übergabe sind implementiert.
 
 Der Zehn-Minuten-Störfall (Abnahmetest J2) ist als
 [CamundaOutageIntakeTest](../../src/test/java/com/pertegato/propertyflow/caseprocessing/workflow/CamundaOutageIntakeTest.java)
@@ -191,13 +228,12 @@ Abschluss bleibt bis zur bestandenen Evaluation und Freigabe gesperrt.
 
 ## 7. Repo-weite Änderung und Diff-Review
 
-Die gemeinsame E-Mail-Prüfung für Fallanlage und Kontozugriff aus Commit
-`1f315c4` ist der Kandidat für das Review. Den Projekt-Kontext als Rahmen des KI-Vorschlags dokumentieren
-und jede betroffene Datei mit «übernommen», «korrigiert» oder «verworfen»
-bewerten. Je Stelle den KI-Beitrag, die eigene Entscheidung und deren Grund mit
-einem Diff oder Test belegen. Das
-[Review-Dokument](../ai-usage/diff-review-1f315c4.md) enthält Rahmen,
-Ausgangslage, Befunde, die Bewertung je Datei und das Ergebnis. Ein zweites
+Reviewt wurde die gemeinsame E-Mail-Prüfung für Fallanlage und Kontozugriff
+aus Commit `1f315c4`. Der Projekt-Kontext bildete den Rahmen des KI-Vorschlags.
+Jede betroffene Datei ist mit «übernommen», «korrigiert» oder «verworfen»
+bewertet; je Stelle sind KI-Beitrag, eigene Entscheidung und Grund mit Diff oder
+Test belegt. Das [Review-Dokument](../ai-usage/diff-review-1f315c4.md) enthält
+Rahmen, Ausgangslage, Befunde, die Bewertung je Datei und das Ergebnis. Ein zweites
 [Review zum BPMN-Umbau](../ai-usage/diff-review-bpmn-cleanup.md) zeigt eine
 Änderung, die der Entwickler mit eigenen Vorgaben gesteuert hat.
 [Regressionstests zum Fallzugriff](../architecture/frontend-demo-ablosung-2026-11-16.md) ·
