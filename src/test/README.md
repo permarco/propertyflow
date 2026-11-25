@@ -78,6 +78,19 @@ $env:PROPERTYFLOW_TEST_MAILPIT_URL = 'http://127.0.0.1:8027'
 .\mvnw.cmd '-Dtest=*CamundaTest,InitialWorkflowBindingTest,ReviewWorkflowBindingTest,BpmnTechnicalConstantsTest,ProcessVariablesContractTest' test
 ```
 
+### Störfall: Camunda zehn Minuten nicht erreichbar
+
+`CamundaOutageIntakeTest` weist den Abnahmetest J2 nach. Er läuft nur, wenn
+zusätzlich `PROPERTYFLOW_TEST_OUTAGE_MINUTES` gesetzt ist; die Abnahme verlangt
+`10`. Für eine schnelle lokale Kontrolle genügt `1`. Der Test arbeitet in einem
+eigenen Datenbankschema und entfernt es danach. Im CI läuft er als eigener Job
+auf `main` und über «Run workflow».
+
+```powershell
+$env:PROPERTYFLOW_TEST_OUTAGE_MINUTES = '10'
+.\mvnw.cmd '-Dtest=CamundaOutageIntakeTest' test
+```
+
 Ohne Datenbank- und Camunda-URL werden die Engine-Tests übersprungen;
 für die SMTP-Prozessprüfung ist zusätzlich der SMTP-Port erforderlich; ein solcher
 Lauf ist kein Nachweis der Prozessausführung. Ergebnisse stehen in
