@@ -16,6 +16,8 @@ Datierte Protokolle beschreiben den jeweils geprüften Stand. Sie sind keine pau
 | [Antwortauswertung und Falllebenszyklus](antwortauswertung-und-lebenszyklus-pruefung-2026-11-15.md) | Zentrale Auswertung, Empfehlung, Wartepfade, Terminänderung, Wiedereröffnung und manuelle Aufhebung von Antwortbedarf; aktuelle Prüfungen und verbleibende Laufzeitlücken. |
 | [Abschlussbewertung und individuelle Mitteilung](abschluss-evaluation-2026-11-16.md) | Echte lokale Modellläufe, gezielte Fehlerkorrekturen, Textsichtung und weiterhin gesperrte automatische Abschlüsse. |
 | [Datenbank-Initialskripte nach Modulen](datenbankmodule-pruefung-2026-11-16.md) | Schemaabgleich, Erhalt der historischen Migrationskette und Neuaufbau der isolierten Testdatenbank. |
+| [Diff-Review: gemeinsame E-Mail-Prüfung](diff-review-1f315c4.md) | Repo-weite Änderung aus Commit `1f315c4`: Rahmen, Ausgangslage, Befunde und Bewertung je Datei. |
+| [Diff-Review: BPMN-Umbau](diff-review-bpmn-cleanup.md) | Repo-weiter BPMN-Umbau aus PR #46 mit den Vorgaben des Entwicklers: Neuzeichnung, Konstanten, Farben und eigenes LLM-Modell. |
 
 ## Zugehörige Nachweisdateien
 
