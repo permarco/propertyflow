@@ -628,10 +628,10 @@ Für den CAS ist ein kleiner, verständlicher und nachweisbar kontrollierter Int
 
 ### Lokale und bereitgestellte Quellen
 
-- **L1:** [PropertyFlow-Projektidee](sources/PropertyFlow.txt), insbesondere Kernfunktionen und MVP-Abgrenzung. Belegt Absicht, nicht Implementierung.
-- **L2:** [FFHS-Modulinformation](sources/Modulinformatinen.pdf), Seite 4 für Block 3; Seiten 2–5 für allgemeine Projekt-, Evaluations- und spätere Betriebsanforderungen.
-- **L3:** [FFHS-Modulplan](sources/modulplan-W4B-C-AS001.AISE.ZH-Sa-1.PVA.HS26_27.pdf), Seiten 3 und 5: Services/MCP als Lerninhalt und Stratis als Lehrmittel.
-- **L4:** [Referenzchat „MCP Server buch bearbeiten“](chatgpt-conversation://6ad997be-e250-83ed-a2b7-5e62385f8808), verfügbarer jüngerer Rückblick. Frühere Assistentenaussagen wurden nicht als Implementierungsbeweis übernommen.
+- **L1:** PropertyFlow-Projektidee (`sources/PropertyFlow.txt`, nicht im Repository), insbesondere Kernfunktionen und MVP-Abgrenzung. Belegt Absicht, nicht Implementierung.
+- **L2:** FFHS-Modulinformation (`sources/Modulinformatinen.pdf`, nicht im Repository), Seite 4 für Block 3; Seiten 2–5 für allgemeine Projekt-, Evaluations- und spätere Betriebsanforderungen.
+- **L3:** FFHS-Modulplan (`sources/modulplan-W4B-C-AS001.AISE.ZH-Sa-1.PVA.HS26_27.pdf`, nicht im Repository), Seiten 3 und 5: Services/MCP als Lerninhalt und Stratis als Lehrmittel.
+- **L4:** Referenzchat „MCP Server buch bearbeiten“ (ChatGPT, nicht öffentlich), verfügbarer jüngerer Rückblick. Frühere Assistentenaussagen wurden nicht als Implementierungsbeweis übernommen.
 - **L5:** Anhang dieses Chats, `Eingefügter Text.txt`, Kapitel 5. Gelesen aus dem bereitgestellten temporären Dateiverweis. Nicht in diese Datei kopiert; hier nur eigenständig paraphrasiert. Kapitel 1–4 waren nicht als Volltext enthalten.
 
 ### Offizielle externe Quellen

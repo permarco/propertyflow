@@ -221,6 +221,5 @@ Block 4 vertieft das entstandene Schema: ER-Sicht, mindestens eine weitere Migra
 - [Use Cases](../use_cases/README.md)
 - [Bestehende Testanleitung](../../src/test/README.md)
 - [Build](../../pom.xml)
-- [Fall-Demo](../../src/main/java/com/pertegato/propertyflow/caseprocessing/demo/DemoCases.java)
 - [Triage](../../src/main/java/com/pertegato/propertyflow/triage/service/AnalyzeTool.java)
-- [MCP-Zwischenstand](../../src/main/java/com/pertegato/propertyflow/caseprocessing/mcp/FallstandTool.java)
+- [MCP-Backend](../../src/main/java/com/pertegato/propertyflow/caseprocessing/mcp/BackendMcpConfiguration.java)

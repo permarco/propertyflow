@@ -160,7 +160,7 @@ führt die HTTP- und Fachprüfungen auf. Der separate Browsertest setzt die
 reguläre Anwendung voraus. Für den Lauf die unten beschriebenen
 Browser-Werkzeuge installieren und das Test-Mailpit starten. Die isolierte
 Anwendung mit `propertyflow-backend` auf Port 8084 und SMTP-Port 1026 starten.
-Den [Serverbefehl zur Ersteinrichtung](../../dev/README.md#regulärer-mitarbeiter-login)
+Den [Serverbefehl zur Ersteinrichtung](../../dev/README.md#starten-und-stoppen)
 für ein Konto mit einer `.test`-Adresse ausführen. Über das Mieterformular einen
 Testfall anlegen und `TEST_CASE_ID` durch dessen Case-ID ersetzen.
 

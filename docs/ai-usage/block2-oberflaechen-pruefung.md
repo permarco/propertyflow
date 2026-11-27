@@ -523,7 +523,7 @@ Prioritäten beziehen sich auf die Demo und sind keine Produktionsrisikofreigabe
 **F01 · P1 · Prüfgrund wird gelöscht statt als berücksichtigt erhalten.**
 [FALL-05/06](../specifications/fallverwaltung.md#direkter-übergang-in-die-bearbeitung)
 und FD-AK-05 verlangen weiterhin nachvollziehbare bisherige Gründe.
-[DemoCases.change](../../src/main/java/com/pertegato/propertyflow/caseprocessing/demo/DemoCases.java),
+`DemoCases.change` (Frontend-Demo, inzwischen entfernt),
 Zweig status, setzt bei «In Bearbeitung» jedoch review auf den leeren String.
 Beispiel: REQ-2026-001 auf «In Bearbeitung» setzen. Der konkrete Heizungs-Prüfgrund
 verschwindet; das neue Statusereignis speichert ihn nicht.
@@ -565,7 +565,7 @@ sein, ist aber kein Stufenwechsel. Beides getrennt behandeln und den No-op-Fall 
 **F06 · P2 · Rückkehr verliert Listenauswahl.**
 UI3 und [UC-002](../use_cases/UC-002-mieteranliegen-anzeigen.md#gemeinsame-fachliche-grundlage)
 verlangen Erhalt von Suche, Filtern, Sortierung und Seite.
-[fragments.html](../../src/main/resources/templates/demo/fragments.html) verlinkt
+`templates/demo/fragments.html` (Frontend-Demo, inzwischen entfernt) verlinkt
 «Zur Fallübersicht» stets auf /mitarbeiter/faelle ohne Auswahl; auch die
 [list.html](../architecture/frontend-demo-ablosung-2026-11-16.md)-Falllinks transportieren
 keinen Rückkehrkontext. Filter setzen → Detail öffnen → Rückkehr zeigt Standardliste.
