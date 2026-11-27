@@ -17,4 +17,4 @@ Der vorher nicht zuordenbare PostgreSQL-Dienst auf Port 5432 wurde nicht veränd
 Die separate Frontend-Demo bleibt unabhängig vom Backend.
 
 Siehe [Datenbankmigrationen nach Modulen](../../docs/architecture/datenbankmigrationen.md)
-und [Entwicklungsstart](../README.md#regulärer-mitarbeiter-login).
+und [Entwicklungsstart](../README.md#starten-und-stoppen).

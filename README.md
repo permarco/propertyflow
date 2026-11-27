@@ -20,8 +20,8 @@ Für die lokale integrierte Version startet `pwsh -File dev/start.ps1` PostgreSQ
 PropertyFlow, Camunda mit Operate/Tasklist und Mailpit einschliesslich synthetischer
 Beispielsfälle. Einstieg: [PropertyFlow Dev](http://127.0.0.1:8081/).
 Die [Dev-Anleitung](dev/README.md) beschreibt Zugänge, Prozessansicht, Persistenz,
-manuelle Prüfschritte und die verbleibenden Grenzen. Die separate Frontend-Demo
-ist weiterhin verfügbar, verwendet aber nicht diese persistente Prozessintegration.
+manuelle Prüfschritte und die verbleibenden Grenzen. Alternativ lässt sich alles
+über die geteilten IntelliJ-Startkonfigurationen in `.run/` starten und stoppen.
 
 Die KI ist im Devbetrieb standardmässig deaktiviert. Der
 [manuelle Ersatzbetrieb](docs/specifications/ki-tools.md) ist verbindlich spezifiziert;
@@ -29,13 +29,12 @@ automatische Abschlüsse bleiben bis zur fachlichen Freigabe gesperrt.
 
 ## Einstieg
 
-- [Entwicklung und Demo](dev/README.md): Mailpit, Mieterregistrierung, Mitarbeiterkonto und Start in IntelliJ oder per Maven.
-- [Tests](src/test/README.md): Java-, JavaScript- und Browserprüfungen mit separatem Test-Mailpit.
-- [Camunda-Infrastruktur](infra/camunda/README.md): separate Workflow-Umgebung.
+- [Entwicklung](dev/README.md): Start per Skript oder in IntelliJ, Zugänge, Camunda Operate, Mailpit und MCP-Clients.
+- [Tests](src/test/README.md): Java-, PostgreSQL-/Camunda- und Browserprüfungen mit eigenem Teststack.
 - [Datenbankmigrationen nach Modulen](docs/architecture/datenbankmigrationen.md): Initialschema, Erhalt bestehender Daten und isolierte Testdatenbank.
 
-Die Frontend-Demo benötigt keine Datenbank und keinen laufenden Camunda-Server.
-Die Anwendung läuft lokal auf Port 8081, die separate Browser-Testinstanz auf 8082.
+Die Anwendung läuft lokal auf Port 8081, die Browserregression startet ihren
+eigenen Teststack auf Port 8084.
 
 Die fachliche Verantwortung verbleibt bei der Immobilienbewirtschaftung.
 Mitarbeitende und das System können Fälle gemäss den vereinbarten
@@ -94,9 +93,8 @@ propertyflow/
 │   ├── project-context.md
 │   ├── evaluation/
 │   │   └── evaluationsgrundlage.md
-│   ├── ai-usage/
-│   │   ├── block1-grundgeruest-pruefung.md
-│   │   └── block2-oberflaechen-pruefung.md
+│   ├── abgabe/           Abgabedokumente je Block
+│   ├── ai-usage/         Prüfprotokolle und Diff-Reviews zur KI-Nutzung
 │   ├── frontend/
 │   ├── specifications/
 │   ├── use_cases/
@@ -109,18 +107,16 @@ propertyflow/
 │           ├── ADR-001-grundarchitektur.md
 │           ├── ADR-002-camunda8-workflow-orchestrierung.md
 │           ├── ADR-003-praesentationsschicht.md
-│           └── ADR-004-tokenbasierter-mieterzugriff.md
+│           ├── ADR-004-tokenbasierter-mieterzugriff.md
+│           ├── ADR-005-zugriffsmodell.md
+│           └── ADR-006-mcp-mieterwerkzeuge-und-nachrichtenfreigabe.md
+│
+├── .run/                 IntelliJ-Startkonfigurationen
 │
 ├── dev/
 │   ├── README.md
-│   ├── compose.yaml
-│   └── compose.test.yaml
-│
-├── infra/
-│   └── camunda/
-│       ├── docker-compose.yaml
-│       ├── configuration/
-│       └── ...
+│   ├── start.ps1 / stop.ps1
+│   └── compose*.yaml     PostgreSQL, Camunda und Mailpit
 │
 ├── src/
 │   ├── main/
@@ -128,7 +124,6 @@ propertyflow/
 │
 ├── AGENTS.md
 ├── pom.xml
-├── compose.yaml
 ├── mvnw
 └── mvnw.cmd
 ```
@@ -154,13 +149,13 @@ architektonische Source of Truth.
 
 - [Dringlichkeitsbewertung](docs/specifications/dringlichkeitsbewertung.md): Vereinbarte Stufen und Farben, automatische Neubewertung, Vorrang manueller Einstufungen und transparente Änderungshistorie.
 
-- [Screen 01 – Mieter-Fallansicht](docs/frontend/ansicht-01-mieter-fallansicht.md): Erfassung, Kommunikation und lesbare Dringlichkeitshistorie unter dem persönlichen Falllink. Die sichtbare Ansicht aktualisiert aktive und abgeschlossene Fälle alle 20 Sekunden und zeigt nach Wiedereröffnung die Nachrichteneingabe wieder an. Fachliche Bedienung und visuelle Entwürfe sind dokumentiert; die lokale Demo ist implementiert. Produktive Integrationen folgen separat.
+- [Screen 01 – Mieter-Fallansicht](docs/frontend/ansicht-01-mieter-fallansicht.md): Erfassung, Kommunikation und lesbare Dringlichkeitshistorie unter dem persönlichen Falllink. Die sichtbare Ansicht aktualisiert aktive und abgeschlossene Fälle alle 20 Sekunden und zeigt nach Wiedereröffnung die Nachrichteneingabe wieder an. Fachliche Bedienung und visuelle Entwürfe sind dokumentiert und im Backend umgesetzt.
 
-- [Screen 02 – Mitarbeiter-Fallübersicht](docs/frontend/ansicht-02-mitarbeiter-falluebersicht.md): Sieben Spalten einschliesslich sortierbarem Wiedervorlagedatum, Suche in veröffentlichten Nachrichten und internen Memos, Filter, Seitennavigation und Aktualisierung alle 20 Sekunden. Visuelle Entwürfe und lokale Demo sind vorhanden; produktive Integrationen folgen separat.
+- [Screen 02 – Mitarbeiter-Fallübersicht](docs/frontend/ansicht-02-mitarbeiter-falluebersicht.md): Sieben Spalten einschliesslich sortierbarem Wiedervorlagedatum, Suche in veröffentlichten Nachrichten und internen Memos, Filter, Seitennavigation und Aktualisierung alle 20 Sekunden. Visuelle Entwürfe sind vorhanden und im Backend umgesetzt.
 
-- [Screen 03 – Mitarbeiter-Falldetailansicht](docs/frontend/ansicht-03-mitarbeiter-falldetail.md): Falldaten, Verlauf und fachliche Aktionen wie «Bearbeitung fortsetzen», Wiedervorlage oder Abschluss. Im Zielablauf führt Camunda die Fallbearbeitung. Eine neue Mieternachricht beendet eine laufende Wiedervorlage und legt den Fall sofort zur Mitarbeiterprüfung vor. Die lokale Demo zeigt noch die bisherige direkte Statusauswahl.
+- [Screen 03 – Mitarbeiter-Falldetailansicht](docs/frontend/ansicht-03-mitarbeiter-falldetail.md): Falldaten, Verlauf und fachliche Aktionen wie «Bearbeitung fortsetzen», Wiedervorlage oder Abschluss. Im Zielablauf führt Camunda die Fallbearbeitung. Eine neue Mieternachricht beendet eine laufende Wiedervorlage und legt den Fall sofort zur Mitarbeiterprüfung vor.
 
-- [Screen 04 – Anmeldung](docs/frontend/ansicht-04-login.md): E-Mail-Einmalcode, Rückmeldungen und Rückkehr zur angeforderten Seite sind in der lokalen Demo umgesetzt. Die MCP-Freigabe ist als Zielablauf beschrieben.
+- [Screen 04 – Anmeldung](docs/frontend/ansicht-04-login.md): E-Mail-Einmalcode, Rückmeldungen und Rückkehr zur angeforderten Seite sind umgesetzt; die MCP-Freigabe läuft über OAuth mit Freigabeseite.
 
 - [Block-2-Prüfprotokoll](docs/ai-usage/block2-oberflaechen-pruefung.md): Dokumentierter Abgleich der UI-Spezifikationen mit den Fachregeln und Use Cases; Unit-Tests, Veto-Notiz sowie Browser- und Performance-Nachweise sind enthalten.
 
@@ -197,6 +192,15 @@ architektonische Source of Truth.
 - [ADR-004: Tokenbasierter Mieterzugriff](docs/architecture/adr/ADR-004-tokenbasierter-mieterzugriff.md)
   Zugang ohne Benutzerkonto über einen wiederverwendbaren persönlichen Link; Hash und verschlüsselte Versandkopie
 
+- [ADR-005: Zugriffsmodell](docs/architecture/adr/ADR-005-zugriffsmodell.md)
+  Gemeinsame Anmeldung für Web und MCP sowie delegierte, widerrufbare Rechte
+
+- [ADR-006: MCP-Werkzeuge und Nachrichtenfreigabe](docs/architecture/adr/ADR-006-mcp-mieterwerkzeuge-und-nachrichtenfreigabe.md)
+  Serverseitige Bestätigung wichtiger MCP-Schreibaktionen
+
+- [Abgabe Block 3](docs/abgabe/block-3-services.md)
+  Services, OpenAPI-Vertrag, MCP-Nachweis und Kommunikationsentscheid
+
 ### Use Cases und gezielte Nachweise
 
 Geschäftsregeln (`BR`) und Akzeptanzkriterien (`AK`) beginnen mit der Nummer ihres Use Cases, zum Beispiel `UC-001-BR-001` und `UC-005-AK-01`.
@@ -204,7 +208,6 @@ Geschäftsregeln (`BR`) und Akzeptanzkriterien (`AK`) beginnen mit der Nummer ih
 - [Use-Case-Übersicht](docs/use_cases/README.md) mit Links auf die einzelnen Abläufe und ihrem Umsetzungsstand
 - [Generierte Unit-Tests und Veto](docs/ai-usage/block2-oberflaechen-pruefung.md#ergänzung-vom-12102026-generierte-unit-tests-und-mutation)
 - [Browser- und Performance-Nachweise](docs/ai-usage/block2-oberflaechen-pruefung.md#ergänzung-browser-qualitätsnachweis-und-präsentationsentscheidung)
-- [Camunda-Umgebung](infra/camunda/README.md)
 
 ## KI-gestützte Entwicklung
 
@@ -212,7 +215,9 @@ Der [KI-Service-Baustein](docs/ai-usage/ki-service-vertrag.md) kapselt einen
 Spring-AI-Aufruf als internes Analyse-Tool mit Eingabevalidierung, typisierten
 Erfolgs-/Fehlerantworten und einem opt-in Live-Test gegen lokales Ollama.
 
-Für die Entwicklung wird GitHub Copilot eingesetzt.
+Für die Entwicklung werden GitHub Copilot, OpenAI Codex und Claude Code
+eingesetzt. Die [Diff-Reviews](docs/ai-usage/README.md) dokumentieren, welche
+Vorschläge übernommen, korrigiert oder verworfen wurden.
 
 Repository-weite Anweisungen für KI-Werkzeuge befinden sich unter:
 
@@ -228,4 +233,4 @@ nicht an das KI-Werkzeug delegiert.
 
 ### Fachlicher Abgleich
 
-Der [fachliche Abgleich vom 13.10.2026](docs/ai-usage/block2-oberflaechen-pruefung.md#fachlicher-abgleich-vom-13102026) dokumentiert die Übereinstimmung von Fachregeln und Demo, verbleibende Implementierungsabweichungen, Dokumentwidersprüche und bewusst ausstehende Produktivintegrationen.
+Der [fachliche Abgleich vom 13.10.2026](docs/ai-usage/block2-oberflaechen-pruefung.md#fachlicher-abgleich-vom-13102026) dokumentiert die damalige Übereinstimmung von Fachregeln und Demo, verbleibende Implementierungsabweichungen, Dokumentwidersprüche und bewusst ausstehende Produktivintegrationen.

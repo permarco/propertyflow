@@ -258,15 +258,16 @@ Der Abruf ist rein lesend und benötigt nach erteilter Delegation keine menschli
 
 **Prüffall UC-023-AK-04 · Fremde Case-ID.** Ein Mieterkonto mit gültiger Delegation ruft zuerst einen eigenen Fall ab und erhält genau die drei vereinbarten Angaben. Derselbe Client verwendet anschliessend die Case-ID eines existierenden Falls mit anderer Kontaktadresse. Der Dienst verweigert den Zugriff. Die Rückmeldung enthält keine Falldaten und ist von der Rückmeldung für eine gültig formatierte, nicht vorhandene Case-ID nicht unterscheidbar.
 
-Die aktivierbare Frontend-Demo verwendet Streamable HTTP mit MCP-Revision
-`2025-11-25` unter `/mcp`. `fallstand_abrufen` nimmt `caseId` entgegen und
-liefert `caseId`, `status` und `urgency`. Jede Anfrage wird anhand des lokal
-freigegebenen Bearer-Tokens autorisiert. Das Fallmodul nutzt dieselbe
-Adressprüfung wie die Web-Fallansicht. Die Freigabe wird nach der
-E-Mail-Code-Anmeldung ausdrücklich erteilt, gilt 30 Minuten und ist
-widerrufbar. Der HTTP-Integrationstest deckt UC-023-AK-04 ab. Die produktive
-OAuth-Delegation und die dauerhafte Datenhaltung stehen aus.
-[Demo-Anleitung](../../dev/README.md#mcp-werkzeug-lokal-ausprobieren) ·
+Das reguläre Backend stellt das Werkzeug über Streamable HTTP unter `/mcp`
+bereit. `fallstand_abrufen` nimmt `caseId` entgegen und liefert `caseId`,
+`status` und `urgency`. Jede Anfrage wird mit einem OAuth-Zugriffstoken
+autorisiert, das der Mieter nach Anmeldung, PKCE und ausdrücklicher Freigabe
+erteilt hat. Delegationen werden in PostgreSQL gespeichert und sind unter
+«Verbundene Apps» widerrufbar. Das Fallmodul nutzt dieselbe Adressprüfung wie
+die Web-Fallansicht. Der HTTP-Integrationstest deckt UC-023-AK-04 ab; den
+Nachweis mit Claude Code enthält die
+[Abgabe Block 3](../abgabe/block-3-services.md#3-mcp-werkzeug).
+[Dev-Anleitung](../../dev/README.md#mcp-fallstand-mit-oauth) ·
 [HTTP-Integrationstest](../../src/test/java/com/pertegato/propertyflow/caseprocessing/mcp/FallstandMcpHttpTest.java)
 
 ## 4. Architekturentscheid für Artefakt 5

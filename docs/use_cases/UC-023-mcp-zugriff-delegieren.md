@@ -6,7 +6,7 @@
 **Primary Actor:** Angemeldeter Mieter oder Mitarbeiter  
 **Supporting Actor:** MCP-Client im LLM-Chat  
 **Goal:** Einem Client ausgewählte PropertyFlow-Aktionen erlauben und diese Berechtigung wieder entziehen können.  
-**Status:** «Fallstand abrufen» ist in der lokalen Demo mit ausdrücklicher Lesefreigabe und Widerruf umgesetzt. Die produktive OAuth-Delegation folgt dem Zielablauf gemäss ADR-005 und ZUG-04. [Demo-Anleitung](../../dev/README.md#mcp-werkzeug-lokal-ausprobieren)
+**Status:** Im regulären Backend mit OAuth-Delegation, PKCE, ausdrücklicher Freigabe und Widerruf unter «Verbundene Apps» umgesetzt (ADR-005, ZUG-04). Am 25.11.2026 mit Claude Code als echtem MCP-Client nachgewiesen: eigener Fall, gleiche Ablehnung für fremden und unbekannten Fall, Widerruf. [Nachweis](../abgabe/block-3-services.md#3-mcp-werkzeug) · [Dev-Anleitung](../../dev/README.md#mcp-fallstand-mit-oauth)
 
 ## Use-Case-Diagramm
 
