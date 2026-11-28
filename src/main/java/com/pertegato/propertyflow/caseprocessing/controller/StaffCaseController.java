@@ -7,6 +7,7 @@ import com.pertegato.propertyflow.caseprocessing.contract.AccountCaseReading;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseErrorCode;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseServiceException;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseStatusView;
+import com.pertegato.propertyflow.caseprocessing.contract.InternalChange.UrgencyDetails;
 import com.pertegato.propertyflow.caseprocessing.contract.PublicMessage;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffCaseListing;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffCasePage;
@@ -14,6 +15,7 @@ import com.pertegato.propertyflow.caseprocessing.contract.StaffCaseQuery;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffCaseSummary;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffCaseView;
 import com.pertegato.propertyflow.caseprocessing.contract.TenantCaseView;
+import com.pertegato.propertyflow.caseprocessing.controller.PersonalCaseController.HistoryUrgency;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -104,10 +106,7 @@ public class StaffCaseController {
             model.addAttribute("urgencyValue", state.urgency().map(Enum::name).orElse(""));
             model.addAttribute("urgencyCss", urgencyCss(state));
             model.addAttribute("urgencySource", publicView.urgencySource()
-                    .map(source -> switch (source) {
-                        case STAFF -> "Immobilienverwaltung";
-                        case SYSTEM -> "System";
-                    }).orElse(""));
+                    .map(PersonalCaseController::urgencySourceLabel).orElse(""));
             model.addAttribute("version", publicView.version());
             model.addAttribute("received", format(publicView.receivedAt()));
             model.addAttribute("lastContact", format(publicView.lastTenantContactAt()));
@@ -254,26 +253,30 @@ public class StaffCaseController {
                 case SYSTEM -> "System";
             };
             events.add(new Event(role, message.text(), message.occurredAt(), false, PersonalCaseController.answerLabel(message),
-                    message.answerState() == PublicMessage.AnswerState.OPEN ? message.id() : null));
+                    message.answerState() == PublicMessage.AnswerState.OPEN ? message.id() : null, null));
         });
         view.internalMemos().forEach(memo -> events.add(new Event("Immobilienverwaltung", memo.text(), memo.occurredAt(), true)));
-        view.internalChanges().forEach(change -> events.add(new Event("Immobilienverwaltung · " + change.actorName(),
-                change.description(), change.occurredAt(), true)));
+        view.internalChanges().forEach(change -> {
+            String role = change.automatic() ? "System" : "Immobilienverwaltung · " + change.actorName();
+            UrgencyDetails urgency = change.urgency();
+            if (urgency == null) {
+                events.add(new Event(role, change.description(), change.occurredAt(), true));
+            } else {
+                events.add(new Event(role, Objects.toString(urgency.reason(), ""), change.occurredAt(), true,
+                        "", null, HistoryUrgency.from(urgency.previous(), urgency.current())));
+            }
+        });
         view.publicView().urgencyHistory().forEach(change -> {
             if (view.internalChanges().stream().anyMatch(internal -> internal.id().equals(change.id()))) {
                 return;
             }
-            String previous = change.previous().map(PersonalCaseController::urgencyLabel).orElse(PersonalCaseController.NOT_ASSESSED);
-            String text = "Dringlichkeit: " + previous + " → " + PersonalCaseController.urgencyLabel(change.current());
-            String role = switch (change.source()) {
-                case STAFF -> "Immobilienverwaltung";
-                case SYSTEM -> "System";
-            };
-            events.add(new Event(role, text, change.occurredAt(), false));
+            events.add(new Event(PersonalCaseController.urgencySourceLabel(change.source()), "", change.occurredAt(), false,
+                    "", null, HistoryUrgency.from(change.previous(), change.current())));
         });
         return events.stream()
                 .sorted(Comparator.comparing(Event::at))
-                .map(event -> new HistoryEntry(event.role(), event.text(), format(event.at()), event.internal(), event.answerLabel(), event.clearAnswerId()))
+                .map(event -> new HistoryEntry(event.role(), event.text(), format(event.at()), event.internal(),
+                        event.answerLabel(), event.clearAnswerId(), event.urgency()))
                 .toList();
     }
 
@@ -293,12 +296,15 @@ public class StaffCaseController {
             String urgency, String urgencyCss, String status) {
     }
 
-    public record HistoryEntry(String role, String text, String timestamp, boolean internal, String answerLabel, String clearAnswerId) {
+    public record HistoryEntry(String role, String text, String timestamp, boolean internal, String answerLabel, String clearAnswerId,
+            HistoryUrgency urgency) {
     }
 
-    private record Event(String role, String text, Instant at, boolean internal, String answerLabel, String clearAnswerId) {
+    private record Event(String role, String text, Instant at, boolean internal, String answerLabel, String clearAnswerId,
+            HistoryUrgency urgency) {
+
         private Event(String role, String text, Instant at, boolean internal) {
-            this(role, text, at, internal, "", null);
+            this(role, text, at, internal, "", null, null);
         }
     }
 

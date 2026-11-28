@@ -9,6 +9,7 @@ import com.pertegato.propertyflow.caseprocessing.contract.PublicMessage;
 import com.pertegato.propertyflow.caseprocessing.contract.TenantCaseView;
 import com.pertegato.propertyflow.caseprocessing.contract.Urgency;
 import com.pertegato.propertyflow.caseprocessing.contract.UrgencyChange;
+import com.pertegato.propertyflow.caseprocessing.contract.UrgencySource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.time.Instant;
@@ -17,6 +18,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -74,6 +76,7 @@ public class PersonalCaseController {
             model.addAttribute("status", statusLabel(view.state().status()));
             model.addAttribute("urgency", view.state().urgency().map(PersonalCaseController::urgencyLabel).orElse(NOT_ASSESSED));
             model.addAttribute("urgencyCss", view.state().urgency().map(PersonalCaseController::urgencyCss).orElse("urgency-0"));
+            model.addAttribute("urgencySource", view.urgencySource().map(PersonalCaseController::urgencySourceLabel).orElse(""));
             model.addAttribute("history", history(view));
             model.addAttribute("messageCsrf", TenantMessageController.csrf(request.getSession()));
             model.addAttribute("messageOperation", UUID.randomUUID().toString());
@@ -95,22 +98,18 @@ public class PersonalCaseController {
                 case STAFF -> "Immobilienverwaltung";
                 case SYSTEM -> "System";
             };
-            events.add(new HistoryEvent("message", message.id(), role, message.text(), message.occurredAt(), answerLabel(message)));
+            events.add(new HistoryEvent("message", message.id(), role, message.text(), message.occurredAt(), answerLabel(message), null));
         }
         for (UrgencyChange change : view.urgencyHistory()) {
-            String role = switch (change.source()) {
-                case STAFF -> "Immobilienverwaltung";
-                case SYSTEM -> "System";
-            };
-            String previous = change.previous().map(PersonalCaseController::urgencyLabel).orElse(NOT_ASSESSED);
-            String text = "Dringlichkeit: " + previous + " → " + urgencyLabel(change.current());
-            events.add(new HistoryEvent("urgency", change.id(), role, text, change.occurredAt(), ""));
+            events.add(new HistoryEvent("urgency", change.id(), urgencySourceLabel(change.source()), "", change.occurredAt(), "",
+                    HistoryUrgency.from(change.previous(), change.current())));
         }
         events.sort(Comparator.comparing(HistoryEvent::occurredAt)
                 .thenComparing(HistoryEvent::type)
                 .thenComparing(HistoryEvent::id));
         return events.stream()
-                .map(event -> new HistoryEntry(event.role(), event.text(), LOCAL_TIME.format(event.occurredAt()), event.answerLabel()))
+                .map(event -> new HistoryEntry(event.role(), event.text(), LOCAL_TIME.format(event.occurredAt()),
+                        event.answerLabel(), event.urgency()))
                 .toList();
     }
 
@@ -145,6 +144,13 @@ public class PersonalCaseController {
         };
     }
 
+    static String urgencySourceLabel(UrgencySource source) {
+        return switch (source) {
+            case STAFF -> "Immobilienverwaltung";
+            case SYSTEM -> "System";
+        };
+    }
+
     static String answerLabel(PublicMessage message) {
         String label = switch (message.answerResolution() == null ? "" : message.answerResolution()) {
             case "MANUAL" -> "Antwortbedarf manuell aufgehoben";
@@ -163,9 +169,20 @@ public class PersonalCaseController {
         };
     }
 
-    private record HistoryEvent(String type, String id, String role, String text, Instant occurredAt, String answerLabel) {
+    private record HistoryEvent(String type, String id, String role, String text, Instant occurredAt, String answerLabel,
+            HistoryUrgency urgency) {
     }
 
-    public record HistoryEntry(String role, String text, String timestamp, String answerLabel) {
+    public record HistoryEntry(String role, String text, String timestamp, String answerLabel, HistoryUrgency urgency) {
+    }
+
+    public record HistoryUrgency(String previousLabel, String previousCss, String currentLabel, String currentCss) {
+
+        static HistoryUrgency from(Optional<Urgency> previous, Urgency current) {
+            return new HistoryUrgency(
+                    previous.map(PersonalCaseController::urgencyLabel).orElse(NOT_ASSESSED),
+                    previous.map(PersonalCaseController::urgencyCss).orElse("urgency-0"),
+                    urgencyLabel(current), urgencyCss(current));
+        }
     }
 }

@@ -17,6 +17,7 @@ import com.pertegato.propertyflow.caseprocessing.contract.StaffCasePage;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffCaseQuery;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffCaseSummary;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffCaseView;
+import com.pertegato.propertyflow.caseprocessing.contract.StaffCaseView.ReviewReason;
 import com.pertegato.propertyflow.caseprocessing.contract.TenantCaseView;
 import com.pertegato.propertyflow.caseprocessing.contract.Urgency;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseDataStore;
@@ -114,7 +115,8 @@ class StaffCaseService implements StaffCaseListing, AccountCaseReading {
             CaseEntity stored = cases.findById(caseId).orElseThrow(() -> failure(CaseErrorCode.CASE_NOT_AVAILABLE));
             return new StaffCaseView(CaseProjections.tenantView(stored, urgencies.publicHistory(caseId), messages.history(caseId), staffMessages.history(caseId)), stored.getContactEmail(),
                     Optional.ofNullable(stored.getFollowUpDueAt()).map(due -> due.atZone(FollowUpDate.ZONE).toLocalDate()),
-                    Stream.concat(mailDelivery.reviewReasons(caseId).stream(), reviews.reasons(caseId).stream())
+                    Stream.concat(mailDelivery.reviewReasons(caseId).stream().map(reason -> new ReviewReason(reason, true)),
+                                    reviews.reasons(caseId).stream())
                             .distinct().toList(), memos.memos(caseId), internalChanges(caseId), evaluations.recommendation(caseId, stored.getVersion()));
         });
     }
@@ -124,7 +126,8 @@ class StaffCaseService implements StaffCaseListing, AccountCaseReading {
         Map<UUID, String> names = directory.displayNames(history.stream().map(InternalChange::actorId)
                 .filter(Objects::nonNull).collect(Collectors.toSet()));
         return history.stream().map(change -> new InternalChange(change.id(), change.description(), change.actorId(),
-                change.actorId() == null ? change.actorName() : names.getOrDefault(change.actorId(), "Mitarbeiter"), change.occurredAt())).toList();
+                change.actorId() == null ? change.actorName() : names.getOrDefault(change.actorId(), "Mitarbeiter"),
+                change.occurredAt(), change.automatic(), change.urgency())).toList();
     }
 
     @Override

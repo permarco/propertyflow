@@ -143,7 +143,8 @@ class AutomaticClosurePostgresTest {
         assertEquals("SYSTEM", database.queryForObject("SELECT source FROM pf_case_closure", String.class));
         assertEquals("System", new StaffChangeStore(database).history(caseId).getFirst().actorName());
         assertTrue(new StaffChangeStore(database).history(caseId).getFirst().description().contains("Quelle: System"));
-        assertTrue(reviews.reasons(caseId).contains("Systemabschluss mit gespeicherter Abschlussgrundlage."));
+        assertTrue(reviews.reasons(caseId).stream()
+                .anyMatch(reason -> reason.automatic() && reason.text().equals("Systemabschluss mit gespeicherter Abschlussgrundlage.")));
         UUID employee = UUID.randomUUID();
         database.update("""
                 INSERT INTO pf_staff_account (id, name, email, active, staff_role, account_administration)

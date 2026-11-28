@@ -1,7 +1,10 @@
 package com.pertegato.propertyflow.caseprocessing.persistence;
 
 import com.pertegato.propertyflow.caseprocessing.contract.InternalChange;
+import com.pertegato.propertyflow.caseprocessing.contract.InternalChange.UrgencyDetails;
+import com.pertegato.propertyflow.caseprocessing.contract.Urgency;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
@@ -61,11 +64,19 @@ public class StaffChangeStore {
                     WHERE c.case_id = ? AND c.state = 'APPLIED'
                 )
                 SELECT * FROM changes ORDER BY occurred_at, id
-                """, (row, index) -> new InternalChange(row.getString("id"),
-                        describe(row.getString("kind"), row.getString("previous_value"), row.getString("current_value"),
-                                row.getString("internal_reason")),
-                        row.getObject("actor_id", UUID.class), "SYSTEM_CLOSE".equals(row.getString("kind")) ? "System" : "Mitarbeiter",
-                        row.getTimestamp("occurred_at").toInstant()),
+                """, (row, index) -> {
+                    String kind = row.getString("kind");
+                    String previous = row.getString("previous_value");
+                    String current = row.getString("current_value");
+                    String reason = row.getString("internal_reason");
+                    boolean automatic = "SYSTEM_CLOSE".equals(kind);
+                    UrgencyDetails urgency = "URGENCY".equals(kind)
+                            ? new UrgencyDetails(Optional.ofNullable(previous).map(Urgency::valueOf), Urgency.valueOf(current), reason)
+                            : null;
+                    return new InternalChange(row.getString("id"), describe(kind, previous, current, reason),
+                            row.getObject("actor_id", UUID.class), automatic ? "System" : "Mitarbeiter",
+                            row.getTimestamp("occurred_at").toInstant(), automatic, urgency);
+                },
                 caseId, caseId, caseId, caseId, caseId, caseId, caseId, caseId, caseId, caseId);
     }
 

@@ -18,8 +18,12 @@
             </div>
             <div>
                 <span class="field-caption">Dringlichkeit</span>
-                <span id="case-urgency" class="badge" th:classappend="${urgencyCss}" th:attr="data-value=${urgencyValue}"
-                      th:text="${#strings.isEmpty(urgencySource) ? urgency : urgency + ' · ' + urgencySource}"></span>
+                <span id="case-urgency" class="badge" th:classappend="${urgencyCss}" th:attr="data-value=${urgencyValue}">
+                    <th:block th:unless="${#strings.isEmpty(urgencySource)}">
+                        <span th:replace="~{case-fragments :: actorIcon(${urgencySource == 'System'}, ${urgencySource})}"></span>
+                    </th:block>
+                    <span th:text="${#strings.isEmpty(urgencySource) ? urgency : urgency + ' · ' + urgencySource}"></span>
+                </span>
             </div>
             <div>
                 <span class="field-caption">Wiedervorlage</span>
@@ -62,7 +66,10 @@
                 </details>
             </section>
             <div id="case-recommendation"><section class="card" th:if="${recommendation != null}" aria-labelledby="recommendation-title">
-                <h2 id="recommendation-title">Empfehlung zur fachlichen Prüfung</h2>
+                <h2 id="recommendation-title">
+                    <span th:replace="~{case-fragments :: actorIcon(true, 'System')}"></span>
+                    Empfehlung zur fachlichen Prüfung
+                </h2>
                 <p th:unless="${recommendation.current}">Diese Empfehlung beruht auf einem früheren Fallstand.</p>
                 <p th:if="${recommendation.failure != null}" th:text="${recommendation.failure}"></p>
                 <div th:if="${recommendation.failure == null}">
@@ -79,7 +86,12 @@
             </div>
             <div id="case-review"><section th:unless="${reviewReasons.isEmpty()}" class="card notice" aria-labelledby="case-review-title">
                 <h2 id="case-review-title" th:text="${status == 'Abgeschlossen' ? 'Interne Hinweise' : 'Prüfbedarf'}">Prüfbedarf</h2>
-                <ul><li th:each="reason : ${reviewReasons}" th:text="${reason}"></li></ul>
+                <ul>
+                    <li th:each="reason : ${reviewReasons}">
+                        <span th:replace="~{case-fragments :: actorIcon(${reason.automatic()}, ${reason.automatic() ? 'System' : 'Immobilienverwaltung'})}"></span>
+                        <span th:text="${reason.text()}"></span>
+                    </li>
+                </ul>
             </section></div>
             <section class="card" aria-labelledby="staff-review-heading" hidden>
                 <details class="edit-card" name="case-edit">
@@ -261,11 +273,17 @@
                     <article th:each="entry : ${history}" class="message"
                              th:classappend="${(entry.role() == 'Mieter' ? 'tenant' : 'management') + (entry.internal() ? ' event' : (entry.role() == 'System' ? ' system' : ''))}">
                         <div class="message-role">
-                            <strong th:text="${entry.role()}"></strong>
+                            <span th:replace="~{case-fragments :: actorIcon(${entry.role() == 'System'}, ${entry.role()})}"></span>
+                            <strong th:unless="${entry.role() == 'System'}" th:text="${entry.role()}"></strong>
                             <span th:if="${entry.internal()}" role="img" aria-label="Nur intern sichtbar" title="Nur intern sichtbar">🔒</span>
                         </div>
                         <p class="muted" th:text="${entry.timestamp()}"></p>
-                        <p th:text="${entry.text()}"></p>
+                        <p th:if="${entry.urgency() == null}" th:text="${entry.text()}"></p>
+                        <p th:if="${entry.urgency() != null}" class="history-urgency">
+                            <span th:text="${entry.internal() ? 'Dringlichkeit manuell bestätigt:' : 'Dringlichkeit:'}"></span>
+                            <span th:replace="~{case-fragments :: urgencyTransition(${entry.urgency()})}"></span><span
+                                    th:if="${entry.internal()}" class="history-urgency-reason" th:text="|. ${entry.text()}|"></span>
+                        </p>
                         <p class="muted" th:if="${!#strings.isEmpty(entry.answerLabel())}" th:text="${entry.answerLabel()}"></p>
                         <details th:if="${entry.clearAnswerId() != null}" class="answer-cancellation">
                             <summary>Antwortbedarf aufheben</summary>
@@ -294,17 +312,19 @@
                       th:attr="data-actor=${memoActor},data-message-base=@{/mitarbeiter/faelle/{id}/nachrichten(id=${caseId})}" method="post">
                     <label for="staff-message-text">Externe Nachricht</label>
                     <textarea id="staff-message-text" name="text" rows="5" required></textarea>
-                    <section id="staff-formulation" aria-label="KI-Formulierung"
+                    <section id="staff-formulation" aria-label="Nachrichtenaktionen und KI-Formulierung"
                              th:attr="data-url=@{/mitarbeiter/faelle/{id}/ki-formulierung(id=${caseId})},data-availability-url=@{/mitarbeiter/faelle/{id}/aktionen/verfuegbar(id=${caseId})}">
-                        <button type="button" data-formulate disabled>Mit KI formulieren</button>
-                        <button type="button" data-formulation-abort hidden>Abbrechen</button>
+                        <div class="actions staff-message-actions">
+                            <button type="button" data-formulate disabled>Mit KI formulieren</button>
+                            <button type="button" data-formulation-abort hidden>Abbrechen</button>
+                            <button type="button" data-formulation-adopt disabled>Vorschlag übernehmen</button>
+                            <button type="submit" class="push-right" disabled>Nachricht senden</button>
+                        </div>
                         <p data-formulation-status role="status" aria-live="polite">Bereit</p>
                         <p data-formulation-output class="formulation-output"></p>
-                        <button type="button" data-formulation-adopt disabled>Vorschlag übernehmen</button>
                         <p class="muted">Vorschläge vor dem Senden prüfen. Bei nicht verfügbarer KI können Sie die Nachricht selbst schreiben.</p>
                     </section>
                     <p class="muted">Diese Nachricht ist für den Mieter sichtbar. Er wird per E-Mail benachrichtigt.</p>
-                    <button type="submit" disabled>Nachricht senden</button>
                     <p role="status" aria-live="polite">Verfügbarkeit wird geprüft.</p>
                     <a data-message-login th:href="@{/anmelden}" target="_blank" rel="noopener" hidden>Erneut anmelden</a>
                 </form>
