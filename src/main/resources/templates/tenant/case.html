@@ -24,7 +24,12 @@
             </div>
             <div>
                 <span class="field-caption">Dringlichkeit</span>
-                <span id="case-urgency" class="badge" th:classappend="${urgencyCss}" th:text="${urgency}"></span>
+                <span id="case-urgency" class="badge" th:classappend="${urgencyCss}">
+                    <th:block th:unless="${#strings.isEmpty(urgencySource)}">
+                        <span th:replace="~{case-fragments :: actorIcon(${urgencySource == 'System'}, ${urgencySource})}"></span>
+                    </th:block>
+                    <span th:text="${urgency}"></span>
+                </span>
             </div>
         </div>
     </section>
@@ -38,9 +43,15 @@
                 <div class="messages">
                     <article class="message" th:each="entry : ${history}"
                              th:classappend="${entry.role() == 'Mieter' ? 'push-right' : (entry.role() == 'System' ? 'system' : '')}">
-                        <div class="message-role"><strong th:text="${entry.role()}"></strong></div>
+                        <div class="message-role">
+                            <span th:replace="~{case-fragments :: actorIcon(${entry.role() == 'System'}, ${entry.role()})}"></span>
+                            <strong th:unless="${entry.role() == 'System'}" th:text="${entry.role()}"></strong>
+                        </div>
                         <span class="muted" th:text="${entry.timestamp()}"></span>
-                        <p th:text="${entry.text()}"></p>
+                        <p th:if="${entry.urgency() == null}" th:text="${entry.text()}"></p>
+                        <p th:if="${entry.urgency() != null}" class="history-urgency">
+                            Dringlichkeit: <span th:replace="~{case-fragments :: urgencyTransition(${entry.urgency()})}"></span>
+                        </p>
                         <p class="muted" th:if="${!#strings.isEmpty(entry.answerLabel())}" th:text="${entry.answerLabel()}"></p>
                     </article>
                 </div>

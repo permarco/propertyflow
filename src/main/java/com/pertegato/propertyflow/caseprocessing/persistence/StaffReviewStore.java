@@ -1,5 +1,6 @@
 package com.pertegato.propertyflow.caseprocessing.persistence;
 
+import com.pertegato.propertyflow.caseprocessing.contract.StaffCaseView.ReviewReason;
 import com.pertegato.propertyflow.caseprocessing.persistence.CaseWorkflowStore.CaseState;
 import java.util.List;
 import java.util.Optional;
@@ -80,26 +81,32 @@ public class StaffReviewStore {
                 Boolean.class, callRef));
     }
 
-    public List<String> reasons(String caseId) {
+    public List<ReviewReason> reasons(String caseId) {
         return database.query("""
-                SELECT DISTINCT reason FROM pf_case_review_signal WHERE case_id = ? AND source_type <> 'MAIL' AND considered_decision_id IS NULL AND considered_wait_command_id IS NULL
-                    AND considered_direct_command_id IS NULL
-                UNION SELECT 'STAFF_DECISION_STALE' FROM pf_staff_decision
+                SELECT reason, source_type NOT IN ('MANUAL_URGENCY', 'STAFF_QUESTION', 'STAFF_CLOSURE') AS automatic
+                FROM pf_case_review_signal WHERE case_id = ? AND source_type <> 'MAIL' AND considered_decision_id IS NULL
+                    AND considered_wait_command_id IS NULL AND considered_direct_command_id IS NULL
+                UNION SELECT 'STAFF_DECISION_STALE', FALSE FROM pf_staff_decision
                 WHERE case_id = ? AND state = 'REJECTED' AND result_code = 'DECISION_BASIS_CHANGED'
-                UNION SELECT CASE WHEN source = 'STAFF' THEN 'STAFF_CLOSED' ELSE 'SYSTEM_CLOSED' END FROM pf_case_closure WHERE case_id = ?
+                UNION SELECT CASE WHEN source = 'STAFF' THEN 'STAFF_CLOSED' ELSE 'SYSTEM_CLOSED' END, source <> 'STAFF'
+                FROM pf_case_closure WHERE case_id = ?
                 """,
-                (row, index) -> switch (row.getString("reason")) {
-                    case "CRITICAL_URGENCY" -> "Kritische Dringlichkeit: menschliche Prüfung erforderlich.";
-                    case "ANALYSIS_FAILED" -> "Automatische Analyse nicht verfügbar oder ungültig: menschliche Prüfung erforderlich.";
-                    case "HUMAN_DECISION_REQUIRED" -> "Die aktuelle Auswertung erfordert eine menschliche Entscheidung.";
-                    case "ALL_QUESTIONS_ANSWERED" -> "Alle zuvor offenen Rückfragen sind beantwortet: Vorgehen prüfen.";
-                    case "STAFF_DECISION_STALE" -> "Fallstand seit der bestätigten Entscheidung geändert: erneute Prüfung erforderlich.";
-                    case "CLOSURE_BASIS_CHANGED" -> "Fallstand seit Abschlussbestätigung geändert: erneute Prüfung erforderlich.";
-                    case "STAFF_CLOSED" -> CaseClosureStore.STAFF_CLOSURE_REASON;
-                    case "SYSTEM_CLOSED" -> "Systemabschluss mit gespeicherter Abschlussgrundlage.";
-                    case "INVALID_CLOSURE_MESSAGE" -> "Automatische Abschlussmitteilung inhaltlich unzulässig: menschliche Prüfung erforderlich.";
-                    default -> "Fachlicher Prüfbedarf liegt vor.";
-                }, caseId, caseId, caseId);
+                (row, index) -> new ReviewReason(reasonLabel(row.getString("reason")), row.getBoolean("automatic")), caseId, caseId, caseId);
+    }
+
+    private static String reasonLabel(String reason) {
+        return switch (reason) {
+            case "CRITICAL_URGENCY" -> "Kritische Dringlichkeit: menschliche Prüfung erforderlich.";
+            case "ANALYSIS_FAILED" -> "Automatische Analyse nicht verfügbar oder ungültig: menschliche Prüfung erforderlich.";
+            case "HUMAN_DECISION_REQUIRED" -> "Die aktuelle Auswertung erfordert eine menschliche Entscheidung.";
+            case "ALL_QUESTIONS_ANSWERED" -> "Alle zuvor offenen Rückfragen sind beantwortet: Vorgehen prüfen.";
+            case "STAFF_DECISION_STALE" -> "Fallstand seit der bestätigten Entscheidung geändert: erneute Prüfung erforderlich.";
+            case "CLOSURE_BASIS_CHANGED" -> "Fallstand seit Abschlussbestätigung geändert: erneute Prüfung erforderlich.";
+            case "STAFF_CLOSED" -> CaseClosureStore.STAFF_CLOSURE_REASON;
+            case "SYSTEM_CLOSED" -> "Systemabschluss mit gespeicherter Abschlussgrundlage.";
+            case "INVALID_CLOSURE_MESSAGE" -> "Automatische Abschlussmitteilung inhaltlich unzulässig: menschliche Prüfung erforderlich.";
+            default -> "Fachlicher Prüfbedarf liegt vor.";
+        };
     }
 
     public void questionConflict(String caseId, long leader, UUID continuation, UUID command) {

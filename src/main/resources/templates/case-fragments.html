@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="de-CH" xmlns:th="http://www.thymeleaf.org">
+<body>
+<span th:fragment="actorIcon(automatic, label)" class="actor-icon" role="img"
+      th:attr="aria-label=${automatic ? 'System' : 'Person'},title=${label}"
+      th:text="${automatic ? '🤖' : '👤'}"></span>
+<span th:fragment="urgencyTransition(urgency)" class="history-urgency-values">
+    <span class="badge" th:classappend="${urgency.previousCss()}" th:text="${urgency.previousLabel()}"></span>
+    <span>→</span>
+    <span class="badge" th:classappend="${urgency.currentCss()}" th:text="${urgency.currentLabel()}"></span>
+</span>
+</body>
+</html>

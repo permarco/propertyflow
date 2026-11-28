@@ -8,6 +8,8 @@ import com.pertegato.propertyflow.caseprocessing.contract.CaseRecommendation;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseServiceException;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseStatus;
 import com.pertegato.propertyflow.caseprocessing.contract.CaseStatusView;
+import com.pertegato.propertyflow.caseprocessing.contract.InternalChange;
+import com.pertegato.propertyflow.caseprocessing.contract.InternalChange.UrgencyDetails;
 import com.pertegato.propertyflow.caseprocessing.contract.InternalMemo;
 import com.pertegato.propertyflow.caseprocessing.contract.PublicAuthor;
 import com.pertegato.propertyflow.caseprocessing.contract.PublicMessage;
@@ -16,7 +18,11 @@ import com.pertegato.propertyflow.caseprocessing.contract.StaffCasePage;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffCaseQuery;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffCaseSummary;
 import com.pertegato.propertyflow.caseprocessing.contract.StaffCaseView;
+import com.pertegato.propertyflow.caseprocessing.contract.StaffCaseView.ReviewReason;
 import com.pertegato.propertyflow.caseprocessing.contract.TenantCaseView;
+import com.pertegato.propertyflow.caseprocessing.contract.Urgency;
+import com.pertegato.propertyflow.caseprocessing.contract.UrgencyChange;
+import com.pertegato.propertyflow.caseprocessing.contract.UrgencySource;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -164,15 +170,28 @@ class StaffCaseWebTest {
     void detailShowsStaffProjectionAndDiscardsExternalReturnTarget() throws Exception {
         TenantCaseView publicView = new TenantCaseView(caseState(), TITLE, "Das Haus ist kalt.", UNIT, Optional.empty(),
                 "m***@example.test", RECEIVED_AT, RECEIVED_AT, 2, Optional.empty(),
-                List.of(new PublicMessage("message-1", PublicAuthor.TENANT, "Das Haus ist kalt.", RECEIVED_AT)), List.of());
-        StaffCaseView projection = new StaffCaseView(publicView, "mieter@example.test", Optional.empty(), List.of("Prüfgrund"),
-                List.of(new InternalMemo("memo-1", "Intern <wichtig>", RECEIVED_AT)));
+                List.of(new PublicMessage("message-1", PublicAuthor.TENANT, "Das Haus ist kalt.", RECEIVED_AT)),
+                List.of(new UrgencyChange("urgency-1", Optional.empty(), Urgency.NORMAL, UrgencySource.SYSTEM, RECEIVED_AT)));
+        StaffCaseView projection = new StaffCaseView(publicView, "mieter@example.test", Optional.empty(),
+                List.of(new ReviewReason("Mitarbeiterabschluss", false)),
+                List.of(new InternalMemo("memo-1", "Intern <wichtig>", RECEIVED_AT)),
+                List.of(new InternalChange("urgency-2", "Dringlichkeit manuell bestätigt: Normal → Niedrig.", STAFF.accountId(),
+                                "Marco", RECEIVED_AT, false, new UrgencyDetails(Optional.of(Urgency.NORMAL), Urgency.LOW, "Geprüft")),
+                        new InternalChange("system-closure", "Fall automatisch abgeschlossen.", null, "System", RECEIVED_AT, true, null)));
         when(reading.readForStaff(STAFF, CASE_ID)).thenReturn(projection);
 
         protectedResponse(mvc.perform(signedIn(DETAIL).param("returnTo", "https://external.example.test/")), 200)
                 .andExpect(content().string(containsString(CASE_ID)))
                 .andExpect(content().string(containsString("Das Haus ist kalt.")))
                 .andExpect(content().string(containsString("Intern &lt;wichtig&gt;")))
+                .andExpect(content().string(containsString("title=\"Mieter\">👤")))
+                .andExpect(content().string(containsString("title=\"Immobilienverwaltung · Marco\">👤")))
+                .andExpect(content().string(containsString("title=\"System\">🤖")))
+                .andExpect(content().string(not(containsString("Immobilienverwaltung · System"))))
+                .andExpect(content().string(containsString("class=\"badge urgency-0\">Noch nicht bewertet")))
+                .andExpect(content().string(containsString("class=\"badge urgency-3\">Normal")))
+                .andExpect(content().string(containsString("class=\"badge urgency-4\">Niedrig")))
+                .andExpect(content().string(containsString(". Geprüft")))
                 .andExpect(content().string(containsString("mieter@example.test")))
                 .andExpect(content().string(containsString(CONTEXT + "/abmelden")))
                 .andExpect(content().string(not(containsString("external.example.test"))))
@@ -195,9 +214,10 @@ class StaffCaseWebTest {
         CaseRecommendation recommendation = new CaseRecommendation("Verwaltung", "Fall prüfen", List.of(), null, false,
                 "Vorgeschlagener Abschlussgrund: Problem behoben.\n<script>window.untrusted=true</script>");
         when(reading.readForStaff(STAFF, CASE_ID)).thenReturn(new StaffCaseView(publicView, "mieter@example.test", Optional.empty(),
-                List.of("Mitarbeiterentscheidung erforderlich"), List.of(), List.of(), Optional.of(recommendation)));
+                List.of(new ReviewReason("Mitarbeiterentscheidung erforderlich", true)), List.of(), List.of(), Optional.of(recommendation)));
         protectedResponse(mvc.perform(signedIn(DETAIL)), 200)
                 .andExpect(content().string(containsString("Abschlussbewertung zur Prüfung")))
+                .andExpect(content().string(containsString("title=\"System\">🤖")))
                 .andExpect(content().string(containsString("Diese Empfehlung beruht auf einem früheren Fallstand.")))
                 .andExpect(content().string(containsString("&lt;script&gt;window.untrusted=true&lt;/script&gt;")))
                 .andExpect(content().string(not(containsString("<script>window.untrusted=true</script>"))));

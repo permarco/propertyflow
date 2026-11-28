@@ -117,7 +117,66 @@ test('Intern-Toggle erhält getrennte Entwürfe und sperrt Antwortbedarf und Ums
     assert.equal(await toggle.isDisabled(), true);
 });
 
+test('Nachrichtenaktionen bleiben auch mit Abbrechen in einer Zeile und Senden steht rechts', async t => {
+    const { page } = await setup(t);
+    const form = page.locator('#staff-message-form');
+    for (const width of [1440, 390, 320]) {
+        await page.setViewportSize({ width, height: 900 });
+        const input = await form.locator('textarea').boundingBox();
+        for (const waiting of [false, true]) {
+            await form.locator('[data-formulation-abort]').evaluate((button, visible) => {
+                button.hidden = !visible;
+            }, waiting);
+            const buttons = await form.getByRole('button').all();
+            assert.equal(buttons.length, waiting ? 4 : 3);
+            assert.equal(await buttons.at(-1).textContent(), 'Nachricht senden');
+            const positions = await Promise.all(buttons.map(button => button.boundingBox()));
+            for (const position of positions) {
+                assert.equal(position.y, positions[0].y);
+                assert.ok(position.x >= input.x);
+            }
+            assert.ok(Math.abs(positions.at(-1).x + positions.at(-1).width - input.x - input.width) < 1);
+        }
+    }
+});
+
 for (const view of ['staff', 'tenant']) {
+    test(`${view}: Verlaufstitel und Sortierung bleiben beim Scrollen sichtbar`, async t => {
+        const { page, script } = await setup(t, view);
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await page.locator('#history .messages').evaluate(messages => {
+            for (let index = 0; index < 20; index++) {
+                const entry = document.createElement('article');
+                entry.className = 'message';
+                entry.textContent = `Verlaufseintrag ${index}`;
+                messages.append(entry);
+            }
+        });
+        await script('history-order');
+        const history = page.locator('#history');
+        const title = page.getByRole('heading', { name: 'Verlauf', exact: true });
+        const sort = history.locator('[data-history-order]');
+        const initialTitle = await title.boundingBox();
+        const initialSort = await sort.boundingBox();
+        assert.ok(initialSort.x > initialTitle.x);
+        assert.ok(await history.evaluate(element => {
+            element.scrollTop = 140;
+            return element.scrollTop > 0;
+        }));
+        assert.equal((await title.boundingBox()).y, initialTitle.y);
+        assert.equal((await sort.boundingBox()).y, initialSort.y);
+
+        await page.setViewportSize({ width: 390, height: 844 });
+        await history.evaluate(element => window.scrollBy(0, element.getBoundingClientRect().top + 140));
+        const mobileTitle = await title.boundingBox();
+        const mobileSort = await sort.boundingBox();
+        assert.ok(mobileTitle.y >= 0 && mobileTitle.y < 64);
+        assert.ok(mobileSort.x > mobileTitle.x);
+        await page.evaluate(() => window.scrollBy(0, 100));
+        assert.equal((await title.boundingBox()).y, mobileTitle.y);
+        assert.equal((await sort.boundingBox()).y, mobileSort.y);
+    });
+
     test(`${view}: Verlaufspfeil sortiert, übersteht Nachladen und speichert die Auswahl`, async t => {
         const { page, script } = await setup(t, view);
         const reset = async () => page.evaluate(() => {

@@ -70,7 +70,8 @@ class CaseContractTest {
     @Test
     void staffViewCopiesInternalListsInsteadOfSharingMutableServiceState() {
         InternalMemo memo = new InternalMemo("memo-1", "Hauswart anrufen", RECEIVED_AT);
-        List<String> reasons = new ArrayList<>(List.of("Zuordnung offen"));
+        StaffCaseView.ReviewReason reason = new StaffCaseView.ReviewReason("Zuordnung offen", true);
+        List<StaffCaseView.ReviewReason> reasons = new ArrayList<>(List.of(reason));
         List<InternalMemo> memos = new ArrayList<>(List.of(memo));
         StaffCaseView view = new StaffCaseView(
                 tenantView(List.of(), List.of()), "tenant@example.test", Optional.empty(), reasons, memos);
@@ -78,9 +79,9 @@ class CaseContractTest {
         reasons.clear();
         memos.clear();
 
-        assertEquals(List.of("Zuordnung offen"), view.reviewReasons());
+        assertEquals(List.of(reason), view.reviewReasons());
         assertEquals(List.of(memo), view.internalMemos());
-        assertThrows(UnsupportedOperationException.class, () -> view.reviewReasons().add("Changed reason"));
+        assertThrows(UnsupportedOperationException.class, () -> view.reviewReasons().add(reason));
         assertThrows(UnsupportedOperationException.class, () -> view.internalMemos().add(memo));
     }
 

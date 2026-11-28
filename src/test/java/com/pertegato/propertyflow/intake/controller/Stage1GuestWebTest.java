@@ -245,7 +245,11 @@ class Stage1GuestWebTest {
         assertTrue(html.contains("CASE-1"));
         assertTrue(html.contains("Heizung &lt;kalt&gt;"));
         assertTrue(html.contains("Eingegangen"));
-        assertTrue(html.contains("Dringlichkeit: Noch nicht bewertet → Hoch"));
+        assertTrue(html.contains("Dringlichkeit:"));
+        assertTrue(html.contains("class=\"badge urgency-0\">Noch nicht bewertet"));
+        assertTrue(html.contains("class=\"badge urgency-2\">Hoch"));
+        assertTrue(html.contains("title=\"Mieter\">👤"));
+        assertTrue(html.contains("title=\"System\">🤖"));
         assertTrue(html.contains("14.11.2026, 15:00"));
         assertTrue(html.contains("&lt;script&gt;Ursprünglicher Text&lt;/script&gt;"));
         assertFalse(html.contains("<script>"));

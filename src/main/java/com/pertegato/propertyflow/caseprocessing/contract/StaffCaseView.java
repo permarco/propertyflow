@@ -12,18 +12,18 @@ public record StaffCaseView(
         TenantCaseView publicView,
         String contactEmail,
         Optional<LocalDate> followUpDate,
-        List<String> reviewReasons,
+        List<ReviewReason> reviewReasons,
         List<InternalMemo> internalMemos,
         List<InternalChange> internalChanges,
         Optional<CaseRecommendation> recommendation) {
 
     public StaffCaseView(TenantCaseView publicView, String contactEmail, Optional<LocalDate> followUpDate,
-            List<String> reviewReasons, List<InternalMemo> internalMemos, List<InternalChange> internalChanges) {
+            List<ReviewReason> reviewReasons, List<InternalMemo> internalMemos, List<InternalChange> internalChanges) {
         this(publicView, contactEmail, followUpDate, reviewReasons, internalMemos, internalChanges, Optional.empty());
     }
 
     public StaffCaseView(TenantCaseView publicView, String contactEmail, Optional<LocalDate> followUpDate,
-            List<String> reviewReasons, List<InternalMemo> internalMemos) {
+            List<ReviewReason> reviewReasons, List<InternalMemo> internalMemos) {
         this(publicView, contactEmail, followUpDate, reviewReasons, internalMemos, List.of());
     }
 
@@ -35,5 +35,8 @@ public record StaffCaseView(
         internalMemos = List.copyOf(internalMemos);
         internalChanges = List.copyOf(internalChanges);
         Objects.requireNonNull(recommendation, "recommendation");
+    }
+
+    public record ReviewReason(String text, boolean automatic) {
     }
 }

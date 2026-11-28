@@ -223,7 +223,8 @@ class CaseDataPostgresTest {
         assertEquals(1, database.queryForObject("SELECT COUNT(*) FROM pf_urgency_mail_order", Integer.class));
         assertEquals(1, database.queryForObject("SELECT COUNT(*) FROM pf_case_review_signal WHERE reason = 'CRITICAL_URGENCY'", Integer.class));
         assertEquals("UNDER_CLARIFICATION", database.queryForObject("SELECT status FROM pf_case", String.class));
-        assertTrue(staff.readForStaff(actor, accepted.caseId()).reviewReasons().stream().anyMatch(reason -> reason.contains("Kritische")));
+        assertTrue(staff.readForStaff(actor, accepted.caseId()).reviewReasons().stream()
+                .anyMatch(reason -> !reason.automatic() && reason.text().contains("Kritische")));
         assertEquals(1, listing.listForStaff(actor, new StaffCaseQuery("", "Kritisch", false, "urgency", false, 1)).total());
         assertEquals(0, listing.listForStaff(actor, new StaffCaseQuery("", "Noch nicht bewertet", false, "default", false, 1)).total());
         browser.perform(get("/mieter/fall/zugang/" + accepted.personalAccessToken()))
